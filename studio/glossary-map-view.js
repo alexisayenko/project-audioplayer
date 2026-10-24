@@ -74,9 +74,10 @@ export function createGlossaryMap({ terms, onSelect } = {}) {
   const order = (n) => DOMAINS.findIndex((d) => d.id === n.domain);
   const tabOrder = [...nodes].sort((a, b) => order(a) - order(b) || a.label.localeCompare(b.label, 'en', { sensitivity: 'base' }));
   for (const n of tabOrder) {
-    const g = svgEl('g', { class: 'gm-n', 'data-id': n.id, tabindex: '0', role: 'button', 'aria-pressed': 'false', 'aria-label': `${n.term}, ${domainOf(n.domain).label}` },
+    const g = svgEl('g', { class: 'gm-n', 'data-id': n.id, tabindex: '0', role: 'button', 'aria-pressed': 'false', 'aria-label': `${n.term}, ${domainOf(n.domain).label}${n.aliases.length ? `. Also called: ${n.aliases.join(', ')}` : ''}` },
       svgEl('rect', { x: -n.w / 2, y: -n.h / 2, width: n.w, height: n.h, rx: n.h / 2 }),
-      svgEl('text', { 'text-anchor': 'middle', y: 4.2 }, n.label));
+      svgEl('text', { 'text-anchor': 'middle', y: 4.2 }, n.label),
+      n.aliases.length ? svgEl('title', {}, `${n.term}. Also called: ${n.aliases.join(', ')}`) : null);
     g.style.setProperty('--dc', `var(${domainOf(n.domain).token})`);
     nodeEls.set(n.id, g);
     nodeLayer.append(g);
@@ -160,6 +161,7 @@ export function createGlossaryMap({ terms, onSelect } = {}) {
     panel.replaceChildren(
       el('div', { class: 'gm-ph' }, dotFor(n.domain), el('h3', { class: 't-subhead' }, t.term)),
       el('p', { class: 'hm-cap muted t-caption' }, domainOf(n.domain).label),
+      ...(n.aliases.length ? [el('p', { class: 'hm-cap muted t-caption gl-also' }, `Also called: ${n.aliases.join(', ')}`)] : []),
       el('p', { class: 'gl-text t-subhead muted' }, t.text),
       el('p', { class: 'gl-more t-caption' }, el('a', { href: `#/glossary/${n.id}` }, 'Open in list'), ...demo),
       rels.length ? el('p', { class: 'gl-label t-caption' }, 'Relations') : null,

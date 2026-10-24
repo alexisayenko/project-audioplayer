@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { installDom } from './test-dom.mjs';
 
 installDom();
-const { TERMS, termById, filterTerms } = await import('./glossary-terms.js');
+const { TERMS, termById, termByAnchor, aliasSlug, filterTerms } = await import('./glossary-terms.js');
 const { PAGES, pageFromHash, glossaryTermFromHash } = await import('../../studio/routes.js');
 const { mountGlossary, countText } = await import('../../studio/glossary.js');
 
@@ -23,6 +23,38 @@ test('STU-025: the terms asked for are present with their key wording', () => {
   assert.match(termById('oscillation').text, /From Latin oscillare, "to swing" \(English since about 1726\)\./);
   assert.match(termById('cycle-and-period').text, /440 Hz = 2\.27 ms/);
   assert.match(termById('membranophones').text, /1, 1\.59, 2\.14 and 2\.30/);
+});
+
+test('STU-025: aliases are unique, do not clash with ids and resolve as anchors', () => {
+  const seen = new Map();
+  for (const t of TERMS) {
+    for (const a of t.aliases ?? []) {
+      const slug = aliasSlug(a);
+      assert.ok(slug && slug !== 'map', `${t.id}: ${a}`);
+      assert.ok(!termById(slug), `alias ${a} clashes with an id`);
+      assert.ok(!seen.has(slug), `alias ${a} used by ${seen.get(slug)} and ${t.id}`);
+      seen.set(slug, t.id);
+    }
+  }
+  assert.equal(termByAnchor('tone-color').id, 'timbre');
+  assert.equal(termByAnchor('tone-quality').id, 'timbre');
+  assert.equal(termByAnchor('тембр').id, 'timbre');
+  assert.equal(termByAnchor('f0').id, 'fundamental');
+  assert.equal(termByAnchor('beats-per-minute').id, 'bpm');
+  assert.equal(termByAnchor('timbre').id, 'timbre');
+  assert.equal(termByAnchor('no-such-term'), undefined);
+  assert.deepEqual(termById('timbre').aliases, ['tone color', 'tone colour', 'tone quality', 'Klangfarbe', 'тембр']);
+  assert.match(termById('timbre').text, /Also called tone color or tone quality: the character of a sound that stays when pitch and loudness are the same\./);
+});
+
+test('STU-025: the filter matches aliases and the new terms are present', () => {
+  assert.ok(filterTerms(TERMS, 'tone quality').some((t) => t.id === 'timbre'));
+  assert.ok(filterTerms(TERMS, 'Klangfarbe').some((t) => t.id === 'timbre'));
+  assert.ok(filterTerms(TERMS, 'upper partial').some((t) => t.id === 'overtone'));
+  for (const id of ['harmony', 'octave', 'interval']) assert.ok(termById(id), id);
+  assert.deepEqual(termById('harmony').see, ['harmonics', 'note', 'octave', 'interval']);
+  assert.deepEqual(termById('octave').see, ['cent', 'note', 'interval']);
+  assert.deepEqual(termById('interval').see, ['octave', 'cent', 'harmony']);
 });
 
 test('STU-025: filterTerms matches every word in the term or the text, ignoring case', () => {

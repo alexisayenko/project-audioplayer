@@ -1,6 +1,6 @@
 import { el } from '../web/js/dom.js';
 import { segmented } from '../web/js/segmented.js';
-import { TERMS, termById, filterTerms } from '../web/js/glossary-terms.js';
+import { TERMS, termById, termByAnchor, filterTerms } from '../web/js/glossary-terms.js';
 import { matchSet } from '../web/js/glossary-map.js';
 import { glossaryTermFromHash, glossaryViewFromHash, glossaryMapTermFromHash } from './routes.js';
 import { createGlossaryMap } from './glossary-map-view.js';
@@ -25,7 +25,7 @@ export function mountGlossary(pane, win = globalThis) {
     const see = t.see?.length ? [el('span', { class: 'gl-label' }, 'See also'), ...t.see.map(termLink)] : [];
     const demo = t.demo ? [el('a', { href: `#/${t.demo.page}` }, `${t.demo.label} page →`)] : [];
     return el('div', { class: 'gl-item', id: `gl-${t.id}`, tabindex: '-1' },
-      el('dt', { class: 't-subhead' }, t.term),
+      el('dt', { class: 't-subhead' }, t.term, t.aliases?.length ? el('span', { class: 'gl-also t-caption' }, ` also: ${t.aliases.join(', ')}`) : null),
       el('dd', { class: 't-subhead muted gl-text' }, t.text),
       see.length || demo.length ? el('dd', { class: 'gl-more t-caption' }, ...see, ...demo) : null);
   };
@@ -95,12 +95,12 @@ export function mountGlossary(pane, win = globalThis) {
     const v = glossaryViewFromHash(hash);
     showView(v);
     if (v === 'map') {
-      const id = glossaryMapTermFromHash(hash);
-      if (id) map.select(id, { silent: true, reveal: true });
+      const hit = termByAnchor(glossaryMapTermFromHash(hash));
+      if (hit) map.select(hit.id, { silent: true, reveal: true });
       return;
     }
-    const id = glossaryTermFromHash(hash);
-    if (id) focusTerm(id);
+    const hit = termByAnchor(glossaryTermFromHash(hash));
+    if (hit) focusTerm(hit.id);
   };
 
   pane.replaceChildren(el('section', { class: 'card gl-card', 'aria-label': TITLE },

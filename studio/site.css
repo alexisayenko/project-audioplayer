@@ -31,6 +31,8 @@
 .gl-item.gl-hit { background: var(--accent-tint); }
 .gl-more { display: flex; flex-wrap: wrap; align-items: center; gap: 0 var(--space-4); }
 .gl-label { color: var(--ink-muted); }
+.gl-also { color: var(--ink-muted); font-weight: 400; }
+.gm-panel p.gl-also { margin: 0; }
 .gl-map { min-width: 0; }
 .gm { display: grid; gap: var(--space-3); min-width: 0; }
 .gm :where(ul, p) { max-width: none; }

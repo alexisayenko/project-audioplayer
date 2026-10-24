@@ -18,7 +18,8 @@ test('STU-037: every relation ends at an existing term, with a label, no self lo
     assert.ok(!seen.has(key), `duplicate ${key}`);
     seen.add(key);
   }
-  assert.ok(RELATIONS.length >= 50 && RELATIONS.length <= 75, `${RELATIONS.length} relations`);
+  assert.equal(RELATIONS.length, 76);
+  assert.equal(TERMS.length, 54);
 });
 
 test('STU-037: every term is in exactly one domain, every domain is non-empty and every term has a relation', () => {
@@ -46,6 +47,13 @@ test('STU-037: the relations asked for are present', () => {
   assert.ok(has('harmonics', 'fundamental', 'multiples'));
   assert.ok(has('fundamental', 'pitch', 'sets'));
   assert.ok(has('octave-error', 'pitch-detection', 'mistake'));
+  assert.ok(has('harmony', 'note', 'made of'));
+  assert.ok(has('harmony', 'harmonics', 'not the same as'));
+  assert.ok(has('octave', 'frequency', '2:1'));
+  assert.ok(has('interval', 'cent', 'measured in'));
+  assert.ok(has('interval', 'octave', 'includes'));
+  assert.ok(has('harmony', 'interval', 'built from'));
+  for (const id of ['harmony', 'octave', 'interval']) assert.equal(DOMAIN_OF[id], 'music', id);
   assert.match(termById('speed-of-sound').text, /343 m\/s in air at 20 °C/);
   assert.match(termById('loudness').text, /follows the amplitude/);
 });
@@ -59,6 +67,11 @@ test('STU-037: buildGraph gives one node per mapped term and keeps only edges be
   assert.ok(sub.edges.every((e) => e.from !== 'frequency' && e.to !== 'frequency'));
   assert.equal(mapLabel(termById('spectrum')), 'Spectrum');
   assert.equal(mapLabel(termById('frequency')), 'Frequency');
+  assert.equal(nodes.length, 54);
+  assert.equal(edges.length, 76);
+  assert.deepEqual(nodes.find((n) => n.id === 'timbre').aliases, termById('timbre').aliases);
+  assert.deepEqual(nodes.find((n) => n.id === 'bpm').aliases, termById('bpm').aliases);
+  assert.deepEqual(nodes.find((n) => n.id === 'sound').aliases, []);
 });
 
 test('STU-037: neighbours and relations of a term, both directions', () => {
@@ -128,6 +141,8 @@ test('STU-039: arrow keys pick the neighbour in that direction and the filter ma
   assert.equal(matchSet(TERMS, '   '), null);
   const hits = matchSet(TERMS, 'wavelength');
   assert.ok(hits.has('wavelength') && hits.has('cycle-and-period') && !hits.has('bpm'));
+  assert.ok(matchSet(TERMS, 'tone quality').has('timbre'));
+  assert.ok(matchSet(TERMS, 'тембр').has('timbre'));
 });
 
 test('STU-036: #/glossary is the list, #/glossary/map the map, #/glossary/map/<id> a selected node and #/glossary/<id> a list term', () => {

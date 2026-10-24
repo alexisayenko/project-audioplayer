@@ -11,7 +11,7 @@ export const DOMAINS = [
 const MEMBERS = {
   physics: ['sound', 'oscillation', 'vibration', 'cycle-and-period', 'frequency', 'wavelength', 'amplitude', 'power', 'speed-of-sound', 'sine-wave', 'infrasound-and-ultrasound', 'soundboard', 'bridge', 'length'],
   perception: ['pitch', 'timbre', 'missing-fundamental', 'cent', 'loudness'],
-  music: ['note', 'tone', 'fundamental', 'harmonic-1', 'harmonics', 'overtone', 'partial', 'inharmonicity', 'beating', 'hammer-strike-position', 'strings-per-note', 'decay-across-harmonics'],
+  music: ['note', 'tone', 'fundamental', 'harmonic-1', 'harmonics', 'overtone', 'partial', 'inharmonicity', 'beating', 'hammer-strike-position', 'strings-per-note', 'decay-across-harmonics', 'harmony', 'octave', 'interval'],
   instruments: ['chordophones', 'aerophones', 'membranophones', 'idiophones', 'electrophones', 'primitive'],
   analysis: ['waveform', 'oscilloscope', 'spectrum', 'spectrogram', 'beat-bands', 'tempo-grid', 'bpm', 'trails', 'harmonic-markers', 'pitch-detection', 'octave-error', 'dbfs', 'db-spl', 'time-window'],
 };
@@ -71,6 +71,12 @@ export const RELATIONS = [
   rel('missing-fundamental', 'is still heard as the', 'pitch'),
   rel('missing-fundamental', 'is rebuilt from the', 'overtone'),
   rel('cent', 'measures differences in', 'pitch'),
+  rel('harmony', 'is made of', 'note'),
+  rel('harmony', 'not the same as', 'harmonics'),
+  rel('octave', 'is the ratio 2:1 of', 'frequency'),
+  rel('interval', 'is measured in', 'cent'),
+  rel('interval', 'includes', 'octave'),
+  rel('harmony', 'is built from', 'interval'),
   rel('pitch-detection', 'finds the', 'fundamental'),
   rel('pitch-detection', 'still works with a', 'missing-fundamental'),
   rel('octave-error', 'is a typical mistake of', 'pitch-detection'),
@@ -111,7 +117,7 @@ export const nodeWidth = (label) => Math.round(label.length * CHAR_W + 24);
 export function buildGraph(terms = TERMS, relations = RELATIONS) {
   const nodes = terms.filter((t) => DOMAIN_OF[t.id]).map((t) => {
     const label = mapLabel(t);
-    return { id: t.id, term: t.term, label, domain: DOMAIN_OF[t.id], w: nodeWidth(label), h: NODE_H, x: 0, y: 0 };
+    return { id: t.id, term: t.term, aliases: t.aliases ?? [], label, domain: DOMAIN_OF[t.id], w: nodeWidth(label), h: NODE_H, x: 0, y: 0 };
   });
   const ids = new Set(nodes.map((n) => n.id));
   const edges = relations.filter((r) => ids.has(r.from) && ids.has(r.to)).map((r, i) => ({ ...r, i }));
