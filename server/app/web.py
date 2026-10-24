@@ -15,7 +15,8 @@ from starlette.types import Scope
 
 from .safepath import safe_join
 
-_ASSET_REF = re.compile(r'(href|src)="([a-z0-9-]+\.css|favicon\.svg|js/app\.js)"')
+_ASSET_REF = re.compile(r'(href|src)="([a-z0-9-]+\.css|favicon\.svg|favicon-32\.png|apple-touch-icon\.png|img/[a-z0-9-]+\.png|js/app\.js)"')
+_INLINE_IMPORT = re.compile(r"(\bfrom\s*')\./(js/[a-z0-9-]+\.js')")
 _ENTRY = "js/app.js"
 _STATIC_IMPORT = re.compile(r"""(?:^|[\n;])\s*(?:import|export)\b[^;'"]*?\bfrom\s*['"](\.{1,2}/[^'"]+)['"]""")
 _BARE_IMPORT = re.compile(r"""(?:^|[\n;])\s*import\s*['"](\.{1,2}/[^'"]+)['"]""")
@@ -26,6 +27,10 @@ _TIER2_FIRST = (
     "js/genres-rework.js", "js/stats.js", "js/studio.js", "js/settings.js", "js/theory.js", "js/playlists.js", "js/about.js", "js/features.js", "js/genres.js",
 )
 _IMMUTABLE = "public, max-age=31536000, immutable"
+_INDEX_CACHE = "no-cache"
+_INDEX_EDGE_CACHE = "max-age=60, stale-while-revalidate=600"
+_IMAGE_CACHE = "public, max-age=86400, stale-while-revalidate=604800"
+_IMAGE_SUFFIXES = (".png", ".jpg", ".jpeg", ".webp", ".svg", ".ico")
 _VERSION_LEN = 10
 _preload_cache: dict[tuple[str, str], str] = {}
 
@@ -35,11 +40,12 @@ def web_dir() -> Path:
 
 
 class NoCacheStaticFiles(StaticFiles):
-    """Revalidate on every load so UI edits show up without a hard refresh."""
+    """Revalidate code and data on every load so UI edits show up without a hard refresh; images, which the page does not reach through /_v/, keep for a day."""
 
     async def get_response(self, path: str, scope: Scope) -> Response:
         response = await super().get_response(path, scope)
-        response.headers["Cache-Control"] = "no-cache"
+        image = path.lower().endswith(_IMAGE_SUFFIXES) and response.status_code in (200, 304)
+        response.headers["Cache-Control"] = _IMAGE_CACHE if image else "no-cache"
         return response
 
 
@@ -132,15 +138,17 @@ def _index_response(request: Request) -> Response:
     """index.html with every asset under /_v/<version>/, so a deploy is a new URL.
 
     Browsers and CDNs may keep the versioned files for a year; the page that names
-    them is always revalidated (ETag), so users pick up a deploy on the next load.
+    them is always revalidated by browsers (ETag), so users pick up a deploy on the next load.
+    The page holds nothing per user, so Cloudflare may keep it briefly (Cloudflare-CDN-Cache-Control).
     """
     version = web_version()
     etag = f'"{version}"'
-    headers = {"Cache-Control": "no-cache", "ETag": etag}
+    headers = {"Cache-Control": _INDEX_CACHE, "Cloudflare-CDN-Cache-Control": _INDEX_EDGE_CACHE, "ETag": etag}
     if request.headers.get("if-none-match") == etag:
         return Response(status_code=304, headers=headers)
     page = (web_dir() / "index.html").read_text(encoding="utf-8")
     page = _ASSET_REF.sub(lambda m: f'{m.group(1)}="_v/{version}/{m.group(2)}"', page)
+    page = _INLINE_IMPORT.sub(lambda m: f"{m.group(1)}./_v/{version}/{m.group(2)}", page)
     if "</head>" in page:
         page = page.replace("</head>", _preload_links(version) + "</head>", 1)
     return HTMLResponse(page, headers=headers)

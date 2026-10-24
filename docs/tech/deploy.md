@@ -148,6 +148,27 @@ Rollback (token from the env file; `Z` = zone id above, `B` = `https://api.cloud
 - Dashboard: Security > WAF > Custom rules and Rate limiting rules (descriptions start with `electrophone:`).
 - A legitimate client blocked by the rate limit gets a Cloudflare 429 page, not the app's `guest_limit` JSON; raise `requests_per_period` with `PUT` on the rule if the web UI ever trips it.
 
+## Cloudflare cache rules
+
+Status: the origin side is built (this change); the owner must apply the three dashboard steps below (no Cloudflare API token is available to the session that wrote this, and none was read). Until they are applied nothing changes at the edge: `/` stays `cf-cache-status: DYNAMIC` and every region crosses the tunnel on each visit.
+
+What the origin sends (`server/app/web.py`, WEB-017, API-051):
+
+| Path | `Cache-Control` | Notes |
+| --- | --- | --- |
+| `/` and `/index.html` | `no-cache` | plus `Cloudflare-CDN-Cache-Control: max-age=60, stale-while-revalidate=600` and `ETag` = web version; browsers always revalidate, so a deploy shows up on the next load; Cloudflare may serve it for 60 s (then stale while it refreshes). The page holds nothing per user (user data comes from API calls after load), so one copy may serve everyone |
+| `/_v/<version>/...` (every page asset, including `img/*` and `js/icons.js`, favicons) | `public, max-age=31536000, immutable` | already `cf-cache-status: HIT` |
+| other images under `/img/` (visualizer preset thumbnails), unversioned | `public, max-age=86400, stale-while-revalidate=604800` | |
+| other unversioned files (`/style.css`, `/js/*.js`, `/data/*.json`) | `no-cache` | only reached by old links; Cloudflare's Browser Cache TTL replaces this with `max-age=14400` until step 3 is done |
+
+Dashboard steps (Cloudflare dashboard, zone `electrophone.cc`):
+
+1. Caching > Cache Rules > Create rule, name `electrophone: index shell`. Edit the expression and paste `(http.host eq "electrophone.cc" and (http.request.uri.path eq "/" or http.request.uri.path eq "/index.html") and not http.cookie contains "__Host-session")`. Cache eligibility: Eligible for cache. Edge TTL: Use cache-control header if present, bypass cache if not (the origin's `Cloudflare-CDN-Cache-Control` then sets 60 s plus stale-while-revalidate). Browser TTL: Respect origin. Deploy. A request with the session cookie `__Host-session` (a signed-in browser) does not match the rule and goes to the origin as before; `/auth/*`, `/me`, `/library`, `/health`, `/version`, `/files/*`, `/covers/*` and every other API path are not matched either, so nothing authenticated is ever cached and no extra bypass rule is needed.
+2. Create a second rule, `electrophone: images`, expression `(http.host eq "electrophone.cc" and starts_with(http.request.uri.path, "/img/"))`. Eligible for cache; Edge TTL: Use cache-control header if present, bypass cache if not; Browser TTL: Respect origin. (Images are cached by default; this rule only makes Cloudflare honour the origin's one-day lifetime instead of its own default.)
+3. Caching > Configuration > Browser Cache TTL: set Respect Existing Headers (it is 4 hours today, which rewrote the origin's `no-cache` on `/js/*.js`, `/style.css` and the images to `max-age=14400`).
+
+Check after saving (anonymous request): `curl -sI https://electrophone.cc/` twice; the second answer shows `cf-cache-status: HIT` and an `age` header under 60. Right after a deploy `scripts/deploy.sh` is unchanged; the new page is visible at the edge within about a minute. Roll back: disable the rule (Caching > Cache Rules > the toggle); the origin headers are harmless without it.
+
 ## Hostnames
 
 | Variable | Default | Effect |

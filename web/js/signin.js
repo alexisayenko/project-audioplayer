@@ -20,6 +20,9 @@ function loadScript(src) {
   return loading.get(src);
 }
 
+const idle = (fn) => (typeof requestIdleCallback === 'function' ? requestIdleCallback(fn, { timeout: 2000 }) : setTimeout(fn, 200));
+const loadWhenIdle = (src) => new Promise((resolve, reject) => idle(() => loadScript(src).then(resolve, reject)));
+
 async function finish(idToken, out, keepHash) {
   try {
     await session.start(idToken);
@@ -47,7 +50,7 @@ export async function setupProviders(box, out, { keepHash = false } = {}) {
   if (cfg.google_client_id) {
     const slot = el('div', { class: 'signin-slot' });
     box.append(row('Sign in with Google', slot));
-    loadScript(GSI).then(() => {
+    loadWhenIdle(GSI).then(() => {
       window.google.accounts.id.initialize({
         client_id: cfg.google_client_id,
         callback: (r) => finish(r.credential, out, keepHash),
@@ -58,7 +61,7 @@ export async function setupProviders(box, out, { keepHash = false } = {}) {
   if (cfg.apple_client_id) {
     const btn = el('button', { class: 'btn outline', type: 'button', disabled: true }, serviceIcon('apple', { size: 'inline' }), 'Sign in');
     box.append(row('Sign in with Apple', btn));
-    loadScript(APPLE).then(() => {
+    loadWhenIdle(APPLE).then(() => {
       window.AppleID.auth.init({
         clientId: cfg.apple_client_id,
         scope: 'email',

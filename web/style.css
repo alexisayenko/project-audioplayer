@@ -82,6 +82,8 @@ a { color: var(--accent-ink); }
 @media (max-width: 479px) { #nav :where(a[data-route], .nav-parent) .nav-label { overflow: visible; text-overflow: clip; white-space: normal; } }
 
 .stage { margin-left: var(--rail-w); min-height: 100dvh; }
+body.auth-pending .stage { visibility: hidden; animation: auth-reveal 0s 4s forwards; }
+@keyframes auth-reveal { to { visibility: visible; } }
 main { max-width: 1100px; padding: var(--space-4) var(--gutter); padding-bottom: calc(var(--tab-h) + var(--dock-b) + var(--space-6)); }
 body.has-mini main { padding-bottom: calc(var(--tab-h) + var(--dock-b) + var(--mini-h) + var(--space-6)); }
 
@@ -638,8 +640,10 @@ body:has(.update-bar) .loading-note { top: calc(var(--space-3) + env(safe-area-i
 body[data-route="library"] main { max-width: none; }
 body.signed-out :is(.side, #mini, #player, #sync-warn, #viz-full) { display: none; }
 body.signed-out :is(.stage, .legal) { margin-left: 0; }
+body.signed-out .stage { transition: none; }
 body.signed-out main { padding-bottom: var(--space-6); }
 .login { max-width: 420px; margin: var(--space-8) auto 0; }
+.login .signin-box { min-height: calc(2 * var(--control) + var(--space-3)); }
 .login-brand { display: flex; align-items: center; gap: var(--space-3); }
 .login-brand .ic { width: calc(var(--icon-play) * 2); height: calc(var(--icon-play) * 2); flex: none; }
 

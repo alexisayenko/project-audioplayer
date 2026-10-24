@@ -63,6 +63,7 @@ function showLogin() {
 }
 
 function route() {
+  document.body.classList.remove('auth-pending');
   if (!isSignedIn() && !isGuest()) {
     showLogin();
     return;
@@ -180,6 +181,7 @@ window.addEventListener('auth-changed', () => { void onAuthChanged(); });
 window.addEventListener('guest-limit', (e) => toast(e.detail));
 
 window.addEventListener('server-starting', () => {
+  document.body.classList.remove('auth-pending');
   if (startup.waiting && !view.firstChild) view.replaceChildren(loadingNote('Server is starting...'));
 });
 

@@ -1,5 +1,7 @@
 const SVG_NS = 'http://www.w3.org/2000/svg';
 
+const IMG = new URL('../img/', import.meta.url).href;
+
 export const STROKE_WIDTH = 1.8;
 
 export const ICONS = {
@@ -20,11 +22,11 @@ export const ICONS = {
   help: { d: '<circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/>' },
   features: { d: '<rect x="3.4" y="3.4" width="7.2" height="7.2" rx="1.8"/><rect x="3.4" y="13.4" width="7.2" height="7.2" rx="1.8"/><rect x="13.4" y="13.4" width="7.2" height="7.2" rx="1.8"/><path d="M17.5 1.46L19.25 5L23.15 5.57L20.33 8.32L20.99 12.21L17.5 10.37L14.01 12.21L14.68 8.32L11.85 5.57L15.75 5z"/>' },
   settings: { d: '<path d="M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915"/><circle cx="12" cy="12" r="3"/>' },
-  srcWikipedia: { d: '<image href="img/wikipedia.png" x="0" y="0" width="24" height="24" stroke="none"/>' },
+  srcWikipedia: { d: `<image href="${IMG}wikipedia.png" x="0" y="0" width="24" height="24" stroke="none"/>` },
   srcAppleMusic: { d: '<rect x="3" y="3" width="18" height="18" rx="5"/><path d="M15.5 7v8"/><circle cx="13" cy="15.5" r="2.5"/><path d="m15.5 7-5 1.2V16"/>' },
   srcSpotify: { d: '<circle cx="12" cy="12" r="10"/><path d="M6.5 9.5c3.7-1.1 7.5-.8 11 1"/><path d="M7.3 13c3-.8 6-.5 8.7.9"/><path d="M8 16.2c2.3-.6 4.6-.4 6.5.6"/>' },
   srcDiscogs: { d: '<circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3.2"/><circle cx="12" cy="12" r=".4"/>' },
-  srcRym: { d: '<image href="img/rym.png" x="0" y="0" width="24" height="24" stroke="none"/>' },
+  srcRym: { d: `<image href="${IMG}rym.png" x="0" y="0" width="24" height="24" stroke="none"/>` },
   srcMusicbrainz: { d: '<path d="M12 2.5 21.5 12 12 21.5 2.5 12z"/><path d="M12 7v10"/><path d="M8.5 10.5 12 7l3.5 3.5"/>' },
   playlist: { d: '<path d="M16 5H3"/><path d="M11 12H3"/><path d="M11 19H3"/><path d="M21 16V5"/><circle cx="18" cy="16" r="3"/>' },
   playlistRemove: { d: '<path d="M11 5H3"/><path d="M16 12H3"/><path d="M16 19H3"/><path d="M21 5h-6"/>' },
@@ -64,8 +66,8 @@ export const ICONS = {
   arrowUpDown: { d: '<path d="m21 16-4 4-4-4"/><path d="M17 20V4"/><path d="m3 8 4-4 4 4"/><path d="M7 4v16"/>' },
   arrowUp: { d: '<path d="m5 12 7-7 7 7"/><path d="M12 19V5"/>' },
   ring: { d: '<circle cx="12" cy="12" r="3.5"/><path d="M12 3v2.5"/><path d="M12 18.5V21"/><path d="M3 12h2.5"/><path d="M18.5 12H21"/><path d="m16.6 7.4 1.8-1.8"/><path d="m16.6 16.6 1.8 1.8"/><path d="m7.4 16.6-1.8 1.8"/><path d="m7.4 7.4-1.8-1.8"/>' },
-  mark: { d: '<image href="img/electrophone-vinyl.png" x="0" y="0" width="24" height="24" stroke="none"/>' },
-  coverPlaceholder: { d: '<image href="img/thumbnail-record.png" x="0" y="0" width="24" height="24" stroke="none"/>' },
+  mark: { d: `<image href="${IMG}electrophone-vinyl.png" x="0" y="0" width="24" height="24" stroke="none"/>` },
+  coverPlaceholder: { d: `<image href="${IMG}thumbnail-record.png" x="0" y="0" width="24" height="24" stroke="none"/>` },
   synthwave: { d: '<path d="M7 12a5 5 0 0 1 10 0"/><path d="M3 12h18"/><path d="M5 16h14"/><path d="M8 20h8"/>' },
 };
 
