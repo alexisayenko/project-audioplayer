@@ -2,7 +2,7 @@
 
 What shipped, newest first. One line each; the web UI and server are live at https://electrophone.cc. Everything listed here is deployed except the sections marked "built, not deployed" (the 2026-10-14 release went out once the SSH access in [task-0027](tasks/task-0027.md) was restored; the live visualizer files match `origin/main` as of 2026-10-15). Why: [tech/decisions.md](tech/decisions.md); runbook: [tech/deploy.md](tech/deploy.md).
 
-## 2026-10-24 (Studio Simple tab: a simple tone with frequency, amplitude, power and length, web, built, not deployed)
+## 2026-10-24 (Studio Simple tab: a simple tone with frequency, amplitude, power and length, web, deployed as `d9c6d78`)
 
 - Web (task-0072, WEB-197 to WEB-201, ADR-0048 amended; owner request 2026-10-24, "create a third tab called Simple; place there those 4 parameters so I can change them and produce a simple frequency"; no tests run, `node --check`, a local Chromium page with a hook on oscillator and gain creation and a 375 px check only): the Studio has a third tab "Simple" (`#/studio/simple`, `simple-tone.js`, loaded only when it opens) with one card "Simple tone": Frequency (20 to 20000 Hz, log slider, note and cents), Amplitude (0 to 80 % of full scale, default 30 %), Power (linked: amplitude squared, 30 % amplitude is 9 % power and -10.5 dBFS) and Length (0.1 to 30 s or Continuous with a 10 minute timeout). Play makes a sine `OscillatorNode` into a `GainNode` with 30 ms fades, applies frequency and amplitude changes smoothly while playing, and stops by itself, on Stop, when the page is hidden and on leaving the tab; an oscilloscope (computed when stopped, from an `AnalyserNode` when playing), a readout line and a collapsible "What do these mean?" explain the four terms.
 
