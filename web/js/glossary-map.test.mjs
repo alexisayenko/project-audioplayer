@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 
 const { TERMS, termById } = await import('./glossary-terms.js');
 const {
-  DOMAINS, DOMAIN_OF, RELATIONS, buildGraph, neighbourMap, relationsOf, layoutGraph, boundsOf, fitView, zoomAbout, edgeEnds, neighbourInDirection, matchSet, shapeFor, mapLabel,
+  DOMAINS, DOMAIN_OF, RELATIONS, buildGraph, neighbourMap, relationsOf, layoutGraph, layoutDomains, boxBounds, nodeWidth, initialView, boundsOf, fitView, zoomAbout, edgeEnds, neighbourInDirection, matchSet, shapeFor, mapLabel,
 } = await import('./glossary-map.js');
 const { glossaryViewFromHash, glossaryTermFromHash, glossaryMapTermFromHash, pageFromHash } = await import('../../studio/routes.js');
 
@@ -101,6 +101,61 @@ test('STU-038: the layout is deterministic, finite and leaves no two nodes overl
       }
     }
   }
+});
+
+test('STU-038: every domain box has an aspect ratio of 0.8 to 1.6, holds its nodes and overlaps no other box, in both shapes', () => {
+  for (const shape of ['wide', 'tall']) {
+    const g = buildGraph();
+    const { nodes, boxes } = layoutDomains(g.nodes, g.edges, shape);
+    assert.equal(boxes.length, DOMAINS.length);
+    for (const b of boxes) {
+      const ratio = (b.x1 - b.x0) / (b.y1 - b.y0);
+      assert.ok(ratio >= 0.8 && ratio <= 1.6, `${shape}: ${b.id} aspect ${ratio.toFixed(2)}`);
+      assert.ok(b.cols >= 1 && b.cols <= 3, `${shape}: ${b.id} columns ${b.cols}`);
+      for (const n of nodes.filter((m) => m.domain === b.id)) {
+        assert.ok(n.x - n.w / 2 >= b.x0 && n.x + n.w / 2 <= b.x1 && n.y - n.h / 2 >= b.y0 && n.y + n.h / 2 <= b.y1, `${shape}: ${n.id} outside ${b.id}`);
+        assert.ok(n.w >= nodeWidth(n.label), `${shape}: ${n.id} narrower than its label`);
+      }
+    }
+    for (let i = 0; i < boxes.length; i++) {
+      for (let j = i + 1; j < boxes.length; j++) {
+        const p = boxes[i];
+        const q = boxes[j];
+        const apart = p.x1 <= q.x0 || q.x1 <= p.x0 || p.y1 <= q.y0 || q.y1 <= p.y0;
+        assert.ok(apart, `${shape}: box ${p.id} overlaps box ${q.id}`);
+      }
+    }
+    const all = boxBounds(boxes);
+    for (const n of nodes) assert.ok(n.x - n.w / 2 >= all.x0 && n.x + n.w / 2 <= all.x1 && n.y - n.h / 2 >= all.y0 && n.y + n.h / 2 <= all.y1, n.id);
+  }
+});
+
+test('STU-038: the physics domain is laid out in two columns, row by row in concept order, and the big domains never use one', () => {
+  const g = buildGraph();
+  const { nodes, boxes } = layoutDomains(g.nodes, g.edges, 'wide');
+  const physics = boxes.find((b) => b.id === 'physics');
+  assert.equal(physics.cols, 2);
+  const at = (id) => nodes.find((n) => n.id === id);
+  assert.ok(Math.abs(at('sound').y - at('oscillation').y) < 1e-9 && at('sound').x < at('oscillation').x);
+  assert.ok(at('vibration').y > at('sound').y && Math.abs(at('vibration').x - at('sound').x) < 1e-9);
+  for (const b of boxes.filter((m) => m.count >= 10)) assert.ok(b.cols >= 2, b.id);
+});
+
+test('STU-038: the initial view is readable, shows everything when it can and Fit shows every box', () => {
+  const g = buildGraph();
+  const { boxes } = layoutDomains(g.nodes, g.edges, 'wide');
+  const b = boxBounds(boxes);
+  const desktop = initialView(b, 900, 620);
+  assert.ok(desktop.k >= 0.7);
+  const fitAll = fitView(b, 900, 620);
+  assert.ok(fitAll.x + b.x0 * fitAll.k >= 0 && fitAll.x + b.x1 * fitAll.k <= 900 && fitAll.y + b.y0 * fitAll.k >= 0 && fitAll.y + b.y1 * fitAll.k <= 620);
+  const t = buildGraph();
+  const tall = layoutDomains(t.nodes, t.edges, 'tall');
+  const tb = boxBounds(tall.boxes);
+  const phone = initialView(tb, 303, 545);
+  assert.ok(phone.k >= 0.65, `phone zoom ${phone.k}`);
+  assert.ok(phone.x + tb.x0 * phone.k >= 0 && phone.x + tb.x1 * phone.k <= 303);
+  assert.ok(fitView(tb, 303, 545).k < phone.k);
 });
 
 test('STU-038: the wide layout is wide and the tall layout is tall', () => {

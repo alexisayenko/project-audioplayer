@@ -1,7 +1,7 @@
 import { el } from '../web/js/dom.js';
 import { termById } from '../web/js/glossary-terms.js';
 import {
-  DOMAINS, buildGraph, neighbourMap, relationsOf, layoutGraph, boundsOf, fitView, zoomAbout, edgeEnds, neighbourInDirection, shapeFor,
+  DOMAINS, buildGraph, neighbourMap, relationsOf, layoutDomains, boxBounds, fitView, initialView, zoomAbout, edgeEnds, neighbourInDirection, shapeFor,
 } from '../web/js/glossary-map.js';
 
 const NS = 'http://www.w3.org/2000/svg';
@@ -30,6 +30,7 @@ export function createGlossaryMap({ terms, onSelect } = {}) {
   const nodeEls = new Map();
   const edgeEls = [];
   let shape = 'wide';
+  let boxes = [];
   let tf = { k: 1, x: 0, y: 0 };
   let W = 0;
   let H = 0;
@@ -89,16 +90,21 @@ export function createGlossaryMap({ terms, onSelect } = {}) {
   };
 
   function paintGeometry() {
-    for (const n of nodes) nodeEls.get(n.id).setAttribute('transform', `translate(${n.x.toFixed(1)} ${n.y.toFixed(1)})`);
-    for (const [id, g] of hulls) {
-      const b = boundsOf(nodes.filter((n) => n.domain === id));
+    for (const n of nodes) {
+      const g = nodeEls.get(n.id);
+      g.setAttribute('transform', `translate(${n.x.toFixed(1)} ${n.y.toFixed(1)})`);
+      g.firstChild.setAttribute('x', (-n.w / 2).toFixed(1));
+      g.firstChild.setAttribute('width', n.w.toFixed(1));
+    }
+    for (const b of boxes) {
+      const g = hulls.get(b.id);
       const rect = g.firstChild;
-      rect.setAttribute('x', (b.x0 - 10).toFixed(1));
-      rect.setAttribute('y', (b.y0 - 24).toFixed(1));
-      rect.setAttribute('width', (b.x1 - b.x0 + 20).toFixed(1));
-      rect.setAttribute('height', (b.y1 - b.y0 + 34).toFixed(1));
-      g.lastChild.setAttribute('x', (b.x0 + 4).toFixed(1));
-      g.lastChild.setAttribute('y', (b.y0 - 10).toFixed(1));
+      rect.setAttribute('x', b.x0.toFixed(1));
+      rect.setAttribute('y', b.y0.toFixed(1));
+      rect.setAttribute('width', b.w.toFixed(1));
+      rect.setAttribute('height', b.h.toFixed(1));
+      g.lastChild.setAttribute('x', (b.x0 + 14).toFixed(1));
+      g.lastChild.setAttribute('y', (b.y0 + 19).toFixed(1));
     }
     edges.forEach((e, i) => {
       const p = edgeEnds(byId.get(e.from), byId.get(e.to));
@@ -203,18 +209,17 @@ export function createGlossaryMap({ terms, onSelect } = {}) {
     paintState();
   };
 
-  function fit() {
+  function fit({ all = true } = {}) {
     if (!W || !H) return;
-    const b = boundsOf(nodes);
-    const view = fitView({ x0: b.x0 - 12, y0: b.y0 - 28, x1: b.x1 + 12, y1: b.y1 + 14 }, W, H);
-    minK = Math.min(view.k * 0.5, 0.5);
+    const b = boxBounds(boxes);
+    minK = Math.min(fitView(b, W, H).k * 0.5, 0.5);
     userMoved = false;
     fitted = true;
-    setTf(view);
+    setTf(all ? fitView(b, W, H) : initialView(b, W, H));
   }
 
   function relayout() {
-    layoutGraph(nodes, edges, shape);
+    boxes = layoutDomains(nodes, edges, shape).boxes;
     paintGeometry();
     paintState();
   }
@@ -235,8 +240,8 @@ export function createGlossaryMap({ terms, onSelect } = {}) {
     if (next !== shape || !fitted) {
       shape = next;
       relayout();
-      fit();
-    } else if (!userMoved) fit();
+      fit({ all: false });
+    } else if (!userMoved) fit({ all: false });
     else if (ow > 10 && oh > 10) setTf({ ...tf, x: tf.x + (W - ow) / 2, y: tf.y + (H - oh) / 2 });
   }
 
@@ -342,7 +347,7 @@ export function createGlossaryMap({ terms, onSelect } = {}) {
   const tools = el('div', { class: 'gm-tools' },
     el('button', { type: 'button', class: 'btn outline small', 'aria-label': 'Zoom in', onclick: () => center(1.4) }, '+'),
     el('button', { type: 'button', class: 'btn outline small', 'aria-label': 'Zoom out', onclick: () => center(1 / 1.4) }, '−'),
-    el('button', { type: 'button', class: 'btn outline small', onclick: () => fit() }, 'Fit'));
+    el('button', { type: 'button', class: 'btn outline small', onclick: () => fit({ all: true }) }, 'Fit'));
   const stage = el('div', { class: 'gm-stage' }, svg, tools);
   const legend = el('ul', { class: 'gm-legend t-caption', 'aria-label': 'Domains' },
     ...DOMAINS.map((d) => el('li', {}, dotFor(d.id), `${d.label} (${nodes.filter((n) => n.domain === d.id).length})`)));
@@ -354,9 +359,7 @@ export function createGlossaryMap({ terms, onSelect } = {}) {
     ro = new ResizeObserver(() => resize());
     ro.observe(svg);
   }
-  layoutGraph(nodes, edges, shape);
-  paintGeometry();
-  paintState();
+  relayout();
   renderPanel();
 
   return {

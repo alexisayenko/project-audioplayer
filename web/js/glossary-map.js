@@ -146,88 +146,175 @@ export function matchSet(terms, query) {
   return q ? new Set(filterTerms(terms, q).map((t) => t.id)) : null;
 }
 
-const RING_ANGLE = { instruments: -90, analysis: -18, music: 54, perception: 126, physics: 198 };
-
-export const WIDE_RING = { rx: 380, ry: 215 };
-
-const TALL_CENTERS = {
-  physics: { x: -105, y: -300 },
-  analysis: { x: 105, y: -310 },
-  perception: { x: -105, y: 80 },
-  music: { x: 105, y: 100 },
-  instruments: { x: -105, y: 330 },
+const WIDE_START = {
+  instruments: { x: -440, y: -130 },
+  physics: { x: -60, y: -150 },
+  analysis: { x: 380, y: -130 },
+  perception: { x: -300, y: 160 },
+  music: { x: 120, y: 170 },
 };
 
-export function clusterCenters(shape) {
-  if (shape === 'tall') return TALL_CENTERS;
-  const { rx, ry } = WIDE_RING;
-  return Object.fromEntries(Object.entries(RING_ANGLE).map(([d, deg]) => [d, { x: rx * Math.cos((deg * Math.PI) / 180), y: ry * Math.sin((deg * Math.PI) / 180) }]));
+const TALL_ORDER = ['analysis', 'physics', 'instruments', 'music', 'perception'];
+
+export const BOX = {
+  pad: 14,
+  head: 30,
+  colGap: 12,
+  rowGap: 8,
+  gap: 28,
+  maxCols: 3,
+  goal: 1.15,
+  lo: 0.9,
+  hi: 1.5,
+  min: 0.8,
+  max: 1.6,
+};
+
+export function domainGrid(sizes) {
+  const n = sizes.w.length;
+  const colW = Math.max(...sizes.w);
+  let best = null;
+  for (let cols = 1; cols <= Math.min(BOX.maxCols, n); cols++) {
+    const rows = Math.ceil(n / cols);
+    const w = cols * colW + (cols - 1) * BOX.colGap + 2 * BOX.pad;
+    const h = BOX.head + rows * sizes.h + (rows - 1) * BOX.rowGap + BOX.pad;
+    const score = Math.abs(Math.log(w / h / BOX.goal));
+    if (!best || score < best.score - 1e-9) best = { cols, rows, w, h, score };
+  }
+  let { cols, rows, w, h } = best;
+  let rowGap = BOX.rowGap;
+  let top = BOX.head;
+  let side = BOX.pad;
+  if (w / h > BOX.hi) {
+    const extra = w / BOX.hi - h;
+    const inGaps = rows > 1 ? Math.min(extra / (rows - 1), 12) : 0;
+    rowGap += inGaps;
+    const left = extra - inGaps * (rows - 1);
+    top += left / 2;
+    h += extra;
+  } else if (w / h < BOX.lo) {
+    const extra = h * BOX.lo - w;
+    side += extra / 2;
+    w += extra;
+  }
+  return { cols, rows, colW, rowGap, top, side, w: Math.ceil(w), h: Math.ceil(h) };
 }
 
-const GOLDEN = 2.399963;
-
-export function layoutGraph(nodes, edges, shape = 'wide', { iterations = 360 } = {}) {
-  const centers = clusterCenters(shape);
-  const byId = new Map(nodes.map((n) => [n.id, n]));
-  const seen = {};
-  for (const n of nodes) {
-    const c = centers[n.domain];
-    const i = seen[n.domain] = (seen[n.domain] ?? -1) + 1;
-    const a = i * GOLDEN;
-    const r = 30 * Math.sqrt(i + 1);
-    n.x = c.x + r * Math.cos(a);
-    n.y = c.y + r * Math.sin(a) * 0.7;
+function placeBoxes(boxes, shape, edges, domainOf) {
+  const weight = new Map();
+  for (const e of edges) {
+    const a = domainOf.get(e.from);
+    const b = domainOf.get(e.to);
+    if (!a || !b || a === b) continue;
+    const k = [a, b].sort().join('|');
+    weight.set(k, (weight.get(k) ?? 0) + 1);
   }
-  const pairs = edges.map((e) => [byId.get(e.from), byId.get(e.to)]);
-  const MX = 12;
-  const MY = 8;
+  const byId = new Map(boxes.map((b) => [b.id, b]));
+  if (shape === 'tall') {
+    const order = TALL_ORDER.filter((id) => byId.has(id));
+    let y = 0;
+    for (const id of order) {
+      const b = byId.get(id);
+      b.cx = 0;
+      b.cy = y + b.h / 2;
+      y += b.h + BOX.gap;
+    }
+    return;
+  }
+  for (const b of boxes) {
+    const s = WIDE_START[b.id] ?? { x: 0, y: 0 };
+    b.cx = s.x;
+    b.cy = s.y;
+  }
   const separate = () => {
-    for (let a = 0; a < nodes.length; a++) {
-      for (let b = a + 1; b < nodes.length; b++) {
-        const p = nodes[a];
-        const q = nodes[b];
-        const dx = q.x - p.x;
-        const dy = q.y - p.y;
-        const ox = (p.w + q.w) / 2 + MX - Math.abs(dx);
-        const oy = (p.h + q.h) / 2 + MY - Math.abs(dy);
+    for (let i = 0; i < boxes.length; i++) {
+      for (let j = i + 1; j < boxes.length; j++) {
+        const p = boxes[i];
+        const q = boxes[j];
+        const dx = q.cx - p.cx;
+        const dy = q.cy - p.cy;
+        const ox = (p.w + q.w) / 2 + BOX.gap - Math.abs(dx);
+        const oy = (p.h + q.h) / 2 + BOX.gap - Math.abs(dy);
         if (ox <= 0 || oy <= 0) continue;
         if (oy < ox) {
-          const s = (dy >= 0 ? 1 : -1) * oy / 2;
-          p.y -= s;
-          q.y += s;
+          const s = ((dy >= 0 ? 1 : -1) * oy) / 2;
+          p.cy -= s;
+          q.cy += s;
         } else {
-          const s = (dx >= 0 ? 1 : -1) * ox / 2;
-          p.x -= s;
-          q.x += s;
+          const s = ((dx >= 0 ? 1 : -1) * ox) / 2;
+          p.cx -= s;
+          q.cx += s;
         }
       }
     }
   };
-  const [gx, gy] = shape === 'tall' ? [0.3, 0.03] : [0.05, 0.05];
+  const iterations = 400;
   for (let it = 0; it < iterations; it++) {
     const alpha = 1 - it / iterations;
-    for (const n of nodes) {
-      const c = centers[n.domain];
-      n.x += (c.x - n.x) * gx;
-      n.y += (c.y - n.y) * gy;
+    for (const b of boxes) {
+      b.cx -= b.cx * 0.002;
+      b.cy -= b.cy * 0.03;
     }
-    for (const [p, q] of pairs) {
-      const dx = q.x - p.x;
-      const dy = q.y - p.y;
-      const d = Math.hypot(dx, dy) || 1;
-      const same = p.domain === q.domain;
-      const rest = same ? 120 : 0;
-      const f = (same ? 0.08 : 0.012) * alpha * (d - rest) / d;
-      if (f <= 0) continue;
-      p.x += dx * f;
-      p.y += dy * f;
-      q.x -= dx * f;
-      q.y -= dy * f;
+    for (const [k, wgt] of weight) {
+      const [a, c] = k.split('|').map((id) => byId.get(id));
+      if (!a || !c) continue;
+      const dx = c.cx - a.cx;
+      const dy = c.cy - a.cy;
+      const f = 0.012 * wgt * alpha;
+      a.cx += dx * f * 0.5;
+      a.cy += dy * f;
+      c.cx -= dx * f * 0.5;
+      c.cy -= dy * f;
     }
     separate();
   }
-  for (let it = 0; it < 80; it++) separate();
-  return nodes;
+  for (let it = 0; it < 200; it++) separate();
+}
+
+export function layoutDomains(nodes, edges, shape = 'wide') {
+  const members = {};
+  for (const n of nodes) (members[n.domain] ??= []).push(n);
+  const boxes = [];
+  for (const d of DOMAINS) {
+    const list = members[d.id];
+    if (!list) continue;
+    const flow = MEMBERS[d.id];
+    list.sort((a, b) => flow.indexOf(a.id) - flow.indexOf(b.id));
+    for (const n of list) n.w = nodeWidth(n.label);
+    const grid = domainGrid({ w: list.map((n) => n.w), h: NODE_H });
+    boxes.push({ id: d.id, label: d.label, count: list.length, ...grid, cx: 0, cy: 0 });
+  }
+  const boxOf = new Map(boxes.map((b) => [b.id, b]));
+  placeBoxes(boxes, shape, edges, new Map(nodes.map((n) => [n.id, n.domain])));
+  for (const b of boxes) {
+    const list = members[b.id];
+    const x0 = b.cx - b.w / 2;
+    const y0 = b.cy - b.h / 2;
+    list.forEach((n, k) => {
+      n.w = b.colW;
+      n.x = x0 + b.side + (k % b.cols) * (b.colW + BOX.colGap) + b.colW / 2;
+      n.y = y0 + b.top + Math.floor(k / b.cols) * (NODE_H + b.rowGap) + NODE_H / 2;
+    });
+    b.x0 = x0;
+    b.y0 = y0;
+    b.x1 = x0 + b.w;
+    b.y1 = y0 + b.h;
+    b.aspect = b.w / b.h;
+  }
+  return { nodes, boxes: [...boxOf.values()] };
+}
+
+export function layoutGraph(nodes, edges, shape = 'wide') {
+  return layoutDomains(nodes, edges, shape).nodes;
+}
+
+export function boxBounds(boxes) {
+  return {
+    x0: Math.min(...boxes.map((b) => b.x0)),
+    y0: Math.min(...boxes.map((b) => b.y0)),
+    x1: Math.max(...boxes.map((b) => b.x1)),
+    y1: Math.max(...boxes.map((b) => b.y1)),
+  };
 }
 
 export function boundsOf(nodes) {
@@ -249,6 +336,16 @@ export function fitView(b, W, H, { pad = 20, minK = 0.1, maxK = 1.6 } = {}) {
   const bh = Math.max(b.y1 - b.y0, 40);
   const k = Math.min(maxK, Math.max(minK, Math.min((W - 2 * pad) / bw, (H - 2 * pad) / bh)));
   return { k, x: W / 2 - ((b.x0 + b.x1) / 2) * k, y: H / 2 - ((b.y0 + b.y1) / 2) * k };
+}
+
+export const READ_K = 0.7;
+
+export function initialView(b, W, H, { pad = 20, readK = READ_K } = {}) {
+  const all = fitView(b, W, H, { pad });
+  const widthK = Math.min(1.6, (W - 2 * pad) / Math.max(b.x1 - b.x0, 40));
+  const k = Math.max(all.k, Math.min(readK, widthK));
+  if (k <= all.k + 1e-9) return all;
+  return { k, x: W / 2 - ((b.x0 + b.x1) / 2) * k, y: pad - b.y0 * k };
 }
 
 export function zoomAbout(tf, px, py, f, minK, maxK) {
