@@ -1,14 +1,10 @@
 #!/usr/bin/env node
 import { createHash } from 'node:crypto';
-import { execFileSync } from 'node:child_process';
-import { createRequire } from 'node:module';
-import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
-import { tmpdir } from 'node:os';
+import { existsSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { ESBUILD, TARGET, loadEsbuild } from './build-lib.mjs';
 
-const ESBUILD = '0.27.7';
-const TARGET = ['es2022', 'chrome111', 'safari16.4', 'firefox113'];
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..', 'web');
 const jsDir = join(root, 'js');
 const dist = join(root, 'dist');
@@ -34,32 +30,6 @@ function sourceDigest(sheets) {
     hash.update('\0');
   }
   return hash.digest('hex');
-}
-
-function npmCli() {
-  const bin = dirname(process.execPath);
-  const candidates = [
-    join(bin, '..', 'lib', 'node_modules', 'npm', 'bin', 'npm-cli.js'),
-    join(bin, 'node_modules', 'npm', 'bin', 'npm-cli.js'),
-    '/opt/homebrew/lib/node_modules/npm/bin/npm-cli.js',
-    '/usr/local/lib/node_modules/npm/bin/npm-cli.js',
-    '/usr/lib/node_modules/npm/bin/npm-cli.js',
-    '/usr/share/nodejs/npm/bin/npm-cli.js',
-  ];
-  const found = candidates.find((p) => existsSync(p));
-  if (!found) throw new Error(`npm-cli.js not found; looked in:\n${candidates.join('\n')}`);
-  return found;
-}
-
-function loadEsbuild() {
-  const dir = join(tmpdir(), `electrophone-esbuild-${ESBUILD}`);
-  const pkg = join(dir, 'node_modules', 'esbuild', 'package.json');
-  if (!existsSync(pkg) || JSON.parse(readFileSync(pkg, 'utf8')).version !== ESBUILD) {
-    mkdirSync(dir, { recursive: true });
-    writeFileSync(join(dir, 'package.json'), '{"private":true}\n');
-    execFileSync(process.execPath, [npmCli(), 'install','--prefix', dir, '--no-audit', '--no-fund', '--loglevel=error', `esbuild@${ESBUILD}`], { stdio: 'inherit' });
-  }
-  return createRequire(join(dir, 'x.js'))('esbuild');
 }
 
 const ident = (name) => name.replaceAll('-', '_');
