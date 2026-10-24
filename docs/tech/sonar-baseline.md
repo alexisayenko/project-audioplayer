@@ -153,7 +153,7 @@ By issue count: `server/tests/test_genre_levels.py` 65, `test_genre_others.py` 4
 1. Scope first (done in step 1, see [Scope](#scope-owner-decision-fh1-2026-10-24-step-1)): a committed `.sonarcloud.properties` (excludes data, generated files and docs; marks tests as tests); the new-code baseline is the owner's UI step.
 2. Fix the 27 bugs and 13 vulnerabilities (small, concrete); this alone turns reliability and security from E to the target and clears the gate. Most bugs are unhandled promises in `player.js` and `play-recorder.js`.
 3. Path handling: one validated-path helper (resolve inside a base directory) used by `downloads.py`, `jsonio.py`, `extractor.py`, `features.py` and the scripts, to retire the traversal family at the source.
-4. Genre map code: `genre-force-view.js` (758) and `genres-rework.js` (567) carry about a third of the web cognitive complexity; split into layout, simulation and rendering modules; same for `genre_vocab.py`, `genre-ops.py`, `build-genre-sources.mjs`.
+4. Genre map code: `genre-force-view.js` (758) and `genres-rework.js` (567) carry about a third of the web cognitive complexity; split into layout, simulation and rendering modules (done for the two web files, see [Refactor results](#refactor-results-2026-10-24)); same for `genre_vocab.py`, `genre-ops.py`, `build-genre-sources.mjs`.
 5. `wiki_lookup.py`, `gitstore.py`, `genre_graph.py`: split by responsibility (fetch, parse, rank / commit, push, read).
 6. Visualizer modules (`viz-terrain-*`, `viz-bars`, `viz-canvas`): long functions with zero open issues; refactor only if they are touched.
 7. Mechanical sweeps: split composite assertions in tests (344), flatten nested ternaries (54), add braces (19), linearise regexes (19), optional chaining (15), duplicate CSS selectors (13).
@@ -204,3 +204,26 @@ Owner decision FH1, step 2. The 27 open bugs were re-read against `origin/main` 
 | `web/js/genre-map-graph.js:43`, `web/js/genre-radial.js:97`, `web/js/genre-tree-facts.mjs:4` | javascript:S2871 | TRUE (low) | `sort()` on string ids without a compare function; new `byCode` (code-unit order, the old default) and `pairKey` in `genre-levels.js`, so the edge keys and the fact lists are identical (`837a008`) |
 
 The bundle was regenerated in `8785a32` (ADR-0047). To do by the owner in the SonarCloud UI (no token here): set the 7 false positives above to "False positive" with the reason; the 20 fixed ones close by themselves on the next analysis of `main`.
+
+## Refactor results 2026-10-24
+
+Owner decision FI1 (FH1 step 3): behaviour-preserving refactor of the two worst complexity hotspots. Cognitive complexity per function, before (SonarCloud, revision `1375616`) and after (measured with the same rules locally; the SonarCloud figures of the new analysis are in the last paragraph). The limit is 15.
+
+| File and function | Before | After |
+|---|---|---|
+| `genre-force-view.js` `endDrag` | 34 | split into `dropMovedNode`, `finishNodeDrag`, `endDrag`: all under 10 |
+| `genre-force-view.js` `frame` | 25 | 12 (`stepLayout`, `tickSim`, `settlePull` carry the rest) |
+| `genre-force-view.js` `drawLinks` | 25 | 9 or less, in `genre-force-links.js` (`classifyLinks`, `strokeAll`, `arrowAll`) |
+| `genre-force-view.js` `enterNodes` | 19 | 11, in `genre-force-enter.js` (`liftAncestors`, `fanGroups`, `nearNeighbours`) |
+| `genre-force-view.js` `focusState` | 17 | 10 or less, in `genre-force-focus.js` |
+| `genre-force-view.js` `followItems` | 17 | 10 or less, in `genre-force-follow.js` |
+| `genre-force-view.js` `drawNode` | 16 | under 10 (`drawAdornments`, `drawHighlight`; painters in `genre-force-draw.js`) |
+| `genre-force-view.js` `pointermove` handler | 16 | under 10 (`onPointerMove`, `pinchMove`, `dragMove`, `panBy`) |
+| `genres-rework.js` `renderGenresRework` | 27 | under 11 |
+| `genres-rework.js` `nowNode` | 22 | 8, now `findNowNode` in `genres-rework-now.js` |
+| `genres-rework.js` `load` | 19 | under 10 (`fetchVocab`, `fetchLayout`, `rememberLayout`, `showLoadFailure`; helpers in `genres-rework-load.js`) |
+| `genres-rework.js` `buildRow` | 17 | 9, in `genres-rework-row.js` |
+
+After the refactor the highest function in `genre-force-view.js` is 15 (`setGraph`) and in `genres-rework.js` 13 (`select`); no function of the two files or of the 15 new modules is over the limit. The 8 nested ternaries (S3358), the duplicate import (S3863), the optional-chain, `NaN`, unused-variable, loop-condition (S1994), "statement not executed conditionally" (S2681) and "move function to the outer scope" (S7721) findings of the two files are fixed too; the two `for...of` over a spread copy (S7747) are gone with the move.
+
+Checked without the test suites: (a) pure parity: the old inline code, cut from `git show 1375616:web/js/...`, against the new functions over generated inputs and the real vocabulary (`fanSlots`, `fanCenter`, focus state, link classification and drawing call sequences, subtree walk, tether and follow steps, node shifting and bounds, playing-genre lookup, status and empty texts, load-result helpers: about 93,000 cases, 0 differences); (b) whole-view parity: the force view driven with a recording canvas and a fixed clock through 11 scenarios (v1, v2, rigid and non-rigid, reduced motion, drill-down, hover, click, empty click, pan, drag of leaves and parents, touch, pinch, wheel, double click, saved layout, visibility changes): 532 checkpoints in two clock modes, byte-identical; the Genres map panel driven through a fake DOM with recording views: 495 DOM, view-call and storage checkpoints, 0 differences; the harnesses were sensitive to deliberate one-token mutations of each new module; (c) the real browser pane, old and new served side by side from two worktrees against a local API: the same canvas pixels, node positions, selection, status text and stored values over 42 and 17 interaction steps on the Genres map (drill-down off and on) and 11 steps on Genres map v2 including the saved layout round trip (drag a family, wait 6 s, reload: same position and selection), no console errors.
