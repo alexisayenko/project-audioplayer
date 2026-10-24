@@ -174,7 +174,7 @@ test('rubber-band selection shows the panel and the buttons call the queue funct
   assert.match(panel.textContent, /^3 selected:/);
   assert.equal(panel.querySelector('[data-act="library"]').disabled, true);
   assert.ok(panel.querySelector('[data-act="play"]').classList.contains('key'), 'WEB-099: Play is a dock key');
-  assert.ok(panel.querySelector('[data-act="add"]').classList.contains('round'), 'WEB-099: Add to playlist is a round icon');
+  assert.ok(panel.querySelector('[data-act="add"]').classList.contains('round'), 'WEB-099: Add to queue is a round icon');
   const calls = [];
   const orig = { add: player.addListed, play: player.playListed };
   player.addListed = (songs, tag) => { calls.push(['add', songs.map((s) => s.id), tag]); return { added: 3, already: 0, fetching: 0 }; };

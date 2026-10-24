@@ -78,6 +78,7 @@ function route() {
     name = 'library';
     history.replaceState(null, '', '#/library');
   }
+  if (name.startsWith('playlists/')) name = 'playlists';
   if (name === 'genres-rework') {
     name = 'genres';
     history.replaceState(null, '', '#/genres');

@@ -1,7 +1,7 @@
 import { player } from './player.js';
 import { toast } from './dom.js';
 
-const MESSAGES = { duplicate: 'Already in queue', queued: 'Queued', removed: 'Removed from playlist' };
+const MESSAGES = { duplicate: 'Already in queue', queued: 'Queued', removed: 'Removed from queue' };
 
 const NEXT_MESSAGES = { next: 'Playing next', now: 'Playing now', current: 'Already the current song', unavailable: 'Not available to play' };
 

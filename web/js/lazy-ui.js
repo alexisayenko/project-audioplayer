@@ -21,6 +21,7 @@ export const UI_LOADERS = {
   drafts: () => import('./drafts.js'),
   actions: () => import('./player-actions.js'),
   filters: () => import('./library-toolbar.js'),
+  playlistPicker: () => import('./playlist-picker.js'),
 };
 
 const loading = new Map();
@@ -80,4 +81,5 @@ export const changeCover = (song, opener = null) => withUi('cover', opener, (m) 
 export const openShareDialog = (song, opener = null) => withUi('share', opener, (m) => m.openShareDialog(song));
 export const openTagPicker = (player, currentTags, opener = null) => withUi('tagPicker', opener, (m) => m.openTagPicker(player, currentTags));
 export const openFilterSheet = (cat, opener, onApply) => withUi('filters', opener, (m) => m.openFilterSheet(cat, opener, onApply));
+export const openPlaylistPicker = (songs, opener = null) => withUi('playlistPicker', opener, (m) => m.openPlaylistPicker(songs));
 export const openGenreCard = (name, opener = null) => withUi('genreCard', opener, (m) => m.openGenreCard(name, opener));

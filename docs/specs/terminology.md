@@ -105,8 +105,8 @@ One name per thing. "Also called" lists informal names the owner or the code use
 | --- | --- | --- | --- |
 | Overlay | The full-screen visualizer (key V) with its control row and top-right Share and Exit. | Also called: full-screen visualizer | VIZ-035, VIZ-070..073 |
 | Playback screen | Tab `#/playback`: cover, seek bar, transport, details, and the queue. | Also called: Now playing (page title) | PLY-001 |
-| Playlist | A saved, named, ordered list of songs, kept in a folder tree (`#/playlists`). A smart playlist is a saved set of Library filter rules evaluated live; a folder holds playlists and folders. | Not: the Queue; "playlist" in old UI wording meant the queue | PLS-001..PLS-099 |
-| Queue | The transient play-next list on Playback ("Add to queue"; formerly "Add to playlist" in the UI). "Save queue as playlist..." turns it into a Playlist. | Also called: Now playing (queue list) | PLY-001, PLS-013 |
+| Playlist | A saved, named, ordered list of songs, flat and private to its user (`#/playlists`; the web has it since 2026-10-24, "Add to playlist..." puts a song in one). "Play playlist" replaces the Queue with it. Folders, smart playlists and import are deferred (task-0034). | Not: the Queue; "playlist" in old UI wording meant the queue (renamed, PLS-128) | PLS-110..PLS-128 |
+| Queue | The transient play-next list on Playback ("Add to queue" / "In queue" in the web since 2026-10-24; formerly "Add to playlist" / "In playlist" in the UI; the iOS app still has the old label). "Save queue as playlist..." (planned, phase 3) turns it into a Playlist. | Also called: Now playing (queue list); code names `toggleInPlaylist` and `playListed` keep "playlist" for the queue | PLY-001, PLS-013, PLS-128 |
 | Now playing (queue list) | The queue card beside or below the player. | Not: the Playback screen as a whole | PLY-001, PLY-040 |
 | Mini-player | The fixed bar (dock) at the bottom on other screens; collapsed, it moves into the sidebar footer (PLY-199). | | WEB-038; playback.md |
 | Cover button | The cover as a button (`#cover-toggle`) that toggles play/pause. | | PLY-016 |

@@ -5,8 +5,6 @@ import { el, toast, plural } from './dom.js';
 import { icon } from './icons.js';
 import { loadingNote } from './loading-note.js';
 import { autodl } from './autodl.js';
-import { ringModel } from './dl-progress.js';
-import { paintRing, paintLine } from './dl-ring.js';
 import { openAdd, openSongCard, openFilterSheet, loadUi } from './lazy-ui.js';
 import { can, isGuest } from './guest.js';
 import { getListening } from './listening-data.js';
@@ -14,7 +12,7 @@ import { ROW_FLASH_MS, LIBRARY_FRESH_MS, EAGER_COVERS } from './constants.js';
 import { findRowIndex, scrollTarget, registerRevealer } from './reveal.js';
 import { tagLabel, categoryOf, CATEGORIES } from './tagname.js';
 import { prefs, readLibraryView, saveLibraryView, SORTS, visibleSongs, selectedIn, isUnsetKey, unsetCount, setListening, hasListening, neverCount, listeningData } from './library-data.js';
-import { songRow } from './library-rows.js';
+import { songRow, paintDownloadRows } from './library-rows.js';
 import { loadReferences, onReferencesChange, cachedReferences, referenceSongIds, ROLES, roleLabel } from './references.js';
 import { disposeAll } from './marquee.js';
 import { isRowControl, keepCovers } from './row-cover.js';
@@ -233,7 +231,7 @@ export function renderLibrary(root) {
     playAll.hidden = !(store.loaded && songs.length);
     playAll.textContent = `Play all ${songs.length}`;
     addAll.hidden = !(store.loaded && filtered && songs.length);
-    addAll.textContent = `Add all ${songs.length} to playlist`;
+    addAll.textContent = `Add all ${songs.length} to queue`;
     clearFilters.hidden = !(store.loaded && filtered);
     showPlaying.hidden = !(store.loaded && cur);
     const nothing = store.loaded && !store.songs.length;
@@ -256,17 +254,7 @@ export function renderLibrary(root) {
     if (focusedId) [...list.querySelectorAll('li.song')].find((r) => r.dataset.id === focusedId)?.querySelector(`.${focusedCls}`)?.focus();
   }
 
-  // Progress ticks update the rings in place; a row gaining or losing its indicator rebuilds the list.
-  function paintDownloads() {
-    for (const row of list.querySelectorAll('li.song.no-audio[data-id]')) {
-      const model = ringModel(autodl.view(row.dataset.id));
-      const ring = row.querySelector('.dl-ring');
-      const line = row.querySelector('.dl-line');
-      if (!model && !ring) continue;
-      if (!model || !ring || !paintRing(ring, model)) { renderList(); return; }
-      if (line) paintLine(line, model);
-    }
-  }
+  const paintDownloads = () => paintDownloadRows(list, renderList);
 
   function matchSummary(count) {
     const names = prefs.sel.size ? ` · ${selectedNames().join(', ')}` : '';

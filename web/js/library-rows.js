@@ -7,13 +7,15 @@ import { autoDownloadOn, autodl } from './autodl.js';
 import { ringModel } from './dl-progress.js';
 import { rowActions } from './row-actions.js';
 import { downloadButton, fetchAudio } from './dl-control.js';
-import { ringNode, lineNode } from './dl-ring.js';
+import { ringNode, lineNode, paintRing, paintLine } from './dl-ring.js';
 import { bpmLabel } from './bpm-label.js';
 import { genreText } from './genre-cell.js';
 import { coverModel, coverButton, queueNote } from './row-cover.js';
 import { tooltipLine, subtitle, titleLine, titleNodes } from './credits.js';
 import { marquee } from './marquee.js';
 import { songMarks, marksTip } from './references.js';
+import { playlistsOn } from './playlists-store.js';
+import { openPlaylistPicker } from './lazy-ui.js';
 
 function cover(s) {
   const img = el('img', { class: 'cover', alt: '', loading: 'lazy' });
@@ -21,6 +23,8 @@ function cover(s) {
   img.addEventListener('error', () => img.removeAttribute('src'));
   return img;
 }
+
+export const coverTile = (s) => el('span', { class: 'row-cover' }, el('span', { class: 'cover-mark', 'aria-hidden': 'true' }, icon('coverPlaceholder')), cover(s));
 
 function dlButton(s) {
   return downloadButton(s.id, titleLine(s));
@@ -41,6 +45,15 @@ function queueButton(s, queued) {
     'aria-label': `${queued ? 'Remove from queue' : 'Add to queue'}: ${titleLine(s)}`, 'aria-pressed': String(queued),
     onclick: (e) => { e.stopPropagation(); player.toggleInPlaylist(s.id); },
   }, icon(queued ? 'playlist' : 'listAdd', 'inline'));
+}
+
+function playlistButton(s) {
+  if (!playlistsOn()) return null;
+  const label = `Add to playlist: ${titleLine(s)}`;
+  return el('button', {
+    class: 'icon sq-btn pl-add', type: 'button', title: 'Add to playlist...', 'aria-label': label, 'aria-haspopup': 'dialog',
+    onclick: (e) => { e.stopPropagation(); void openPlaylistPicker(s, e.currentTarget); },
+  }, icon('playlistPlus', 'inline'));
 }
 
 function stateControl(s, { audio, queueable, queued, dl }) {
@@ -96,13 +109,25 @@ export function songRow(s, cur, flashId, listened = null) {
   const row = el('li', { class: `song${here ? ' current' : ''}${audio ? '' : ' no-audio'}${flashId === s.id ? ' flash' : ''}`, 'aria-current': here ? 'true' : null, 'data-id': s.id },
     coverCell(s, full, { audio, queueable, here, link, queued: queued ? player.queuePosition(s.id) : null }),
     el('div', { class: 'info' },
-      el('div', { class: 'title-line' }, open, refStar(s), stateControl(s, { audio, queueable, queued, dl }), audio && s.duration ? el('span', { class: 'title-len t-time', title: 'Length' }, fmtTime(s.duration)) : null),
+      el('div', { class: 'title-line' }, open, refStar(s), stateControl(s, { audio, queueable, queued, dl }), playlistButton(s), audio && s.duration ? el('span', { class: 'title-len t-time', title: 'Length' }, fmtTime(s.duration)) : null),
       subLine(s)),
     el('div', { class: 'c-genres t-subhead' }, el('span', { class: 'g-txt', title: genres || null }, genres)),
     listened == null ? null : statsCell(listened),
     dl ? lineNode(dl) : null);
   marquee(open, { auto: !!here, host: row });
   return row;
+}
+
+// Progress ticks update the rings in place; a row gaining or losing its indicator calls `rebuild`.
+export function paintDownloadRows(list, rebuild) {
+  for (const row of list.querySelectorAll('li.song.no-audio[data-id]')) {
+    const model = ringModel(autodl.view(row.dataset.id));
+    const ring = row.querySelector('.dl-ring');
+    const line = row.querySelector('.dl-line');
+    if (!model && !ring) continue;
+    if (!model || !ring || !paintRing(ring, model)) { rebuild(); return; }
+    if (line) paintLine(line, model);
+  }
 }
 
 export function refStar(s) {

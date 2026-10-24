@@ -367,7 +367,7 @@ export const player = {
   advance(auto = false) {
     if (!autoDownloadOn()) {
       const step = Q.nextPlayable({ ...logic(), played }, !auto, hasAudioId, false);
-      if (!step) { toast(shuffle ? 'No downloaded songs to shuffle' : 'No more downloaded songs in the playlist'); render(); return; }
+      if (!step) { toast(shuffle ? 'No downloaded songs to shuffle' : 'No more downloaded songs in the queue'); render(); return; }
       played = step.played;
       if (step.index === qs.index) { replayCurrent(); render(); return; }
       skipNote(step.skipped);

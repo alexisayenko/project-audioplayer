@@ -13,6 +13,8 @@ import { watchPlayerInset } from './player-inset.js';
 import { createCollapsible, loadCollapsed, saveCollapsed, PANEL_KEYS } from './collapsible.js';
 import { renderTable } from './stats-table.js';
 import { isGuest } from './guest.js';
+import { playlistsOn } from './playlists-store.js';
+import { openPlaylistPicker } from './lazy-ui.js';
 import { getListening, refreshListening } from './listening-data.js';
 import { renderListening } from './stats-listening.js';
 import { renderGenres } from './stats-genres-view.js';
@@ -361,7 +363,8 @@ export function renderStats(root) {
     panel.replaceChildren(
       el('span', { class: 't-subhead st-sel' }, `${selected.size} selected:`),
       el('button', { class: 'st-act t-caption', type: 'button', disabled: true, title: 'Coming soon', 'data-act': 'library' }, 'Show in Library'),
-      el('button', { class: 'icon round', type: 'button', title: 'Add to playlist', 'aria-label': 'Add to playlist', 'data-act': 'add', onclick: addSelected }, icon('playlistAdd', 'nav')),
+      el('button', { class: 'icon round', type: 'button', title: 'Add to queue', 'aria-label': 'Add to queue', 'data-act': 'add', onclick: addSelected }, icon('listAdd', 'nav')),
+      playlistsOn() ? el('button', { class: 'icon round', type: 'button', title: 'Add to playlist...', 'aria-label': 'Add to playlist...', 'aria-haspopup': 'dialog', 'data-act': 'playlist', onclick: (e) => { void openPlaylistPicker(selectedSongs(), e.currentTarget); } }, icon('playlistPlus', 'nav')) : null,
       el('button', { class: 'key lit', type: 'button', title: 'Play', 'aria-label': 'Play', 'data-act': 'play', onclick: playSelected }, icon('play', 'nav')),
       el('button', { class: 'st-act t-caption', type: 'button', 'data-act': 'clear', onclick: () => setSelected(new Set()) }, 'Clear'));
   }

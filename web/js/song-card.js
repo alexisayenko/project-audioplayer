@@ -8,7 +8,8 @@ import { cachedListening, getListening, invalidateListening, hasListening, liste
 import { autodl, autoDownloadOn } from './autodl.js';
 import { downloadSong } from './download.js';
 import { editDialog } from './edit-dialog.js';
-import { changeCover, openGenreCard } from './lazy-ui.js';
+import { changeCover, openGenreCard, openPlaylistPicker } from './lazy-ui.js';
+import { playlistsOn } from './playlists-store.js';
 import { creditParts, subtitle, titleNodes, detailsLines, yearFact, albumOf, albumsOf, displayLine } from './credits.js';
 import { icon } from './icons.js';
 import { bpmLabel } from './bpm-label.js';
@@ -170,10 +171,11 @@ function actionRow(song) {
   const btn = (label, run, cls = 'btn outline') => el('button', { class: cls, type: 'button', onclick: run }, label);
   const ib = (label, name, run, cls = 'icon round') => el('button', { class: cls, type: 'button', title: label, 'aria-label': label, onclick: run }, icon(name, 'nav'));
   const qp = queued ? player.queuePosition(song.id) : null;
-  const plLabel = queued ? `In playlist${qp ? `, position ${qp.pos} of ${qp.total}` : ''} - click to remove` : 'Add to playlist';
+  const plLabel = queued ? `In queue${qp ? `, position ${qp.pos} of ${qp.total}` : ''} - click to remove` : 'Add to queue';
   const icons = [
     queueable ? ib('Play next', 'playPlus', () => playNextInQueue(song)) : null,
     queueable ? el('button', { class: `icon round pl-toggle${queued ? ' on' : ''}`, type: 'button', title: plLabel, 'aria-label': plLabel, 'aria-pressed': String(queued), onclick: () => toggleQueue(song) }, icon(queued ? 'playlist' : 'listAdd', 'nav')) : null,
+    playlistsOn() ? el('button', { class: 'icon round', type: 'button', title: 'Add to playlist...', 'aria-label': 'Add to playlist...', 'aria-haspopup': 'dialog', onclick: (e) => { void openPlaylistPicker(song, e.currentTarget); } }, icon('playlistPlus', 'nav')) : null,
     ib('Share link', 'share', () => openShareDialog(song)),
     downloadIcon(song, audio, view, ib),
     can('edit') ? ib('Edit', 'pencil', () => editDialog(song)) : null,

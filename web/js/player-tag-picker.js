@@ -50,7 +50,7 @@ export function openTagPicker(player, currentTags) {
     toast(parts.join(', ').replace(/^./, (c) => c.toUpperCase()));
   });
   dlg.replaceChildren(el('div', {},
-    dialogHead('Add songs by tag', 'Songs with any picked tag are added to the end of the playlist.', () => dlg.close()),
+    dialogHead('Add songs by tag', 'Songs with any picked tag are added to the end of the queue.', () => dlg.close()),
     groups.length ? el('div', { class: 'chip-groups' }, groups.map((g) => el('div', { class: 'chip-group' },
       el('span', { class: 'group-name' }, g.name),
       ...g.tags.map(chip)))) : el('p', { class: 'muted' }, 'No tags yet'),

@@ -121,6 +121,26 @@ async function sendCoverFile(id, file) {
   return data;
 }
 
+const DISPOSITION_NAME = /filename\*=UTF-8''([^;]+)/i;
+
+async function fetchText(path) {
+  let res;
+  try {
+    res = await fetchWhenReady(path, { headers: { ...CSRF } });
+  } catch {
+    throw new ApiError(0, 'Server unreachable');
+  }
+  if (!res.ok) {
+    let data = null;
+    try { data = await res.json(); } catch { /* no body */ }
+    throw failure(res, data);
+  }
+  const match = DISPOSITION_NAME.exec(res.headers.get('Content-Disposition') || '');
+  let filename = '';
+  try { filename = match ? decodeURIComponent(match[1]) : ''; } catch { /* keep the fallback */ }
+  return { text: await res.text(), filename };
+}
+
 function* parseLines(lines) {
   for (const line of lines) if (line.trim()) yield JSON.parse(line);
 }
@@ -278,6 +298,15 @@ export const api = {
   refreshDraft: (id) => request('POST', `/drafts/${q(id)}/refresh`),
   removeDraft: (id) => request('DELETE', `/drafts/${q(id)}`),
   clearDrafts: () => request('DELETE', '/drafts'),
+  playlists: () => request('GET', '/playlists').then((d) => (Array.isArray(d?.playlists) ? d.playlists : [])),
+  playlistDetail: (id) => request('GET', `/playlists/${q(id)}`),
+  createPlaylist: (body) => request('POST', '/playlists', body),
+  patchPlaylist: (id, body) => request('PATCH', `/playlists/${q(id)}`, body),
+  deletePlaylist: (id) => request('DELETE', `/playlists/${q(id)}`),
+  addToPlaylist: (id, songIds) => request('POST', `/playlists/${q(id)}/songs`, { song_ids: songIds }),
+  removeFromPlaylist: (id, songId) => request('DELETE', `/playlists/${q(id)}/songs/${q(songId)}`),
+  putPlaylistOrder: (id, songIds, keepalive = false) => request('PUT', `/playlists/${q(id)}/order`, { song_ids: songIds }, undefined, false, keepalive),
+  exportPlaylist: (id) => fetchText(`/playlists/${q(id)}/export`),
   youtubePlaylist: (url) => request('GET', `/youtube/playlist?url=${encodeURIComponent(url)}`),
   postPlays: (batch, keepalive = false) => request('POST', '/plays', batch, undefined, false, keepalive),
   fileUrl: (id) => `/files/${q(id)}`,

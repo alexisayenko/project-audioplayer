@@ -15,6 +15,7 @@
 <link rel="stylesheet" href="style.css">
 <link rel="stylesheet" href="genres.css">
 <link rel="stylesheet" href="drafts.css">
+<link rel="stylesheet" href="playlists.css">
 <link rel="stylesheet" href="stats.css">
 <link rel="stylesheet" href="progress.css">
 <link rel="stylesheet" href="import.css">
@@ -103,7 +104,7 @@
         </div>
         <div class="fill-tags" id="fill-tags"></div>
         <p class="muted empty-note t-subhead" id="queue-empty">Queue is empty - add songs from Library</p>
-        <ul id="queue-list" class="queue-list" aria-label="Current playlist"></ul>
+        <ul id="queue-list" class="queue-list" aria-label="Current queue"></ul>
       </div>
     </div>
   </div>
@@ -141,6 +142,7 @@
 <dialog id="add-dialog" aria-label="Add from YouTube or SoundCloud"></dialog>
 <dialog id="edit-dialog"></dialog>
 <dialog id="song-card" class="sheet card-dlg" aria-labelledby="song-card-title"></dialog>
+<dialog id="pl-dialog" aria-label="Playlists"></dialog>
 <dialog id="filter-sheet" class="sheet" aria-labelledby="sheet-title"></dialog>
 <dialog id="help-sheet" class="sheet" aria-labelledby="help-sheet-title"></dialog>
 <output id="toast" class="toast t-subhead" hidden></output>

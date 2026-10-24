@@ -99,7 +99,7 @@ function playbackCard() {
     el('h2', { class: 't-headline' }, 'Playback'),
     el('label', { class: 'switch-row', for: 'auto-dl' },
       el('span', { class: 't-subhead set-text' }, 'Auto-download songs',
-        el('small', { class: 't-caption' }, 'Download songs you play or add to the playlist. Each download counts toward the hourly add limit.')), box),
+        el('small', { class: 't-caption' }, 'Download songs you play or add to the queue. Each download counts toward the hourly add limit.')), box),
     fadeRow({ id: 'fade-in', label: 'Fade in', get: fadeSettings.fadeIn, set: fadeSettings.setFadeIn }),
     fadeRow({ id: 'fade-out', label: 'Fade out', get: fadeSettings.fadeOut, set: fadeSettings.setFadeOut }));
 }

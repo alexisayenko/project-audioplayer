@@ -82,7 +82,7 @@ test('the card opens read-only with links, actions and returns focus to the row 
   const hrefs = dlg.querySelectorAll('a.svc').map((a) => a.getAttribute('href'));
   assert.equal(hrefs.length, 3);
   assert.ok(dlg.querySelectorAll('a.svc').every((a) => a.getAttribute('target') === '_blank' && a.getAttribute('rel') === 'noopener'));
-  assert.deepEqual(names(dlg), ['Play next', 'Add to playlist', 'Share link', 'Download', 'Edit']);
+  assert.deepEqual(names(dlg), ['Play next', 'Add to queue', 'Share link', 'Download', 'Edit']);
   assert.ok(dlg.querySelectorAll('.card-icons button').every((b) => b.getAttribute('aria-label') && b.title), 'icon buttons are labelled');
   assert.ok(document.activeElement === dlg, 'opening focuses the dialog itself, not an action button');
   assert.equal(dlg.getAttribute('tabindex'), '-1');
@@ -141,40 +141,40 @@ test('the card opens when querySelectorAll returns a real NodeList (no indexOf o
   }
 });
 
-test('pressing the pressed playlist button removes the song from the list and the card repaints', () => {
+test('pressing the pressed queue button removes the song from the queue and the card repaints', () => {
   publish([FULL, BARE]);
   while (player.current) player.removeAt(0);
   openSongCard(FULL);
   const dlg = $('song-card');
   const btn = (t) => dlg.querySelectorAll('.card-actions button').find((b) => b.getAttribute('aria-label') === t);
-  btn('Add to playlist').click();
+  btn('Add to queue').click();
   assert.equal(player.inQueue('a'), true);
-  btn('In playlist, position 1 of 1 - click to remove').click();
+  btn('In queue, position 1 of 1 - click to remove').click();
   assert.equal(player.inQueue('a'), false);
-  const off = btn('Add to playlist');
+  const off = btn('Add to queue');
   assert.ok(off, 'the card repaints to the unpressed button');
   assert.equal(off.getAttribute('aria-pressed'), 'false');
   assert.equal(off.classList.contains('on'), false);
   dlg.close();
 });
 
-test('the playlist button toggles, Play next queues the song after the current one, Edit hands over to the edit dialog', () => {
+test('the queue button toggles, Play next queues the song after the current one, Edit hands over to the edit dialog', () => {
   publish([FULL, BARE, { ...FULL, id: 'o', title: 'Other', file: 'o.mp3' }]);
   while (player.current) player.removeAt(0);
   openSongCard(FULL);
   const dlg = $('song-card');
   const btn = (t) => dlg.querySelectorAll('.card-actions button').find((b) => (b.getAttribute('aria-label') || b.textContent) === t);
-  const off = btn('Add to playlist');
+  const off = btn('Add to queue');
   assert.equal(off.getAttribute('aria-pressed'), 'false');
   assert.equal(off.classList.contains('on'), false);
   off.click();
   assert.equal(player.inQueue('a'), true);
-  const on = btn('In playlist, position 1 of 1 - click to remove');
+  const on = btn('In queue, position 1 of 1 - click to remove');
   assert.ok(on, 'the card repaints after the toggle');
-  assert.equal(btn('Add to playlist'), undefined, 'one toggle: the label follows the state');
+  assert.equal(btn('Add to queue'), undefined, 'one toggle: the label follows the state');
   assert.equal(on.getAttribute('aria-pressed'), 'true');
   assert.ok(on.classList.contains('on') && on.classList.contains('pl-toggle') && on.classList.contains('icon'), 'the same pressed round button as the Library row');
-  assert.equal(on.title, 'In playlist, position 1 of 1 - click to remove');
+  assert.equal(on.title, 'In queue, position 1 of 1 - click to remove');
   assert.notEqual(on.querySelector('svg').innerHTML, off.querySelector('svg').innerHTML, 'the pressed state swaps to the playlist icon');
   assert.equal(on.querySelector('svg').innerHTML, icon('playlist').innerHTML);
   assert.equal(dlg.querySelector('.card-actions .btn'), null);
