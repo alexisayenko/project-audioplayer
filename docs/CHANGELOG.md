@@ -81,6 +81,7 @@ What shipped, newest first. One line each; the web UI and server are live at htt
 ## 2026-10-24 (microgenre candidates review, docs only)
 
 - Docs: phase 1 of the microgenre flag (owner decision CH1, [task-0100](tasks/task-0100.md)): criteria, a review table of 53 candidates (25 recommended as microgenre, 19 keep, 4 synonym, 5 drop) and a proposal of what the flag would do; nothing built, no data, API or UI change. [tech/microgenre-candidates.md](tech/microgenre-candidates.md).
+- Docs: follow-up task notes (owner request): [task-0101](tasks/task-0101.md) microgenre flag phase 2 (the seven open points and the build plan) and [task-0102](tasks/task-0102.md) the RYM checks only the owner can do; docs only.
 
 ## 2026-10-24 (dock collapse button on the left edge strip, deployed)
 
