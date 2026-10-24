@@ -26,7 +26,10 @@ export const PEAK_EVERY_MS = 200;
 export const METER_WINDOW_S = 0.1;
 export const METER_EVERY_MS = 100;
 export const METER_FALL_DB_S = 40;
-export const RMS_SINE_DB = 10 * Math.log10(2);
+export const TRAIL_DECAY_DB_S = 20;
+export const TRAIL_FLOOR_DB = -200;
+export const TRAILS_HINT = 'The spectrum keeps a fading ghost of recent peaks, like a phosphor screen.';
+export const RMS_SINE_DB =10 * Math.log10(2);
 export const DBFS_NOTE = 'dBFS is the digital level: 0 is the loudest the device can record; it is not dB SPL (room loudness), which needs a calibrated microphone.';
 export const LIVE_VIEW_NAMES = {
   wave: 'Oscilloscope view: time across, amplitude up.',
@@ -200,10 +203,9 @@ export function peakText(peak) {
   return peak ? `Peak: ${fmtHz(peak.freq)} (${noteInfo(peak.freq).text})` : 'Peak: -';
 }
 
-export function curveLevels(freqData, sampleRate, range, count) {
+export function curveLevels(freqData, sampleRate, range, count, out = new Float32Array(count)) {
   const bins = freqData.length;
   const bw = sampleRate / (2 * bins);
-  const out = new Float32Array(count);
   const edge = (t) => freqAt(t, range.axis, range.max);
   for (let i = 0; i < count; i += 1) {
     const lo = edge(i / count);
@@ -265,6 +267,55 @@ export function meterFraction(db) {
 
 export function smoothDown(prev, next, dt, rate = METER_FALL_DB_S) {
   return next >= prev ? next : Math.max(next, prev - rate * dt);
+}
+
+export function decayTrail(trail, current, dt, rate = TRAIL_DECAY_DB_S, floor = TRAIL_FLOOR_DB) {
+  const fall = rate * dt;
+  for (let i = 0; i < trail.length; i += 1) {
+    const kept = trail[i] - fall;
+    const now = current[i];
+    trail[i] = Math.max(now > kept ? now : kept, floor);
+  }
+  return trail;
+}
+
+export function createTrails() {
+  let on = false;
+  let buf = null;
+  let keys = null;
+  let scratch = null;
+  let at = null;
+  const clear = () => { buf?.fill(TRAIL_FLOOR_DB); at = null; };
+  return {
+    get on() { return on; },
+    get buf() { return on ? buf : null; },
+    set(next) { on = Boolean(next); clear(); },
+    clear,
+    step(current, t, items = null) {
+      if (!on) return null;
+      if (!buf || buf.length !== current.length) { buf = new Float32Array(current.length).fill(TRAIL_FLOOR_DB); keys = null; at = null; }
+      if (items) {
+        if (!keys || keys.length !== items.length) { keys = new Float64Array(items.length).fill(NaN); }
+        let same = true;
+        for (let i = 0; i < items.length; i += 1) if (keys[i] !== items[i].freq) { same = false; keys[i] = items[i].freq; }
+        if (!same) { buf.fill(TRAIL_FLOOR_DB); at = null; }
+      }
+      const dt = at === null ? 0 : clamp((t - at) / 1000, 0, 0.25);
+      at = t;
+      return decayTrail(buf, current, dt);
+    },
+    levels(count) {
+      if (!scratch || scratch.length !== count) scratch = new Float32Array(count);
+      return scratch;
+    },
+  };
+}
+
+export function createTrailControl({ uid, trails, onChange }) {
+  const id = `${uid}-trails`;
+  const box = el('input', { id, type: 'checkbox', checked: trails.on, onchange: () => { trails.set(box.checked); onChange(); } });
+  const node = el('span', { class: 'hm-check', title: TRAILS_HINT }, box, el('label', { htmlFor: id }, 'Trails'));
+  return { node, paint() { box.checked = trails.on; } };
 }
 
 export const BANDS = [
@@ -541,7 +592,32 @@ export function trackHover(canvas, onChange) {
   return state;
 }
 
-export function drawLiveSpectrumView(g, colors, freqData, sampleRate, range, peak, hoverX = null) {
+export const TRAIL_FILL_ALPHA = 0.14;
+export const TRAIL_LINE_ALPHA = 0.5;
+
+export function drawSpecTrail(g, colors, geo, ghost) {
+  const { ctx } = g;
+  const count = ghost.length;
+  const base = geo.yOf(DB_MIN);
+  const xAt = (i) => geo.left + ((i + 0.5) / count) * geo.plotW;
+  ctx.beginPath();
+  ctx.moveTo(geo.left, base);
+  for (let i = 0; i < count; i += 1) ctx.lineTo(xAt(i), geo.yOf(ghost[i]));
+  ctx.lineTo(geo.left + geo.plotW, base);
+  ctx.closePath();
+  ctx.fillStyle = css(colors.fill, TRAIL_FILL_ALPHA);
+  ctx.fill();
+  ctx.beginPath();
+  for (let i = 0; i < count; i += 1) {
+    if (i === 0) ctx.moveTo(xAt(i), geo.yOf(ghost[i])); else ctx.lineTo(xAt(i), geo.yOf(ghost[i]));
+  }
+  ctx.strokeStyle = css(colors.fill, TRAIL_LINE_ALPHA);
+  ctx.lineWidth = 1;
+  ctx.lineJoin = 'round';
+  ctx.stroke();
+}
+
+export function drawLiveSpectrumView(g, colors, freqData, sampleRate, range, peak, hoverX = null, trails = null) {
   const { ctx } = g;
   const geo = drawSpecGrid(g, colors, range);
   if (!freqData) {
@@ -551,6 +627,8 @@ export function drawLiveSpectrumView(g, colors, freqData, sampleRate, range, pea
   const count = Math.max(2, Math.round(geo.plotW));
   const levels = curveLevels(freqData, sampleRate, range, count);
   const base = geo.yOf(DB_MIN);
+  const trail = trails?.buf;
+  if (trail) drawSpecTrail(g, colors, geo, curveLevels(trail, sampleRate, range, count, trails.levels(count)));
   ctx.beginPath();
   ctx.moveTo(geo.left, base);
   for (let i = 0; i < count; i += 1) ctx.lineTo(geo.left + ((i + 0.5) / count) * geo.plotW, geo.yOf(levels[i]));
@@ -857,8 +935,10 @@ export function createLiveSpectrum({ uid, colors, now, feed, range, axisControl,
   const canvas = el('canvas', { class: 'hm-canvas', role: 'img' });
   const caption = el('p', { class: 'hm-cap muted t-caption' });
   const peakOut = el('p', { class: 'hm-peak t-subhead', role: 'status', 'aria-live': 'off' }, peakText(null));
+  const trails = createTrails();
+  const trailControl = createTrailControl({ uid, trails, onChange: () => { describe(); paint(); } });
   const node = el('div', { class: 'hm-block' },
-    el('div', { class: 'hm-head' }, el('h3', { class: 't-subhead' }, 'Spectrum'), axisControl.node),
+    el('div', { class: 'hm-head' }, el('h3', { class: 't-subhead' }, 'Spectrum'), el('div', { class: 'hm-checks' }, trailControl.node, axisControl.node)),
     view(canvas, 'hm-spec'),
     caption,
     peakOut);
@@ -866,7 +946,7 @@ export function createLiveSpectrum({ uid, colors, now, feed, range, axisControl,
   function describe() {
     const r = range();
     canvas.setAttribute('aria-label', `Spectrum of ${what()} signal, ${axisText(r)}`);
-    caption.textContent = `${LIVE_VIEW_NAMES.spectrum} Frequency axis ${axisCaption(r)}, level in dBFS. The dot marks the loudest frequency.`;
+    caption.textContent = `${LIVE_VIEW_NAMES.spectrum} Frequency axis ${axisCaption(r)}, level in dBFS. The dot marks the loudest frequency.${trails.on ? ' The faint ghost behind the curve is where recent peaks were; it fades about 20 dB per second.' : ''}`;
   }
 
   function showPeak(p) {
@@ -887,9 +967,12 @@ export function createLiveSpectrum({ uid, colors, now, feed, range, axisControl,
       f.an.getFloatFrequencyData(f.b.freq);
       data = f.b.freq;
       peak = peakOf(data, f.sr);
+      trails.step(data, now());
+    } else {
+      trails.clear();
     }
     showPeak(peak);
-    drawLiveSpectrumView(g, colors(), data, f?.sr ?? 0, range(), peak, hover.x);
+    drawLiveSpectrumView(g, colors(), data, f?.sr ?? 0, range(), peak, hover.x, trails);
   }
 
   const hover = trackHover(canvas, paint);
@@ -897,6 +980,7 @@ export function createLiveSpectrum({ uid, colors, now, feed, range, axisControl,
   return {
     node,
     get peak() { return peak; },
+    get trails() { return trails; },
     describe,
     paint,
     reset() {

@@ -139,3 +139,55 @@ test('STU-027: specHover snaps to a harmonic bar within 8 px and keeps the line 
   assert.equal(far.x, bars[2].x + 9);
   assert.ok(!far.title.startsWith('H'));
 });
+
+test('WEB-205: decayTrail keeps the louder of the live level and the trail falling 20 dB per second', () => {
+  const trail = Float32Array.from([-20, -50, -90]);
+  v.decayTrail(trail, Float32Array.from([-60, -45, -Infinity]), 0.5);
+  assert.deepEqual([...trail], [-30, -45, -100]);
+  v.decayTrail(trail, new Float32Array(3).fill(-Infinity), 2);
+  assert.deepEqual([...trail], [-70, -85, -140]);
+  const deep = new Float32Array(1).fill(v.TRAIL_FLOOR_DB);
+  v.decayTrail(deep, new Float32Array(1).fill(-Infinity), 10);
+  assert.equal(deep[0], v.TRAIL_FLOOR_DB);
+  const same = v.decayTrail(trail, trail, 0);
+  assert.equal(same, trail);
+});
+
+test('WEB-205: createTrails is off by default, clears on every toggle, caps dt and resets when the bar set changes', () => {
+  const t = v.createTrails();
+  assert.equal(t.on, false);
+  assert.equal(t.step(new Float32Array(2).fill(-10), 0), null);
+  t.set(true);
+  const live = Float32Array.from([-10, -80]);
+  assert.deepEqual([...t.step(live, 0)], [-10, -80]);
+  const low = new Float32Array(2).fill(-Infinity);
+  assert.deepEqual([...t.step(low, 1000)], [-30, -100]);
+  assert.deepEqual([...t.step(low, 60000)], [-35, -105]);
+  t.set(false);
+  assert.equal(t.buf, null);
+  t.set(true);
+  assert.equal(t.buf[0], v.TRAIL_FLOOR_DB);
+  const rows = [{ freq: 220 }, { freq: 440 }];
+  t.step(live, 0, rows);
+  t.step(low, 1000, rows);
+  assert.equal(t.buf[0], -30);
+  t.step(low, 1100, [{ freq: 230 }, { freq: 440 }]);
+  assert.equal(t.buf[0], v.TRAIL_FLOOR_DB);
+  assert.equal(t.levels(7), t.levels(7));
+});
+
+test('WEB-205: the trail is stored per analyser bin, so curveLevels maps it through the current axis', () => {
+  const bins = new Float32Array(1024).fill(-120);
+  bins[Math.round(220 / (24000 / 1024))] = -20;
+  const trail = v.createTrails();
+  trail.set(true);
+  trail.step(bins, 0);
+  const lin = { axis: 'linear', max: 2000 };
+  const log = { axis: 'log', max: 20000 };
+  for (const range of [lin, log]) {
+    const out = v.curveLevels(trail.buf, 48000, range, 300, trail.levels(300));
+    const top = out.indexOf(Math.max(...out));
+    const x = v.specX(220, range, v.specGeo(300 + 42, 210));
+    assert.ok(Math.abs(top + v.SPEC_PAD.left - x) < 4, `${range.axis} ${top} ${x}`);
+  }
+});

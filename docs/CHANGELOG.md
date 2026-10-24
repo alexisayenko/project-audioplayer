@@ -2,6 +2,10 @@
 
 What shipped, newest first. One line each; the web UI and server are live at https://electrophone.cc. Everything listed here is deployed except the sections marked "built, not deployed" (the 2026-10-14 release went out once the SSH access in [task-0027](tasks/task-0027.md) was restored; the live visualizer files match `origin/main` as of 2026-10-15). Why: [tech/decisions.md](tech/decisions.md); runbook: [tech/deploy.md](tech/deploy.md).
 
+## 2026-10-25 (Studio Spectrum Trails switch, built, not deployed; the main app is unchanged)
+
+- Web (WEB-205, STU-028; owner: "make a switch to turn on trails on spectrum, like what we had in the visualizer (photoluminescence: the trail stays)"; no tests run, `node --check`, the build and the Browser pane at desktop and 375 px with a faked analyser and microphone only): on Listen and Chordophones the Spectrum has a "Trails" checkbox (off by default): a faint ghost of recent peaks falls 20 dB per second behind the live curve (per bin on Listen, per harmonic bar on Chordophones), stays aligned across Linear and Log, and is cleared on every click of the switch, on stop and on a change of harmonics. New glossary entry "Trails (afterglow)". `listen-views.test.mjs` extended, not run.
+
 ## 2026-10-25 (Primitive slow-motion speaker cone, deployed to studio.electrophone.cc as `9d83ce0`; the main app is not redeployed, only an unused CSS rule changed in its bundle)
 
 - Web (task-0114, WEB-201, WEB-204, STU-006; owner requests GZ and HA1 2026-10-25; no tests run, `node --check`, the build and the Browser pane at desktop and 375 px only): the Primitive card has a block "Slow motion: the speaker cone" under the oscilloscope, a loudspeaker side view whose cone and air dots move 1000 times slower than the chosen frequency (440 Hz: one swing every 2.27 s) with a dot on the oscilloscope at the same phase, the readout "Slowed 1000×: ...", a "Pause animation" button, and a loop that stops when paused, hidden, off screen or on a route change (reduced motion starts paused); the "Cycles shown" switch is gone from Primitive (one fixed cycle; Chordophones and Listen keep it).

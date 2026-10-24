@@ -6,7 +6,7 @@ import { mixColor } from './viz-color.js';
 import {
   MAX_RUN_MS, AUDIBLE_MAX_HZ, ANALYSER_DB_OFFSET, SPECTRUM_MIN_HZ, SPECTRUM_MAX_HZ, DB_MIN,
   LIVE_VIEW_NAMES, clamp, noteInfo, fmtHz, axisText, axisCaption, linearTicks, pickLabels, gramTicks, fit, css, drawSpecGrid,
-  specHover, drawSpecHover, trackHover,
+  specHover, drawSpecHover, trackHover, createTrails, createTrailControl, TRAIL_FILL_ALPHA, TRAIL_LINE_ALPHA,
   createFeeder, createColors, createAxisControl, createGramView, createBandsView, view,
 } from './listen-views.js';
 
@@ -926,7 +926,7 @@ function drawBeatingView(g, colors, data) {
   }
 }
 
-function drawSpectrumView(g, colors, rows, levels, range, hoverX = null) {
+function drawSpectrumView(g, colors, rows, levels, range, hoverX = null, ghost = null) {
   const { ctx, w } = g;
   const geo = drawSpecGrid(g, colors, range);
   const { yOf, xOf } = geo;
@@ -937,8 +937,21 @@ function drawSpectrumView(g, colors, rows, levels, range, hoverX = null) {
   let gap = Infinity;
   for (let i = 1; i < bars.length; i += 1) gap = Math.min(gap, bars[i].x - bars[i - 1].x);
   const bw = clamp(Number.isFinite(gap) ? gap * 0.6 : 6, 1.5, 6);
-  ctx.fillStyle = css(colors.fill);
   const base = yOf(DB_MIN);
+  if (ghost) {
+    ctx.fillStyle = css(colors.fill, TRAIL_FILL_ALPHA + 0.1);
+    for (let i = 0; i < rows.length; i += 1) {
+      if (!rows[i].played || !(ghost[i] > DB_MIN)) continue;
+      const y = yOf(ghost[i]);
+      ctx.fillRect(xOf(rows[i].freq) - bw / 2, y, bw, Math.max(1, base - y));
+    }
+    ctx.fillStyle = css(colors.fill, TRAIL_LINE_ALPHA);
+    for (let i = 0; i < rows.length; i += 1) {
+      if (!rows[i].played || !(ghost[i] > DB_MIN)) continue;
+      ctx.fillRect(xOf(rows[i].freq) - bw / 2, yOf(ghost[i]), bw, 1.5);
+    }
+  }
+  ctx.fillStyle = css(colors.fill);
   for (const b of bars) {
     const y = yOf(b.db);
     ctx.fillRect(b.x - bw / 2, y, bw, Math.max(1, base - y));
@@ -1097,6 +1110,8 @@ export function createHarmonicsCard(env = {}) {
       feat(inharmBox, INHARM_NOTE, inharmCtl.field),
       feat(hammerBox, HAMMER_NOTE, strikeCtl.field)));
   const axisControl = createAxisControl({ uid, getAxis: () => axis, setAxis });
+  const trails = createTrails();
+  const trailControl = createTrailControl({ uid, trails, onChange: () => { describe(); paintSpectrum(); } });
   const cyclesSeg = segmented(CYCLES_CHOICES.map((c) => [c, String(c)]), () => cycles, (c) => setCycles(c), { 'aria-labelledby': `${uid}-cl` });
   const cyclesField = el('div', { class: 'hm-axis' },
     el('span', { id: `${uid}-cl`, class: 'hm-lbl' }, 'Cycles shown'),
@@ -1167,7 +1182,7 @@ export function createHarmonicsCard(env = {}) {
       stringsHint,
       beatHint),
     el('div', { class: 'hm-block' },
-      el('div', { class: 'hm-head' }, el('h3', { class: 't-subhead' }, 'Spectrum'), axisControl.node),
+      el('div', { class: 'hm-head' }, el('h3', { class: 't-subhead' }, 'Spectrum'), el('div', { class: 'hm-checks' }, trailControl.node, axisControl.node)),
       view(specCanvas, 'hm-spec'),
       specCap,
       list),
@@ -1205,7 +1220,7 @@ export function createHarmonicsCard(env = {}) {
     bands.describe('the synthesized tone');
     const own = eachShown() ? ' The faint coloured lines are single strings played alone.' : '';
     waveCap.textContent = `${VIEW_NAMES.wave} Window: ${shown}; the bright line is the sum.${own}`;
-    specCap.textContent = `${VIEW_NAMES.spectrum} Frequency axis ${axisCaption(rangeNow())}, level in dBFS, one bar per harmonic.`;
+    specCap.textContent = `${VIEW_NAMES.spectrum} Frequency axis ${axisCaption(rangeNow())}, level in dBFS, one bar per harmonic.${trails.on ? ' The faint ghost bars show where each harmonic recently was; they fade about 20 dB per second.' : ''}`;
     gram.caption.textContent = `${VIEW_NAMES.gram} The last 10 seconds, frequency axis ${axisCaption(rangeNow())}. It fills while the tone plays and clears when the axis changes.`;
     const lead = leadN(params);
     const beat = beatRate(params.freq * lead, params.strings, params.detune);
@@ -1335,11 +1350,16 @@ export function createHarmonicsCard(env = {}) {
     const f = feed();
     const rows = rowsNow();
     let levels = rows.map((r) => r.db);
+    let ghost = null;
     if (f) {
       f.an.getFloatFrequencyData(f.b.freq);
       levels = barLevels(rows, f.b.freq, f.sr, params.strings > 1 ? params.detune : 0);
+      trails.step(levels, now(), rows);
+      ghost = trails.buf;
+    } else {
+      trails.clear();
     }
-    drawSpectrumView(g, colors(), rows, levels, rangeNow(), specPointer.x);
+    drawSpectrumView(g, colors(), rows, levels, rangeNow(), specPointer.x, ghost);
   }
 
   function paintStatic() {
