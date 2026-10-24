@@ -12,7 +12,7 @@ export const MAX_STRINGS = 8;
 export const MAX_OSCILLATORS = 256;
 export const MAX_DETUNE = 5;
 export const DEFAULTS = {
-  freq: 220, count: 10, rolloff: -12, decay: false, tau: 1.2, repeat: 3, strings: 1, detune: 2,
+  freq: 220, count: 10, rolloff: -12, mute: false, decay: false, tau: 1.2, repeat: 3, strings: 1, detune: 2,
   thump: true, thumpDb: -24, twoStage: true, inharm: true, inharmB: 0.0004, hammer: true, strike: 1 / 8,
 };
 export const MIN_THUMP_DB = -48;
@@ -133,6 +133,7 @@ export function clampParams(p = {}) {
     freq: clamp(num(p.freq, DEFAULTS.freq), MIN_HZ, MAX_HZ),
     count: clamp(Math.round(num(p.count, DEFAULTS.count)), 1, MAX_COUNT),
     rolloff: clamp(num(p.rolloff, DEFAULTS.rolloff), MIN_ROLLOFF, 0),
+    mute: p.mute === true,
     decay: p.decay === true,
     tau: clamp(num(p.tau, DEFAULTS.tau), MIN_TAU, MAX_TAU),
     repeat: clamp(num(p.repeat, DEFAULTS.repeat), MIN_REPEAT, MAX_REPEAT),
@@ -146,6 +147,19 @@ export function clampParams(p = {}) {
     hammer: flag(p.hammer, DEFAULTS.hammer),
     strike: clamp(num(p.strike, DEFAULTS.strike), MIN_STRIKE, MAX_STRIKE),
   };
+}
+
+export function isMuted(params) {
+  const p = clampParams(params);
+  return p.mute && p.count >= 2;
+}
+
+export function leadN(params) {
+  return isMuted(params) ? 2 : 1;
+}
+
+export function muteText(hz) {
+  return `The pitch you hear is still H1 (${fmtHz(hz)}): your brain infers the missing fundamental from the spacing of the overtones. Try it with 6+ harmonics.`;
 }
 
 export function realism(params) {
@@ -261,18 +275,35 @@ export function harmonicList(params, sampleRate = 48000) {
     const played = f * widest < limit;
     const amp = amplitude(n, rolloff) * strikeFactor(n, real.strike);
     if (played) sum += amp;
-    rows.push({ n, freq: f, amp, played, gain: 0, db: -Infinity });
+    rows.push({ n, freq: f, amp, played, muted: false, gain: 0, full: 0, db: -Infinity });
   }
   for (const r of rows) {
     if (!r.played) continue;
-    r.gain = (TOTAL_GAIN * r.amp) / sum;
+    r.full = (TOTAL_GAIN * r.amp) / sum;
+    r.gain = r.full;
     r.db = 20 * Math.log10(r.gain);
+  }
+  if (p.mute && count >= 2 && rows[0].played) {
+    rows[0].muted = true;
+    rows[0].gain = 0;
+    rows[0].db = -Infinity;
   }
   return rows;
 }
 
 export function harmonicLabel(row) {
+  if (row.muted) return `Fundamental (H1, muted) · ${fmtHz(row.freq)}`;
   return `${row.n === 1 ? 'Fundamental (H1)' : `H${row.n}`} · ${fmtHz(row.freq)}`;
+}
+
+export function levelMatched(sum, samples, rows) {
+  const tail = Math.min(samples.length, 1024);
+  let live = 0;
+  for (let i = samples.length - tail; i < samples.length; i += 1) live += samples[i] * samples[i];
+  let want = 0;
+  for (const r of rows) if (r.played) want += (r.gain * r.gain) / 2;
+  const k = want > 0 && tail > 0 ? Math.min(1.5, Math.sqrt(live / tail) / Math.sqrt(want)) : 0;
+  return k > 0.95 ? sum : sum.map((v) => v * k);
 }
 
 export function fmtHz(f) {
@@ -333,17 +364,17 @@ export function fmtSwell(s) {
   return s < 10 ? s.toFixed(2) : s.toFixed(1);
 }
 
-export function beatText(beat) {
-  return `H1 beats about ${fmtBeat(beat)} Hz`;
+export function beatText(beat, n = 1) {
+  return `H${n} beats about ${fmtBeat(beat)} Hz`;
 }
 
-export function swellText(beat) {
-  return `${beatText(beat)}: one swell every ${fmtSwell(1 / beat)} s`;
+export function swellText(beat, n = 1) {
+  return `${beatText(beat, n)}: one swell every ${fmtSwell(1 / beat)} s`;
 }
 
-export function beatingH1(rows, offsets, windowS, cols) {
+export function beatingH1(rows, offsets, windowS, cols, idx = 0) {
   const out = new Float32Array(cols);
-  const r = rows[0];
+  const r = rows[idx];
   if (!r?.played) return out;
   const rel = offsets.map((o) => 2 * Math.PI * r.freq * (centsRatio(o) - 1));
   for (let i = 0; i < cols; i += 1) {
@@ -430,7 +461,7 @@ export function barLevels(rows, freqData, sampleRate, spreadCents = 0) {
   const bw = sampleRate / (2 * bins);
   const spread = centsRatio(spreadCents);
   return rows.map((r) => {
-    if (!r.played) return -Infinity;
+    if (!r.played || r.muted) return -Infinity;
     const lo = Math.round(r.freq / spread / bw);
     const hi = Math.round((r.freq * spread) / bw);
     let top = -Infinity;
@@ -813,7 +844,7 @@ export function createSynth(env = {}) {
           v.gain.gain.value = live.decay ? 0 : gain;
           v.gain2.gain.value = 0;
         } else if (!live.decay) {
-          v.gain.gain.setTargetAtTime(gain, t, SMOOTH_S);
+          v.gain.gain.setTargetAtTime(gain, t, i === 0 ? FADE_S : SMOOTH_S);
           v.gain2.gain.setTargetAtTime(0, t, SMOOTH_S);
         }
       });
@@ -839,7 +870,7 @@ export function createSynth(env = {}) {
     }
     if (strings === live.strings) {
       live.struckB = real.inharmB;
-      if (real.thumpGain > 0 && rows[0]?.played) thump(at, rows[0].gain * real.thumpGain * THUMP_NORM);
+      if (real.thumpGain > 0 && rows[0]?.played) thump(at, rows[0].full * real.thumpGain * THUMP_NORM);
     }
   }
 
@@ -866,6 +897,26 @@ export function createSynth(env = {}) {
     live.struckB = realism(live.params).inharmB;
     live.next = t + 0.02;
     pump();
+  }
+
+  function settleH1(muted) {
+    const t = live.ctx.currentTime;
+    if (!muted) {
+      clearTimeout(live.timer);
+      live.next = t + RELEASE_S + 0.005;
+      pump();
+      return;
+    }
+    for (const s of live.strings) {
+      const v = s.voices[0];
+      if (!v) continue;
+      for (const g of [v.gain.gain, v.gain2.gain]) {
+        hold(g, t);
+        g.setTargetAtTime(0, t, FADE_S);
+      }
+      v.env = { t0: 0, gain: 0, tau: Infinity };
+      v.env2 = { t0: 0, gain: 0, tau: Infinity };
+    }
   }
 
   function leaveDecay() {
@@ -948,9 +999,13 @@ export function createSynth(env = {}) {
       const added = live.strings.filter((s) => !known.has(s));
       if (next.decay && !wasDecay) enterDecay(params);
       else if (!next.decay && wasDecay) leaveDecay();
+      const flipped = isMuted(live.params) !== isMuted(next);
       live.params = next;
       apply(params, false);
-      if (wasDecay && next.decay && added.length) strikeNew(added, next);
+      if (wasDecay && next.decay) {
+        if (flipped) settleH1(isMuted(next));
+        if (added.length && !(flipped && !isMuted(next))) strikeNew(added, next);
+      }
     },
     stop() {
       const r = live;
@@ -1025,7 +1080,7 @@ export function gramTicks(rows, range, h, minGap = 18) {
   const played = rows.filter((r) => r.played);
   if (!played.length) return [];
   const stride = Math.max(1, Math.ceil(minGap / (h * (played[0].freq / range.max))));
-  return played.filter((_, i) => i % stride === 0).map((r) => [r.freq, `H${r.n} · ${fmtHz(r.freq)}`]);
+  return played.filter((_, i) => i % stride === 0).map((r) => [r.freq, `H${r.n}${r.muted ? ' (muted)' : ''} · ${fmtHz(r.freq)}`]);
 }
 
 function drawWaveView(g, colors, data, showParts) {
@@ -1070,7 +1125,7 @@ function drawWaveView(g, colors, data, showParts) {
     }
     ctx.stroke();
   };
-  if (showParts && data.parts) data.parts.forEach((p, i) => { if (data.rows[i].played) trace(p, css(colors.muted, 0.35), 1); });
+  if (showParts && data.parts) data.parts.forEach((p, i) => { if (data.rows[i].played && !data.rows[i].muted) trace(p, css(colors.muted, 0.35), 1); });
   const own = data.strings ?? [];
   own.forEach((s, k) => trace(s, css(stringColor(colors, k, own.length), stringAlpha(own.length)), 4));
   trace(data.sum, css(colors.fill), 2);
@@ -1303,6 +1358,29 @@ function drawSpectrumView(g, colors, rows, levels, range) {
     ctx.fillText(it.hz, it.x, y);
     ctx.fillText(it.name, it.x, y - 11);
   }
+  for (const r of rows) if (r.played && r.muted) drawMutedMark(g, colors, r, xOf(r.freq), base);
+}
+
+function drawMutedMark(g, colors, row, x0, base) {
+  const { ctx, w } = g;
+  const name = `H${row.n} (muted)`;
+  const hz = fmtHz(row.freq);
+  const half = Math.max(ctx.measureText(name).width, ctx.measureText(hz).width) / 2;
+  const x = clamp(x0, 36 + half, w - 2 - half);
+  ctx.save();
+  ctx.fillStyle = css(colors.muted);
+  ctx.strokeStyle = css(colors.muted);
+  ctx.lineWidth = 1;
+  ctx.setLineDash([3, 3]);
+  ctx.beginPath(); ctx.moveTo(x0, base); ctx.lineTo(x0, base - 14); ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'alphabetic';
+  ctx.fillText(hz, x, base - 18);
+  ctx.fillText(name, x, base - 29);
+  const tw = ctx.measureText(name).width;
+  ctx.beginPath(); ctx.moveTo(x - tw / 2, base - 32); ctx.lineTo(x + tw / 2, base - 32); ctx.stroke();
+  ctx.restore();
 }
 
 function drawGramAxes(g, colors, range, ticks) {
@@ -1529,6 +1607,13 @@ export function createHarmonicsCard(env = {}) {
     el('label', { htmlFor: `${uid}-dr` }, 'Decay across harmonics (dB per octave; -6 is about 1/n)'),
     el('div', { class: 'hm-pair' }, rollRange, rollOut),
     rollHint);
+  const muteBox = el('input', { id: `${uid}-mu`, type: 'checkbox', checked: params.mute, onchange: () => change({ mute: muteBox.checked }) });
+  const muteHint = needsHint(`${uid}-mh`);
+  const muteNote = el('p', { class: 'hm-cap muted t-caption', hidden: true });
+  const muteField = el('div', { class: 'hm-field' },
+    el('span', { class: 'hm-check' }, muteBox, el('label', { htmlFor: `${uid}-mu` }, 'Mute H1 (missing fundamental)')),
+    muteHint,
+    muteNote);
   const setNeeds = (range, field, hint, off) => {
     range.disabled = off;
     field.classList.toggle('is-off', off);
@@ -1612,6 +1697,7 @@ export function createHarmonicsCard(env = {}) {
       el('div', { class: 'hm-field' },
         el('label', { htmlFor: `${uid}-cr` }, 'Number of harmonics (H1 is the fundamental)'),
         el('div', { class: 'hm-pair' }, countRange, countOut)),
+      muteField,
       rollField,
       el('div', { class: 'hm-field' },
         el('span', { class: 'hm-check' }, decayBox, el('label', { htmlFor: `${uid}-dk` }, 'Piano-like decay'))),
@@ -1682,7 +1768,8 @@ export function createHarmonicsCard(env = {}) {
       real.strike > 0 ? `hammer at ${fmtStrike(real.strike)} of the string` : '',
     ].filter(Boolean);
     const extra = parts.length ? `, ${parts.join(', ')}` : '';
-    const base = `${synthCount(params.strings, params.count)} harmonics of ${fmtHz(params.freq)}, ${note.name}, decay ${params.rolloff} dB per octave${piano}${multi}${extra}`;
+    const muted = isMuted(params) ? ', H1 muted (missing fundamental)' : '';
+    const base = `${synthCount(params.strings, params.count)} harmonics of ${fmtHz(params.freq)}, ${note.name}, decay ${params.rolloff} dB per octave${muted}${piano}${multi}${extra}`;
     const where = axisText();
     if (source !== 'synth') {
       const what = source === 'mic' ? 'the microphone' : 'the player';
@@ -1705,11 +1792,12 @@ export function createHarmonicsCard(env = {}) {
     waveCap.textContent = `${VIEW_NAMES.wave} 3.5 cycles of the fundamental; the bright line is the sum.${own}`;
     specCap.textContent = `${VIEW_NAMES.spectrum} Frequency axis ${axisCaption()}, level in dBFS, one bar per harmonic.`;
     gramCap.textContent = `${VIEW_NAMES.gram} The last 10 seconds, frequency axis ${axisCaption()}. It fills while the tone plays and clears when the axis changes.`;
-    const beat = beatRate(params.freq, params.strings, params.detune);
+    const lead = leadN(params);
+    const beat = beatRate(params.freq * lead, params.strings, params.detune);
     const win = beatingWindow(beat > 0 ? 1 / beat : 0);
-    const kind = beat > 0 ? `${swellText(beat)}` : params.strings < 2 ? BEATING_ONE : BEATING_ZERO;
+    const kind = beat > 0 ? `${swellText(beat, lead)}` : params.strings < 2 ? BEATING_ONE : BEATING_ZERO;
     beatCanvas.setAttribute('aria-label', `Beating of the synthesized strings, ${win} seconds: amplitude envelope of ${params.strings} string${params.strings === 1 ? '' : 's'}, ${kind}`);
-    beatCap.textContent = `${VIEW_NAMES.beating} Time across (${win} s), amplitude up, shown at full level without the piano decay. The bright lines are the envelope of the sum; the faint lines are the level of each string's H1 and the envelope of the H1s added together.`;
+    beatCap.textContent = `${VIEW_NAMES.beating} Time across (${win} s), amplitude up, shown at full level without the piano decay. The bright lines are the envelope of the sum; the faint lines are the level of each string's H${lead} and the envelope of the H${lead}s added together.${lead > 1 ? ' H1 is muted, so the beating of H2 (the lowest harmonic that sounds) is shown.' : ''}`;
   }
 
   const eachShown = () => source === 'synth' && params.strings > 1 && showStrings;
@@ -1732,7 +1820,7 @@ export function createHarmonicsCard(env = {}) {
     list.hidden = !synthOn;
     if (!synthOn) { skipNote.hidden = true; return; }
     const rows = rowsNow();
-    list.replaceChildren(...rows.filter((r) => r.played).map((r) => el('li', {}, `${harmonicLabel(r)} · ${r.db.toFixed(1)} dB`)));
+    list.replaceChildren(...rows.filter((r) => r.played).map((r) => el('li', r.muted ? { class: 'is-muted' } : {}, `${harmonicLabel(r)} · ${r.muted ? 'off' : `${r.db.toFixed(1)} dB`}`)));
     const skipped = rows.filter((r) => !r.played);
     skipNote.hidden = !skipped.length;
     if (skipped.length) skipNote.textContent = `${skipped.length === 1 ? `H${skipped[0].n} is` : `H${skipped[0].n} to H${skipped.at(-1).n} are`} above ${fmtHz(playableLimit(rate()))} and skipped.`;
@@ -1767,14 +1855,19 @@ export function createHarmonicsCard(env = {}) {
     inharmCtl.out.textContent = `B ${+params.inharmB.toFixed(5)}`;
     strikeCtl.out.textContent = fmtStrike(params.strike);
     const single = params.count < 2;
+    muteBox.checked = params.mute;
+    setNeeds(muteBox, muteField, muteHint, single);
+    muteNote.hidden = !isMuted(params);
+    muteNote.textContent = muteNote.hidden ? '' : muteText(partialFreq(1, params.freq, realism(params).inharmB));
     setNeeds(rollRange, rollField, rollHint, single);
     setNeeds(strikeCtl.range, strikeCtl.field, strikeHint, single);
     fill(detuneRange, params.detune, 0, MAX_DETUNE);
     detuneOut.textContent = `${params.detune} cents`;
-    const beat = beatRate(params.freq, params.strings, params.detune);
+    const lead = leadN(params);
+    const beat = beatRate(params.freq * lead, params.strings, params.detune);
     detuneField.hidden = params.strings < 2;
     beatOut.hidden = !(beat > 0);
-    beatOut.textContent = beat > 0 ? beatText(beat) : '';
+    beatOut.textContent = beat > 0 ? beatText(beat, lead) : '';
     beatHint.hidden = source !== 'synth' || !(beat > 0);
     fill(stringsRange, params.strings, 1, MAX_STRINGS);
     stringsOut.textContent = String(params.strings);
@@ -1799,7 +1892,7 @@ export function createHarmonicsCard(env = {}) {
     beatingNote.hidden = synthOn;
     beatCap.hidden = !synthOn;
     beatingOut.hidden = !synthOn || !(beat > 0);
-    beatingOut.textContent = beat > 0 ? swellText(beat) : '';
+    beatingOut.textContent = beat > 0 ? swellText(beat, lead) : '';
     sourceNote.hidden = synthOn;
     peakOut.hidden = synthOn;
     rangeSeg.group.hidden = synthOn || axis !== 'linear';
@@ -1865,26 +1958,28 @@ export function createHarmonicsCard(env = {}) {
     let sum = data.sum;
     if (f) {
       f.an.getFloatTimeDomainData(f.b.time);
-      sum = liveWave(f.b.time, f.sr, params.freq, points) ?? (params.decay && isSilent(f.b.time) ? new Float32Array(points) : sum);
+      if (isMuted(params)) sum = levelMatched(sum, f.b.time, rows);
+      else sum = liveWave(f.b.time, f.sr, params.freq, points) ?? (params.decay && isSilent(f.b.time) ? new Float32Array(points) : sum);
     }
     drawWaveView(g, currentColors(), { sum, parts: data.parts, strings: withStrings ? data.strings : [], rows, cycles: CYCLES, freq: params.freq }, showParts);
   }
 
   function beatingFor(cols) {
     const real = realism(params);
-    const key = [cols, params.freq, params.count, params.rolloff, params.strings, params.detune, real.inharmB, real.strike, rate()].join('|');
+    const lead = leadN(params);
+    const key = [cols, params.freq, params.count, params.rolloff, params.strings, params.detune, real.inharmB, real.strike, lead, rate()].join('|');
     if (key === beatingKey && beatingData) return beatingData;
     const rows = rowsNow();
     const offsets = stringOffsets(params.strings, params.detune);
-    const beat = beatRate(params.freq, params.strings, params.detune);
+    const beat = beatRate(params.freq * lead, params.strings, params.detune);
     const period = beat > 0 ? 1 / beat : 0;
     const windowS = beatingWindow(period);
     const { lo, hi } = beatingEnvelope(rows, offsets, windowS, cols);
-    const first = rows[0];
+    const first = rows[lead - 1];
     beatingKey = key;
     beatingData = {
       lo, hi, windowS, period, strings: params.strings,
-      h1: beatingH1(rows, offsets, windowS, cols),
+      h1: beatingH1(rows, offsets, windowS, cols, lead - 1),
       own: first?.played ? first.gain / params.strings : 0,
       message: beat > 0 ? '' : params.strings < 2 ? BEATING_ONE : BEATING_ZERO,
     };

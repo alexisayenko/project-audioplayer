@@ -34,7 +34,7 @@ test('clampParams keeps every control in range', () => {
   assert.deepEqual(wild, { ...h.DEFAULTS, freq: 20, count: 32, rolloff: -24, tau: 5, repeat: 1, strings: 8, detune: 5, thumpDb: -12, inharmB: 0.002, strike: 0.25 });
   assert.deepEqual(h.clampParams({}), h.DEFAULTS);
   assert.deepEqual(h.DEFAULTS, {
-    freq: 220, count: 10, rolloff: -12, decay: false, tau: 1.2, repeat: 3, strings: 1, detune: 2,
+    freq: 220, count: 10, rolloff: -12, mute: false, decay: false, tau: 1.2, repeat: 3, strings: 1, detune: 2,
     thump: true, thumpDb: -24, twoStage: true, inharm: true, inharmB: 0.0004, hammer: true, strike: 1 / 8,
   });
   assert.equal(h.clampParams({ strings: 0 }).strings, 1);
@@ -367,4 +367,41 @@ test('createBeatTracker marks a regular kick pattern and ignores a steady or qui
   assert.ok(jumps.every((j) => j === false));
   tracker.reset();
   assert.equal(tracker.lanes[0].points.length, 0);
+});
+
+test('muting H1 silences only H1 and keeps the other levels', () => {
+  const on = h.harmonicList({ freq: 220, count: 8, rolloff: -12, mute: true });
+  const off = h.harmonicList({ freq: 220, count: 8, rolloff: -12 });
+  assert.equal(on[0].muted, true);
+  assert.equal(on[0].gain, 0);
+  assert.equal(on[0].db, -Infinity);
+  assert.equal(on[0].full, off[0].gain);
+  assert.equal(on[0].freq, 220);
+  for (let i = 1; i < 8; i += 1) assert.equal(on[i].gain, off[i].gain);
+  assert.ok(Math.abs(on.reduce((a, r) => a + r.gain, 0) - (0.3 - off[0].gain)) < 1e-12);
+  assert.equal(h.harmonicList({ freq: 220, count: 1, mute: true })[0].muted, false);
+  assert.equal(h.isMuted({ count: 1, mute: true }), false);
+  assert.equal(h.leadN({ count: 8, mute: true }), 2);
+  assert.equal(h.leadN({ count: 8 }), 1);
+});
+
+test('a muted H1 has no bar, a muted label and the lead beat moves to H2', () => {
+  const rows = h.harmonicList({ freq: 220, count: 4, mute: true });
+  assert.equal(h.barLevels(rows, new Float32Array(1024).fill(-50), 48000)[0], -Infinity);
+  assert.equal(h.harmonicLabel(rows[0]), 'Fundamental (H1, muted) · 220 Hz');
+  assert.equal(h.gramTicks(rows, { axis: 'linear', max: 1000 }, 400)[0][1], 'H1 (muted) · 220 Hz');
+  assert.equal(h.beatText(1.02, 2), 'H2 beats about 1.02 Hz');
+  assert.equal(h.swellText(2, 2), 'H2 beats about 2.00 Hz: one swell every 0.50 s');
+  assert.ok(h.beatingH1(rows, [-2, 2], 2, 8, 1).some((v) => v > 0));
+  assert.match(h.muteText(220), /still H1 \(220 Hz\).*Try it with 6\+ harmonics\.$/);
+});
+
+test('levelMatched keeps a steady wave and scales a fading or silent one', () => {
+  const rows = h.harmonicList({ freq: 220, count: 4, mute: true });
+  const sum = new Float32Array([0, 0.2, -0.2]);
+  assert.equal(h.levelMatched(sum, new Float32Array(2048), rows)[1], 0);
+  const steady = new Float32Array(2048);
+  const rms = Math.sqrt(rows.reduce((a, r) => a + (r.gain * r.gain) / 2, 0));
+  for (let i = 0; i < steady.length; i += 1) steady[i] = rms * Math.SQRT2 * Math.sin(i);
+  assert.equal(h.levelMatched(sum, steady, rows), sum);
 });
