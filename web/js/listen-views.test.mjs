@@ -191,3 +191,29 @@ test('WEB-205: the trail is stored per analyser bin, so curveLevels maps it thro
     assert.ok(Math.abs(top + v.SPEC_PAD.left - x) < 4, `${range.axis} ${top} ${x}`);
   }
 });
+
+test('WEB-206: pitchText reads the pitch, the note and the harmonics found, or says why there is none', () => {
+  const items = [{ n: 1, freq: 220.4, found: true }, { n: 2, freq: 440.8, found: true }, { n: 3, freq: 661.2, found: false }, { n: 4, freq: 881.6, found: true }];
+  const lin = v.liveAxisRange('linear', 2000);
+  assert.equal(v.pitchText(true, 220.4, items, lin), 'Pitch: 220.4 Hz (A3 +3 cents), harmonics found: 1,2,4');
+  assert.equal(v.pitchText(false, 0, [], lin), 'No single pitch (polyphonic or noisy sound)');
+  assert.equal(v.pitchText(true, 2030, items, lin), 'Pitch outside the visible range');
+  assert.equal(v.pitchText(true, 220, [{ n: 1, freq: 220, found: false }], lin), 'Pitch: 220 Hz (A3 +0 cents), harmonics found: none');
+});
+
+test('WEB-206: harmonic markers follow the axis: only ticks inside the range, and hover snaps to one within 8 px', () => {
+  const items = range16().map((n) => ({ n, freq: 220 * n, found: n % 2 === 1 }));
+  const lin = v.liveAxisRange('linear', 2000);
+  assert.deepEqual(v.visibleMarks(items, lin).map((m) => m.n), [1, 2, 3, 4, 5, 6, 7, 8, 9]);
+  assert.equal(v.visibleMarks(items, v.liveAxisRange('log')).length, 16);
+  const geo = { ...v.specGeo(342, 210), xOf: (f) => v.specX(f, lin, v.specGeo(342, 210)) };
+  const levels = new Float32Array(300).fill(-40);
+  const bars = v.harmonicBars({ items, alpha: 1 }, geo, lin, levels);
+  assert.equal(bars.length, 9);
+  const hit = v.specHover(bars[2].x + 5, geo, lin, { levels, bars });
+  assert.equal(hit.title, 'H3 · 660 Hz');
+  assert.equal(hit.x, bars[2].x);
+  assert.deepEqual(v.harmonicBars({ items, alpha: 0 }, geo, lin, levels), []);
+});
+
+const range16 = () => Array.from({ length: 16 }, (_, i) => i + 1);

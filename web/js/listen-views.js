@@ -1,6 +1,7 @@
 import { el } from './dom.js';
 import { segmented } from './segmented.js';
 import { parseColor, mixColor } from './viz-color.js';
+import { detectPitch, harmonicMarks, foundList, createPitchTracker, PITCH_EVERY_MS, HARMONIC_LABEL_GAP_PX } from './pitch-detect.js';
 
 export const MAX_RUN_MS = 10 * 60 * 1000;
 export const AUDIBLE_MAX_HZ = 20000;
@@ -318,6 +319,13 @@ export function createTrailControl({ uid, trails, onChange }) {
   return { node, paint() { box.checked = trails.on; } };
 }
 
+export function createMarkControl({ uid, get, set }) {
+  const id = `${uid}-marks`;
+  const box = el('input', { id, type: 'checkbox', checked: get(), onchange: () => set(box.checked) });
+  const node = el('span', { class: 'hm-check', title: MARKS_HINT }, box, el('label', { htmlFor: id }, 'Mark harmonics'));
+  return { node, paint() { box.checked = get(); } };
+}
+
 export const BANDS = [
   { key: 'sub', name: 'Sub', lo: 20, hi: 60 },
   { key: 'bass', name: 'Bass', lo: 60, hi: 250 },
@@ -617,7 +625,63 @@ export function drawSpecTrail(g, colors, geo, ghost) {
   ctx.stroke();
 }
 
-export function drawLiveSpectrumView(g, colors, freqData, sampleRate, range, peak, hoverX = null, trails = null) {
+export const MARKS_HINT = 'Marks the detected pitch and its harmonics on the spectrum: solid where a real peak sits, hollow where a harmonic is missing.';
+export const NO_PITCH_TEXT = 'No single pitch (polyphonic or noisy sound)';
+export const PITCH_IDLE_TEXT = 'Pitch: -';
+export const PITCH_RANGE_TEXT = 'Pitch outside the visible range';
+export const MARK_TICK_PX = 8;
+
+export function visibleMarks(items, range) {
+  return (items ?? []).filter((m) => m.freq >= range.min && m.freq <= range.max);
+}
+
+export function pitchText(locked, f0, items, range) {
+  if (!locked) return NO_PITCH_TEXT;
+  if (f0 < range.min || f0 > range.max) return PITCH_RANGE_TEXT;
+  return `Pitch: ${fmtHz(f0)} (${noteInfo(f0).text}), harmonics found: ${foundList(visibleMarks(items, range))}`;
+}
+
+export function harmonicBars(marks, geo, range, levels) {
+  if (!marks || !(marks.alpha > 0)) return [];
+  return visibleMarks(marks.items, range).map((m) => {
+    const x = geo.xOf(m.freq);
+    const i = clamp(Math.floor(((x - geo.left) / geo.plotW) * levels.length), 0, levels.length - 1);
+    return { x, freq: m.freq, db: levels[i], name: `H${m.n}` };
+  });
+}
+
+export function drawHarmonicMarks(g, colors, geo, range, marks) {
+  if (!marks || !(marks.alpha > 0)) return;
+  const { ctx, w } = g;
+  const top = geo.top - MARK_TICK_PX;
+  ctx.save();
+  ctx.globalAlpha = clamp(marks.alpha, 0, 1);
+  ctx.font = `10px ${colors.font}`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'alphabetic';
+  let lastLabel = -Infinity;
+  for (const m of visibleMarks(marks.items, range)) {
+    const x = Math.round(geo.xOf(m.freq));
+    if (m.found) {
+      ctx.strokeStyle = css(colors.ink);
+      ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.moveTo(x, top); ctx.lineTo(x, geo.top + 2); ctx.stroke();
+    } else {
+      ctx.strokeStyle = css(colors.muted, 0.7);
+      ctx.lineWidth = 1;
+      ctx.strokeRect(x - 1.5, top + 0.5, 3, MARK_TICK_PX + 1);
+    }
+    const text = `H${m.n}`;
+    const half = ctx.measureText(text).width / 2;
+    if (x - lastLabel < HARMONIC_LABEL_GAP_PX || x - half < 0 || x + half > w - 2) continue;
+    lastLabel = x;
+    ctx.fillStyle = m.found ? css(colors.ink) : css(colors.muted, 0.8);
+    ctx.fillText(text, x, top - 3);
+  }
+  ctx.restore();
+}
+
+export function drawLiveSpectrumView(g, colors, freqData, sampleRate, range, peak, hoverX = null, trails = null, marks = null) {
   const { ctx } = g;
   const geo = drawSpecGrid(g, colors, range);
   if (!freqData) {
@@ -650,7 +714,8 @@ export function drawLiveSpectrumView(g, colors, freqData, sampleRate, range, pea
     ctx.fillStyle = css(colors.ink);
     ctx.beginPath(); ctx.arc(x, geo.yOf(peak.db), 3, 0, 2 * Math.PI); ctx.fill();
   }
-  if (hoverX !== null) drawSpecHover(g, colors, geo, specHover(hoverX, geo, range, { levels }));
+  drawHarmonicMarks(g, colors, geo, range, marks);
+  if (hoverX !== null) drawSpecHover(g, colors, geo, specHover(hoverX, geo, range, { levels, bars: harmonicBars(marks, geo, range, levels) }));
 }
 
 export function drawGramAxes(g, colors, range, ticks) {
@@ -937,16 +1002,67 @@ export function createLiveSpectrum({ uid, colors, now, feed, range, axisControl,
   const peakOut = el('p', { class: 'hm-peak t-subhead', role: 'status', 'aria-live': 'off' }, peakText(null));
   const trails = createTrails();
   const trailControl = createTrailControl({ uid, trails, onChange: () => { describe(); paint(); } });
+  let marking = false;
+  let pitchAt = -Infinity;
+  let pitchShown = '';
+  let items = [];
+  const tracker = createPitchTracker();
+  const markControl = createMarkControl({ uid, get: () => marking, set: (next) => setMarking(next) });
+  const pitchOut = el('p', { class: 'hm-peak t-subhead', role: 'status', 'aria-live': 'off', hidden: true }, PITCH_IDLE_TEXT);
   const node = el('div', { class: 'hm-block' },
-    el('div', { class: 'hm-head' }, el('h3', { class: 't-subhead' }, 'Spectrum'), el('div', { class: 'hm-checks' }, trailControl.node, axisControl.node)),
+    el('div', { class: 'hm-head' }, el('h3', { class: 't-subhead' }, 'Spectrum'), el('div', { class: 'hm-checks' }, trailControl.node, markControl.node, axisControl.node)),
     view(canvas, 'hm-spec'),
     caption,
-    peakOut);
+    peakOut,
+    pitchOut);
 
   function describe() {
     const r = range();
     canvas.setAttribute('aria-label', `Spectrum of ${what()} signal, ${axisText(r)}`);
-    caption.textContent = `${LIVE_VIEW_NAMES.spectrum} Frequency axis ${axisCaption(r)}, level in dBFS. The dot marks the loudest frequency.${trails.on ? ' The faint ghost behind the curve is where recent peaks were; it fades about 20 dB per second.' : ''}`;
+    const ghost = trails.on ? ' The faint ghost behind the curve is where recent peaks were; it fades about 20 dB per second.' : '';
+    const ticks = marking ? ' The ticks above the curve mark the detected pitch and its harmonics: solid where a real peak sits, hollow where a harmonic is missing.' : '';
+    caption.textContent = `${LIVE_VIEW_NAMES.spectrum} Frequency axis ${axisCaption(r)}, level in dBFS. The dot marks the loudest frequency.${ghost}${ticks}`;
+  }
+
+  function showPitch(text) {
+    if (text === pitchShown) return;
+    pitchShown = text;
+    pitchOut.textContent = text;
+  }
+
+  function markState(f, data) {
+    const t = now();
+    if (!f) {
+      tracker.reset();
+      items = [];
+      pitchAt = -Infinity;
+      showPitch(PITCH_IDLE_TEXT);
+      return null;
+    }
+    if (t - pitchAt >= PITCH_EVERY_MS) {
+      pitchAt = t;
+      f.an.getFloatTimeDomainData(f.b.time);
+      const s = tracker.update(detectPitch(f.b.time, f.sr), t);
+      if (s.locked) items = harmonicMarks(data, f.sr, s.freq, { offsetDb: ANALYSER_DB_OFFSET, maxHz: AUDIBLE_MAX_HZ });
+    }
+    const s = tracker.state(t);
+    showPitch(pitchText(s.locked, s.freq, items, range()));
+    return { items, alpha: s.alpha };
+  }
+
+  function setMarking(next) {
+    const on = Boolean(next);
+    if (on === marking) return;
+    marking = on;
+    tracker.reset();
+    items = [];
+    pitchAt = -Infinity;
+    pitchShown = '';
+    pitchOut.hidden = !on;
+    showPitch(PITCH_IDLE_TEXT);
+    markControl.paint();
+    describe();
+    paint();
   }
 
   function showPeak(p) {
@@ -972,7 +1088,8 @@ export function createLiveSpectrum({ uid, colors, now, feed, range, axisControl,
       trails.clear();
     }
     showPeak(peak);
-    drawLiveSpectrumView(g, colors(), data, f?.sr ?? 0, range(), peak, hover.x, trails);
+    const marks = marking ? markState(f, data) : null;
+    drawLiveSpectrumView(g, colors(), data, f?.sr ?? 0, range(), peak, hover.x, trails, marks);
   }
 
   const hover = trackHover(canvas, paint);
@@ -981,9 +1098,14 @@ export function createLiveSpectrum({ uid, colors, now, feed, range, axisControl,
     node,
     get peak() { return peak; },
     get trails() { return trails; },
+    get marking() { return marking; },
+    get pitchText() { return pitchShown; },
+    setMarking,
     describe,
     paint,
     reset() {
+      tracker.reset();
+      items = [];
       peak = null;
       peakShown = '';
       showPeak(null);
