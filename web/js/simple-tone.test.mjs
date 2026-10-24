@@ -48,21 +48,36 @@ test('WEB-201: the readout states the period, the swing, the power and the lengt
   assert.equal(s.fmtMs(s.periodMs(20)), '50');
 });
 
-test('WEB-201: the scope series spans 3.5 cycles at the set amplitude', () => {
+test('WEB-201: the scope series spans the chosen cycles (default one) at the set amplitude', () => {
+  assert.equal(s.CYCLES, 1);
   const v = s.scopeSeries(0.3, 701);
   assert.equal(v.length, 701);
   assert.ok(near(Math.max(...v), 0.3, 1e-3));
   assert.ok(near(v[0], 0));
+  assert.ok(near(v[700], 0, 1e-9));
+  assert.ok(near(s.scopeSeries(0.3, 701, 4)[175], 0.3 * Math.sin(2 * Math.PI), 1e-9));
 });
 
-test('WEB-201: the live window starts on a rising zero crossing and holds 3.5 cycles', () => {
+test('WEB-201: the time axis has five ticks that follow the window', () => {
+  const ms = (cycles) => s.scopeTicks(cycles, 220).map((t) => s.fmtMs(t.ms));
+  assert.deepEqual(ms(1), ['0', '1.14', '2.27', '3.41', '4.55']);
+  assert.deepEqual(ms(2), ['0', '2.27', '4.55', '6.82', '9.09']);
+  assert.deepEqual(ms(4), ['0', '4.55', '9.09', '13.6', '18.2']);
+  assert.deepEqual(s.scopeTicks(1, 220).map((t) => t.frac), [0, 0.25, 0.5, 0.75, 1]);
+});
+
+test('WEB-201: the live window starts on a rising zero crossing and holds exactly the chosen cycles', () => {
   const rate = 48000;
   const buf = new Float32Array(32768);
   for (let i = 0; i < buf.length; i += 1) buf[i] = 0.3 * Math.sin((2 * Math.PI * 440 * i) / rate);
-  const w = s.liveWindow(buf, rate, 440);
-  assert.equal(w.need, Math.round(3.5 * rate / 440));
-  assert.equal(w.samples.length, w.need);
-  assert.ok(w.samples[0] <= 0.01 && w.samples[2] >= 0);
+  for (const cycles of [1, 2, 4]) {
+    const w = s.liveWindow(buf, rate, 440, cycles, 600);
+    assert.equal(w.need, 600);
+    assert.equal(w.samples.length, 600);
+    assert.ok(Math.abs(w.samples[0]) < 0.005);
+    assert.ok(Math.abs(w.samples[599]) < 0.005);
+    assert.ok(w.samples[2] > 0);
+  }
 });
 
 function fakeCtx() {

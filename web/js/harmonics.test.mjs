@@ -128,6 +128,16 @@ test('beatRate is the frequency gap of adjacent strings', () => {
   assert.equal(h.fmtBeat(23.04), '23.0');
 });
 
+test('the waveform axis has five ticks that follow the window (1, 2 or 4 cycles; default 1)', () => {
+  assert.deepEqual(h.CYCLES_CHOICES, [1, 2, 4]);
+  assert.equal(h.CYCLES, 1);
+  const ms = (cycles) => h.waveTicks(cycles, 220).map((t) => +t.ms.toFixed(2));
+  assert.deepEqual(ms(1), [0, 1.14, 2.27, 3.41, 4.55]);
+  assert.deepEqual(ms(2), [0, 2.27, 4.55, 6.82, 9.09]);
+  assert.deepEqual(ms(4), [0, 4.55, 9.09, 13.64, 18.18]);
+  assert.ok(Math.abs(h.waveTicks(1, 220)[4].ms - 1000 / 220) < 1e-9);
+});
+
 test('strings keep the total wave amplitude and skip partials that detune past the limit', () => {
   const rows = h.harmonicList({ freq: 440, count: 1, rolloff: 0 });
   const one = h.computedWave(rows, 64, 3.5, [0]);

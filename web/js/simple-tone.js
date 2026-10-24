@@ -1,5 +1,6 @@
 import { el } from './dom.js';
 import { icon } from './icons.js';
+import { segmented } from './segmented.js';
 
 export const TITLE = 'Simple tone';
 export const INTRO = 'The four numbers that describe a sound from a speaker. Set them, press Play and hear a pure sine tone.';
@@ -14,7 +15,10 @@ export const FADE_S = 0.03;
 export const SMOOTH_S = 0.015;
 export const MAX_RUN_MS = 10 * 60 * 1000;
 export const FFT_SIZE = 32768;
-export const CYCLES = 3.5;
+export const CYCLES_CHOICES = [1, 2, 4];
+export const CYCLES = 1;
+export const CYCLE_NAMES = { 1: 'one cycle', 2: 'two cycles', 4: 'four cycles' };
+export const SCOPE_TICKS = 4;
 export const POWER_NOTE = 'Power grows with the square of the amplitude: double the amplitude, four times the power.';
 export const DB_NOTE = 'In decibels of full scale: dBFS = 20 x log10(amplitude). 0 dBFS is the loudest tone the device can play.';
 export const AMP_NOTE = 'How far the speaker cone moves.';
@@ -107,18 +111,34 @@ export function scopeSeries(amp, points, cycles = CYCLES) {
   return out;
 }
 
-export function liveWindow(samples, sampleRate, freq, cycles = CYCLES) {
+export function liveWindow(samples, sampleRate, freq, cycles = CYCLES, points = 0) {
   const period = sampleRate / freq;
-  const need = Math.max(2, Math.round(cycles * period));
+  const span = cycles * period;
+  const need = Math.max(2, points > 1 ? Math.round(points) : Math.round(span));
   const len = samples.length;
-  const from = Math.max(0, len - need - Math.ceil(period) - 2);
+  const from = Math.max(0, len - Math.ceil(span) - Math.ceil(period) - 2);
   const last = Math.min(len - 2, from + Math.ceil(period));
   let start = from;
   for (let i = from; i <= last; i += 1) {
-    if (samples[i] <= 0 && samples[i + 1] > 0) { start = i; break; }
+    if (samples[i] <= 0 && samples[i + 1] > 0) { start = i + -samples[i] / (samples[i + 1] - samples[i]); break; }
   }
-  const count = Math.max(0, Math.min(need, len - start));
-  return { samples: samples.subarray(start, start + count), need };
+  const out = new Float32Array(need);
+  let count = 0;
+  for (; count < need; count += 1) {
+    const pos = start + (count / (need - 1)) * span;
+    const i0 = Math.floor(pos);
+    if (i0 + 1 > len - 1) break;
+    const frac = pos - i0;
+    out[count] = samples[i0] * (1 - frac) + samples[i0 + 1] * frac;
+  }
+  return { samples: out.subarray(0, count), need };
+}
+
+export function scopeTicks(cycles, freq) {
+  return Array.from({ length: SCOPE_TICKS + 1 }, (_, k) => ({
+    frac: k / SCOPE_TICKS,
+    ms: (((cycles * k) / SCOPE_TICKS) * 1000) / freq,
+  }));
 }
 
 function readColors(node) {
@@ -146,7 +166,7 @@ function fit(canvas) {
   return { ctx, w, h };
 }
 
-function drawScope(g, colors, series, need, p) {
+function drawScope(g, colors, series, need, p, cycles) {
   const { ctx, w, h } = g;
   const left = 40;
   const bottom = 18;
@@ -167,11 +187,11 @@ function drawScope(g, colors, series, need, p) {
     ctx.fillText(text, left - 4, y);
   }
   ctx.textBaseline = 'top';
-  for (let k = 0; k <= Math.floor(CYCLES); k += 1) {
-    const x = left + (k / CYCLES) * plotW;
+  for (const t of scopeTicks(cycles, p.freq)) {
+    const x = left + t.frac * plotW;
     ctx.beginPath(); ctx.moveTo(x, mid - scale); ctx.lineTo(x, mid + scale); ctx.stroke();
-    ctx.textAlign = k === 0 ? 'left' : 'center';
-    ctx.fillText(`${fmtMs(periodMs(p.freq) * k)} ms`, x, h - bottom + 3);
+    ctx.textAlign = t.frac === 0 ? 'left' : t.frac >= 1 ? 'right' : 'center';
+    ctx.fillText(`${fmtMs(t.ms)} ms`, x, h - bottom + 3);
   }
   if (p.amp > 0) {
     ctx.save();
@@ -209,6 +229,7 @@ export function createSimpleCard(env = {}) {
   let live = null;
   let state = 'idle';
   let frame = 0;
+  let cycles = CYCLES;
   let colors = null;
   let colorsAt = 0;
   let gone = false;
@@ -233,6 +254,10 @@ export function createSimpleCard(env = {}) {
   const stateOut = el('p', { class: 'hm-state t-subhead', role: 'status', 'aria-live': 'polite' }, TEXT.idle);
   const canvas = el('canvas', { class: 'hm-canvas', role: 'img' });
   const readoutOut = el('p', { class: 'hm-cap muted t-caption' });
+  const cyclesSeg = segmented(CYCLES_CHOICES.map((c) => [c, String(c)]), () => cycles, (c) => setCycles(c), { 'aria-labelledby': `${uid}-cl` });
+  const cyclesField = el('div', { class: 'hm-axis' },
+    el('span', { id: `${uid}-cl`, class: 'hm-lbl' }, 'Cycles shown'),
+    cyclesSeg.group);
 
   const field = (id, title, ...rest) => el('div', { class: 'hm-field' }, el('label', { htmlFor: id }, title), ...rest);
   const cap = (id, text) => el('p', { id, class: 'hm-cap muted t-caption' }, text);
@@ -248,6 +273,7 @@ export function createSimpleCard(env = {}) {
     el('div', { class: 'hm-play' }, button, stateOut),
     el('div', { class: 'hm-block' },
       el('h3', { class: 't-subhead' }, 'Waveform'),
+      cyclesField,
       el('div', { class: 'hm-view hm-wave' }, canvas),
       readoutOut,
       el('p', { class: 'hm-cap muted t-caption' }, SINE_NOTE)),
@@ -280,7 +306,8 @@ export function createSimpleCard(env = {}) {
     lenNum.disabled = p.continuous;
     contBox.checked = p.continuous;
     readoutOut.textContent = readout(p);
-    canvas.setAttribute('aria-label', `Sine wave, ${p.freq} Hz, amplitude ${fmtPct(p.amp * 100)} % of full scale, three and a half cycles`);
+    canvas.setAttribute('aria-label', `Sine wave, ${p.freq} Hz, amplitude ${fmtPct(p.amp * 100)} % of full scale, ${CYCLE_NAMES[cycles]}`);
+    cyclesSeg.paint();
   }
 
   function say(key) {
@@ -308,14 +335,21 @@ export function createSimpleCard(env = {}) {
     const g = fit(canvas);
     if (!g) return;
     const c = currentColors();
+    const points = Math.max(64, Math.round(g.w * 2));
     if (live) {
       live.analyser.getFloatTimeDomainData(live.buf);
-      const win = liveWindow(live.buf, live.ctx.sampleRate, params.freq);
-      drawScope(g, c, win.samples, win.need, params);
+      const win = liveWindow(live.buf, live.ctx.sampleRate, params.freq, cycles, points);
+      drawScope(g, c, win.samples, win.need, params, cycles);
     } else {
-      const points = Math.max(64, Math.round(g.w * 2));
-      drawScope(g, c, scopeSeries(params.amp, points), points, params);
+      drawScope(g, c, scopeSeries(params.amp, points, cycles), points, params, cycles);
     }
+  }
+
+  function setCycles(next) {
+    if (next === cycles || !CYCLE_NAMES[next]) return;
+    cycles = next;
+    paintOutputs();
+    paintScope();
   }
 
   function tick() {

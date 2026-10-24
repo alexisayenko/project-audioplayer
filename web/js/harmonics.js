@@ -1,5 +1,6 @@
 import { el } from './dom.js';
 import { icon } from './icons.js';
+import { segmented } from './segmented.js';
 import { parseColor, mixColor } from './viz-color.js';
 import { createMicInput, createPlayerInput, errorKey } from './harmonics-input.js';
 
@@ -46,7 +47,10 @@ export const MAX_RUN_MS = 10 * 60 * 1000;
 export const AUDIBLE_MAX_HZ = 20000;
 export const FFT_SIZE = 16384;
 export const ANALYSER_DB_OFFSET = 13.56;
-export const CYCLES = 3.5;
+export const CYCLES_CHOICES = [1, 2, 4];
+export const CYCLES = 1;
+export const CYCLE_NAMES = { 1: 'one cycle', 2: 'two cycles', 4: 'four cycles' };
+export const WAVE_TICKS = 4;
 export const SPECTRUM_MIN_HZ = 20;
 export const SPECTRUM_MAX_HZ = 20000;
 export const DB_MIN = -90;
@@ -454,6 +458,13 @@ export function liveWave(samples, sampleRate, freq, points, cycles = CYCLES) {
     peak = Math.max(peak, Math.abs(v));
   }
   return peak < 1e-4 ? null : out;
+}
+
+export function waveTicks(cycles, freq) {
+  return Array.from({ length: WAVE_TICKS + 1 }, (_, k) => ({
+    frac: k / WAVE_TICKS,
+    ms: (((cycles * k) / WAVE_TICKS) / freq) * 1000,
+  }));
 }
 
 export function barLevels(rows, freqData, sampleRate, spreadCents = 0) {
@@ -1105,12 +1116,11 @@ function drawWaveView(g, colors, data, showParts) {
   }
   ctx.textAlign = 'center';
   ctx.textBaseline = 'top';
-  const whole = Math.floor(data.cycles);
-  for (let k = 0; k <= whole; k += 1) {
-    const x = left + (k / data.cycles) * plotW;
+  for (const t of waveTicks(data.cycles, data.freq)) {
+    const x = left + t.frac * plotW;
     ctx.beginPath(); ctx.moveTo(x, mid - amp); ctx.lineTo(x, mid + amp); ctx.stroke();
-    ctx.textAlign = k === 0 ? 'left' : 'center';
-    ctx.fillText(`${+((k / data.freq) * 1000).toFixed(2)} ms`, x, h - bottom + 3);
+    ctx.textAlign = t.frac === 0 ? 'left' : t.frac >= 1 ? 'right' : 'center';
+    ctx.fillText(`${+t.ms.toFixed(2)} ms`, x, h - bottom + 3);
   }
   const trace = (series, style, width) => {
     ctx.strokeStyle = style;
@@ -1480,30 +1490,6 @@ function drawBandsView(g, colors, lanes, nowT, normalize) {
   }
 }
 
-function segmented(items, current, pick, attrs) {
-  const btns = items.map(([key, text]) => el('button', {
-    class: 'seg-btn', type: 'button', role: 'radio', 'aria-checked': 'false', onclick: () => pick(key),
-  }, text));
-  const group = el('div', {
-    class: 'seg hm-seg', role: 'radiogroup', ...attrs,
-    onkeydown: (ev) => {
-      const step = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1 }[ev.key];
-      if (!step) return;
-      ev.preventDefault();
-      const i = clamp(items.findIndex(([key]) => key === current()) + step, 0, items.length - 1);
-      pick(items[i][0]);
-      btns[i].focus();
-    },
-  }, ...btns);
-  const paint = () => btns.forEach((b, i) => {
-    const on = items[i][0] === current();
-    b.classList.toggle('on', on);
-    b.setAttribute('aria-checked', String(on));
-    b.tabIndex = on ? 0 : -1;
-  });
-  return { group, paint };
-}
-
 export function createHarmonicsCard(env = {}) {
   const doc = env.document ?? globalThis.document;
   const raf = env.raf ?? ((fn) => globalThis.requestAnimationFrame?.(fn) ?? 0);
@@ -1528,6 +1514,7 @@ export function createHarmonicsCard(env = {}) {
   let axis = 'linear';
   let gramAxisKey = '';
   let source = 'synth';
+  let cycles = CYCLES;
   let liveMax = DEFAULT_LIVE_MAX;
   let starting = false;
   let paused = false;
@@ -1651,6 +1638,10 @@ export function createHarmonicsCard(env = {}) {
   const sourceField = el('div', { class: 'hm-axis' },
     el('span', { id: `${uid}-ol`, class: 'hm-lbl' }, 'Source'),
     sourceSeg.group);
+  const cyclesSeg = segmented(CYCLES_CHOICES.map((c) => [c, String(c)]), () => cycles, (c) => setCycles(c), { 'aria-labelledby': `${uid}-cl` });
+  const cyclesField = el('div', { class: 'hm-axis' },
+    el('span', { id: `${uid}-cl`, class: 'hm-lbl' }, 'Cycles shown'),
+    cyclesSeg.group);
   const sourceNote = el('p', { class: 'hm-cap muted t-caption', hidden: true }, SOURCE_NOTE);
   const specCap = el('p', { class: 'hm-cap muted t-caption' });
   const gramCap = el('p', { class: 'hm-cap muted t-caption' });
@@ -1718,6 +1709,7 @@ export function createHarmonicsCard(env = {}) {
     skipNote,
     el('div', { class: 'hm-block' },
       el('div', { class: 'hm-head' }, el('h3', { class: 't-subhead' }, 'Waveform'), el('div', { class: 'hm-checks' }, partsField, eachField)),
+      cyclesField,
       view(waveCanvas, 'hm-wave'),
       waveCap,
       stringsHint,
@@ -1784,12 +1776,13 @@ export function createHarmonicsCard(env = {}) {
       beatCap.textContent = VIEW_NAMES.beating;
       return;
     }
-    waveCanvas.setAttribute('aria-label', `Waveform of the synthesized tone, 3.5 cycles: ${base}`);
+    const shown = `${CYCLE_NAMES[cycles]} of the fundamental`;
+    waveCanvas.setAttribute('aria-label', `Waveform of the synthesized tone, ${shown}: ${base}`);
     specCanvas.setAttribute('aria-label', `Spectrum of the synthesized tone, ${where}, one bar per harmonic: ${base}`);
     gramCanvas.setAttribute('aria-label', `Spectrogram of the synthesized tone, ${where}, last 10 seconds: ${base}`);
     bandsCanvas.setAttribute('aria-label', bandsLabel('the synthesized tone'));
     const own = eachShown() ? ' The faint coloured lines are single strings played alone.' : '';
-    waveCap.textContent = `${VIEW_NAMES.wave} 3.5 cycles of the fundamental; the bright line is the sum.${own}`;
+    waveCap.textContent = `${VIEW_NAMES.wave} Window: ${shown}; the bright line is the sum.${own}`;
     specCap.textContent = `${VIEW_NAMES.spectrum} Frequency axis ${axisCaption()}, level in dBFS, one bar per harmonic.`;
     gramCap.textContent = `${VIEW_NAMES.gram} The last 10 seconds, frequency axis ${axisCaption()}. It fills while the tone plays and clears when the axis changes.`;
     const lead = leadN(params);
@@ -1882,7 +1875,9 @@ export function createHarmonicsCard(env = {}) {
     });
     sourceSeg.paint();
     rangeSeg.paint();
+    cyclesSeg.paint();
     const synthOn = source === 'synth';
+    cyclesField.hidden = !synthOn;
     ctlBox.hidden = !synthOn;
     stringsNote.hidden = !synthOn;
     partsField.hidden = !synthOn;
@@ -1954,14 +1949,14 @@ export function createHarmonicsCard(env = {}) {
     const rows = rowsNow();
     const points = Math.max(32, Math.round(g.w - 44));
     const withStrings = eachShown();
-    const data = computedWave(rows, points, CYCLES, stringOffsets(params.strings, params.detune), withStrings);
+    const data = computedWave(rows, points, cycles, stringOffsets(params.strings, params.detune), withStrings);
     let sum = data.sum;
     if (f) {
       f.an.getFloatTimeDomainData(f.b.time);
       if (isMuted(params)) sum = levelMatched(sum, f.b.time, rows);
-      else sum = liveWave(f.b.time, f.sr, params.freq, points) ?? (params.decay && isSilent(f.b.time) ? new Float32Array(points) : sum);
+      else sum = liveWave(f.b.time, f.sr, params.freq, points, cycles) ?? (params.decay && isSilent(f.b.time) ? new Float32Array(points) : sum);
     }
-    drawWaveView(g, currentColors(), { sum, parts: data.parts, strings: withStrings ? data.strings : [], rows, cycles: CYCLES, freq: params.freq }, showParts);
+    drawWaveView(g, currentColors(), { sum, parts: data.parts, strings: withStrings ? data.strings : [], rows, cycles, freq: params.freq }, showParts);
   }
 
   function beatingFor(cols) {
@@ -2253,6 +2248,13 @@ export function createHarmonicsCard(env = {}) {
     if (next === liveMax || !LIVE_RANGES.includes(next)) return;
     liveMax = next;
     refreshAxis();
+  }
+
+  function setCycles(next) {
+    if (next === cycles || !CYCLES_CHOICES.includes(next)) return;
+    cycles = next;
+    paintOutputs();
+    paintWave();
   }
 
   function setSource(next) {
