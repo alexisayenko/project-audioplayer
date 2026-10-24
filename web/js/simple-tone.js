@@ -2,7 +2,8 @@ import { el } from './dom.js';
 import { icon } from './icons.js';
 import { segmented } from './segmented.js';
 
-export const TITLE = 'Simple tone';
+export const TITLE = 'Primitive';
+export const PRIMITIVE_NOTE = 'A primitive sound: one sine wave, one frequency, H1 only. It models a speaker cone driven by an electrical signal.';
 export const INTRO = 'The four numbers that describe a sound from a speaker. Set them, press Play and hear a pure sine tone.';
 export const MIN_HZ = 20;
 export const MAX_HZ = 20000;
@@ -264,6 +265,7 @@ export function createSimpleCard(env = {}) {
 
   const node = el('section', { class: 'card hm-card sm-card', 'aria-label': TITLE },
     el('h2', { class: 't-headline' }, TITLE),
+    el('p', { class: 'hm-cap muted t-caption' }, PRIMITIVE_NOTE),
     el('p', { class: 'hm-cap muted t-caption' }, INTRO),
     el('div', { class: 'sm-ctl' },
       field(`${uid}-fn`, 'Frequency (Hz)', el('div', { class: 'hm-freq' }, freqNum, noteOut), freqRange),

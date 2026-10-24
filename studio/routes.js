@@ -3,7 +3,7 @@ export const GROUPS = [
     id: 'synthesize',
     label: 'Synthesize',
     pages: [
-      { id: 'synthesize/simple', label: 'Simple tone' },
+      { id: 'synthesize/simple', label: 'Primitive' },
       { id: 'synthesize/chordophones', label: 'Chordophones' },
       { id: 'synthesize/aerophones', label: 'Aerophones' },
       { id: 'synthesize/membranophones', label: 'Membranophones' },

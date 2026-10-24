@@ -26,7 +26,7 @@ test('STU-006: six routes, #/synthesize/simple is the default, the old two-page 
   assert.equal(pageFromHash('#/analyze/bogus'), 'synthesize/simple');
   assert.equal(pageFromHash('#/studio/tools'), 'synthesize/simple');
   assert.deepEqual(PAGES.map((p) => [p.group, p.label, p.hash]), [
-    ['Synthesize', 'Simple tone', '#/synthesize/simple'],
+    ['Synthesize', 'Primitive', '#/synthesize/simple'],
     ['Synthesize', 'Chordophones', '#/synthesize/chordophones'],
     ['Synthesize', 'Aerophones', '#/synthesize/aerophones'],
     ['Synthesize', 'Membranophones', '#/synthesize/membranophones'],
