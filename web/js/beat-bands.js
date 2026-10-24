@@ -2,9 +2,9 @@ export const BAND_COUNTS = [4, 6, 8, 12];
 export const DEFAULT_BAND_COUNT = 6;
 export const LOW_LANE_MAX_HZ = 250;
 export const LANE_MIN_PX = 18;
-export const LANE_PX = 34;
-export const BANDS_H_MIN = 160;
-export const BANDS_H_MAX = 440;
+export const LANE_PX = 102;
+export const BANDS_H_MIN = 480;
+export const BANDS_H_MAX = 1320;
 export const BANDS_FOOT = 16;
 
 export function bandRangeText(band) {

@@ -42,10 +42,10 @@ test('WEB-191: the low lanes are the leading lanes whose upper edge is at most 2
   }
 });
 
-test('WEB-191: the canvas height follows the band count within 160 to 440 px and each lane stays at least 18 px', () => {
-  assert.deepEqual(BAND_COUNTS.map(bandsHeight), [160, 204, 272, 408]);
-  assert.equal(bandsHeight(20), 440);
-  assert.equal(bandsHeight(1), 160);
+test('WEB-191: the canvas height follows the band count within 480 to 1320 px and each lane stays at least 18 px', () => {
+  assert.deepEqual(BAND_COUNTS.map(bandsHeight), [480, 612, 816, 1224]);
+  assert.equal(bandsHeight(20), 1320);
+  assert.equal(bandsHeight(1), 480);
   for (const n of BAND_COUNTS) assert.ok(laneHeight(bandsHeight(n), n) >= LANE_MIN_PX, String(n));
 });
 

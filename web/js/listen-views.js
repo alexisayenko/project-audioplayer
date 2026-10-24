@@ -1426,7 +1426,7 @@ export function createBandsView({ uid, colors, feed, note = BEAT_NOTE, count = D
         el('span', { class: 'hm-check' }, normBox, el('label', { htmlFor: `${uid}-nb` }, 'Normalize per band')))),
     stage,
     caption);
-  stage.style.height = `${bandsHeight(bandCount)}px`;
+  stage.style.setProperty('--bands-h', `${bandsHeight(bandCount)}px`);
   countSeg.paint();
 
   function setCount(next) {
@@ -1441,7 +1441,7 @@ export function createBandsView({ uid, colors, feed, note = BEAT_NOTE, count = D
     beatBins = 0;
     beatAt = 0;
     grid = null;
-    stage.style.height = `${bandsHeight(next)}px`;
+    stage.style.setProperty('--bands-h', `${bandsHeight(next)}px`);
     countSeg.paint();
     describe(what);
     paint();
