@@ -2,7 +2,7 @@
 
 What shipped, newest first. One line each; the web UI and server are live at https://electrophone.cc. Everything listed here is deployed except the sections marked "built, not deployed" (the 2026-10-14 release went out once the SSH access in [task-0027](tasks/task-0027.md) was restored; the live visualizer files match `origin/main` as of 2026-10-15). Why: [tech/decisions.md](tech/decisions.md); runbook: [tech/deploy.md](tech/deploy.md).
 
-## 2026-10-24 (Studio tools site, phase 3, main app drops Analyze and Synthesize, web, built, not deployed)
+## 2026-10-24 (Studio tools site, phase 3, main app drops Analyze and Synthesize, web, deployed as `15a88f4`)
 
 - Web (task-0114 phase 3, STU-016, WEB-150, WEB-175; owner decision GU1; no tests run, `node --check`, a local 375 px page and a real redirect from a local copy of the app only; test assertions edited in `studio-nav.test.mjs`, `studio.test.mjs`, `studio-tools.test.mjs` and `simple-tone.test.mjs`, not run): the main app's Studio page is Modify only, with no tab bar, and ends with the link "Studio tools: analyze and synthesize sound →" to https://studio.electrophone.cc/. `#/studio/tools` and `#/studio/analyze` redirect (`location.replace`) to `https://studio.electrophone.cc/#/analyze`, `#/studio/simple` and `#/studio/synthesize` to `#/synthesize`. The `studio-tools` and `simple-tone` chunks are gone from `web/dist` (JavaScript 881 kB to 804 kB); the shared modules stay in `web/js` for the site. No server change (the main app sets no CSP).
 
