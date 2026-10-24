@@ -1,0 +1,110 @@
+#if os(iOS)
+import SwiftUI
+import UIKit
+
+/// Tools screen: a list of tool cards. First card: Live BPM (microphone). More tools (task-0110 to task-0112) get their own cards here.
+struct ToolsView: View {
+    var isVisible = true
+
+    @EnvironmentObject var player: PlayerService
+    @Environment(\.scenePhase) private var scenePhase
+    @StateObject private var mic = MicBPMModel()
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: DS.Space.space3) {
+                LiveBPMCard(mic: mic)
+            }
+            .padding(.horizontal, DS.Space.space4).padding(.top, DS.Space.space2).padding(.bottom, DS.Space.space4)
+        }
+        .safeAreaInset(edge: .top, spacing: 0) {
+            ScreenHeader(title: "Tools").padding(.horizontal, DS.Space.space4).padding(.top, DS.Space.space2)
+                .background(DS.Color.ground)
+        }
+        .dsGround()
+        .dynamicTypeSize(...DynamicTypeSize.accessibility2)
+        .onAppear { mic.isPlayerPlaying = { [weak player] in player?.isPlaying ?? false } }
+        .onChange(of: isVisible) { _, visible in if !visible { mic.stop() } }
+        .onChange(of: scenePhase) { _, phase in if phase == .background { mic.stop(.backgrounded) } }
+        .onDisappear { mic.stop() }
+    }
+}
+
+private struct LiveBPMCard: View {
+    @ObservedObject var mic: MicBPMModel
+    @Environment(\.openURL) private var openURL
+    @Environment(\.colorScheme) private var scheme
+
+    private var badgeText: String {
+        let label = BPMLabel.live(mic.running ? mic.bpm : nil)
+        return label.isEmpty ? LiveBPMConst.idleLabel : label
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: DS.Space.space2) {
+            SectionLabel("Live BPM (microphone)")
+            VStack(alignment: .leading, spacing: DS.Space.space3) {
+                HStack(alignment: .center, spacing: DS.Space.space3) {
+                    badge
+                    Spacer(minLength: DS.Space.space2)
+                    toggleButton
+                }
+                meter
+                Text(mic.stateLine).font(T.subhead).foregroundStyle(mic.isProblem ? DS.Color.powerText : DS.Color.inkMuted)
+                    .accessibilityAddTraits(.updatesFrequently)
+                if mic.phase == .denied {
+                    Button("Open Settings") {
+                        if let url = URL(string: UIApplication.openSettingsURLString) { openURL(url) }
+                    }
+                    .buttonStyle(DSButtonStyle(kind: .outline))
+                }
+                Text("Hears the phone speaker through the microphone. Not headphones.").dsCaption()
+            }
+            .padding(DS.Space.space4)
+            .frame(maxWidth: .infinity, alignment: .leading).dsSlab()
+        }
+    }
+
+    private var badge: some View {
+        HStack(alignment: .firstTextBaseline, spacing: DS.Space.space1) {
+            Text(badgeText).font(.system(size: 40, weight: .bold, design: .monospaced)).foregroundStyle(DS.Color.ink)
+                .lineLimit(1).minimumScaleFactor(0.5)
+            Text("BPM").font(T.caption.weight(.semibold)).foregroundStyle(DS.Color.inkMuted)
+        }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(mic.running && mic.bpm != nil ? "BPM \(BPMLabel.live(mic.bpm))" : "BPM not detected")
+    }
+
+    private var toggleButton: some View {
+        Button { mic.toggle() } label: {
+            Text(mic.running ? "Stop" : "Start")
+                .font(T.subhead.weight(.semibold))
+                .foregroundStyle(mic.running ? DS.Color.accentInk : scheme.onStrong)
+                .padding(.horizontal, DS.Space.space5)
+                .frame(minWidth: 96, minHeight: DS.Space.hit)
+                .background {
+                    if mic.running { Capsule().stroke(DS.Color.accentInk, lineWidth: 1.5) } else { Capsule().fill(scheme.strongFill) }
+                }
+                .contentShape(Capsule())
+        }
+        .buttonStyle(.plain)
+        .disabled(mic.busy)
+        .opacity(mic.busy ? 0.4 : 1)
+        .accessibilityLabel(mic.running ? "Stop listening" : "Start listening")
+    }
+
+    private var meter: some View {
+        GeometryReader { geo in
+            ZStack(alignment: .leading) {
+                Capsule().fill(DS.Color.surfaceSunken)
+                Capsule().fill(scheme.strongFill).frame(width: geo.size.width * mic.level)
+            }
+        }
+        .frame(height: 8)
+        .animation(.linear(duration: 0.1), value: mic.level)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("Microphone level")
+        .accessibilityValue("\(Int((mic.level * 100).rounded())) percent")
+    }
+}
+#endif

@@ -59,6 +59,7 @@ targets:
         CFBundleShortVersionString: $(MARKETING_VERSION)
         UILaunchScreen: {}
         UIBackgroundModes: [audio]
+        NSMicrophoneUsageDescription: Electrophone listens through the microphone only while you use Tools such as Live BPM.
         UIFileSharingEnabled: true
         LSSupportsOpeningDocumentsInPlace: true
         ITSAppUsesNonExemptEncryption: false

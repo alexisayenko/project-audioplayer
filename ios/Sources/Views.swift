@@ -1,7 +1,7 @@
 import SwiftUI
 
 enum AppTab: Hashable, CaseIterable {
-    case library, playback, playlists, statistics, settings
+    case library, playback, playlists, statistics, tools, settings
 
     var title: String {
         switch self {
@@ -9,6 +9,7 @@ enum AppTab: Hashable, CaseIterable {
         case .playback: "Now playing"
         case .playlists: "Playlists"
         case .statistics: "Statistics"
+        case .tools: "Tools"
         case .settings: "Settings"
         }
     }
@@ -18,6 +19,7 @@ enum AppTab: Hashable, CaseIterable {
         case .library: "books.vertical"
         case .playlists: "music.note.list"
         case .statistics: "chart.xyaxis.line"
+        case .tools: "wrench.and.screwdriver"
         case .settings: "gearshape"
         }
     }
@@ -42,6 +44,7 @@ struct RootView: View {
             page(.playback) { PlaybackView() }
             page(.playlists) { PlaylistsView() }
             page(.statistics) { statistics }
+            page(.tools) { ToolsView(isVisible: tab == .tools) }
             page(.settings) { SettingsView() }
         }
         .environment(\.openMenu, { menuOpen = true })

@@ -38,6 +38,20 @@ enum PlatformAudio {
         #endif
     }
 
+    /// Back to the player's session after a microphone tool: stays active while a song plays, otherwise lets other apps resume.
+    static func restorePlayback(playerIsPlaying: Bool) {
+        #if os(iOS)
+        let session = AVAudioSession.sharedInstance()
+        if playerIsPlaying {
+            try? session.setCategory(.playback, mode: .default)
+            try? session.setActive(true)
+        } else {
+            try? session.setActive(false, options: .notifyOthersOnDeactivation)
+            try? session.setCategory(.playback, mode: .default)
+        }
+        #endif
+    }
+
     static func activate() {
         #if os(iOS)
         try? AVAudioSession.sharedInstance().setActive(true)
