@@ -2,7 +2,7 @@
 
 What shipped, newest first. One line each; the web UI and server are live at https://electrophone.cc. Everything listed here is deployed except the sections marked "built, not deployed" (the 2026-10-14 release went out once the SSH access in [task-0027](tasks/task-0027.md) was restored; the live visualizer files match `origin/main` as of 2026-10-15). Why: [tech/decisions.md](tech/decisions.md); runbook: [tech/deploy.md](tech/deploy.md).
 
-## 2026-10-25 (Studio Beat bands three times taller, built, not deployed)
+## 2026-10-25 (Studio Beat bands three times taller, deployed to studio.electrophone.cc and electrophone.cc as `f879463`; the main app's only change is the stylesheet)
 
 - Web (WEB-191, STU-032; owner request "Beat bands: make 3x taller"; no tests run, `node --check`, the build and the Browser pane with a fake microphone only): the Beat bands canvas on Rhythm and Chordophones is clamp(480 px, bands x 102 px, 1320 px) high (480, 612, 816 and 1224 px for 4, 6, 8 and 12 bands, was 160, 204, 272 and 408), capped at max(70vh, 640 px) on phones; lanes, labels, ticks and the tempo grid scale with it.
 
