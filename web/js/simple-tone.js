@@ -30,7 +30,7 @@ export const ABOUT = [
 export const GLOSSARY_TITLE = 'Sound, tone, note: what is what?';
 export const GLOSSARY = [
   ['Sound', 'any air pressure vibration you can hear.'],
-  ['Oscillation', 'any repeating back-and-forth change, such as a pendulum, a voltage or air pressure.'],
+  ['Oscillation', 'any repeating back-and-forth change, such as a pendulum, a voltage or air pressure. From Latin oscillare, "to swing" (English since about 1726).'],
   ['Vibration', 'an oscillation of a physical object, such as a string or a speaker cone. The cone vibrates; the air pressure it creates oscillates.'],
   ['Frequency', 'how many swings per second (Hz), a number you can measure and set.'],
   ['Pitch', 'how high or low a sound seems to you; it follows the fundamental frequency.'],
