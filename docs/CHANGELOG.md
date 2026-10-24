@@ -2,9 +2,9 @@
 
 What shipped, newest first. One line each; the web UI and server are live at https://electrophone.cc. Everything listed here is deployed except the sections marked "built, not deployed" (the 2026-10-14 release went out once the SSH access in [task-0027](tasks/task-0027.md) was restored; the live visualizer files match `origin/main` as of 2026-10-15). Why: [tech/decisions.md](tech/decisions.md); runbook: [tech/deploy.md](tech/deploy.md).
 
-## 2026-10-24 (Add songs shortcut on the playlist list rows, web, built, not deployed)
+## 2026-10-24 (Add songs shortcut on the playlist list rows, web, deployed)
 
-- Web (owner, 2026-10-24: he looked for the add-songs search box on the Playlists list and found it only on a playlist's page; the shortcut was offered and accepted; [task-0058](tasks/task-0058.md), PLS-134; no tests run or written by the owner's rule, `node --check` and a browser check at 500 and 375 px against a local server with fixture songs and two playlists): every row of the Playlists list has a plus button ("Add songs to <name>", before the pencil and the trash, same size, 44 px hit area). It opens that playlist and puts the cursor in the "Add songs by title or artist" box (`#/playlists/<id>?add=1`, removed from the address once used, so Back and reload do not focus it again). Clicking the row or the name still just opens the playlist.
+- Web (owner, 2026-10-24: he looked for the add-songs search box on the Playlists list and found it only on a playlist's page; the shortcut was offered and accepted; deployed 2026-10-24 as `e587442`; [task-0058](tasks/task-0058.md), PLS-134; no tests run or written by the owner's rule, `node --check` and a browser check at 500 and 375 px against a local server with fixture songs and two playlists): every row of the Playlists list has a plus button ("Add songs to <name>", before the pencil and the trash, same size, 44 px hit area). It opens that playlist and puts the cursor in the "Add songs by title or artist" box (`#/playlists/<id>?add=1`, removed from the address once used, so Back and reload do not focus it again). Clicking the row or the name still just opens the playlist.
 
 ## 2026-10-24 (sidebar text no longer reflows while it collapses and expands, deployed)
 
