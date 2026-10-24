@@ -93,7 +93,7 @@ test('STU-027: freqAt is the inverse of freqPos on the linear and the log axis, 
 
 test('STU-027: specX and specFreq map a pixel to a frequency and back with the same geometry as the grid', () => {
   const geo = v.specGeo(375, 210);
-  assert.deepEqual(geo, { left: 34, top: 30, plotW: 333, plotH: 162 });
+  assert.deepEqual(geo, { left: 34, top: 30 + v.H1_HINT_ROW_PX, plotW: 333, plotH: 210 - 30 - v.H1_HINT_ROW_PX - 18 });
   const lin = { axis: 'linear', max: 5000 };
   const log = { axis: 'log', max: 20000 };
   assert.equal(v.specX(0, lin, geo), 34);
@@ -233,12 +233,13 @@ test('WEB-205: the trail is stored per analyser bin, so curveLevels maps it thro
 test('WEB-206: pitchText reads the pitch, the note and the harmonics found, or says why there is none', () => {
   const items = [{ n: 1, freq: 220.4, found: true }, { n: 2, freq: 440.8, found: true }, { n: 3, freq: 661.2, found: false }, { n: 4, freq: 881.6, found: true }];
   const lin = v.liveAxisRange('linear', 2000);
-  assert.equal(v.pitchText(true, 220.4, items, lin), 'Pitch: 220.4 Hz (A3 +3 cents), harmonics found: 1,2,4');
+  const why = ` ${v.H1_EXPLAIN}`;
+  assert.equal(v.pitchText(true, 220.4, items, lin), `Pitch: 220.4 Hz (A3 +3 cents), harmonics found: 1,2,4.${why}`);
   assert.equal(v.pitchText(false, 0, [], lin), 'No single pitch (polyphonic or noisy sound)');
   assert.equal(v.pitchText(true, 2030, items, lin), 'Pitch outside the visible range');
-  assert.equal(v.pitchText(true, 220, [{ n: 1, freq: 220, found: false }], lin), 'Pitch: 220 Hz (A3 +0 cents), harmonics found: none');
-  assert.equal(v.pitchText(true, 220, [{ n: 1, freq: 220, found: true }], lin, 440), 'Pitch: 220 Hz (A3 +0 cents), harmonics found: 1; lower than the loudest peak (440 Hz)');
-  assert.equal(v.pitchText(true, 220, [{ n: 1, freq: 220, found: true }], lin, 220), 'Pitch: 220 Hz (A3 +0 cents), harmonics found: 1');
+  assert.equal(v.pitchText(true, 220, [{ n: 1, freq: 220, found: false }], lin), `Pitch: 220 Hz (A3 +0 cents), harmonics found: none.${why}`);
+  assert.equal(v.pitchText(true, 220, [{ n: 1, freq: 220, found: true }], lin, 440), `Pitch: 220 Hz (A3 +0 cents), harmonics found: 1; lower than the loudest peak (440 Hz).${why}`);
+  assert.equal(v.pitchText(true, 220, [{ n: 1, freq: 220, found: true }], lin, 220), `Pitch: 220 Hz (A3 +0 cents), harmonics found: 1.${why}`);
   assert.equal(v.loudestPeakHz({ freq: 166 }, 167.8), 166);
   assert.equal(v.loudestPeakHz({ freq: 900 }, 167.8), 167.8);
   assert.equal(v.loudestPeakHz(null, 167.8), 167.8);
@@ -257,6 +258,17 @@ test('WEB-206: harmonic markers follow the axis: only ticks inside the range, an
   assert.equal(hit.title, 'H3 · 660 Hz');
   assert.equal(hit.x, bars[2].x);
   assert.deepEqual(v.harmonicBars({ items, alpha: 0 }, geo, lin, levels), []);
+});
+
+test('WEB-206: h1HintText picks the long hint when it clears H2 and fits, the short one otherwise, and drops it when nothing fits the canvas', () => {
+  const measure = (t) => t.length * 5;
+  assert.equal(v.h1HintText(measure, 300, 700, Infinity).text, v.H1_HINTS[0]);
+  assert.equal(v.h1HintText(measure, 300, 375, Infinity).text, 'fundamental');
+  assert.equal(v.h1HintText(measure, 80, 700, 130).text, 'fundamental');
+  assert.equal(v.h1HintText(measure, 80, 700, 100).text, 'fundamental');
+  assert.equal(v.h1HintText(measure, 10, 50, Infinity), null);
+  assert.equal(v.h1HintText(measure, 5, 700, Infinity).left, 2);
+  assert.equal(v.h1HintText(measure, 690, 700, Infinity).left + 55 <= 698, true);
 });
 
 const range16 = () => Array.from({ length: 16 }, (_, i) => i + 1);

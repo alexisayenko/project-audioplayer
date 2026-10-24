@@ -2,6 +2,10 @@
 
 What shipped, newest first. One line each; the web UI and server are live at https://electrophone.cc. Everything listed here is deployed except the sections marked "built, not deployed" (the 2026-10-14 release went out once the SSH access in [task-0027](tasks/task-0027.md) was restored; the live visualizer files match `origin/main` as of 2026-10-15). Why: [tech/decisions.md](tech/decisions.md); runbook: [tech/deploy.md](tech/deploy.md).
 
+## 2026-10-25 (Studio Spectrum H1 hint, Mark harmonics on and Log axis by default, built, not yet deployed; the main app is unchanged)
+
+- Web (WEB-206, STU-029, WEB-188, task-0107; owner decisions HD2, HD3, "Mark harmonics is ON by default" and HF1 "the Listen frequency axis defaults to Log, 20 Hz to 20 kHz; Chordophones keeps Linear"; no tests run, `node --check`, the build and the Browser pane with a fake 220 Hz sawtooth microphone at desktop width and 375 px only): the Listen Spectrum starts with "Mark harmonics" on (the Pitch readout is visible from the start) and the Log axis, and draws a muted "fundamental" hint (the long "H1 · fundamental: the pitch you hear" when it clears H2 on a wide canvas) in its own row above the H1 tick; the hover box moved below the tick row so it never overlaps it; the "Pitch:" readout adds "H1 is the fundamental: the pitch you hear. H2 and up are its overtones." and its "cents" word links to the new glossary entry "Cent".
+
 ## 2026-10-25 (Studio Trails on by default, Trail length 0.5 to 60 s and 10 s default, deployed to studio.electrophone.cc as `c12772d`; the main app is unchanged, its bundle did not change)
 
 - Web (WEB-205, STU-028; owner: Trails on by default, Trail length up to 60 s, default 10 s; no tests run, `node --check`, the build and the Browser pane only): on Listen and Chordophones the Trails switch starts on and the "Trail length" counter starts at 10 s (4 dB/s) and runs from 0.5 to 60 s in steps of 0.5 (0.67 dB/s at the maximum; the time-stamped peak model keeps the slow fall exact); the pages still keep the user's changes while open. `listen-views.test.mjs` adjusted, not run.

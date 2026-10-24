@@ -83,7 +83,8 @@ export function freqAt(pos, axis, max) {
   return axis === 'log' ? SPECTRUM_MIN_HZ * (SPECTRUM_MAX_HZ / SPECTRUM_MIN_HZ) ** p : max * p;
 }
 
-export const SPEC_PAD = { left: 34, right: 8, top: 30, bottom: 18 };
+export const H1_HINT_ROW_PX = 12;
+export const SPEC_PAD = { left: 34, right: 8, top: 30 + H1_HINT_ROW_PX, bottom: 18 };
 
 export function specGeo(w, h) {
   const { left, right, top, bottom } = SPEC_PAD;
@@ -617,20 +618,21 @@ export function drawSpecHover(g, colors, geo, hover) {
   ctx.save();
   ctx.lineWidth = 1;
   ctx.strokeStyle = css(colors.ink, 0.55);
-  ctx.beginPath(); ctx.moveTo(x, 2); ctx.lineTo(x, geo.top + geo.plotH); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(x, geo.top); ctx.lineTo(x, geo.top + geo.plotH); ctx.stroke();
   ctx.font = `10px ${colors.font}`;
   ctx.textAlign = 'left';
   ctx.textBaseline = 'alphabetic';
   const bw = Math.ceil(Math.max(ctx.measureText(hover.title).width, ctx.measureText(hover.sub).width)) + 10;
   const bh = 30;
+  const by = geo.top + 4;
   const bx = x + 6 + bw <= w - 2 ? x + 6 : Math.max(2, x - 6 - bw);
   ctx.fillStyle = css(colors.surface, 0.94);
-  ctx.fillRect(bx, 2, bw, bh);
+  ctx.fillRect(bx, by, bw, bh);
   ctx.strokeStyle = css(colors.line);
-  ctx.strokeRect(bx + 0.5, 2.5, bw - 1, bh - 1);
+  ctx.strokeRect(bx + 0.5, by + 0.5, bw - 1, bh - 1);
   ctx.fillStyle = css(colors.ink);
-  ctx.fillText(hover.title, bx + 5, 14);
-  ctx.fillText(hover.sub, bx + 5, 27);
+  ctx.fillText(hover.title, bx + 5, by + 12);
+  ctx.fillText(hover.sub, bx + 5, by + 25);
   ctx.restore();
 }
 
@@ -677,6 +679,23 @@ export const NO_PITCH_TEXT = 'No single pitch (polyphonic or noisy sound)';
 export const PITCH_IDLE_TEXT = 'Pitch: -';
 export const PITCH_RANGE_TEXT = 'Pitch outside the visible range';
 export const MARK_TICK_PX = 8;
+export const H1_EXPLAIN = 'H1 is the fundamental: the pitch you hear. H2 and up are its overtones.';
+export const H1_HINTS = ['H1 · fundamental: the pitch you hear', 'fundamental'];
+export const CENT_HREF = '#/glossary/cent';
+export const H1_HINT_GAP_PX = 6;
+export const H1_HINT_LONG_MIN_W = 480;
+
+export function h1HintText(measure, x, w, h2Left = Infinity) {
+  const [long, short] = H1_HINTS;
+  for (const text of [long, short]) {
+    const tw = measure(text);
+    const left = clamp(x - tw / 2, 2, Math.max(2, w - 2 - tw));
+    if (left + tw > w - 2) continue;
+    if (text === long && (w < H1_HINT_LONG_MIN_W || left + tw + H1_HINT_GAP_PX > h2Left)) continue;
+    return { text, left };
+  }
+  return null;
+}
 
 export function visibleMarks(items, range) {
   return (items ?? []).filter((m) => m.freq >= range.min && m.freq <= range.max);
@@ -686,7 +705,7 @@ export function pitchText(locked, f0, items, range, loudest = 0) {
   if (!locked) return NO_PITCH_TEXT;
   if (f0 < range.min || f0 > range.max) return PITCH_RANGE_TEXT;
   const lower = loudest > f0 * 1.5 ? `; lower than the loudest peak (${fmtHz(loudest)})` : '';
-  return `Pitch: ${fmtHz(f0)} (${noteInfo(f0).text}), harmonics found: ${foundList(visibleMarks(items, range))}${lower}`;
+  return `Pitch: ${fmtHz(f0)} (${noteInfo(f0).text}), harmonics found: ${foundList(visibleMarks(items, range))}${lower}. ${H1_EXPLAIN}`;
 }
 
 export function loudestPeakHz(peak, raw) {
@@ -712,7 +731,10 @@ export function drawHarmonicMarks(g, colors, geo, range, marks) {
   ctx.textAlign = 'center';
   ctx.textBaseline = 'alphabetic';
   let lastLabel = -Infinity;
+  let h2Left = Infinity;
+  let h1X = null;
   for (const m of visibleMarks(marks.items, range)) {
+    if (m.n === 1) h1X = Math.round(geo.xOf(m.freq));
     const x = Math.round(geo.xOf(m.freq));
     if (m.found) {
       ctx.strokeStyle = css(colors.ink);
@@ -725,10 +747,19 @@ export function drawHarmonicMarks(g, colors, geo, range, marks) {
     }
     const text = `H${m.n}`;
     const half = ctx.measureText(text).width / 2;
+    if (m.n === 2) h2Left = x - half;
     if (x - lastLabel < HARMONIC_LABEL_GAP_PX || x - half < 0 || x + half > w - 2) continue;
     lastLabel = x;
     ctx.fillStyle = m.found ? css(colors.ink) : css(colors.muted, 0.8);
     ctx.fillText(text, x, top - 3);
+  }
+  if (h1X !== null) {
+    const hint = h1HintText((t) => ctx.measureText(t).width, h1X, w, h2Left);
+    if (hint) {
+      ctx.fillStyle = css(colors.muted);
+      ctx.textAlign = 'left';
+      ctx.fillText(hint.text, hint.left, top - 3 - H1_HINT_ROW_PX);
+    }
   }
   ctx.restore();
 }
@@ -1054,13 +1085,13 @@ export function createLiveSpectrum({ uid, colors, now, feed, range, axisControl,
   const peakOut = el('p', { class: 'hm-peak t-subhead', role: 'status', 'aria-live': 'off' }, peakText(null));
   const trails = createTrails();
   const trailControl = createTrailControl({ uid, trails, onChange: () => { describe(); paint(); } });
-  let marking = false;
+  let marking = true;
   let pitchAt = -Infinity;
   let pitchShown = '';
   let items = [];
   const tracker = createPitchTracker();
   const markControl = createMarkControl({ uid, get: () => marking, set: (next) => setMarking(next) });
-  const pitchOut = el('p', { class: 'hm-peak t-subhead', role: 'status', 'aria-live': 'off', hidden: true }, PITCH_IDLE_TEXT);
+  const pitchOut = el('p', { class: 'hm-peak t-subhead', role: 'status', 'aria-live': 'off' }, PITCH_IDLE_TEXT);
   const node = el('div', { class: 'hm-block' },
     el('div', { class: 'hm-head' }, el('h3', { class: 't-subhead' }, 'Spectrum'), el('div', { class: 'hm-checks' }, trailControl.node, markControl.node, axisControl.node)),
     view(canvas, 'hm-spec'),
@@ -1079,7 +1110,9 @@ export function createLiveSpectrum({ uid, colors, now, feed, range, axisControl,
   function showPitch(text) {
     if (text === pitchShown) return;
     pitchShown = text;
-    pitchOut.textContent = text;
+    const m = text.match(/^(.*? )(cents)(\).*)$/s);
+    if (m) pitchOut.replaceChildren(m[1], el('a', { href: CENT_HREF, target: '_blank', rel: 'noopener', title: 'What is a cent? (opens the glossary in a new tab)' }, m[2]), m[3]);
+    else pitchOut.textContent = text;
   }
 
   function markState(f, data) {
