@@ -218,7 +218,7 @@ ADR-0008. App Store Connect record "Gramophone Offline" (now Electrophone) (bund
 `com.alexisayenko.audioplayer`, SKU `gramophone-ios`), internal group "Alex".
 
 1. Raise `CURRENT_PROJECT_VERSION` in `ios/project.yml` above every build
-   already uploaded (date-based; last uploaded 20261032, 2026-10-24, matches `ios/project.yml`), then `xcodegen`.
+   already uploaded (date-based; last uploaded 20261034, 2026-10-25, matches `ios/project.yml`), then `xcodegen`.
 2. `xcodebuild archive` the `AudioPlayer` scheme (Release, generic iOS device).
 3. `xcodebuild -exportArchive` with export options `method=app-store-connect`,
    `destination=upload`; it signs and uploads with the account signed in to
@@ -229,7 +229,7 @@ Builds expire after 90 days; re-upload.
 
 ## Known gaps
 
-- The iOS app is on TestFlight (build 20261032 uploaded 2026-10-24; Apple processing); its server flows (Add and download, edit with the shared form, sign-in, token-pill drag) are not yet tested on a device. The web token-pill drag and the shared form are tested by node unit tests, not in a real browser.
+- The iOS app is on TestFlight (build 20261034 uploaded 2026-10-25; processed); its server flows (Add and download, edit with the shared form, sign-in, token-pill drag) are not yet tested on a device. The web token-pill drag and the shared form are tested by node unit tests, not in a real browser.
 - iOS handling of the ADR-0012 `queued` job status is not done: [task-0016](../tasks/task-0016.md).
 - Server covers are kept offline on the phone since build 20261026 (not yet checked on a device).
 - `NSAllowsArbitraryLoads` is on in `project.yml`; the server is now HTTPS
