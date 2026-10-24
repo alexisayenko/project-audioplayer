@@ -2,6 +2,10 @@
 
 What shipped, newest first. One line each; the web UI and server are live at https://electrophone.cc. Everything listed here is deployed except the sections marked "built, not deployed" (the 2026-10-14 release went out once the SSH access in [task-0027](tasks/task-0027.md) was restored; the live visualizer files match `origin/main` as of 2026-10-15). Why: [tech/decisions.md](tech/decisions.md); runbook: [tech/deploy.md](tech/deploy.md).
 
+## 2026-10-24 (Studio tabs renamed, web, built, not deployed)
+
+- Web (WEB-150, WEB-175 to WEB-179, WEB-197 to WEB-201; owner request 2026-10-24; no tests run, `node --check` and a local check at desktop and 375 px only): the Studio tabs read Modify, Analyze and Synthesize (were Track, Tools and Simple), in the same order; the routes `#/studio`, `#/studio/tools` and `#/studio/simple` and the code names are unchanged, so existing links keep working.
+
 ## 2026-10-24 (harmonics lab: Mute H1, web, deployed as `4fcc4a6`)
 
 - Web (task-0106, WEB-202, ADR-0048 amended; owner decision GK, 2026-10-24; no tests run, `node --check`, a local Chromium page with a hook on oscillator, gain and analyser creation and a 375 px check only): a checkbox "Mute H1 (missing fundamental)" after "Number of harmonics" (disabled with "Needs 2 or more harmonics." at 1 harmonic) sets H1 to gain 0 while H2 to Hn keep their levels; the pitch stays at H1, which the one-line explainer says; the spectrum, list, spectrogram ticks and waveform show H1 as muted and the Beating view uses H2. Measured at 220 Hz with 8 harmonics: no analyser peak at 220 Hz, peaks at 440, 660 and 880 Hz unchanged, period 4.545 ms.

@@ -170,7 +170,7 @@ test('WEB-177: the engine adapter shows idle for silence and the engine value fo
   assert.equal(levelFraction(1), 1);
 });
 
-test('WEB-176: the Tools tab shows the temporary caption and the microphone card with no song and no player', async () => {
+test('WEB-176: the Analyze tab shows the temporary caption and the microphone card with no song and no player', async () => {
   const { env } = fakeEnv();
   const root = document.createElement('div');
   const dispose = renderStudio(root, { tab: 'tools', tools: env });

@@ -1,9 +1,9 @@
 import { el } from './dom.js';
 
 export const TABS = [
-  { id: 'track', label: 'Track', hash: '#/studio' },
-  { id: 'tools', label: 'Tools', hash: '#/studio/tools' },
-  { id: 'simple', label: 'Simple', hash: '#/studio/simple' },
+  { id: 'track', label: 'Modify', hash: '#/studio' },
+  { id: 'tools', label: 'Analyze', hash: '#/studio/tools' },
+  { id: 'simple', label: 'Synthesize', hash: '#/studio/simple' },
 ];
 
 export const tabFromHash = (hash) => {

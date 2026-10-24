@@ -123,7 +123,7 @@ test('WEB-200: a hidden page stops the tone', () => {
   card.dispose();
 });
 
-test('WEB-197: the Simple tab is loaded lazily, shown for the simple tab only', async () => {
+test('WEB-197: the Synthesize tab is loaded lazily, shown for the simple tab only', async () => {
   const root = document.createElement('div');
   const dispose = renderStudio(root, { tab: 'simple', loadSimple: () => import('./simple-tone.js'), simple: fakeCtx().env });
   await flush();
