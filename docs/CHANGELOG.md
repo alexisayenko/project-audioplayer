@@ -2,7 +2,7 @@
 
 What shipped, newest first. One line each; the web UI and server are live at https://electrophone.cc. Everything listed here is deployed except the sections marked "built, not deployed" (the 2026-10-14 release went out once the SSH access in [task-0027](tasks/task-0027.md) was restored; the live visualizer files match `origin/main` as of 2026-10-15). Why: [tech/decisions.md](tech/decisions.md); runbook: [tech/deploy.md](tech/deploy.md).
 
-## 2026-10-25 (Primitive oscilloscope: "Oscilloscope" heading and a "1 cycle = period = frequency = wavelength" bracket, built, not deployed)
+## 2026-10-25 (Primitive oscilloscope: "Oscilloscope" heading and a "1 cycle = period = frequency = wavelength" bracket, deployed to studio.electrophone.cc and the main app as `35f9aa1`)
 
 - Web (WEB-197, WEB-201, WEB-204, STU-006, STU-026; owner decision HI1; no tests run, `node --check`, the build and the Browser pane at desktop and 375 px only): the Primitive block "Waveform" is now "Oscilloscope" (subtitle "Waveform of the tone: time across, amplitude up, one cycle."), the canvas is 190 px tall and a bracket spans the visible cycle in its own row above the time labels with the live label "1 cycle = 2.27 ms = 440 Hz = 78 cm in air" (220 Hz: 4.55 ms, 1.56 m; 4000 Hz: 0.25 ms, 8.6 cm; short form "1 cycle · 2.27 ms · 440 Hz · 78 cm" at 480 px or less; "at 20 °C" in the caption, tooltip and aria-label). The dot and cone animation are unchanged. Glossary: new "Oscilloscope"; "Cycle and period" and "Wavelength" add f x wavelength = 343 m/s. `simple-tone.test.mjs` extended, not run.
 
