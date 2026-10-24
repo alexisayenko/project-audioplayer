@@ -15,12 +15,13 @@ iOS: TestFlight internal testing only. Web: open signup (Google or Apple), per-u
 - [`ios/`](ios/) — SwiftUI app
 - [`server/`](server/) — FastAPI + `yt-dlp` API; also serves the web UI
 - [`web/`](web/) — web UI (plain HTML/CSS/JS, no build step)
+- [`studio/`](studio/) — standalone static "Electrophone Studio" site (Analyze and Synthesize; built from the `web/js` modules, not deployed yet)
 
 Setup and release steps: [`docs/tech/architecture.md`](docs/tech/architecture.md). Live at https://electrophone.cc; deploy and rollback: [`docs/tech/deploy.md`](docs/tech/deploy.md) (`scripts/check.sh`, `scripts/deploy.sh`); what shipped: [`docs/CHANGELOG.md`](docs/CHANGELOG.md); requirements: [`docs/specs/`](docs/specs/README.md). Web pages: Library, Playback, Genres map, Song stats, Settings.
 
 ## Structure
 
-This repo today: `docs/`, `ios/`, `scripts/` (`check.sh`, `check-domain.sh`, `deploy.sh`, `sync-design-system.py`, `clean-titles.py`, `gen-countries.py`), `server/`, `web/`, plus `AGENTS.md`, `CLAUDE.md`, `README.md`, `LICENSE`. There is no `archive/` or `.github/` yet; the tree below is the general convention.
+This repo today: `docs/`, `ios/`, `scripts/` (`check.sh`, `check-domain.sh`, `deploy.sh`, `build-studio.mjs`, `deploy-studio.sh`, `sync-design-system.py`, `clean-titles.py`, `gen-countries.py`), `server/`, `studio/`, `web/`, plus `AGENTS.md`, `CLAUDE.md`, `README.md`, `LICENSE`. There is no `archive/` or `.github/` yet; the tree below is the general convention.
 
 ### Top-level layout
 

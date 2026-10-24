@@ -187,9 +187,15 @@ Check after saving (anonymous request): `curl -sI https://electrophone.cc/` twic
 
 `X-Forwarded-Host` is trusted only from a loopback or LAN peer. Sessions are host-only cookies: sign in again on each host. Steps: [domain-migration.md](domain-migration.md).
 
-## Studio site (planned)
+## Studio site
 
-Not built, not deployed ([ADR-0049](decisions.md), [task-0114](../tasks/task-0114.md), [studio-site.md](../specs/studio-site.md)). `https://studio.electrophone.cc` is a Cloudflare Pages project (Direct Upload) `electrophone-studio`, independent of perkunas and the tunnel. Plan: `scripts/deploy-studio.sh` runs `node scripts/build-studio.mjs`, then `wrangler pages deploy studio/dist --project-name electrophone-studio --branch main` with `CLOUDFLARE_API_TOKEN` sourced from `~/.config/cloudflare/token.env` (never printed). Needs the token permissions Account > Cloudflare Pages: Edit and Zone > DNS: Edit (not present on 2026-10-24). One-time setup, with owner approval: create the project, add the custom domain, a proxied CNAME `studio` -> `electrophone-studio.pages.dev`. Rollback: promote the previous deployment in Workers & Pages > electrophone-studio > Deployments. The zone's WAF custom rules and Browser Cache TTL also apply to this host.
+Built, not deployed ([ADR-0049](decisions.md), [task-0114](../tasks/task-0114.md), [studio-site.md](../specs/studio-site.md)). `https://studio.electrophone.cc` will be a Cloudflare Pages project (Direct Upload) `electrophone-studio`, independent of perkunas and the tunnel: static files, no server, no API.
+
+- Build: `node scripts/build-studio.mjs` bundles `studio/main.js` with the shared `web/js` modules (same pinned esbuild as the main app) and writes `studio/dist/` (git-ignored; hashed files in `assets/`, `index.html`, favicons, `_headers`, `robots.txt`). Local check: serve `studio/dist` with any static server (`python3 -m http.server <port> -d studio/dist`; it ignores `_headers`, so security headers and the CSP are only applied on Pages).
+- Deploy (from the PC; not run yet): `scripts/deploy-studio.sh` builds, then `npx wrangler pages deploy studio/dist --project-name electrophone-studio --branch main`. The token is read in a subshell from `~/.config/cloudflare/token.env` (`CLOUDFLARE_API_TOKEN`, never printed). `scripts/deploy-studio.sh --dry-run` only builds and lists the files.
+- Needs the owner (phase 2): add the token permissions Account > Cloudflare Pages: Edit and Zone > DNS: Edit (not present on 2026-10-24); approve the one-time setup: `wrangler pages project create electrophone-studio --production-branch main`, the custom domain `studio.electrophone.cc`, a proxied CNAME `studio` -> `electrophone-studio.pages.dev`. Do not run these earlier.
+- Check before the first deploy: the zone's Browser Cache TTL and WAF custom rules also apply to the new host (STU-015); then the microphone on `https://studio.electrophone.cc` at 375 px (the permission is per origin).
+- Rollback: promote the previous deployment in Workers & Pages > electrophone-studio > Deployments.
 
 ## Git sync timer
 

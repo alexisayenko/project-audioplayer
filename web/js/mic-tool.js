@@ -3,7 +3,8 @@ import { icon } from './icons.js';
 import { createMicBpm, rmsOf, levelFraction, MAX_RUN_MS, PUBLISH_MS, METER_MS } from './mic-bpm.js';
 
 export const TITLE = 'Live BPM (microphone)';
-export const CAPTION = 'Listens in this browser only. Nothing is recorded or uploaded. Works best when the music plays from a speaker. The player and this tool can run together.';
+export const CAPTION_STANDALONE = 'Listens in this browser only. Nothing is recorded or uploaded. Works best when the music plays from a speaker.';
+export const CAPTION = `${CAPTION_STANDALONE} The player and this tool can run together.`;
 export const IDLE_VALUE = '- - -';
 export const CONSTRAINTS = { audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false, channelCount: 1 } };
 export const DEVICE_GRACE_MS = 1500;
@@ -51,7 +52,7 @@ export function createMicCard(env = {}) {
     el('h2', { class: 't-headline' }, TITLE),
     el('div', { class: 'mt-row' }, badge, button),
     meter, state,
-    el('p', { class: 'mt-caption muted t-caption' }, CAPTION));
+    el('p', { class: 'mt-caption muted t-caption' }, env.standalone ? CAPTION_STANDALONE : CAPTION));
 
   function paintBpm(bpm) {
     value.textContent = bpm == null ? IDLE_VALUE : String(bpm);

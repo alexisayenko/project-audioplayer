@@ -13,8 +13,8 @@ export const tabFromHash = (hash) => {
 
 let refocus = false;
 
-export function studioTabs(active, go = (hash) => { globalThis.location.hash = hash; }) {
-  const buttons = TABS.map((t) => {
+export function studioTabs(active, go = (hash) => { globalThis.location.hash = hash; }, tabs = TABS) {
+  const buttons = tabs.map((t) => {
     const on = t.id === active;
     return el('button', {
       class: `seg-btn${on ? ' on' : ''}`, type: 'button', role: 'tab', id: `stu-tab-${t.id}`, 'aria-controls': `stu-${t.id}`,
@@ -24,11 +24,11 @@ export function studioTabs(active, go = (hash) => { globalThis.location.hash = h
   });
   const bar = el('div', { class: 'seg stu-tabs', role: 'tablist', 'aria-label': 'Studio view' }, ...buttons);
   bar.addEventListener('keydown', (e) => {
-    const at = TABS.findIndex((t) => t.id === active);
-    const next = { ArrowRight: at + 1, ArrowLeft: at - 1, Home: 0, End: TABS.length - 1 }[e.key];
+    const at = tabs.findIndex((t) => t.id === active);
+    const next = { ArrowRight: at + 1, ArrowLeft: at - 1, Home: 0, End: tabs.length - 1 }[e.key];
     if (next === undefined) return;
     e.preventDefault();
-    const to = TABS[(next + TABS.length) % TABS.length];
+    const to = tabs[(next + tabs.length) % tabs.length];
     if (to.id === active) return;
     refocus = true;
     go(to.hash);
@@ -38,7 +38,7 @@ export function studioTabs(active, go = (hash) => { globalThis.location.hash = h
     restoreFocus() {
       if (!refocus) return;
       refocus = false;
-      buttons[TABS.findIndex((t) => t.id === active)].focus();
+      buttons[tabs.findIndex((t) => t.id === active)].focus();
     },
   };
 }

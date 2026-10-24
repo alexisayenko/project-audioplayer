@@ -68,7 +68,9 @@ export const TEXT = {
 };
 export const SOURCES = ['synth', 'mic', 'player'];
 export const SOURCE_LABELS = { synth: 'Synth', mic: 'Microphone', player: 'Player' };
-export const SOURCE_NOTE = 'The frequency, harmonics, decay, piano and string controls apply to the Synth source only.';
+export const APP_URL = 'https://electrophone.cc/';
+export const PLAYER_NEEDS_APP = 'Player needs the Electrophone app';
+export const SOURCE_NOTE ='The frequency, harmonics, decay, piano and string controls apply to the Synth source only.';
 export const LIVE_RANGES = [2000, 5000, 10000];
 export const DEFAULT_LIVE_MAX = 5000;
 export const WAVE_MS = 40;
@@ -1635,9 +1637,16 @@ export function createHarmonicsCard(env = {}) {
     el('span', { id: `${uid}-al`, class: 'hm-lbl' }, 'Frequency axis'),
     axisGroup, rangeSeg.group);
   const sourceSeg = segmented(SOURCES.map((s) => [s, SOURCE_LABELS[s]]), () => source, (s) => setSource(s), { 'aria-labelledby': `${uid}-ol` });
+  const playerOff = playerIn.available === false;
+  const playerNote = el('p', { class: 'hm-cap muted t-caption', hidden: !playerOff }, 'Player needs the ', el('a', { href: APP_URL }, 'Electrophone app'));
+  if (playerOff) {
+    const btn = sourceSeg.group.children[SOURCES.indexOf('player')];
+    btn.disabled = true;
+    btn.title = PLAYER_NEEDS_APP;
+  }
   const sourceField = el('div', { class: 'hm-axis' },
     el('span', { id: `${uid}-ol`, class: 'hm-lbl' }, 'Source'),
-    sourceSeg.group);
+    sourceSeg.group, playerNote);
   const cyclesSeg = segmented(CYCLES_CHOICES.map((c) => [c, String(c)]), () => cycles, (c) => setCycles(c), { 'aria-labelledby': `${uid}-cl` });
   const cyclesField = el('div', { class: 'hm-axis' },
     el('span', { id: `${uid}-cl`, class: 'hm-lbl' }, 'Cycles shown'),
@@ -2259,6 +2268,7 @@ export function createHarmonicsCard(env = {}) {
 
   function setSource(next) {
     if (next === source || !SOURCES.includes(next) || gone) return;
+    if (next === 'player' && playerOff) return;
     attempt += 1;
     starting = false;
     if (running) stop('idle');

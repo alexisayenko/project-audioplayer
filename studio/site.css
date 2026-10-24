@@ -1,0 +1,5 @@
+.site-head { display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-3); padding: calc(var(--space-3) + env(safe-area-inset-top, 0px)) var(--gutter) 0; max-width: 1100px; margin: 0 auto; }
+.site-title { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.site-home { flex: none; display: inline-flex; align-items: center; min-height: var(--control-sm); }
+body[data-route="studio"] main { max-width: 1100px; margin: 0 auto; padding: var(--space-4) var(--gutter) calc(var(--space-6) + env(safe-area-inset-bottom, 0px)); }
+.site-noscript { padding: var(--space-4) var(--gutter); }
