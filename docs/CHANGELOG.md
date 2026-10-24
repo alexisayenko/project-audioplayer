@@ -2,7 +2,7 @@
 
 What shipped, newest first. One line each; the web UI and server are live at https://electrophone.cc. Everything listed here is deployed except the sections marked "built, not deployed" (the 2026-10-14 release went out once the SSH access in [task-0027](tasks/task-0027.md) was restored; the live visualizer files match `origin/main` as of 2026-10-15). Why: [tech/decisions.md](tech/decisions.md); runbook: [tech/deploy.md](tech/deploy.md).
 
-## 2026-10-24 (Studio "Simple tone" renamed "Primitive", built, not deployed)
+## 2026-10-24 (Studio "Simple tone" renamed "Primitive", deployed to studio.electrophone.cc as `60c0e14`; the main app is unchanged)
 
 - Web (task-0072, task-0114, WEB-198, STU-006; owner decision 2026-10-24; no tests run): the menu item and the card title are now "Primitive" with one added caption ("A primitive sound: one sine wave, one frequency, H1 only..."); routes, identifiers and files unchanged.
 
