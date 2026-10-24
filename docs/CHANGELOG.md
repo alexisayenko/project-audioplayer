@@ -2,7 +2,7 @@
 
 What shipped, newest first. One line each; the web UI and server are live at https://electrophone.cc. Everything listed here is deployed except the sections marked "built, not deployed" (the 2026-10-14 release went out once the SSH access in [task-0027](tasks/task-0027.md) was restored; the live visualizer files match `origin/main` as of 2026-10-15). Why: [tech/decisions.md](tech/decisions.md); runbook: [tech/deploy.md](tech/deploy.md).
 
-## 2026-10-24 (harmonics lab: controls disabled at 1 harmonic, web, built, not deployed)
+## 2026-10-24 (harmonics lab: controls disabled at 1 harmonic, web, deployed as `030f2d0`)
 
 - Web (task-0106, WEB-192; owner request 2026-10-24; no tests run): with 1 harmonic, "Decay across harmonics" and "Strike position" are disabled and dimmed with the hint "Needs 2 or more harmonics.", keep their values and re-enable from 2 harmonics; Inharmonicity B stays enabled (it still shifts H1).
 
