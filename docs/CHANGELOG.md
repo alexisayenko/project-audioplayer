@@ -2,7 +2,7 @@
 
 What shipped, newest first. One line each; the web UI and server are live at https://electrophone.cc. Everything listed here is deployed except the sections marked "built, not deployed" (the 2026-10-14 release went out once the SSH access in [task-0027](tasks/task-0027.md) was restored; the live visualizer files match `origin/main` as of 2026-10-15). Why: [tech/decisions.md](tech/decisions.md); runbook: [tech/deploy.md](tech/deploy.md).
 
-## 2026-10-25 (Studio Trails on by default, Trail length 0.5 to 60 s and 10 s default, built, not yet deployed; the main app is unchanged)
+## 2026-10-25 (Studio Trails on by default, Trail length 0.5 to 60 s and 10 s default, deployed to studio.electrophone.cc as `c12772d`; the main app is unchanged, its bundle did not change)
 
 - Web (WEB-205, STU-028; owner: Trails on by default, Trail length up to 60 s, default 10 s; no tests run, `node --check`, the build and the Browser pane only): on Listen and Chordophones the Trails switch starts on and the "Trail length" counter starts at 10 s (4 dB/s) and runs from 0.5 to 60 s in steps of 0.5 (0.67 dB/s at the maximum; the time-stamped peak model keeps the slow fall exact); the pages still keep the user's changes while open. `listen-views.test.mjs` adjusted, not run.
 
