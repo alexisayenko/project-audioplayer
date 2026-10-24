@@ -71,6 +71,17 @@ test('WEB-150: no song playing shows the empty state with the standard page head
   assert.equal(one(root, '.stu-wave'), null);
 });
 
+test('WEB-175: the Studio page has no tab bar and ends with one quiet link to the studio site', async () => {
+  const { root } = await mount();
+  assert.equal(one(root, '[role=tablist]'), null);
+  assert.equal(one(root, '[role=tabpanel]'), null);
+  assert.ok(one(root, '#stu-track'));
+  const link = one(root, '.stu-more a');
+  assert.equal(link.getAttribute('href'), 'https://studio.electrophone.cc/');
+  assert.equal(link.getAttribute('rel'), 'noopener');
+  assert.equal(link.textContent, 'Studio tools: analyze and synthesize sound →');
+});
+
 test('WEB-150: a song without audio on the server is the empty state too', async () => {
   const { root } = await mount({ player: makePlayer({ ...SONG, audio_state: 'none' }) });
   assert.ok(one(root, '.stu-empty'));

@@ -19,6 +19,7 @@ import { describeSync } from './sync-status.js';
 import { describeBuild } from './build-info.js';
 import { initHelpNav } from './nav-help.js';
 import { renderLogin } from './login.js';
+import { studioSiteUrl } from './studio-redirect.js';
 
 const STARTING_RECHECK_MS = 3000;
 const player = document.getElementById('player');
@@ -63,6 +64,11 @@ function showLogin() {
 }
 
 function route() {
+  const studioSite = studioSiteUrl(location.hash);
+  if (studioSite) {
+    location.replace(studioSite);
+    return;
+  }
   document.body.classList.remove('auth-pending');
   if (!isSignedIn() && !isGuest()) {
     showLogin();
@@ -80,7 +86,6 @@ function route() {
     history.replaceState(null, '', '#/library');
   }
   if (name.startsWith('playlists/')) name = 'playlists';
-  if (name === 'studio/tools' || name === 'studio/simple') name = 'studio';
   if (name === 'genres-rework') {
     name = 'genres';
     history.replaceState(null, '', '#/genres');

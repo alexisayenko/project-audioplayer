@@ -15,7 +15,7 @@ iOS: TestFlight internal testing only. Web: open signup (Google or Apple), per-u
 - [`ios/`](ios/) — SwiftUI app
 - [`server/`](server/) — FastAPI + `yt-dlp` API; also serves the web UI
 - [`web/`](web/) — web UI (plain HTML/CSS/JS, no build step)
-- [`studio/`](studio/) — standalone static "Electrophone Studio" site (Analyze and Synthesize; built from the `web/js` modules, not deployed yet)
+- [`studio/`](studio/) — standalone static "Electrophone Studio" site (Analyze and Synthesize, live at https://studio.electrophone.cc; built from the `web/js` modules; the main app's Studio page is Modify only)
 
 Setup and release steps: [`docs/tech/architecture.md`](docs/tech/architecture.md). Live at https://electrophone.cc; deploy and rollback: [`docs/tech/deploy.md`](docs/tech/deploy.md) (`scripts/check.sh`, `scripts/deploy.sh`); what shipped: [`docs/CHANGELOG.md`](docs/CHANGELOG.md); requirements: [`docs/specs/`](docs/specs/README.md). Web pages: Library, Playback, Genres map, Song stats, Settings.
 

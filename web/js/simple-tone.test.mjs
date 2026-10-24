@@ -5,7 +5,6 @@ import { installDom, flush } from './test-dom.mjs';
 installDom();
 globalThis.location = { hash: '#/studio/simple', href: 'http://localhost/' };
 const s = await import('./simple-tone.js');
-const { renderStudio } = await import('./studio.js');
 
 const near = (a, b, eps = 1e-9) => Math.abs(a - b) < eps;
 
@@ -138,12 +137,10 @@ test('WEB-200: a hidden page stops the tone', () => {
   card.dispose();
 });
 
-test('WEB-197: the Synthesize tab is loaded lazily, shown for the simple tab only', async () => {
-  const root = document.createElement('div');
-  const dispose = renderStudio(root, { tab: 'simple', loadSimple: () => import('./simple-tone.js'), simple: fakeCtx().env });
+test('WEB-197: the Synthesize tool (now on the studio site) mounts its card into a plain panel', async () => {
+  const panel = document.createElement('div');
+  const dispose = s.mountSimple(panel, fakeCtx().env);
   await flush();
-  assert.equal(root.querySelector('#stu-simple').hidden, false);
-  assert.equal(root.querySelector('#stu-track').hidden, true);
-  assert.ok(root.querySelector('section.card.sm-card'));
+  assert.ok(panel.querySelector('section.card.sm-card'));
   dispose();
 });

@@ -6,7 +6,6 @@ installDom();
 globalThis.location = { hash: '#/studio/tools', href: 'http://localhost/' };
 const { createMicCard, errorKey, TEXT, CONSTRAINTS, CAPTION, TITLE } = await import('./mic-tool.js');
 const { createMicBpm, rmsOf, levelFraction, SILENT_RMS } = await import('./mic-bpm.js');
-const { renderStudio } = await import('./studio.js');
 const { mountTools, TOOLS_NOTE } = await import('./studio-tools.js');
 
 function node() {
@@ -170,27 +169,14 @@ test('WEB-177: the engine adapter shows idle for silence and the engine value fo
   assert.equal(levelFraction(1), 1);
 });
 
-test('WEB-176: the Analyze tab shows the temporary caption and the microphone card with no song and no player', async () => {
+test('WEB-176: the Analyze tool (now on the studio site) shows the microphone card with no song and no player', async () => {
   const { env } = fakeEnv();
-  const root = document.createElement('div');
-  const dispose = renderStudio(root, { tab: 'tools', tools: env });
+  const panel = document.createElement('div');
+  const dispose = mountTools(panel, env);
   await flush();
-  assert.equal(root.querySelector('#stu-tools').hidden, false);
-  assert.equal(root.querySelector('#stu-track').hidden, true);
-  assert.equal(root.querySelector('.stu-tools-note').textContent, 'Temporary home for audio tools.');
+  assert.equal(panel.querySelector('.stu-tools-note').textContent, 'Temporary home for audio tools.');
   assert.equal(TOOLS_NOTE, 'Temporary home for audio tools.');
-  assert.ok(root.querySelector('section.card.mt-card'));
-  dispose();
-});
-
-test('WEB-176: a failed tools load shows an error with Retry', async () => {
-  const root = document.createElement('div');
-  let tries = 0;
-  const dispose = renderStudio(root, { tab: 'tools', loadTools: () => { tries += 1; return Promise.reject(new Error('offline')); } });
-  await flush();
-  assert.match(root.textContent, /The tools could not be loaded/);
-  fire(root.querySelectorAll('button').find((b) => b.textContent === 'Retry'), 'click');
-  assert.equal(tries, 2);
+  assert.ok(panel.querySelector('section.card.mt-card'));
   dispose();
 });
 

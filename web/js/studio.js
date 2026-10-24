@@ -1,7 +1,7 @@
 import { api as defaultApi } from './api.js';
 import { store } from './store.js';
 import { el, pageHead } from './dom.js';
-import { studioTabs, tabFromHash } from './studio-tabs.js';
+import { STUDIO_SITE, STUDIO_LINK_TEXT } from './studio-redirect.js';
 import { icon } from './icons.js';
 import { hasAudio } from './playable.js';
 import { can } from './guest.js';
@@ -30,26 +30,6 @@ const SIDES = {
 const nudgeText = (d) => `${d > 0 ? '+' : '-'}${Math.abs(d)} s`;
 const nudgeLabel = (side, d) => `${SIDES[side].text} ${d > 0 ? 'later' : 'earlier'} by ${Math.abs(d)} s`;
 
-export const TOOLS_FAILED = 'The tools could not be loaded. Check the connection and try again.';
-
-function mountLazyTab(pane, load, mount) {
-  let stop = null;
-  let gone = false;
-  const attempt = () => {
-    Promise.resolve(load()).then((m) => {
-      if (gone) return;
-      stop = mount(m);
-    }, () => {
-      if (gone) return;
-      pane.replaceChildren(el('div', { class: 'state card' },
-        el('p', { class: 'msg error', role: 'alert' }, TOOLS_FAILED),
-        el('button', { class: 'btn', type: 'button', onclick: attempt }, 'Retry')));
-    });
-  };
-  attempt();
-  return () => { gone = true; stop?.(); };
-}
-
 function readColors(node) {
   const css = node.ownerDocument?.defaultView?.getComputedStyle?.(node);
   const get = (name, fallback) => css?.getPropertyValue(name).trim() || fallback;
@@ -67,16 +47,11 @@ export function renderStudio(root, env = {}) {
   const load = env.load ?? loadPeaks;
   const raf = env.raf ?? ((fn) => globalThis.requestAnimationFrame?.(fn) ?? 0);
   const caf = env.caf ?? ((id) => globalThis.cancelAnimationFrame?.(id));
-  const tab = env.tab ?? tabFromHash(globalThis.location?.hash);
   const head = pageHead('Studio', TAGLINE);
-  const tabs = studioTabs(tab);
-  const body = el('div', { class: 'stu', id: 'stu-track', role: 'tabpanel', 'aria-labelledby': 'stu-tab-track', hidden: tab !== 'track' });
-  const toolsPane = el('div', { class: 'stu', id: 'stu-tools', role: 'tabpanel', 'aria-labelledby': 'stu-tab-tools', hidden: tab !== 'tools' });
-  const simplePane = el('div', { class: 'stu', id: 'stu-simple', role: 'tabpanel', 'aria-labelledby': 'stu-tab-simple', hidden: tab !== 'simple' });
-  root.append(head, tabs.bar, body, toolsPane, simplePane);
-  tabs.restoreFocus();
-  if (tab === 'tools') return mountLazyTab(toolsPane, env.loadTools ?? (() => import('./studio-tools.js')), (m) => m.mountTools(toolsPane, env.tools));
-  if (tab === 'simple') return mountLazyTab(simplePane, env.loadSimple ?? (() => import('./simple-tone.js')), (m) => m.mountSimple(simplePane, env.simple));
+  const body = el('div', { class: 'stu', id: 'stu-track' });
+  const more = el('p', { class: 'stu-more muted t-caption' },
+    el('a', { href: STUDIO_SITE, rel: 'noopener' }, STUDIO_LINK_TEXT));
+  root.append(head, el('div', { class: 'stu' }, body, more));
   const loop = player.loop;
 
   let shownId = null;

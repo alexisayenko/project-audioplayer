@@ -47,18 +47,20 @@ test('WEB-012: below 400 px the tab bar drops its gaps and side margins so eight
   assert.match(rule, /\.side \{ left: clamp\(var\(--space-1\), calc\(\(100vw - 8 \* var\(--hit\)\) \/ 2\), var\(--space-4\)\)/);
 });
 
-const { studioTabs, tabFromHash, TABS } = await import('./studio-tabs.js');
+const { studioTabs } = await import('./studio-tabs.js');
 const { fire, makeEvent } = await import('./test-dom.mjs');
 
-test('WEB-175: #/studio is the Modify tab, #/studio/tools the Analyze tab, and app.js maps both to the studio route', () => {
-  assert.equal(tabFromHash(''), 'track');
-  assert.equal(tabFromHash('#/studio'), 'track');
-  assert.equal(tabFromHash('#/studio/tools'), 'tools');
-  assert.equal(tabFromHash('#/studio/simple'), 'simple');
-  assert.equal(tabFromHash('#/studio/other'), 'track');
-  assert.deepEqual(TABS.map((t) => [t.label, t.hash]), [['Modify', '#/studio'], ['Analyze', '#/studio/tools'], ['Synthesize', '#/studio/simple']]);
-  assert.match(read('./app.js'), /if \(name === 'studio\/tools' \|\| name === 'studio\/simple'\) name = 'studio';/);
+test('WEB-175: the main app redirects the old Analyze and Synthesize hashes to the studio site before anything else in route()', async () => {
+  const { studioSiteUrl, STUDIO_SITE } = await import('./studio-redirect.js');
+  assert.equal(STUDIO_SITE, 'https://studio.electrophone.cc/');
+  for (const h of ['#/studio/tools', '#studio/tools', '#/studio/analyze', '#/studio/tools/', '#/STUDIO/Analyze']) assert.equal(studioSiteUrl(h), 'https://studio.electrophone.cc/#/analyze', h);
+  for (const h of ['#/studio/simple', '#/studio/synthesize', '#/studio/simple/']) assert.equal(studioSiteUrl(h), 'https://studio.electrophone.cc/#/synthesize', h);
+  for (const h of ['', '#/studio', '#/studio/other', '#/library', undefined]) assert.equal(studioSiteUrl(h), null, String(h));
+  const app = read('./app.js');
+  assert.match(app, /function route\(\) \{\n  const studioSite = studioSiteUrl\(location\.hash\);\n  if \(studioSite\) \{\n    location\.replace\(studioSite\);\n    return;\n  \}/);
+  assert.doesNotMatch(app, /studio\/tools|studio\/simple/);
 });
+
 
 test('WEB-175: the tabs reuse the Library switch classes with the tablist pattern and a roving tabindex', () => {
   const t = studioTabs('tools', () => {});
