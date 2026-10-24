@@ -16,9 +16,14 @@
 </head>
 <body class="t-body" data-route="studio">
 <div class="site-shell">
+<button class="site-toggle site-open" id="site-open" type="button" aria-controls="site-nav" aria-expanded="false" aria-label="Expand menu" title="Expand menu" data-ic="chevronLeft"></button>
 <header class="site-side">
-  <h1 class="t-headline site-title">Electrophone Studio</h1>
-  <nav class="site-nav" aria-label="Studio">
+<div class="site-side-in">
+  <div class="site-head">
+    <h1 class="t-headline site-title">Electrophone Studio</h1>
+    <button class="site-toggle" id="site-toggle" type="button" aria-controls="site-nav" aria-expanded="true" aria-label="Collapse menu" title="Collapse menu" data-ic="chevronLeft"></button>
+  </div>
+  <nav class="site-nav" id="site-nav" aria-label="Studio">
     <div class="site-group" role="group" aria-labelledby="grp-synthesize">
       <h2 class="site-group-title t-caption" id="grp-synthesize">Synthesize</h2>
       <a class="t-subhead" href="#/synthesize/simple" data-page="synthesize/simple">Primitive</a>
@@ -38,6 +43,7 @@
     </div>
   </nav>
   <a class="site-home t-caption" href="https://electrophone.cc/">Back to Electrophone</a>
+</div>
 </header>
 <main id="app"></main>
 </div>

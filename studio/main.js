@@ -4,6 +4,7 @@ import { mountSimple } from '../web/js/simple-tone.js';
 import { PAGES, pageFromHash } from './routes.js';
 import { mountPlaceholder } from './placeholders.js';
 import { mountGlossary } from './glossary.js';
+import { mountMenu } from './menu.js';
 
 const MOUNT = {
   'synthesize/simple': (pane) => mountSimple(pane),
@@ -36,5 +37,6 @@ function show() {
   document.title = `${PAGES.find((p) => p.id === page).label} - Electrophone Studio`;
 }
 
+mountMenu(document.querySelector('.site-shell'));
 globalThis.addEventListener('hashchange', show);
 show();
