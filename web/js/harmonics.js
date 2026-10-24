@@ -7,7 +7,9 @@ export const MIN_HZ = 20;
 export const MAX_HZ = 4000;
 export const MAX_COUNT = 32;
 export const MIN_ROLLOFF = -24;
-export const DEFAULTS = { freq: 220, count: 10, rolloff: -12, decay: false, tau: 1.2, repeat: 3 };
+export const MAX_STRINGS = 3;
+export const MAX_DETUNE = 5;
+export const DEFAULTS = { freq: 220, count: 10, rolloff: -12, decay: false, tau: 1.2, repeat: 3, strings: 1, detune: 2 };
 export const MIN_TAU = 0.2;
 export const MAX_TAU = 5;
 export const MIN_REPEAT = 1;
@@ -41,7 +43,9 @@ export const TEXT = {
   unsupported: 'This browser cannot play audio',
   failed: 'Could not start the sound',
 };
-export const ABOUT_TITLE = 'What are harmonics?';
+export const STRINGS_NOTE = 'A real piano note has up to 3 strings tuned a hair apart; their slow beating gives the shimmer.';
+export const BEAT_HINT = 'With detuned strings the loudness swells slowly: beats';
+export const ABOUT_TITLE ='What are harmonics?';
 export const ABOUT = [
   ['Fundamental (H1)', 'is the lowest frequency, f. It sets the pitch you hear.'],
   ['Harmonics', 'are whole-number multiples of the fundamental: Hn = n x f. H2 is 2f, H3 is 3f, and so on.'],
@@ -62,7 +66,27 @@ export function clampParams(p = {}) {
     decay: p.decay === true,
     tau: clamp(num(p.tau, DEFAULTS.tau), MIN_TAU, MAX_TAU),
     repeat: clamp(num(p.repeat, DEFAULTS.repeat), MIN_REPEAT, MAX_REPEAT),
+    strings: clamp(Math.round(num(p.strings, DEFAULTS.strings)), 1, MAX_STRINGS),
+    detune: clamp(num(p.detune, DEFAULTS.detune), 0, MAX_DETUNE),
   };
+}
+
+export function stringOffsets(strings, detune) {
+  if (strings <= 1) return [0];
+  return strings === 2 ? [-detune, detune] : [-detune, 0, detune];
+}
+
+export function centsRatio(cents) {
+  return 2 ** (cents / 1200);
+}
+
+export function beatRate(freq, strings, detune) {
+  if (strings < 2 || !(detune > 0)) return 0;
+  return freq * (centsRatio(strings === 2 ? 2 * detune : detune) - 1);
+}
+
+export function fmtBeat(hz) {
+  return hz < 10 ? hz.toFixed(2) : hz.toFixed(1);
 }
 
 export function tauOf(n, tau1) {
@@ -96,13 +120,14 @@ export function playableLimit(sampleRate = 48000) {
 }
 
 export function harmonicList(params, sampleRate = 48000) {
-  const { freq, count, rolloff } = clampParams(params);
+  const { freq, count, rolloff, strings, detune } = clampParams(params);
   const limit = playableLimit(sampleRate);
+  const widest = centsRatio(strings > 1 ? detune : 0);
   const rows = [];
   let sum = 0;
   for (let n = 1; n <= count; n += 1) {
     const f = n * freq;
-    const played = f < limit;
+    const played = f * widest < limit;
     const amp = amplitude(n, rolloff);
     if (played) sum += amp;
     rows.push({ n, freq: f, amp, played, gain: 0, db: -Infinity });
@@ -135,18 +160,21 @@ export function hzToSlider(f) {
   return Math.round((1000 * Math.log(clamp(f, MIN_HZ, MAX_HZ) / MIN_HZ)) / Math.log(MAX_HZ / MIN_HZ));
 }
 
-export function computedWave(rows, points, cycles = CYCLES) {
+export function computedWave(rows, points, cycles = CYCLES, offsets = [0]) {
   const f = rows[0]?.freq ?? DEFAULTS.freq;
   const sum = new Float32Array(points);
   const parts = rows.map(() => new Float32Array(points));
   const span = cycles / f;
+  const ratios = offsets.map(centsRatio);
   for (let i = 0; i < points; i += 1) {
     const t = (i / (points - 1)) * span;
     let s = 0;
     for (let k = 0; k < rows.length; k += 1) {
       const r = rows[k];
       if (!r.played) continue;
-      const v = r.gain * Math.sin(2 * Math.PI * r.freq * t);
+      let v = 0;
+      for (const q of ratios) v += Math.sin(2 * Math.PI * r.freq * q * t);
+      v *= r.gain / ratios.length;
       parts[k][i] = v;
       s += v;
     }
@@ -192,14 +220,16 @@ export function liveWave(samples, sampleRate, freq, points, cycles = CYCLES) {
   return peak < 1e-4 ? null : out;
 }
 
-export function barLevels(rows, freqData, sampleRate) {
+export function barLevels(rows, freqData, sampleRate, spreadCents = 0) {
   const bins = freqData.length;
   const bw = sampleRate / (2 * bins);
+  const spread = centsRatio(spreadCents);
   return rows.map((r) => {
     if (!r.played) return -Infinity;
-    const k = Math.round(r.freq / bw);
+    const lo = Math.round(r.freq / spread / bw);
+    const hi = Math.round((r.freq * spread) / bw);
     let top = -Infinity;
-    for (let b = Math.max(0, k - 2); b <= Math.min(bins - 1, k + 2); b += 1) if (freqData[b] > top) top = freqData[b];
+    for (let b = Math.max(0, lo - 2); b <= Math.min(bins - 1, hi + 2); b += 1) if (freqData[b] > top) top = freqData[b];
     return top + ANALYSER_DB_OFFSET;
   });
 }
@@ -242,30 +272,79 @@ export function createSynth(env = {}) {
   const Ctx = env.AudioContext ?? globalThis.AudioContext ?? globalThis.webkitAudioContext;
   let live = null;
 
+  const voicesOf = (strings) => strings.flatMap((s) => s.voices);
+
+  function buildString(t) {
+    const trim = live.ctx.createGain();
+    trim.gain.value = 0;
+    trim.connect(live.master);
+    const voices = [];
+    for (let n = 1; n <= MAX_COUNT; n += 1) {
+      const osc = live.ctx.createOscillator();
+      osc.type = 'sine';
+      const gain = live.ctx.createGain();
+      gain.gain.value = 0;
+      osc.connect(gain);
+      gain.connect(trim);
+      osc.start(t);
+      voices.push({ osc, gain, env: { t0: 0, gain: 0, tau: Infinity } });
+    }
+    return { trim, voices, fresh: true };
+  }
+
+  function retire(s, t) {
+    const g = s.trim.gain;
+    g.cancelScheduledValues(t);
+    g.setValueAtTime(g.value, t);
+    g.linearRampToValueAtTime(0, t + FADE_S);
+    setTimeout(() => {
+      for (const v of s.voices) { try { v.osc.stop(); } catch { /* already stopped */ } v.osc.disconnect(); v.gain.disconnect(); }
+      s.trim.disconnect();
+    }, FADE_S * 1000 + 40);
+  }
+
+  function syncStrings(n) {
+    const t = live.ctx.currentTime;
+    const before = live.strings.length;
+    while (live.strings.length < n) live.strings.push(buildString(t));
+    while (live.strings.length > n) retire(live.strings.pop(), t);
+    return live.strings.length > before;
+  }
+
   function apply(params, initial) {
-    const rows = harmonicList(params, live.ctx.sampleRate);
+    const p = clampParams(params);
+    const rows = harmonicList(p, live.ctx.sampleRate);
+    const offsets = stringOffsets(p.strings, p.detune);
     const t = live.ctx.currentTime;
     const limit = playableLimit(live.ctx.sampleRate) - 1;
-    live.voices.forEach((v, i) => {
-      const row = rows[i];
-      const gain = row?.played ? row.gain : 0;
-      const hz = Math.min((i + 1) * clampParams(params).freq, limit);
-      if (initial) {
-        v.osc.frequency.value = hz;
-        v.gain.gain.value = live.decay ? 0 : gain;
-      } else {
-        v.osc.frequency.setTargetAtTime(hz, t, SMOOTH_S);
-        if (!live.decay) v.gain.gain.setTargetAtTime(gain, t, SMOOTH_S);
-      }
+    live.strings.forEach((s, k) => {
+      const direct = initial || s.fresh;
+      s.fresh = false;
+      if (initial) s.trim.gain.value = 1 / p.strings;
+      else s.trim.gain.setTargetAtTime(1 / p.strings, t, SMOOTH_S);
+      s.voices.forEach((v, i) => {
+        const gain = rows[i]?.played ? rows[i].gain : 0;
+        const hz = Math.min((i + 1) * p.freq, limit);
+        if (direct) {
+          v.osc.frequency.value = hz;
+          v.osc.detune.value = offsets[k];
+          v.gain.gain.value = live.decay ? 0 : gain;
+        } else {
+          v.osc.frequency.setTargetAtTime(hz, t, SMOOTH_S);
+          v.osc.detune.setTargetAtTime(offsets[k], t, SMOOTH_S);
+          if (!live.decay) v.gain.gain.setTargetAtTime(gain, t, SMOOTH_S);
+        }
+      });
     });
   }
 
-  function strike(at, params) {
+  function strike(at, params, strings = live.strings) {
     const now = live.ctx.currentTime;
     const rows = harmonicList(params, live.ctx.sampleRate);
     const tau1 = clampParams(params).tau;
     const from = Math.max(now, at - RELEASE_S);
-    live.voices.forEach((v, i) => {
+    voicesOf(strings).forEach((v, j) => {
+      const i = j % MAX_COUNT;
       const p = v.gain.gain;
       const gain = rows[i]?.played ? rows[i].gain : 0;
       const tau = tauOf(i + 1, tau1);
@@ -286,6 +365,7 @@ export function createSynth(env = {}) {
     if (live.next < now) live.next = now + RELEASE_S + 0.005;
     while (live.next <= now + LOOKAHEAD_S) {
       strike(live.next, live.params);
+      live.last = live.next;
       live.next += live.params.repeat;
     }
     live.timer = setTimeout(pump, TICK_MS);
@@ -293,7 +373,7 @@ export function createSynth(env = {}) {
 
   function enterDecay(params) {
     const t = live.ctx.currentTime;
-    for (const v of live.voices) {
+    for (const v of voicesOf(live.strings)) {
       const p = v.gain.gain;
       const held = p.value;
       p.cancelScheduledValues(t);
@@ -309,13 +389,25 @@ export function createSynth(env = {}) {
   function leaveDecay() {
     clearTimeout(live.timer);
     live.decay = false;
+    live.last = 0;
     const t = live.ctx.currentTime;
-    for (const v of live.voices) {
+    for (const v of voicesOf(live.strings)) {
       const p = v.gain.gain;
       const held = p.value;
       p.cancelScheduledValues(t);
       p.setValueAtTime(held, t);
     }
+  }
+
+  function strikeNew(added, params) {
+    const now = live.ctx.currentTime;
+    if (live.last > now) {
+      strike(live.last, params, added);
+      return;
+    }
+    clearTimeout(live.timer);
+    live.next = now + RELEASE_S + 0.005;
+    pump();
   }
 
   return {
@@ -334,23 +426,13 @@ export function createSynth(env = {}) {
       analyser.smoothingTimeConstant = 0.4;
       master.connect(analyser);
       analyser.connect(ctx.destination);
-      const voices = [];
-      for (let n = 1; n <= MAX_COUNT; n += 1) {
-        const osc = ctx.createOscillator();
-        osc.type = 'sine';
-        const gain = ctx.createGain();
-        gain.gain.value = 0;
-        osc.connect(gain);
-        gain.connect(master);
-        voices.push({ osc, gain, env: { t0: 0, gain: 0, tau: Infinity } });
-      }
       const clamped = clampParams(params);
-      live = { ctx, master, analyser, voices, decay: clamped.decay, params: clamped, next: 0, timer: 0 };
-      apply(params, true);
       const t = ctx.currentTime;
+      live = { ctx, master, analyser, strings: [], decay: clamped.decay, params: clamped, next: 0, last: 0, timer: 0 };
+      syncStrings(clamped.strings);
+      apply(params, true);
       master.gain.setValueAtTime(0, t);
       master.gain.linearRampToValueAtTime(1, t + FADE_S);
-      for (const v of voices) v.osc.start(t);
       if (live.decay) {
         live.next = t + FADE_S;
         pump();
@@ -360,10 +442,15 @@ export function createSynth(env = {}) {
     update(params) {
       if (!live) return;
       const next = clampParams(params);
-      if (next.decay && !live.decay) enterDecay(params);
-      else if (!next.decay && live.decay) leaveDecay();
+      const wasDecay = live.decay;
+      const known = new Set(live.strings);
+      syncStrings(next.strings);
+      const added = live.strings.filter((s) => !known.has(s));
+      if (next.decay && !wasDecay) enterDecay(params);
+      else if (!next.decay && wasDecay) leaveDecay();
       live.params = next;
       apply(params, false);
+      if (wasDecay && next.decay && added.length) strikeNew(added, next);
     },
     stop() {
       const r = live;
@@ -375,7 +462,8 @@ export function createSynth(env = {}) {
       r.master.gain.setValueAtTime(r.master.gain.value, t);
       r.master.gain.linearRampToValueAtTime(0, t + FADE_S);
       setTimeout(() => {
-        for (const v of r.voices) { try { v.osc.stop(); } catch { /* already stopped */ } v.osc.disconnect(); v.gain.disconnect(); }
+        for (const v of voicesOf(r.strings)) { try { v.osc.stop(); } catch { /* already stopped */ } v.osc.disconnect(); v.gain.disconnect(); }
+        for (const s of r.strings) s.trim.disconnect();
         r.master.disconnect();
         r.analyser.disconnect();
         void r.ctx.close?.();
@@ -593,6 +681,30 @@ export function createHarmonicsCard(env = {}) {
   const repeatField = el('div', { class: 'hm-field', hidden: true },
     el('label', { htmlFor: `${uid}-rr` }, 'Repeat every'),
     el('div', { class: 'hm-pair' }, repeatRange, repeatOut));
+  const stringBtns = Array.from({ length: MAX_STRINGS }, (_, i) => el('button', {
+    class: 'seg-btn', type: 'button', role: 'radio', 'aria-checked': 'false', onclick: () => change({ strings: i + 1 }),
+  }, String(i + 1)));
+  const stringsGroup = el('div', {
+    class: 'seg hm-seg', role: 'radiogroup', 'aria-labelledby': `${uid}-sl`,
+    onkeydown: (ev) => {
+      const step = { ArrowRight: 1, ArrowUp: 1, ArrowLeft: -1, ArrowDown: -1 }[ev.key];
+      if (!step) return;
+      ev.preventDefault();
+      const n = clamp(params.strings + step, 1, MAX_STRINGS);
+      change({ strings: n });
+      stringBtns[n - 1].focus();
+    },
+  }, ...stringBtns);
+  const detuneRange = el('input', { id: `${uid}-ur`, class: 'slider hm-range', type: 'range', min: '0', max: String(MAX_DETUNE), step: '0.1', value: String(params.detune) });
+  const detuneOut = el('output', { class: 'hm-val t-subhead', htmlFor: `${uid}-ur` }, '');
+  const beatOut = el('p', { class: 'hm-beat muted t-caption' });
+  const stringsField = el('div', { class: 'hm-field' },
+    el('span', { id: `${uid}-sl`, class: 'hm-lbl' }, 'Strings per note'),
+    stringsGroup);
+  const detuneField = el('div', { class: 'hm-field', hidden: true },
+    el('label', { htmlFor: `${uid}-ur` }, 'Detune between strings (cents)'),
+    el('div', { class: 'hm-pair' }, detuneRange, detuneOut),
+    beatOut);
   const label = el('span', {}, 'Play');
   const toggleIcon = el('span', { class: 'hm-ic' }, icon('play', 'action'));
   const button = el('button', { class: 'btn primary hm-toggle', type: 'button', onclick: () => { if (running) stop('idle'); else start(); } }, toggleIcon, label);
@@ -607,6 +719,7 @@ export function createHarmonicsCard(env = {}) {
   const scaleBar = el('span', { class: 'hm-scale', 'aria-hidden': 'true' });
   const list = el('ul', { class: 'hm-list t-caption', 'aria-label': 'Harmonics' });
 
+  const beatHint = el('p', { class: 'hm-cap muted t-caption', hidden: true }, BEAT_HINT);
   const view = (canvas, cls, ...extra) => el('div', { class: `hm-view ${cls}` }, canvas, ...extra);
   const about = el('details', { class: 'hm-about', open: true },
     el('summary', { class: 't-subhead' }, ABOUT_TITLE),
@@ -628,14 +741,18 @@ export function createHarmonicsCard(env = {}) {
       el('div', { class: 'hm-field' },
         el('span', { class: 'hm-check' }, decayBox, el('label', { htmlFor: `${uid}-dk` }, 'Piano-like decay'))),
       tauField,
-      repeatField),
+      repeatField,
+      stringsField,
+      detuneField),
+    el('p', { class: 'hm-cap muted t-caption' }, STRINGS_NOTE),
     el('div', { class: 'hm-play' }, button, state),
     skipNote,
     el('div', { class: 'hm-block' },
       el('div', { class: 'hm-head' }, el('h3', { class: 't-subhead' }, 'Waveform'),
         el('span', { class: 'hm-check' }, partsBox, el('label', { htmlFor: `${uid}-ip` }, 'Show individual harmonics'))),
       view(waveCanvas, 'hm-wave'),
-      el('p', { class: 'hm-cap muted t-caption' }, 'Time across, amplitude up, 3.5 cycles of the fundamental. The bright line is the sum.')),
+      el('p', { class: 'hm-cap muted t-caption' }, 'Time across, amplitude up, 3.5 cycles of the fundamental. The bright line is the sum.'),
+      beatHint),
     el('div', { class: 'hm-block' },
       el('h3', { class: 't-subhead' }, 'Spectrum'),
       view(specCanvas, 'hm-spec'),
@@ -660,7 +777,8 @@ export function createHarmonicsCard(env = {}) {
   function describe() {
     const note = noteInfo(params.freq);
     const piano = params.decay ? `, piano-like decay, fade ${params.tau} s, repeat every ${params.repeat} s` : '';
-    const base = `${params.count} harmonics of ${fmtHz(params.freq)}, ${note.name}, decay ${params.rolloff} dB per octave${piano}`;
+    const multi = params.strings > 1 ? `, ${params.strings} strings detuned by ${params.detune} cents` : '';
+    const base = `${params.count} harmonics of ${fmtHz(params.freq)}, ${note.name}, decay ${params.rolloff} dB per octave${piano}${multi}`;
     waveCanvas.setAttribute('aria-label', `Waveform of the synthesized tone, 3.5 cycles: ${base}`);
     specCanvas.setAttribute('aria-label', `Spectrum of the synthesized tone, one bar per harmonic: ${base}`);
     gramCanvas.setAttribute('aria-label', `Spectrogram of the synthesized tone, last 10 seconds: ${base}`);
@@ -688,6 +806,19 @@ export function createHarmonicsCard(env = {}) {
     repeatOut.textContent = `${params.repeat} s`;
     tauField.hidden = !params.decay;
     repeatField.hidden = !params.decay;
+    fill(detuneRange, params.detune, 0, MAX_DETUNE);
+    detuneOut.textContent = `${params.detune} cents`;
+    const beat = beatRate(params.freq, params.strings, params.detune);
+    detuneField.hidden = params.strings < 2;
+    beatOut.hidden = !(beat > 0);
+    beatOut.textContent = beat > 0 ? `H1 beats about ${fmtBeat(beat)} Hz` : '';
+    beatHint.hidden = !(beat > 0);
+    stringBtns.forEach((b, i) => {
+      const on = i + 1 === params.strings;
+      b.classList.toggle('on', on);
+      b.setAttribute('aria-checked', String(on));
+      b.tabIndex = on ? 0 : -1;
+    });
     describe();
     paintList();
   }
@@ -707,7 +838,7 @@ export function createHarmonicsCard(env = {}) {
     if (!g) return;
     const rows = rowsNow();
     const points = Math.max(32, Math.round(g.w - 44));
-    const data = computedWave(rows, points);
+    const data = computedWave(rows, points, CYCLES, stringOffsets(params.strings, params.detune));
     let sum = data.sum;
     const b = running ? liveBuffers() : null;
     if (b) {
@@ -725,7 +856,7 @@ export function createHarmonicsCard(env = {}) {
     const b = running ? liveBuffers() : null;
     if (b) {
       synth.analyser.getFloatFrequencyData(b.freq);
-      levels = barLevels(rows, b.freq, rate());
+      levels = barLevels(rows, b.freq, rate(), params.strings > 1 ? params.detune : 0);
     }
     drawSpectrumView(g, currentColors(), rows, levels);
   }
@@ -879,6 +1010,7 @@ export function createHarmonicsCard(env = {}) {
   rollRange.addEventListener('input', () => change({ rolloff: Number(rollRange.value) }));
   tauRange.addEventListener('input', () => change({ tau: Number(tauRange.value) }));
   repeatRange.addEventListener('input', () => change({ repeat: Number(repeatRange.value) }));
+  detuneRange.addEventListener('input', () => change({ detune: Number(detuneRange.value) }));
 
   let ro = null;
   if (typeof ResizeObserver !== 'undefined') {

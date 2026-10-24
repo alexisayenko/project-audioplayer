@@ -30,9 +30,37 @@ test('harmonicList keeps the summed gain at 0.3 and skips harmonics above 20 kHz
 });
 
 test('clampParams keeps every control in range', () => {
-  assert.deepEqual(h.clampParams({ freq: 1, count: 99, rolloff: -90, tau: 99, repeat: 0 }), { freq: 20, count: 32, rolloff: -24, decay: false, tau: 5, repeat: 1 });
+  assert.deepEqual(h.clampParams({ freq: 1, count: 99, rolloff: -90, tau: 99, repeat: 0, strings: 9, detune: 40 }), { freq: 20, count: 32, rolloff: -24, decay: false, tau: 5, repeat: 1, strings: 3, detune: 5 });
   assert.deepEqual(h.clampParams({}), h.DEFAULTS);
-  assert.deepEqual(h.DEFAULTS, { freq: 220, count: 10, rolloff: -12, decay: false, tau: 1.2, repeat: 3 });
+  assert.deepEqual(h.DEFAULTS, { freq: 220, count: 10, rolloff: -12, decay: false, tau: 1.2, repeat: 3, strings: 1, detune: 2 });
+  assert.equal(h.clampParams({ strings: 0 }).strings, 1);
+});
+
+test('strings are detuned symmetrically by cents', () => {
+  assert.deepEqual(h.stringOffsets(1, 2), [0]);
+  assert.deepEqual(h.stringOffsets(2, 2), [-2, 2]);
+  assert.deepEqual(h.stringOffsets(3, 2), [-2, 0, 2]);
+  const hz = h.stringOffsets(3, 2).map((c) => 440 * h.centsRatio(c));
+  assert.ok(Math.abs(hz[0] - 439.492) < 0.001 && hz[1] === 440 && Math.abs(hz[2] - 440.508) < 0.001);
+});
+
+test('beatRate is the frequency gap of adjacent strings', () => {
+  assert.equal(h.beatRate(440, 1, 2), 0);
+  assert.equal(h.beatRate(440, 3, 0), 0);
+  assert.ok(Math.abs(h.beatRate(440, 3, 2) - 440 * (2 ** (2 / 1200) - 1)) < 1e-9);
+  assert.ok(Math.abs(h.beatRate(440, 2, 2) - 440 * (2 ** (4 / 1200) - 1)) < 1e-9);
+  assert.equal(h.fmtBeat(0.509), '0.51');
+  assert.equal(h.fmtBeat(23.04), '23.0');
+});
+
+test('strings keep the total wave amplitude and skip partials that detune past the limit', () => {
+  const rows = h.harmonicList({ freq: 440, count: 1, rolloff: 0 });
+  const one = h.computedWave(rows, 64, 3.5, [0]);
+  const three = h.computedWave(rows, 64, 3.5, h.stringOffsets(3, 2));
+  assert.ok(Math.max(...three.sum) <= h.TOTAL_GAIN + 1e-9);
+  assert.ok(Math.abs(three.sum[10] - one.sum[10]) < 0.002);
+  assert.equal(h.harmonicList({ freq: 19990, count: 1, rolloff: 0, strings: 1 }, 48000)[0].played, true);
+  assert.equal(h.harmonicList({ freq: 19990, count: 1, rolloff: 0, strings: 3, detune: 5 }, 48000)[0].played, false);
 });
 
 test('higher harmonics fade faster: tau_n = tau1 / n^0.8', () => {
