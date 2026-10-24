@@ -14,7 +14,7 @@ from concurrent.futures import ThreadPoolExecutor, wait
 from pathlib import Path
 from typing import Any
 
-from . import credit_title, credits_split, links, playlist_import, previewcache, titleclean, titles, urlclean
+from . import credit_title, credits, credits_split, links, playlist_import, previewcache, titleclean, titles, urlclean
 from .jsonio import write_json_atomic
 from .library import sources_of
 from .problems import Problem
@@ -149,9 +149,12 @@ def quick_fetch(url: str) -> dict[str, Any]:
     return fetched_fields(link.vid, link.probe or {})
 
 
-def new_draft(text: str, url: str) -> dict[str, Any]:
+def new_draft(text: str, url: str, origin: dict[str, Any] | None = None) -> dict[str, Any]:
     blank = {k: v for k, v in _blank_fetched().items() if k != "sourceId"}
-    return {"id": f"d_{uuid.uuid4().hex[:12]}", "text": text, "url": url, "source": source_of(url), "state": "new", "createdAt": now_utc(), "fetched": None, **blank}
+    draft = {"id": f"d_{uuid.uuid4().hex[:12]}", "text": text, "url": url, "source": source_of(url), "state": "new", "createdAt": now_utc(), "fetched": None, **blank}
+    if origin:
+        draft["playlist"] = {"id": origin["id"], "title": origin.get("title") or "", "position": origin["position"]}
+    return draft
 
 
 def compose(draft: dict[str, Any]) -> None:
@@ -172,8 +175,8 @@ def apply_fetch(draft: dict[str, Any], fields: dict[str, Any] | None) -> None:
     compose(draft)
 
 
-def build(text: str, url: str) -> dict[str, Any]:
-    draft = new_draft(text, url)
+def build(text: str, url: str, origin: dict[str, Any] | None = None) -> dict[str, Any]:
+    draft = new_draft(text, url, origin)
     compose(draft)
     return draft
 
@@ -250,28 +253,64 @@ def save(path: Path, drafts: list[dict[str, Any]]) -> None:
 # --- library marks and output ------------------------------------------------------------------
 
 class Library:
-    """What the user already has, for the "In library" mark: song ids, source links and normalised title + artists + version."""
+    """What the user already has, for the "In library" mark: song ids, source links and normalised title + artists + version; `song_id` says which song a draft matches."""
 
     def __init__(self, songs: list[dict[str, Any]]) -> None:
-        self.owned = playlist_import.Owned(songs)
-        self.urls = {urlclean.clean_url(u) for s in songs for u in [s.get("source_url"), *(e.get("url") for e in sources_of(s))] if isinstance(u, str) and u}
+        self.by_id: dict[str, str] = {}
+        self.by_url: dict[str, str] = {}
+        self.by_key: dict[tuple[str, tuple[str, ...], str], str] = {}
+        for song in songs:
+            sid = str(song.get("id") or "")
+            self.by_id.setdefault(sid, sid)
+            for entry in sources_of(song):
+                if entry.get("source") == "youtube":
+                    self.by_id.setdefault(str(entry.get("id") or ""), sid)
+            for u in [song.get("source_url"), *(e.get("url") for e in sources_of(song))]:
+                if isinstance(u, str) and u:
+                    self.by_url.setdefault(urlclean.clean_url(u), sid)
+            key = playlist_import._key(song.get("title"), credits.main_artists(song), song.get("version"))
+            if key:
+                self.by_key.setdefault(key, sid)
 
-    def has(self, draft: dict[str, Any]) -> bool:
+    def link_song_id(self, draft: dict[str, Any]) -> str | None:
         url = draft.get("url") or ""
         vid = urlclean.parse_video_id(url) if url else None
         fetched_id = (draft.get("fetched") or {}).get("sourceId")
-        if (vid and vid in self.owned.ids) or (fetched_id and fetched_id in self.owned.ids):
-            return True
-        if url and url in self.urls:
-            return True
-        return self.owned.duplicate("", draft.get("title", ""), draft.get("mainArtists") or [], draft.get("version")) is not None
+        for candidate in (vid, fetched_id):
+            if candidate and candidate in self.by_id:
+                return self.by_id[candidate]
+        return self.by_url.get(url) if url else None
+
+    def owns_link(self, draft: dict[str, Any]) -> bool:
+        return self.link_song_id(draft) is not None
+
+    def song_id(self, draft: dict[str, Any]) -> str | None:
+        found = self.link_song_id(draft)
+        if found:
+            return found
+        key = playlist_import._key(draft.get("title", ""), draft.get("mainArtists") or [], draft.get("version"))
+        return self.by_key.get(key) if key else None
+
+    def has(self, draft: dict[str, Any]) -> bool:
+        return self.song_id(draft) is not None
 
 
-PUBLIC_KEYS = ("id", "text", "url", "source", "title", "mainArtists", "featuredArtists", "withArtists", "version", "year", "duration", "thumbnail", "state", "createdAt")
+PUBLIC_KEYS = ("id", "text", "url", "source", "title", "mainArtists", "featuredArtists", "withArtists", "version", "year", "duration", "thumbnail", "state", "createdAt", "playlist")
+
+
+def origin_of(draft: dict[str, Any]) -> dict[str, Any] | None:
+    """`{id, title, position}` of the YouTube playlist a draft was imported from, or None (old drafts, pasted lines)."""
+    raw = draft.get("playlist")
+    if not isinstance(raw, dict) or not isinstance(raw.get("id"), str) or not raw["id"]:
+        return None
+    position = raw.get("position")
+    return {"id": raw["id"], "title": raw["title"] if isinstance(raw.get("title"), str) else "",
+            "position": position if isinstance(position, int) and not isinstance(position, bool) else 0}
 
 
 def public(draft: dict[str, Any], library: Library) -> dict[str, Any]:
     out = {k: draft.get(k) for k in PUBLIC_KEYS}
+    out["playlist"] = origin_of(draft)
     out["mainArtists"] = list(out["mainArtists"] or [])
     out["featuredArtists"] = list(out["featuredArtists"] or [])
     out["withArtists"] = list(out["withArtists"] or [])
@@ -282,17 +321,30 @@ def public(draft: dict[str, Any], library: Library) -> dict[str, Any]:
 
 # --- adding ------------------------------------------------------------------------------------
 
-def plan_lines(raw: Any, existing: list[dict[str, Any]]) -> dict[str, Any]:
-    """Split a paste and drop what cannot be a draft: `lines` are the new `(text, url)` pairs in paste order, `updates` the existing drafts that get the text of a line with the same link; `counts` says what was left out and why."""
-    lines = split_input(raw)
+def pair_origins(raw: Any, origins: list[dict[str, Any] | None] | None) -> list[tuple[str, dict[str, Any] | None]]:
+    """The lines of a paste with the playlist origin of their item; `origins[i]` belongs to item `i` and counts only when that item is a single line."""
+    items = raw if isinstance(raw, list) else [raw]
+    out: list[tuple[str, dict[str, Any] | None]] = []
+    for index, item in enumerate(items):
+        parts = split_input(item)
+        origin = origins[index] if origins and index < len(origins) and len(parts) == 1 else None
+        out.extend((part, origin) for part in parts)
+    return out
+
+
+def plan_lines(raw: Any, existing: list[dict[str, Any]], origins: list[dict[str, Any] | None] | None = None) -> dict[str, Any]:
+    """Split a paste and drop what cannot be a draft: `lines` are the new `(text, url)` pairs in paste order (`origins` the playlist origin of each, or None), `updates` the existing drafts that get the text of a line with the same link; `counts` says what was left out and why."""
+    pairs = pair_origins(raw, origins)
+    lines = [line for line, _ in pairs]
     counts = {"lines": len(lines), "overLineCap": max(0, len(lines) - MAX_LINES), "tooLong": 0, "duplicates": 0}
     by_url = {d["url"]: d for d in existing if d.get("url")}
     known_texts = {fold(d.get("text")) for d in existing if d.get("text")}
     seen_urls: set[str] = set()
     seen_texts: set[str] = set()
     fresh: list[tuple[str, str]] = []
+    fresh_origins: list[dict[str, Any] | None] = []
     updates: list[tuple[dict[str, Any], str]] = []
-    for line in lines[:MAX_LINES]:
+    for line, origin in pairs[:MAX_LINES]:
         if len(line) > MAX_LINE:
             counts["tooLong"] += 1
             continue
@@ -318,7 +370,8 @@ def plan_lines(raw: Any, existing: list[dict[str, Any]]) -> dict[str, Any]:
         if key:
             seen_texts.add(key)
         fresh.append((text, url))
-    return {"lines": fresh, "updates": updates, "counts": counts}
+        fresh_origins.append(origin)
+    return {"lines": fresh, "origins": fresh_origins, "updates": updates, "counts": counts}
 
 
 def find(items: list[dict[str, Any]], draft_id: str) -> dict[str, Any] | None:

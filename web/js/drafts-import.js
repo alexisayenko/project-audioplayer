@@ -123,15 +123,16 @@ export function playlistError(ex) {
 
 /**
  * Resolves the playlists, then adds every line in chunks (one save per chunk), so an interrupted import keeps what was added.
- * `fetchPlaylist(url)` and `addLines(lines)` (returns the paste response) are injected; `isCancelled()` is checked between steps.
+ * A playlist entry travels with its origin `{id, title, position}` (position = index in the playlist) so the draft remembers the playlist.
+ * `fetchPlaylist(url)` and `addLines(lines, origins)` (returns the paste response; `origins` is undefined when no line has one) are injected; `isCancelled()` is checked between steps.
  */
 export async function runImport({ lines, fetchPlaylist, addLines, ids = new Set(), onProgress = () => {}, isCancelled = () => false, chunk = CHUNK }) {
-  const r = { added: 0, duplicates: 0, unavailable: 0, truncated: 0, overCap: 0, unfetched: 0, rateLimited: false, errors: [], cancelled: false, total: 0, done: 0, failed: '' };
+  const r = { added: 0, duplicates: 0, unavailable: 0, truncated: 0, overCap: 0, unfetched: 0, inLibrary: 0, rateLimited: false, errors: [], cancelled: false, total: 0, done: 0, failed: '' };
   const queue = [];
   const taken = new Set(ids);
   for (const item of classify(lines)) {
     if (isCancelled()) { r.cancelled = true; return r; }
-    if (item.kind === 'line') { queue.push(item.line); continue; }
+    if (item.kind === 'line') { queue.push({ line: item.line, origin: null }); continue; }
     onProgress({ phase: 'reading', done: 0, total: 0 });
     let list;
     try {
@@ -142,11 +143,12 @@ export async function runImport({ lines, fetchPlaylist, addLines, ids = new Set(
     }
     if (list?.truncated) r.truncated += 1;
     r.unavailable += Number(list?.skipped) || 0;
-    for (const e of list?.entries ?? []) {
+    const title = squash(list?.title);
+    for (const [position, e] of (list?.entries ?? []).entries()) {
       if (!e.available || !e.id) { r.unavailable += 1; continue; }
       if (taken.has(e.id)) { r.duplicates += 1; continue; }
       taken.add(e.id);
-      queue.push(entryLine(e));
+      queue.push({ line: entryLine(e), origin: { id: item.id, title, position } });
     }
   }
   r.total = queue.length;
@@ -155,7 +157,9 @@ export async function runImport({ lines, fetchPlaylist, addLines, ids = new Set(
     if (isCancelled()) { r.cancelled = true; break; }
     const part = queue.slice(i, i + chunk);
     try {
-      const c = (await addLines(part))?.counts ?? {};
+      const resp = await addLines(part.map((q) => q.line), part.some((q) => q.origin) ? part.map((q) => q.origin) : undefined);
+      const c = resp?.counts ?? {};
+      r.inLibrary += (resp?.created ?? []).filter((d) => d.playlist && d.inLibrary).length;
       r.added += c.created ?? 0;
       r.duplicates += c.duplicates ?? 0;
       r.overCap += c.overCap ?? 0;
@@ -175,9 +179,10 @@ export async function runImport({ lines, fetchPlaylist, addLines, ids = new Set(
 export function summarizeImport(r) {
   const parts = [];
   const skipped = [];
-  if (r.duplicates) skipped.push(`skipped ${r.duplicates} already in your Drafts or Library`);
+  if (r.duplicates) skipped.push(`skipped ${r.duplicates} already in your Drafts`);
   if (r.unavailable) skipped.push(`${r.unavailable} unavailable`);
   if (r.total || skipped.length || !r.errors.length) parts.push(`${[`Added ${r.added}`, ...skipped].join(', ')}.`);
+  if (r.inLibrary) parts.push(`${r.inLibrary} already in your Library, kept as drafts so the playlist can include them.`);
   if (r.cancelled) parts.push(`Cancelled after ${r.done} of ${r.total}: the ${r.added} added ${plural(r.added, 'draft is', 'drafts are')} kept.`);
   if (r.failed) parts.push(`Stopped after ${r.done} of ${r.total}: ${r.failed}`);
   if (r.truncated) parts.push(`A playlist has more than ${PLAYLIST_CAP} videos: only the first ${PLAYLIST_CAP} were read.`);

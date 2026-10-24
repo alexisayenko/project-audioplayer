@@ -7,8 +7,8 @@ from typing import Annotated, Any
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.concurrency import run_in_threadpool
 
-from .. import deps, drafts, users
-from ..schemas import DraftLinesRequest, DraftPatchRequest
+from .. import deps, drafts, playlists, urlclean, users
+from ..schemas import DraftLinesRequest, DraftPatchRequest, DraftPlaylistRequest
 
 router = APIRouter()
 
@@ -16,6 +16,8 @@ UNKNOWN_DRAFT = "unknown draft"
 NOT_A_LINK = "url must be a link"
 NOTHING_TO_FETCH = "this draft has no YouTube or SoundCloud link to look up"
 ALREADY = "this link is already in your drafts"
+NO_PLAYLIST = "this draft did not come from a YouTube playlist"
+NOT_IN_LIBRARY = "this draft is not in your library yet"
 User = Annotated[dict[str, Any], Depends(deps.require_token)]
 
 
@@ -24,8 +26,12 @@ def _snapshot(uid: str) -> list[dict[str, Any]]:
         return drafts.load(deps.drafts_path(uid))
 
 
+def _library(uid: str) -> drafts.Library:
+    return drafts.Library(deps.load_songs(uid))
+
+
 def _present(uid: str, items: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    library = drafts.Library(deps.load_songs(uid))
+    library = _library(uid)
     return [drafts.public(d, library) for d in items]
 
 
@@ -63,10 +69,13 @@ def _commit_add(uid: str, built: list[dict[str, Any]], texts: list[tuple[str, st
 async def add_drafts(req: DraftLinesRequest, user: User):
     uid, owner = user["uid"], user["owner"]
     items = await run_in_threadpool(_snapshot, uid)
-    plan = drafts.plan_lines(req.lines, items)
+    origins = [o.model_dump() if o else None for o in req.origins] if req.origins is not None else None
+    plan = drafts.plan_lines(req.lines, items, origins)
     room = max(0, drafts.MAX_DRAFTS - len(items))
-    built = [drafts.build(text, url) for text, url in plan["lines"][:room]]
-    todo = [d for d in built if drafts.fetchable(d)]
+    built = [drafts.build(text, url, origin) for (text, url), origin in list(zip(plan["lines"], plan["origins"]))[:room]]
+    owned = await run_in_threadpool(_library, uid) if any(d.get("playlist") for d in built) else None
+    todo = [d for d in built if drafts.fetchable(d) and not (owned and d.get("playlist") and owned.owns_link(d))]
+    todo_ids = {d["id"] for d in todo}
     wait_s = drafts.charge_fetches(uid, owner, len(todo))
     results, blocked, errors = ({}, False, {}) if wait_s or not todo else await run_in_threadpool(drafts.fetch_many, todo)
     for draft in built:
@@ -82,7 +91,7 @@ async def add_drafts(req: DraftLinesRequest, user: User):
         "updated": len(done["updated"]),
         "duplicates": plan["counts"]["duplicates"] + done["duplicates"],
         "overCap": done["overCap"] + max(0, len(plan["lines"]) - room),
-        "unfetched": sum(1 for d in done["created"] if drafts.fetchable(d) and d["state"] != "fetched"),
+        "unfetched": sum(1 for d in done["created"] if d["id"] in todo_ids and d["state"] != "fetched"),
         "total": done["total"],
         "rateLimited": bool(blocked or wait_s),
         "retryAfterMinutes": max(1, int(-(-wait_s // 60))) if wait_s else None,
@@ -150,6 +159,39 @@ async def refresh_draft(draft_id: str, user: User):
 
     draft = await run_in_threadpool(commit)
     return {"draft": draft, "fetched": draft["state"] == "fetched" and draft_id in results, "rateLimited": limited, "error": errors.get(draft_id)}
+
+
+@router.post("/drafts/{draft_id}/playlist", responses=deps.responses(404, 422))
+def draft_playlist(draft_id: str, req: DraftPlaylistRequest, user: User):
+    uid, owner = user["uid"], user["owner"]
+    with deps.tx(uid, "drafts playlist"):
+        items = drafts.load(deps.drafts_path(uid))
+        found = _stored(draft_id, items)
+        origin = drafts.origin_of(found)
+        if origin is None:
+            raise HTTPException(status_code=422, detail=NO_PLAYLIST)
+        songs = deps.load_songs(uid)
+        known = {s["id"] for s in songs}
+        library = drafts.Library(songs)
+        own = req.song_id if req.song_id is not None else library.song_id(found)
+        if own is None or own not in known:
+            raise HTTPException(status_code=422, detail=NOT_IN_LIBRARY)
+        picks = {own: origin["position"]}
+        swept: set[str] = set()
+        for other in items:
+            sibling = drafts.origin_of(other)
+            if other is not found and sibling and sibling["id"] == origin["id"]:
+                sid = library.song_id(other)
+                if sid:
+                    picks.setdefault(sid, sibling["position"])
+                    swept.add(other["id"])
+        stored = playlists.load(deps.playlists_path(uid))
+        item, created, added, skipped = playlists.upsert_source(
+            stored, owner, source_id=origin["id"], url=urlclean.playlist_url(origin["id"]), title=origin["title"], picks=list(picks.items()), known=known)
+        playlists.save(deps.playlists_path(uid), stored)
+        if swept:
+            drafts.save(deps.drafts_path(uid), [d for d in items if d["id"] not in swept])
+        return {"playlist": {"id": item["id"], "name": item["name"], "count": len(item["songs"])}, "created": created, "added": added, "skipped": len(skipped), "dropped": sorted(swept)}
 
 
 @router.delete("/drafts/{draft_id}", status_code=204, responses=deps.responses(404))

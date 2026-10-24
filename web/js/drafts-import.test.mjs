@@ -88,7 +88,7 @@ test('runImport skips unavailable entries and known ids, adds in chunks of 10 in
   assert.equal(r.duplicates, 1);
   assert.equal(r.unavailable, 2);
   assert.deepEqual(progress, ['reading:0/0', 'adding:0/23', 'adding:10/23', 'adding:20/23', 'adding:23/23']);
-  assert.equal(summarizeImport(r), 'Added 23, skipped 1 already in your Drafts or Library, 2 unavailable.');
+  assert.equal(summarizeImport(r), 'Added 23, skipped 1 already in your Drafts, 2 unavailable.');
 });
 
 test('plain lines and a playlist are processed in order of appearance', async () => {

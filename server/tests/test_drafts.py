@@ -78,7 +78,7 @@ def test_mixed_lines_become_drafts_with_parsed_credits_in_paste_order(client, fa
     assert url_only["thumbnail"].endswith(f"/{V1}/hqdefault.jpg")
     assert (link["source"], link["url"], link["title"], link["state"]) == ("link", "https://example.com/page", "", "new")
     assert (bare["title"], bare["mainArtists"]) == ("just a title", [])
-    assert set(first) == {"id", "text", "url", "source", "title", "mainArtists", "featuredArtists", "withArtists", "version", "year", "duration", "thumbnail", "state", "inLibrary", "createdAt"}
+    assert set(first) == {"id", "text", "url", "source", "title", "mainArtists", "featuredArtists", "withArtists", "version", "year", "duration", "thumbnail", "state", "inLibrary", "createdAt", "playlist"}
     assert sorted(fake["calls"]) == [V1, V2]
 
 

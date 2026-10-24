@@ -143,8 +143,17 @@ class PlaylistDetailsRequest(BaseModel):
     ids: list[str] = Field(min_length=1, max_length=10)
 
 
+class DraftOrigin(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+
+    id: str = Field(pattern=r"^[A-Za-z0-9_-]{2,80}$")
+    title: str = Field(default="", max_length=300)
+    position: int = Field(ge=0, le=100000)
+
+
 class DraftLinesRequest(BaseModel):
     lines: list[str] = Field(max_length=1000)
+    origins: list[DraftOrigin | None] | None = Field(default=None, max_length=1000)
 
     @field_validator("lines")
     @classmethod
@@ -152,6 +161,18 @@ class DraftLinesRequest(BaseModel):
         if any(len(line) > MAX_PASTE_ITEM for line in lines):
             raise ValueError("a pasted item is too long")
         return lines
+
+    @model_validator(mode="after")
+    def _aligned(self) -> "DraftLinesRequest":
+        if self.origins is not None and len(self.origins) != len(self.lines):
+            raise ValueError("origins must have one entry per line")
+        return self
+
+
+class DraftPlaylistRequest(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+
+    song_id: str | None = Field(default=None, max_length=200)
 
 
 class DraftPatchRequest(BaseModel):

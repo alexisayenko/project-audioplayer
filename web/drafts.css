@@ -46,6 +46,7 @@
   border: var(--stroke-hairline) solid var(--line); border-radius: var(--radius-pill); color: var(--ink-muted); font: var(--font-caption); white-space: nowrap;
 }
 .draft-mark svg { flex: none; }
+.draft-from { min-width: 0; overflow-wrap: anywhere; }
 .draft-mark.library, .draft-mark.fetched { color: var(--ok); border-color: currentColor; }
 .draft-mark.failed { color: var(--power-text); border-color: currentColor; }
 .draft.in-library .draft-title { color: var(--muted); }

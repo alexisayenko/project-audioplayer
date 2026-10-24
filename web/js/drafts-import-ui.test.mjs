@@ -58,13 +58,13 @@ test('a pasted playlist link is resolved once and added in chunks of 10, saving 
   assert.equal(v.host.querySelector('.drafts-import').hidden, true);
 });
 
-test('videos already in Drafts or the Library are skipped and counted, unavailable ones too', async () => {
+test('videos already in Drafts are skipped and counted, unavailable ones too; videos already in the Library are kept as drafts', async () => {
   const list = playlist(6);
   list.entries[5].available = false;
   const v = await mount({ list, drafts: [draft('d0', { url: `https://www.youtube.com/watch?v=${vid(0)}` })], songs: [{ id: vid(1), title: 'x' }] });
   await v.paste(PL);
-  assert.equal(v.posts.flat().length, 3);
-  assert.equal(v.msg(), 'Added 3, skipped 2 already in your Drafts or Library, 1 unavailable.');
+  assert.equal(v.posts.flat().length, 4);
+  assert.equal(v.msg(), 'Added 4, skipped 1 already in your Drafts, 1 unavailable.');
 });
 
 test('a private playlist shows the friendly message and keeps the pasted text', async () => {

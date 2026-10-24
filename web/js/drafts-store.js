@@ -36,8 +36,8 @@ export const draftStore = {
     }
     this.emit();
   },
-  async paste(lines) {
-    const resp = await api.addDrafts(lines);
+  async paste(lines, origins) {
+    const resp = await api.addDrafts(lines, origins);
     this.items = mergePaste(this.items, resp);
     this.loaded = true;
     this.emit();
@@ -84,6 +84,12 @@ export const draftStore = {
     this.emit();
   },
   flush() { return Promise.all([...this.timers.keys()].map((id) => this.commitDelete(id))); },
+  forget(ids) {
+    const gone = new Set(ids ?? []);
+    if (!gone.size) return;
+    this.items = this.items.filter((d) => !gone.has(d.id));
+    this.emit();
+  },
   async dropAfterAdd(id) {
     this.hidden.add(id);
     this.emit();

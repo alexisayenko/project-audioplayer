@@ -4,8 +4,8 @@ import { serviceIcon, LABELS } from './service-icons.js';
 import { artistLine, titleNodes } from './credits.js';
 import { openAdd } from './add.js';
 import { draftStore } from './drafts-store.js';
-import { store } from './store.js';
 import { api } from './api.js';
+import { addDraftToPlaylist } from './drafts-playlist.js';
 import { hasPlaylist, runImport, summarizeImport, existingVideoIds } from './drafts-import.js';
 import {
   MAX_LINE, PLACEHOLDER, EMPTY_TEXT, LINK_NOTE, prepare, lineParts, rawLine, isFetchable, canRefresh, titleOf, statusOf, countText, summarize,
@@ -37,6 +37,11 @@ function subLine(d) {
 function statusMark(d) {
   const st = statusOf(d);
   return el('span', { class: `draft-mark ${st.kind}` }, MARK_ICON[st.kind] ? icon(MARK_ICON[st.kind], 'inline') : null, st.label);
+}
+
+function fromNote(d) {
+  if (!d.playlist) return null;
+  return el('small', { class: 'draft-from muted t-caption', title: 'Added to a playlist of the same name when you add it to the Library' }, `from ${d.playlist.title || 'a YouTube playlist'}`);
 }
 
 function thumb(d) {
@@ -88,8 +93,8 @@ export function mountDrafts(host) {
       r = await runImport({
         lines: prep.lines,
         fetchPlaylist: (url) => api.youtubePlaylist(url),
-        addLines: (part) => draftStore.paste(part),
-        ids: existingVideoIds({ drafts: draftStore.visible, songs: store.songs }),
+        addLines: (part, origins) => draftStore.paste(part, origins),
+        ids: existingVideoIds({ drafts: draftStore.visible }),
         onProgress: (p) => paintProgress(p, cancel),
         isCancelled: () => cancel.aborted,
       });
@@ -129,8 +134,27 @@ export function mountDrafts(host) {
     if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); void submit(); }
   });
 
+  async function finishAdd(d, songId) {
+    if (d.playlist && !(await addDraftToPlaylist(d, songId))) {
+      void draftStore.load();
+      return;
+    }
+    await draftStore.dropAfterAdd(d.id);
+  }
+
   function addToLibrary(d) {
-    openAdd({ draft: d, onSaved: () => { void draftStore.dropAfterAdd(d.id); } });
+    openAdd({ draft: d, onSaved: (added) => { void finishAdd(d, added?.id); } });
+  }
+
+  async function addToPlaylist(d) {
+    busy.add(d.id);
+    paint();
+    try {
+      await finishAdd(d);
+    } finally {
+      busy.delete(d.id);
+      paint();
+    }
   }
 
   async function refresh(d) {
@@ -188,9 +212,12 @@ export function mountDrafts(host) {
   function actions(d) {
     const name = titleOf(d);
     const working = busy.has(d.id);
+    const joinOnly = d.inLibrary && d.playlist;
     return el('div', { class: 'draft-actions' },
       srcLink(d),
-      el('button', { class: 'btn fill small', type: 'button', 'aria-label': `Add to Library: ${name}`, onclick: () => addToLibrary(d) }, icon('plus', 'inline'), 'Add to Library'),
+      joinOnly
+        ? el('button', { class: 'btn fill small', type: 'button', disabled: working, 'aria-label': `Add to playlist ${d.playlist.title}: ${name}`, onclick: () => { void addToPlaylist(d); } }, icon('plus', 'inline'), 'Add to playlist')
+        : el('button', { class: 'btn fill small', type: 'button', 'aria-label': `Add to Library: ${name}`, onclick: () => addToLibrary(d) }, icon('plus', 'inline'), 'Add to Library'),
       canRefresh(d) ? el('button', { class: 'link-btn', type: 'button', disabled: working, 'aria-label': `Refresh: ${name}`, onclick: () => { void refresh(d); } }, working ? 'Fetching...' : 'Refresh') : null,
       el('button', { class: 'link-btn', type: 'button', 'aria-label': `Edit: ${name}`, onclick: () => startEdit(d) }, 'Edit'),
       el('button', { class: 'link-btn danger-text', type: 'button', 'aria-label': `Delete: ${name}`, onclick: () => remove(d) }, 'Delete'));
@@ -206,7 +233,7 @@ export function mountDrafts(host) {
       : el('div', { class: 'info' },
         el('div', { class: 'title-line' }, head),
         subLine(d),
-        el('div', { class: 'draft-meta' }, statusMark(d), link ? el('small', { class: 'muted t-caption' }, LINK_NOTE) : null));
+        el('div', { class: 'draft-meta' }, statusMark(d), fromNote(d), link ? el('small', { class: 'muted t-caption' }, LINK_NOTE) : null));
     return el('li', { class: `draft${d.inLibrary ? ' in-library' : ''}`, 'data-id': d.id }, thumb(d), info, actions(d));
   }
 

@@ -22,6 +22,7 @@ MAX_REQUEST_IDS = 20000
 NAME_MAX = 120
 DESCRIPTION_MAX = 1000
 FILE_STEM_MAX = 100
+SOURCE_FALLBACK_NAME = "YouTube playlist"
 ID_RE = re.compile(r"^pl_[0-9a-z]{8}$")
 _ID_CHARS = string.ascii_lowercase + string.digits
 _CONTROL = re.compile(r"[\x00-\x1f\x7f]")
@@ -41,13 +42,29 @@ def _clean(raw: Any) -> dict[str, Any] | None:
         return None
     songs = raw.get("songs")
     description = raw.get("description")
-    return {
+    item = {
         "id": raw["id"],
         "name": name.strip(),
         "description": description.strip() if isinstance(description, str) else "",
         "created": _stamp(raw.get("created")),
         "updated": _stamp(raw.get("updated")),
         "songs": list(dict.fromkeys(s for s in songs if isinstance(s, str) and s)) if isinstance(songs, list) else [],
+    }
+    source = _clean_source(raw.get("source"))
+    if source is not None:
+        item["source"] = source
+    return item
+
+
+def _clean_source(raw: Any) -> dict[str, Any] | None:
+    if not isinstance(raw, dict) or raw.get("type") != "youtube" or not isinstance(raw.get("id"), str) or not raw["id"]:
+        return None
+    positions = raw.get("positions")
+    return {
+        "type": "youtube",
+        "id": raw["id"],
+        "url": raw["url"] if isinstance(raw.get("url"), str) else "",
+        "positions": {k: v for k, v in positions.items() if isinstance(k, str) and isinstance(v, int) and not isinstance(v, bool)} if isinstance(positions, dict) else {},
     }
 
 
@@ -134,6 +151,66 @@ def add_songs(item: dict[str, Any], song_ids: list[str], known: set[str], owner:
         raise Problem(422, "too_many_songs", f"A playlist holds at most {MAX_SONGS} songs.")
     item["songs"] = [*item["songs"], *fresh]
     return len(fresh), skipped
+
+
+def find_source(items: list[dict[str, Any]], source_id: str) -> dict[str, Any] | None:
+    return next((p for p in items if (p.get("source") or {}).get("id") == source_id), None)
+
+
+def free_name(items: list[dict[str, Any]], wanted: Any) -> str:
+    """The wanted name, or "Name (2)", "Name (3)", ... when a playlist of the user already has it (a missing title becomes "YouTube playlist")."""
+    base = " ".join(_CONTROL.sub(" ", str(wanted or "")).split())[:NAME_MAX].strip() or SOURCE_FALLBACK_NAME
+    taken = {p["name"].casefold() for p in items}
+    if base.casefold() not in taken:
+        return base
+    number = 2
+    while True:
+        suffix = f" ({number})"
+        name = f"{base[: NAME_MAX - len(suffix)].rstrip()}{suffix}"
+        if name.casefold() not in taken:
+            return name
+        number += 1
+
+
+def insert_by_position(item: dict[str, Any], picks: list[tuple[str, int]], known: set[str], owner: bool) -> tuple[int, list[str]]:
+    """Put `(song_id, position)` picks of a source playlist into `item`, each before the first song whose recorded position is higher (after all when none is), so the YouTube order holds across batches and songs the user placed by hand stay put. A song already there or not in the library is skipped; its position is still recorded. Returns `(added, skipped)`."""
+    positions = item["source"]["positions"]
+    have = set(item["songs"])
+    fresh: list[tuple[str, int]] = []
+    skipped: list[str] = []
+    for sid, pos in sorted(picks, key=lambda p: p[1]):
+        if sid not in known or sid in have:
+            skipped.append(sid)
+            if sid in have:
+                positions.setdefault(sid, pos)
+        else:
+            have.add(sid)
+            fresh.append((sid, pos))
+    if not owner and len(item["songs"]) + len(fresh) > MAX_SONGS:
+        raise Problem(422, "too_many_songs", f"A playlist holds at most {MAX_SONGS} songs.")
+    for sid, pos in fresh:
+        songs = item["songs"]
+        at = next((i for i, s in enumerate(songs) if positions.get(s) is not None and positions[s] > pos), len(songs))
+        songs.insert(at, sid)
+        positions[sid] = pos
+    return len(fresh), skipped
+
+
+def upsert_source(items: list[dict[str, Any]], owner: bool, *, source_id: str, url: str, title: Any, picks: list[tuple[str, int]], known: set[str]) -> tuple[dict[str, Any], bool, int, list[str]]:
+    """The playlist of a YouTube playlist (matched by `source.id`, created named after `title` when there is none) with the picks put in. Returns `(playlist, created, added, skipped)`; `items` gets the new playlist appended."""
+    item = find_source(items, source_id)
+    created = item is None
+    if item is None:
+        check_room(items, owner)
+        now = now_utc()
+        item = {"id": new_id(items), "name": free_name(items, title), "description": "", "created": now, "updated": now, "songs": [],
+                "source": {"type": "youtube", "id": source_id, "url": url, "positions": {}}}
+        items.append(item)
+    prune(item, known)
+    added, skipped = insert_by_position(item, picks, known, owner)
+    if added:
+        item["updated"] = now_utc()
+    return item, created, added, skipped
 
 
 def set_order(item: dict[str, Any], song_ids: list[str]) -> None:
