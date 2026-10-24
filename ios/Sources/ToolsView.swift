@@ -2,18 +2,24 @@
 import SwiftUI
 import UIKit
 
-/// Tools screen: a list of tool cards. First card: Live BPM (microphone). More tools (task-0110 to task-0112) get their own cards here.
+/// Tools screen: a list of tool cards: Live BPM (microphone) and the metronome. More tools (task-0110 to task-0112) get their own cards here.
+/// The microphone and the metronome never run together, and both stop when the screen is left or the app goes to the background.
 struct ToolsView: View {
     var isVisible = true
 
     @EnvironmentObject var player: PlayerService
     @Environment(\.scenePhase) private var scenePhase
     @StateObject private var mic = MicBPMModel()
+    @StateObject private var metronome = MetronomeModel()
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: DS.Space.space3) {
                 LiveBPMCard(mic: mic)
+                VStack(alignment: .leading, spacing: DS.Space.space2) {
+                    SectionLabel("Metronome")
+                    MetronomeCard(model: metronome, beforeStart: { mic.stop() })
+                }
             }
             .padding(.horizontal, DS.Space.space4).padding(.top, DS.Space.space2).padding(.bottom, DS.Space.space4)
         }
@@ -21,12 +27,27 @@ struct ToolsView: View {
             ScreenHeader(title: "Tools").padding(.horizontal, DS.Space.space4).padding(.top, DS.Space.space2)
                 .background(DS.Color.ground)
         }
+        .scrollDismissesKeyboard(.interactively)
         .dsGround()
         .dynamicTypeSize(...DynamicTypeSize.accessibility2)
-        .onAppear { mic.isPlayerPlaying = { [weak player] in player?.isPlaying ?? false } }
-        .onChange(of: isVisible) { _, visible in if !visible { mic.stop() } }
-        .onChange(of: scenePhase) { _, phase in if phase == .background { mic.stop(.backgrounded) } }
-        .onDisappear { mic.stop() }
+        .onAppear {
+            mic.isPlayerPlaying = { [weak player] in player?.isPlaying ?? false }
+            metronome.isMicListening = { [weak mic] in (mic?.running ?? false) || (mic?.busy ?? false) }
+        }
+        .onChange(of: mic.phase) { _, phase in if phase == .asking || phase == .listening { metronome.stop(ownPlayback: player.isPlaying) } }
+        .onChange(of: isVisible) { _, visible in if !visible { stopAll() } }
+        .onChange(of: scenePhase) { _, phase in
+            if phase == .background {
+                mic.stop(.backgrounded)
+                metronome.stop(ownPlayback: player.isPlaying)
+            }
+        }
+        .onDisappear { stopAll() }
+    }
+
+    private func stopAll() {
+        mic.stop()
+        metronome.stop(ownPlayback: player.isPlaying)
     }
 }
 
