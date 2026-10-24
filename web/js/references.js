@@ -123,7 +123,6 @@ export async function genreReferenceData(name, { force = false } = {}) {
 }
 
 export const genreReferences = (name, opts) => genreReferenceData(name, opts).then((d) => d.references);
-export const genreEras = (name, opts) => genreReferenceData(name, opts).then((d) => sortEras(d.eras));
 
 export const songMarks = (songId) => all?.by_song?.[songId] || [];
 
@@ -215,11 +214,6 @@ export function patchBodyFor(entry, {
   if (nextYear !== (entry.year ?? null)) body.year = nextYear;
   if (JSON.stringify(sources) !== JSON.stringify(entrySources(entry).map((s) => ({ type: s.type, url: s.url, ...(s.note ? { note: s.note } : {}) })))) body.sources = sources;
   return body;
-}
-
-export function markBody({ role, note, era }) {
-  const n = String(note || '').trim();
-  return { role, ...(n ? { note: n } : {}), ...(era ? { era } : {}) };
 }
 
 if (typeof window !== 'undefined') window.addEventListener('auth-changed', () => { resetReferences(); emit(); });

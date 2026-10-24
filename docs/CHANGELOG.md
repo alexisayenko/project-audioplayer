@@ -2,6 +2,10 @@
 
 What shipped, newest first. One line each; the web UI and server are live at https://electrophone.cc. Everything listed here is deployed except the sections marked "built, not deployed" (the 2026-10-14 release went out once the SSH access in [task-0027](tasks/task-0027.md) was restored; the live visualizer files match `origin/main` as of 2026-10-15). Why: [tech/decisions.md](tech/decisions.md); runbook: [tech/deploy.md](tech/deploy.md).
 
+## 2026-10-24 (remove "Mark as reference" from the song card, web, built, not deployed)
+
+- Web (owner, 2026-10-24: "remove button 'mark as a reference'"; LIB-211, GEN-088, GEN-100 withdrawn, [task-0093](tasks/task-0093.md); built, not deployed; `node --check` only, no tests run, test files edited): the song card no longer has the star action "Mark as reference" and its dialog (`web/js/reference-dialog.js` and its helpers `markBody`, `genreEras`, `eraSelect` and the `.ref-mark`, `.ref-hits` rules are removed), so reference tracks are read-only in the web UI and are curated only through Claude and the API (`POST /genres/{name}/references`, unchanged). Kept: the star line on a reference song in the card, the star in Library rows, the Library filter chip "Reference tracks" with its role select, and the reference rows in the Genre info. `web/js/reference-dialog.test.mjs` became `web/js/reference-badge.test.mjs` (the badge test only).
+
 ## 2026-10-24 (iOS TestFlight build 20261032)
 
 - iOS: TestFlight build 20261032 uploaded 2026-10-24 (App Store Connect accepted the archive; no server change). It carries the play recorder with the offline queue (IOS-087 to IOS-090, already in 20261031) and the playback and statistics refinements: the collapsed dock expands from a top grabber into a bottom Now Playing sheet (task-0099), taps left or right of the playhead seek 5 seconds in the dock and the seek bar (task-0087), read-only genre chips in Playback (task-0088), a faded non-tappable Up next preview with swipe-left removal and drag-handle reordering in the full queue (task-0090), and Statistics polling every 30 seconds while visible (STT-100). Not run on a device.

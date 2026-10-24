@@ -45,13 +45,11 @@ test('cleanSources validates links, drops empty rows and caps at 8', () => {
   assert.equal(R.cleanSources([{ type: 'weird', url: 'https://a.test/' }]).sources[0].type, 'other');
 });
 
-test('buildBody, patchBodyFor and markBody', () => {
+test('buildBody and patchBodyFor', () => {
   assert.deepEqual(R.buildBody({ artist: ' A ', title: ' T ', year: '1991', role: 'origin', note: '', sources: [] }), { artist: 'A', title: 'T', role: 'origin', year: 1991, sources: [] });
   const entry = { id: 'x', role: 'origin', note: 'n', year: 1991, sources: [{ type: 'rym', url: 'https://a.test/' }] };
   assert.deepEqual(R.patchBodyFor(entry, { year: '1991', role: 'origin', note: 'n', sources: [{ type: 'rym', url: 'https://a.test/' }] }), {});
   assert.deepEqual(R.patchBodyFor(entry, { year: '', role: 'landmark', note: '', sources: [] }), { role: 'landmark', note: '', year: null, sources: [] });
-  assert.deepEqual(R.markBody({ role: 'archetype', note: ' ' }), { role: 'archetype' });
-  assert.deepEqual(R.markBody({ role: 'origin', note: 'x' }), { role: 'origin', note: 'x' });
 });
 
 test('the store loads once, answers by song and refreshes after a write', async () => {
@@ -124,5 +122,4 @@ test('era in the entry bodies', () => {
   assert.deepEqual(R.patchBodyFor(entry, { role: 'origin', era: '', sources: [] }), { era: null });
   assert.deepEqual(R.patchBodyFor(entry, { role: 'origin', era: 'e1', sources: [] }), {});
   assert.deepEqual(R.patchBodyFor({ role: 'origin', sources: [] }, { role: 'origin', era: 'e2', sources: [] }), { era: 'e2' });
-  assert.deepEqual(R.markBody({ role: 'origin', era: 'e1' }), { role: 'origin', era: 'e1' });
 });

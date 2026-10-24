@@ -25,8 +25,7 @@ import { togglePartPopover, closePartPopover, initPartPopovers } from './part-po
 import { prefs, saveLibraryView } from './library-data.js';
 import * as audioGraph from './audio-graph.js';
 import { createLiveBpmController } from './live-bpm-ctl.js';
-import { loadReferences, onReferencesChange, isReferenceOwner, songMarks, marksTip, roleLabel } from './references.js';
-import { openReferenceDialog } from './reference-dialog.js';
+import { loadReferences, onReferencesChange, songMarks, marksTip, roleLabel } from './references.js';
 
 export function cardTags(tags) {
   const counts = visibleTags(tags).map((tag) => ({ tag, count: 1 }));
@@ -179,7 +178,6 @@ function actionRow(song) {
     ib('Share link', 'share', () => openShareDialog(song)),
     downloadIcon(song, audio, view, ib),
     can('edit') ? ib('Edit', 'pencil', () => editDialog(song)) : null,
-    isReferenceOwner() ? ib('Mark as reference', 'star', () => openReferenceDialog(song)) : null,
   ].filter(Boolean);
   return el('div', { class: 'card-actions' },
     icons.length ? el('div', { class: 'card-icons' }, ...icons) : null,

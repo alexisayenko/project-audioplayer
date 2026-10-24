@@ -11,17 +11,11 @@ import { paintRing } from './dl-ring.js';
 import { fetchControl } from './dl-control.js';
 import {
   roleLabel, sourceTypeLabel, entrySources, addPrefillFor, entryLine,
-  loadReferences, genreReferenceData, onReferencesChange, sortEras, sortEntries,
+  loadReferences, genreReferenceData, onReferencesChange, sortEntries,
 } from './references.js';
 
 export const EMPTY_REFERENCES = 'No reference tracks yet.';
 export const NOT_IN_LIBRARY = 'Not in library';
-
-export function eraSelect(eras, value = '') {
-  return el('select', { 'aria-label': 'Era' },
-    el('option', { value: '' }, 'None'),
-    ...sortEras(eras).map((e) => el('option', { value: e.id, selected: e.id === value }, e.name)));
-}
 
 export function linkText(url) {
   try {
