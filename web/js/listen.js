@@ -4,7 +4,7 @@ import { segmented } from './segmented.js';
 import { createMicInput, createPlayerInput, errorKey } from './harmonics-input.js';
 import {
   MAX_RUN_MS, DEFAULT_LIVE_MAX, LIVE_RANGES, LIVE_VIEW_NAMES, axisText, axisCaption, liveAxisRange, gramTicks,
-  createFeeder, createColors, createAxisControl, createLevelMeter, createLiveWave, createLiveSpectrum, createGramView, createBandsView,
+  createFeeder, createColors, createAxisControl, createLevelMeter, createLiveWave, createLiveSpectrum, createGramView,
 } from './listen-views.js';
 
 export const TITLE = 'Listen';
@@ -71,7 +71,6 @@ export function createListenCard(env = {}) {
   const wave = createLiveWave({ uid, colors, feed, what, freq: () => spectrum.peak?.freq ?? 0 });
   const spectrum = createLiveSpectrum({ uid, colors, now, feed, range, axisControl, what });
   const gram = createGramView({ colors, feed, range, ticks: (r, h) => gramTicks([], r, h) });
-  const bands = createBandsView({ uid, colors, feed });
 
   const label = el('span', {}, 'Start');
   const toggleIcon = el('span', { class: 'hm-ic' }, icon('mic', 'action'));
@@ -102,8 +101,7 @@ export function createListenCard(env = {}) {
     meter.node,
     wave.node,
     spectrum.node,
-    gram.node,
-    bands.node);
+    gram.node);
 
   function describe() {
     const w = what();
@@ -112,7 +110,6 @@ export function createListenCard(env = {}) {
     spectrum.describe();
     gram.canvas.setAttribute('aria-label', `Spectrogram of ${w} signal, ${axisText(r)}, last 10 seconds`);
     gram.caption.textContent = `${LIVE_VIEW_NAMES.gram} The last 10 seconds, frequency axis ${axisCaption(r)}. It fills while ${w} is heard and clears when the axis or source changes.`;
-    bands.describe(`${w} signal`);
   }
 
   function paintButton() {
@@ -134,7 +131,6 @@ export function createListenCard(env = {}) {
     wave.paint();
     spectrum.paint();
     gram.paintAxes();
-    bands.paint();
   }
 
   function say(key) {
@@ -156,7 +152,6 @@ export function createListenCard(env = {}) {
 
   function clearViews() {
     gram.restart();
-    bands.reset();
     meter.reset();
     wave.reset();
   }
@@ -187,7 +182,6 @@ export function createListenCard(env = {}) {
     spectrum.paint();
     meter.update();
     gram.step(dt);
-    bands.step(t);
   }
 
   function stop(key = 'idle') {

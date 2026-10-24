@@ -389,6 +389,55 @@ export const ONSET_GAP_S = 0.12;
 export const ONSET_FLOOR_DB = -70;
 export const LANE_MIN_SPAN_DB = 6;
 export const BEAT_NOTE = `${LIVE_VIEW_NAMES.bands} Each lane is one frequency range over the last 10 s. Regular ticks show which range carries the beat (usually Sub and Bass: the kick).`;
+export const GRID_NOTE = 'Faint vertical lines are the detected beat. If the ticks line up with them the BPM matches the music.';
+export const GRID_MIN_PX = 14;
+export const GRID_ANCHOR_S = 2;
+export const GRID_STRONG = 0.6;
+export const GRID_LANES = 2;
+export const GRID_ALPHA = 0.3;
+export const BANDS_LEFT = 74;
+export const BANDS_RIGHT = 22;
+export const BANDS_BOTTOM = 16;
+
+export const bandsPlotW = (w) => Math.max(1, w - BANDS_LEFT - BANDS_RIGHT);
+
+export function gridEvery(period, plotW) {
+  if (!(period > 0) || !(plotW > 0)) return 1;
+  return Math.max(1, Math.ceil(GRID_MIN_PX / ((period / BEAT_SECONDS) * plotW)));
+}
+
+export const gridEveryText = (every) => (every > 1 ? `Fast tempo: grid every ${every} beats.` : '');
+
+export function gridAnchor(lanes, nowT) {
+  const found = [];
+  let top = 0;
+  for (let i = 0; i < Math.min(GRID_LANES, lanes.length); i += 1) {
+    const pts = lanes[i].points;
+    for (let k = pts.length - 1; k >= 0 && nowT - pts[k].t <= GRID_ANCHOR_S; k -= 1) {
+      if (!pts[k].onset) continue;
+      found.push(pts[k]);
+      if (pts[k].strength > top) top = pts[k].strength;
+    }
+  }
+  let latest = null;
+  for (const p of found) if (p.strength >= GRID_STRONG * top && (latest === null || p.t > latest.t)) latest = p;
+  if (!latest) return null;
+  let first = latest.t;
+  for (const p of found) if (p.strength >= GRID_STRONG * top && latest.t - p.t < ONSET_GAP_S && p.t < first) first = p.t;
+  return first;
+}
+
+export function tempoGrid(lanes, bpm, nowT, plotW) {
+  if (!(bpm > 0)) return null;
+  const anchor = gridAnchor(lanes, nowT);
+  if (anchor === null) return null;
+  const period = 60 / bpm;
+  const every = gridEvery(period, plotW);
+  const step = period * every;
+  const times = [];
+  for (let t = anchor; t >= nowT - BEAT_SECONDS; t -= step) times.push(t);
+  return { period, every, anchor, times };
+}
 
 export function bandRangeText(band) {
   const k = (f) => +(f / 1000).toFixed(2);
@@ -445,7 +494,7 @@ export function createBeatTracker(count = BANDS.length) {
         lane.t = t;
         lane.level = db;
         lane.recent.push({ t, db });
-        lane.points.push({ t, db, onset });
+        lane.points.push({ t, db, onset, strength: onset ? strength : 0 });
         while (lane.points.length && t - lane.points[0].t > BEAT_SECONDS) lane.points.shift();
         return onset;
       });
@@ -830,12 +879,12 @@ export function drawGramAxes(g, colors, range, ticks) {
   }
 }
 
-export function drawBandsView(g, colors, lanes, nowT, normalize) {
+export function drawBandsView(g, colors, lanes, nowT, normalize, grid = null) {
   const { ctx, w, h } = g;
-  const left = 74;
-  const right = 22;
-  const bottom = 16;
-  const plotW = Math.max(1, w - left - right);
+  const left = BANDS_LEFT;
+  const right = BANDS_RIGHT;
+  const bottom = BANDS_BOTTOM;
+  const plotW = bandsPlotW(w);
   const laneH = (h - bottom) / BANDS.length;
   const pad = 4;
   ctx.clearRect(0, 0, w, h);
@@ -889,6 +938,17 @@ export function drawBandsView(g, colors, lanes, nowT, normalize) {
     ctx.fillRect(barX, top + ph - barH, 8, barH);
   });
   ctx.lineWidth = 1;
+  if (grid?.times.length) {
+    ctx.strokeStyle = css(colors.ink, GRID_ALPHA);
+    ctx.beginPath();
+    for (const t of grid.times) {
+      const x = Math.round(left + plotW - ((nowT - t) / BEAT_SECONDS) * plotW) + 0.5;
+      if (x < left) continue;
+      ctx.moveTo(x, 0);
+      ctx.lineTo(x, h - bottom);
+    }
+    ctx.stroke();
+  }
   ctx.font = `10px ${colors.font}`;
   ctx.fillStyle = css(colors.muted);
   ctx.textBaseline = 'top';
@@ -1287,28 +1347,48 @@ export function createGramView({ colors, feed, range, ticks }) {
   };
 }
 
-export function createBandsView({ uid, colors, feed }) {
+export function createBandsView({ uid, colors, feed, note = BEAT_NOTE }) {
   let normalize = true;
   let beatKey = '';
   let beatMap = [];
   let beatAt = 0;
+  let bpm = 0;
+  let grid = null;
+  let every = 1;
   const tracker = createBeatTracker();
   const canvas = el('canvas', { class: 'hm-canvas', role: 'img' });
   const normBox = el('input', { id: `${uid}-nb`, type: 'checkbox', checked: true, onchange: () => { normalize = normBox.checked; paint(); } });
+  const caption = el('p', { class: 'hm-cap muted t-caption' }, note);
   const node = el('div', { class: 'hm-block' },
     el('div', { class: 'hm-head' },
       el('h3', { class: 't-subhead' }, 'Beat bands'),
       el('span', { class: 'hm-check' }, normBox, el('label', { htmlFor: `${uid}-nb` }, 'Normalize per band'))),
     view(canvas, 'hm-bands'),
-    el('p', { class: 'hm-cap muted t-caption' }, BEAT_NOTE));
+    caption);
+
+  function showEvery(next) {
+    if (next === every) return;
+    every = next;
+    caption.textContent = [note, gridEveryText(every)].filter(Boolean).join(' ');
+  }
 
   function paint() {
     const g = fit(canvas);
-    if (g) drawBandsView(g, colors(), tracker.lanes, beatAt, normalize);
+    if (!g) return;
+    grid = bpm > 0 ? tempoGrid(tracker.lanes, bpm, beatAt, bandsPlotW(g.w)) : null;
+    if (grid) showEvery(grid.every);
+    drawBandsView(g, colors(), tracker.lanes, beatAt, normalize, grid);
   }
 
   return {
     node,
+    caption,
+    get grid() { return grid; },
+    get lanes() { return tracker.lanes; },
+    setTempo(next) {
+      bpm = next > 0 ? Number(next) : 0;
+      if (!bpm) { grid = null; showEvery(1); }
+    },
     paint,
     describe(what) {
       canvas.setAttribute('aria-label', `Beat bands of ${what}, last 10 seconds: four lanes, ${BANDS.map((b) => `${b.name} ${bandRangeText(b)}`).join(', ')}, each with its level and the detected beats marked`);

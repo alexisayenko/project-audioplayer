@@ -29,9 +29,11 @@ export function createMicBpm({ create = createLiveBpm } = {}) {
   let silent = true;
   let recent = [];
   let levelDb = -Infinity;
+  let exact = null;
 
   return {
     get silent() { return silent; },
+    get exact() { return exact; },
     push(samples, sampleRate) {
       if (!samples.length || !(sampleRate > 0)) return;
       const rms = rmsOf(samples);
@@ -43,13 +45,15 @@ export function createMicBpm({ create = createLiveBpm } = {}) {
       if (!quiet) det.pushSamples(samples, sampleRate);
     },
     value() {
+      exact = null;
       if (silent) return null;
       const bpm = det.estimateExact();
       if (Number.isFinite(bpm) && bpm > 0) recent.push(bpm);
       else recent.shift();
       if (recent.length > SMOOTH_COUNT) recent.shift();
       if (!recent.length) return null;
-      return Math.round(recent.slice().sort((a, b) => a - b)[recent.length >> 1]);
+      exact = recent.slice().sort((a, b) => a - b)[recent.length >> 1];
+      return Math.round(exact);
     },
     details() {
       const d = silent ? null : det.details?.();
@@ -57,6 +61,7 @@ export function createMicBpm({ create = createLiveBpm } = {}) {
     },
     reset() {
       levelDb = -Infinity;
+      exact = null;
       det.reset();
       recent = [];
       quietS = 0;

@@ -271,4 +271,92 @@ test('WEB-206: h1HintText picks the long hint when it clears H2 and fits, the sh
   assert.equal(v.h1HintText(measure, 690, 700, Infinity).left + 55 <= 698, true);
 });
 
+function kickLanes(seconds = 15, period = 0.5, count = 4) {
+  const tracker = v.createBeatTracker(count);
+  for (let i = 0; i <= seconds * 60; i += 1) {
+    const t = i / 60;
+    const phase = t % period;
+    const kick = phase < 0.05 ? -20 : -20 - 40 * Math.min(1, (phase - 0.05) / 0.2);
+    tracker.push(t, [kick, kick - 3, -50, -60].slice(0, count));
+  }
+  return { lanes: tracker.lanes, nowT: seconds };
+}
+
+test('STU-033: gridEvery keeps the grid lines at least 14 px apart and says so with a count above 1', () => {
+  assert.equal(v.GRID_MIN_PX, 14);
+  assert.equal(v.gridEvery(0.5, 600), 1);
+  assert.equal(v.gridEvery(0.2, 600), 2);
+  assert.equal(v.gridEvery(0.05, 600), 5);
+  assert.equal(v.gridEvery(0, 600), 1);
+  for (const bpm of [60, 120, 250, 400, 800, 1200]) {
+    const every = v.gridEvery(60 / bpm, 500);
+    assert.ok(every * (60 / bpm / v.BEAT_SECONDS) * 500 >= 14, String(bpm));
+  }
+  assert.equal(v.gridEveryText(1), '');
+  assert.equal(v.gridEveryText(3), 'Fast tempo: grid every 3 beats.');
+});
+
+test('STU-033: the tempo grid is phase-locked to the latest strong Sub or Bass onset and moves with it', () => {
+  const { lanes, nowT } = kickLanes();
+  const grid = v.tempoGrid(lanes, 120, nowT, 600);
+  assert.equal(grid.every, 1);
+  assert.ok(nowT - grid.anchor <= 0.5 + 1e-9);
+  assert.ok(Math.abs(grid.anchor % 0.5) < 0.05 || Math.abs((grid.anchor % 0.5) - 0.5) < 0.05);
+  assert.ok(grid.times.every((t) => t <= nowT && t >= nowT - v.BEAT_SECONDS));
+  assert.ok(grid.times.length >= 20 && grid.times.length <= 21);
+  for (let i = 1; i < grid.times.length; i += 1) assert.ok(Math.abs(grid.times[i - 1] - grid.times[i] - 0.5) < 1e-9);
+  const later = v.tempoGrid(lanes, 120, nowT + 0.25, 600);
+  assert.equal(later.anchor, grid.anchor);
+  assert.ok(later.times.length <= grid.times.length);
+});
+
+test('STU-033: no grid without a lock, without a recent onset, and the grid draws only every Nth beat at a fast tempo', () => {
+  const { lanes, nowT } = kickLanes();
+  assert.equal(v.tempoGrid(lanes, 0, nowT, 600), null);
+  assert.equal(v.tempoGrid(lanes, null, nowT, 600), null);
+  assert.equal(v.tempoGrid(lanes, 120, nowT + v.GRID_ANCHOR_S + 1, 600), null);
+  assert.equal(v.tempoGrid(v.createBeatTracker(4).lanes, 120, 3, 600), null);
+  const fast = v.tempoGrid(lanes, 600, nowT, 600);
+  assert.equal(fast.every, 3);
+  assert.ok(Math.abs(fast.times[0] - fast.times[1] - 0.3) < 1e-9);
+});
+
+test('STU-033: the grid ignores onsets in Mids and Highs and a weak onset beside a strong one', () => {
+  const tracker = v.createBeatTracker(4);
+  tracker.lanes[0].points.push({ t: 9.0, db: -20, onset: true, strength: 20 }, { t: 9.5, db: -20, onset: true, strength: 4 });
+  tracker.lanes[2].points.push({ t: 9.9, db: -20, onset: true, strength: 30 });
+  assert.equal(v.gridAnchor(tracker.lanes, 10), 9.0);
+  tracker.lanes[1].points.push({ t: 9.04, db: -20, onset: true, strength: 18 });
+  assert.equal(v.gridAnchor(tracker.lanes, 10), 9.0);
+});
+
+test('STU-033: drawBandsView strokes one path of grid lines inside the plot and none without a grid', () => {
+  const calls = [];
+  const ctx = new Proxy({}, { get: (_, k) => (k === 'measureText' ? () => ({ width: 10 }) : (...a) => calls.push([k, ...a])), set: (_, k, val) => { calls.push(['set', k, val]); return true; } });
+  const colors = { ink: [0, 0, 0], muted: [90, 90, 90], line: [200, 200, 200], fill: [30, 150, 180], stops: [[0, 0, 0], [0, 0, 0], [0, 0, 0], [210, 96, 26], [0, 0, 0]], font: 'sans-serif' };
+  const { lanes, nowT } = kickLanes();
+  const g = { ctx, w: 600, h: 240 };
+  v.drawBandsView(g, colors, lanes, nowT, true, null);
+  const plain = calls.filter(([k]) => k === 'stroke').length;
+  calls.length = 0;
+  const grid = v.tempoGrid(lanes, 120, nowT, v.bandsPlotW(600));
+  v.drawBandsView(g, colors, lanes, nowT, true, grid);
+  assert.equal(calls.filter(([k]) => k === 'stroke').length, plain + 1);
+  assert.ok(calls.some(([k, a, b]) => k === 'set' && a === 'strokeStyle' && b === `rgba(0,0,0,${v.GRID_ALPHA})`));
+  const xs = calls.filter(([k, x, y]) => k === 'moveTo' && y === 0).map(([, x]) => x);
+  assert.ok(xs.length >= 19 && xs.every((x) => x >= v.BANDS_LEFT && x <= 600 - v.BANDS_RIGHT + 1));
+});
+
+test('STU-033: the bands view takes its own caption and adds the grid note only at a fast tempo', () => {
+  const colors = () => ({ ink: [0, 0, 0], muted: [0, 0, 0], line: [0, 0, 0], fill: [0, 0, 0], stops: [[0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]], font: 'x' });
+  const bands = v.createBandsView({ uid: 'b', colors, feed: () => null, note: v.GRID_NOTE });
+  assert.equal(bands.caption.textContent, v.GRID_NOTE);
+  bands.setTempo(120);
+  assert.equal(bands.caption.textContent, v.GRID_NOTE);
+  bands.setTempo(null);
+  assert.equal(bands.grid, null);
+  const plain = v.createBandsView({ uid: 'c', colors, feed: () => null });
+  assert.equal(plain.caption.textContent, v.BEAT_NOTE);
+});
+
 const range16 = () => Array.from({ length: 16 }, (_, i) => i + 1);

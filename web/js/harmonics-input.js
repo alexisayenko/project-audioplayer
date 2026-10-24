@@ -1,13 +1,23 @@
 import * as realGraph from './audio-graph.js';
-import { errorKey, DEVICE_GRACE_MS } from './mic-tool.js';
 
 export const MIC_CONSTRAINTS = { audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false } };
 export const INPUT_FFT_SIZE = 16384;
 export const INPUT_SMOOTHING = 0.4;
+export const SAMPLE_BLOCK = 4096;
+export const DEVICE_GRACE_MS = 1500;
+
+export function errorKey(ex) {
+  const name = ex?.name;
+  if (name === 'NotAllowedError' || name === 'SecurityError' || name === 'PermissionDeniedError') return 'denied';
+  if (name === 'NotFoundError' || name === 'DevicesNotFoundError' || name === 'OverconstrainedError') return 'none';
+  if (name === 'NotReadableError' || name === 'TrackStartError' || name === 'AbortError') return 'busy';
+  return 'failed';
+}
 
 export function createMicInput(env = {}) {
   const nav = env.navigator ?? globalThis.navigator;
   const Ctx = env.AudioContext ?? globalThis.AudioContext ?? globalThis.webkitAudioContext;
+  const onSamples = typeof env.onSamples === 'function' ? env.onSamples : null;
   let live = null;
   let token = 0;
   let starting = false;
@@ -16,6 +26,7 @@ export function createMicInput(env = {}) {
     const r = live;
     if (!r) return;
     live = null;
+    if (r.proc) r.proc.onaudioprocess = null;
     r.off.forEach((fn) => fn());
     for (const n of r.nodes) n.disconnect();
     for (const t of r.stream.getTracks()) t.stop();
@@ -49,14 +60,25 @@ export function createMicInput(env = {}) {
         const sink = ctx.createGain();
         sink.gain.value = 0;
         source.connect(analyser);
-        analyser.connect(sink);
+        const nodes = [source, analyser, sink];
+        let proc = null;
+        if (onSamples) {
+          // Same stream as the analyser: the tempo engine reads raw samples from this node, so one getUserMedia serves both.
+          proc = ctx.createScriptProcessor(SAMPLE_BLOCK, 1, 1);
+          proc.onaudioprocess = (e) => onSamples(e.inputBuffer.getChannelData(0), ctx.sampleRate);
+          analyser.connect(proc);
+          proc.connect(sink);
+          nodes.push(proc);
+        } else {
+          analyser.connect(sink);
+        }
         sink.connect(ctx.destination);
         const off = [];
         const listen = (target, type, fn) => { target?.addEventListener?.(type, fn); off.push(() => target?.removeEventListener?.(type, fn)); };
         const startedAt = Date.now();
         for (const t of stream.getTracks()) listen(t, 'ended', () => onEnd?.('ended'));
         listen(nav.mediaDevices, 'devicechange', () => { if (Date.now() - startedAt > DEVICE_GRACE_MS) onEnd?.('devices'); });
-        live = { ctx, stream, analyser, nodes: [source, analyser, sink], off };
+        live = { ctx, stream, analyser, proc, nodes, off };
         starting = false;
         return true;
       } catch (ex) {
@@ -97,5 +119,3 @@ export function createPlayerInput(env = {}) {
     },
   };
 }
-
-export { errorKey };

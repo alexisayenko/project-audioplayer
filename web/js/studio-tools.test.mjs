@@ -3,16 +3,18 @@ import assert from 'node:assert/strict';
 import { installDom, fire, flush } from './test-dom.mjs';
 
 installDom();
-globalThis.location = { hash: '#/studio/tools', href: 'http://localhost/' };
-const { createMicCard, errorKey, TEXT, CONSTRAINTS, CAPTION, TITLE } = await import('./mic-tool.js');
+globalThis.location = { hash: '#/analyze/rhythm', href: 'http://localhost/' };
+const { createRhythmCard, TEXT, CAPTION, TITLE } = await import('./rhythm.js');
+const { errorKey, MIC_CONSTRAINTS } = await import('./harmonics-input.js');
 const { createMicBpm, rmsOf, levelFraction, SILENT_RMS } = await import('./mic-bpm.js');
-const { mountTools, TOOLS_NOTE } = await import('./studio-tools.js');
+const { mountRhythm } = await import('./studio-tools.js');
+const { GRID_NOTE } = await import('./listen-views.js');
 
 function node() {
   return { connected: [], connect(n) { this.connected.push(n); }, disconnect() { this.gone = true; } };
 }
 
-function fakeEnv({ fail = null } = {}) {
+function fakeEnv({ fail = null, exact = null } = {}) {
   const track = {
     stopped: 0, handlers: {},
     addEventListener(t, f) { (this.handlers[t] ||= []).push(f); },
@@ -20,10 +22,10 @@ function fakeEnv({ fail = null } = {}) {
     stop() { this.stopped += 1; },
   };
   const devices = {
-    asked: null, handlers: {},
+    asked: null, calls: 0, handlers: {},
     addEventListener(t, f) { (this.handlers[t] ||= []).push(f); },
     removeEventListener(t, f) { this.handlers[t] = (this.handlers[t] || []).filter((x) => x !== f); },
-    async getUserMedia(c) { devices.asked = c; if (fail) throw Object.assign(new Error('x'), { name: fail }); return { getTracks: () => [track] }; },
+    async getUserMedia(c) { devices.calls += 1; devices.asked = c; if (fail) throw Object.assign(new Error('x'), { name: fail }); return { getTracks: () => [track] }; },
   };
   const made = [];
   class Ctx {
@@ -31,7 +33,7 @@ function fakeEnv({ fail = null } = {}) {
     resume() { return Promise.resolve(); }
     close() { this.closed = true; return Promise.resolve(); }
     createMediaStreamSource() { return node(); }
-    createAnalyser() { return { ...node(), fftSize: 0, getFloatTimeDomainData(b) { b.fill(0.1); } }; }
+    createAnalyser() { return { ...node(), fftSize: 0, frequencyBinCount: 8192, getFloatFrequencyData(b) { b.fill(-80); } }; }
     createScriptProcessor() { return this.proc; }
     createGain() { return { ...node(), gain: { value: 1 } }; }
   }
@@ -41,70 +43,89 @@ function fakeEnv({ fail = null } = {}) {
     removeEventListener(t, f) { this.handlers[t] = (this.handlers[t] || []).filter((x) => x !== f); },
   };
   const pushed = [];
-  const createBpm = () => ({ push: (s, rate) => pushed.push([s.length, rate]), value: () => 128 });
-  return { env: { navigator: { mediaDevices: devices }, AudioContext: Ctx, document: doc, createBpm }, track, devices, made, doc, pushed };
+  const queue = [];
+  const clock = { t: 0 };
+  const createBpm = () => ({
+    exact,
+    push: (s, rate) => pushed.push([s.length, rate]),
+    value() { this.exact = exact; return exact === null ? null : Math.round(exact); },
+    reset() { this.exact = null; },
+    details: () => ({ levelDb: -20, windowS: 6, candidates: [{ bpm: 120, score: 0.95 }] }),
+  });
+  const raf = (fn) => { queue.push(fn); return queue.length; };
+  const env = { navigator: { mediaDevices: devices }, AudioContext: Ctx, document: doc, createBpm, raf, caf: () => {}, now: () => clock.t };
+  return { env, track, devices, made, doc, pushed, queue, clock };
 }
 
+const runFrame = (f) => f.queue.splice(0).forEach((fn) => fn());
 const text = (card, sel) => card.node.querySelector(sel).textContent;
 const click = (card) => fire(card.node.querySelector('.mt-toggle'), 'click');
 
-test('WEB-177: the card starts idle with the idle badge, the title and the privacy caption', () => {
+test('STU-032: the Rhythm card starts idle with the idle badge, the title, one Beat bands block and the privacy caption', () => {
   const { env } = fakeEnv();
-  const card = createMicCard(env);
+  const card = createRhythmCard(env);
   assert.equal(text(card, 'h2'), TITLE);
-  assert.equal(TITLE, 'Live BPM (microphone)');
+  assert.equal(TITLE, 'Rhythm');
   assert.equal(text(card, '.mt-state'), 'Tap Start to listen');
   assert.match(text(card, '.mt-bpm'), /- - -\s*BPM/);
   assert.match(CAPTION, /Nothing is recorded or uploaded/);
-  assert.match(CAPTION, /The player and this tool can run together/);
+  assert.doesNotMatch(CAPTION, /player/i);
+  assert.deepEqual(card.node.querySelectorAll('h3').map((h) => h.textContent), ['Beat bands']);
+  assert.equal(card.node.querySelectorAll('canvas').length, 1);
+  assert.equal(card.node.querySelector('.hm-cap').textContent, GRID_NOTE);
+  assert.equal(GRID_NOTE, 'Faint vertical lines are the detected beat. If the ticks line up with them the BPM matches the music.');
   assert.equal(card.node.className.includes('card'), true);
   card.dispose();
 });
 
-test('WEB-177: Start asks for the unprocessed single-channel microphone and shows Listening...', async () => {
+test('STU-033: Start asks for the unprocessed microphone once and shows Listening...', async () => {
   const { env, devices } = fakeEnv();
-  const card = createMicCard(env);
+  const card = createRhythmCard(env);
   click(card);
   await flush();
-  assert.deepEqual(devices.asked, { audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false, channelCount: 1 } });
-  assert.deepEqual(CONSTRAINTS, devices.asked);
+  assert.deepEqual(devices.asked, { audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false } });
+  assert.deepEqual(MIC_CONSTRAINTS, devices.asked);
+  assert.equal(devices.calls, 1);
   assert.equal(text(card, '.mt-state'), TEXT.listening);
   assert.equal(text(card, '.mt-toggle'), 'Stop');
   assert.equal(card.running, true);
   card.dispose();
 });
 
-test('WEB-177: audio from the processor node goes to the analyser engine with the context sample rate', async () => {
-  const { env, made, pushed } = fakeEnv();
-  const card = createMicCard(env);
+test('STU-033: the processor node on the shared input feeds the tempo engine with the context sample rate', async () => {
+  const { env, made, pushed, devices } = fakeEnv();
+  const card = createRhythmCard(env);
   click(card);
   await flush();
   made[0].proc.onaudioprocess({ inputBuffer: { getChannelData: () => new Float32Array(4096) } });
   assert.deepEqual(pushed, [[4096, 48000]]);
+  assert.equal(devices.calls, 1);
+  assert.equal(made.length, 1);
   card.dispose();
 });
 
-test('WEB-178: Stop releases the tracks, the nodes and the context and says Tap Start to listen', async () => {
+test('STU-033: Stop releases the tracks, the nodes and the context and says Tap Start to listen', async () => {
   const { env, track, made } = fakeEnv();
-  const card = createMicCard(env);
+  const card = createRhythmCard(env);
   click(card);
   await flush();
   click(card);
   assert.equal(track.stopped, 1);
   assert.equal(made[0].closed, true);
   assert.equal(made[0].proc.gone, true);
+  assert.equal(made[0].proc.onaudioprocess, null);
   assert.equal(card.running, false);
   assert.equal(text(card, '.mt-state'), TEXT.idle);
   assert.equal(text(card, '.mt-toggle'), 'Start');
 });
 
-test('WEB-178: a hidden page, an ended stream and a device change stop it with their own message', async () => {
+test('STU-033: a hidden page and an ended stream stop it with their own message', async () => {
   for (const [fire$, key] of [
     [(f) => { f.doc.hidden = true; f.doc.handlers.visibilitychange.forEach((h) => h()); }, 'hidden'],
     [(f) => f.track.handlers.ended.forEach((h) => h()), 'ended'],
   ]) {
     const f = fakeEnv();
-    const card = createMicCard(f.env);
+    const card = createRhythmCard(f.env);
     click(card);
     await flush();
     fire$(f);
@@ -113,11 +134,12 @@ test('WEB-178: a hidden page, an ended stream and a device change stop it with t
     assert.equal(card.running, false);
   }
   assert.equal(TEXT.hidden, 'Stopped: the page was hidden');
+  assert.equal(TEXT.timeout, 'Stopped: 10 minutes reached');
 });
 
-test('WEB-178: leaving the tab (dispose) releases everything without painting', async () => {
+test('STU-033: leaving the page (dispose) releases everything without painting', async () => {
   const { env, track, made } = fakeEnv();
-  const card = createMicCard(env);
+  const card = createRhythmCard(env);
   click(card);
   await flush();
   card.dispose();
@@ -126,10 +148,10 @@ test('WEB-178: leaving the tab (dispose) releases everything without painting', 
   assert.equal(text(card, '.mt-state'), TEXT.listening);
 });
 
-test('WEB-177: a refused, missing or busy microphone shows its own message and keeps Start', async () => {
+test('STU-033: a refused, missing or busy microphone shows its own message and keeps Start', async () => {
   for (const [name, key] of [['NotAllowedError', 'denied'], ['NotFoundError', 'none'], ['NotReadableError', 'busy'], ['Weird', 'failed']]) {
     const { env, made } = fakeEnv({ fail: name });
-    const card = createMicCard(env);
+    const card = createRhythmCard(env);
     click(card);
     await flush();
     assert.equal(text(card, '.mt-state'), TEXT[key]);
@@ -142,25 +164,59 @@ test('WEB-177: a refused, missing or busy microphone shows its own message and k
   assert.equal(TEXT.none, 'No microphone found');
 });
 
-test('WEB-177: without getUserMedia the card says so and does not start', async () => {
-  const card = createMicCard({ navigator: {}, AudioContext: class {}, document: {} });
+test('STU-033: without getUserMedia the card says so and does not start', async () => {
+  const card = createRhythmCard({ navigator: {}, AudioContext: class {}, document: {} });
   click(card);
   await flush();
   assert.equal(text(card, '.mt-state'), TEXT.unsupported);
   assert.equal(card.running, false);
 });
 
-test('WEB-177: the engine adapter shows idle for silence and the engine value for sound, and the meter maps decibels', () => {
+test('STU-032: the badge shows one decimal up to 200 BPM and an integer above, and the engine value drives the grid', async () => {
+  for (const [exact, shown] of [[120.04, '120.0'], [199.96, '200.0'], [250.4, '250'], [1000.4, '1000']]) {
+    const f = fakeEnv({ exact });
+    const card = createRhythmCard(f.env);
+    click(card);
+    await flush();
+    f.clock.t = 600;
+    runFrame(f);
+    assert.equal(text(card, '.mt-value'), shown, String(exact));
+    assert.equal(card.node.querySelector('.mt-bpm').getAttribute('aria-label'), `BPM ${shown}`);
+    click(card);
+    assert.equal(text(card, '.mt-value'), '- - -');
+  }
+});
+
+test('STU-023: the Details row lists the level, the window and the top candidates while running', async () => {
+  const f = fakeEnv({ exact: 120 });
+  const card = createRhythmCard(f.env);
+  const details = card.node.querySelector('.mt-details');
+  details.open = true;
+  fire(details, 'toggle');
+  assert.match(text(card, '.mt-detail'), /Level: - dBFS/);
+  click(card);
+  await flush();
+  f.clock.t = 600;
+  runFrame(f);
+  assert.match(details.textContent, /Level: -20\.0 dBFS/);
+  assert.match(details.textContent, /Window: 6\.0 s/);
+  assert.match(details.textContent, /120 BPM \(0\.95\)/);
+  card.dispose();
+});
+
+test('STU-032: the engine adapter shows idle for silence, keeps the unrounded value and the meter maps decibels', () => {
   const pushed = [];
   let reset = 0;
-  const mic = createMicBpm({ create: () => ({ pushSamples: (s, r) => pushed.push([s.length, r]), estimateExact: () => 140, reset: () => { reset += 1; } }) });
+  const mic = createMicBpm({ create: () => ({ pushSamples: (s, r) => pushed.push([s.length, r]), estimateExact: () => 140.4, reset: () => { reset += 1; } }) });
   const loud = new Float32Array(48000).fill(0.2);
   const quiet = new Float32Array(48000);
   mic.push(loud, 48000);
   assert.equal(mic.value(), 140);
+  assert.equal(mic.exact, 140.4);
   mic.push(quiet, 48000);
   mic.push(quiet, 48000);
   assert.equal(mic.value(), null);
+  assert.equal(mic.exact, null);
   assert.equal(reset, 1);
   assert.equal(pushed.length, 2);
   assert.ok(SILENT_RMS > 0);
@@ -169,21 +225,12 @@ test('WEB-177: the engine adapter shows idle for silence and the engine value fo
   assert.equal(levelFraction(1), 1);
 });
 
-test('WEB-176: the Analyze tool (now on the studio site) shows the microphone card with no song and no player', async () => {
-  const { env } = fakeEnv();
-  const panel = document.createElement('div');
-  const dispose = mountTools(panel, env);
-  await flush();
-  assert.equal(panel.querySelector('.stu-tools-note').textContent, 'Temporary home for audio tools.');
-  assert.equal(TOOLS_NOTE, 'Temporary home for audio tools.');
-  assert.ok(panel.querySelector('section.card.mt-card'));
-  dispose();
-});
-
-test('WEB-176: mountTools returns a dispose that stops the microphone', async () => {
+test('STU-032: mountRhythm shows the one card and returns a dispose that stops the microphone', async () => {
   const { env, track } = fakeEnv();
   const panel = document.createElement('div');
-  const dispose = mountTools(panel, env);
+  const dispose = mountRhythm(panel, env);
+  assert.ok(panel.querySelector('section.card.rh-card'));
+  assert.equal(panel.querySelector('.ls-card'), null);
   fire(panel.querySelector('.mt-toggle'), 'click');
   await flush();
   dispose();

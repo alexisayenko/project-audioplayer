@@ -7,8 +7,8 @@ installDom();
 const { PAGES, pageFromHash, DEFAULT_PAGE } = await import('../../studio/routes.js');
 const { createHarmonicsCard } = await import('./harmonics.js');
 const { createListenCard, PLAYER_NEEDS_APP } = await import('./listen.js');
-const { createMicCard, CAPTION, CAPTION_STANDALONE } = await import('./mic-tool.js');
-const { mountTools, mountMic, mountListen, mountChordophones, TOOLS_NOTE } = await import('./studio-tools.js');
+const { createRhythmCard, CAPTION } = await import('./rhythm.js');
+const { mountRhythm, mountListen, mountChordophones } = await import('./studio-tools.js');
 const { PLACEHOLDERS, mountPlaceholder } = await import('../../studio/placeholders.js');
 const read = (rel) => readFileSync(new URL(rel, import.meta.url), 'utf8');
 
@@ -16,9 +16,11 @@ const player = (available) => ({ available, playing: false, analyser: null, samp
 
 test('STU-006: seven routes, #/synthesize/simple is the default, the old two-page hashes are aliases, anything else falls back', () => {
   assert.equal(DEFAULT_PAGE, 'synthesize/simple');
-  for (const id of ['synthesize/simple', 'synthesize/chordophones', 'synthesize/aerophones', 'synthesize/membranophones', 'synthesize/idiophones', 'analyze/listen', 'analyze/bpm']) {
+  for (const id of ['synthesize/simple', 'synthesize/chordophones', 'synthesize/aerophones', 'synthesize/membranophones', 'synthesize/idiophones', 'analyze/listen', 'analyze/rhythm']) {
     assert.equal(pageFromHash(`#/${id}`), id);
   }
+  assert.equal(pageFromHash('#/analyze/bpm'), 'analyze/rhythm');
+  assert.equal(pageFromHash('#/analyze/bpm/'), 'analyze/rhythm');
   assert.equal(pageFromHash('#/synthesize/chordophones/'), 'synthesize/chordophones');
   assert.equal(pageFromHash('#/synthesize'), 'synthesize/simple');
   assert.equal(pageFromHash('#/analyze'), 'analyze/listen');
@@ -33,7 +35,7 @@ test('STU-006: seven routes, #/synthesize/simple is the default, the old two-pag
     ['Synthesize', 'Membranophones', '#/synthesize/membranophones'],
     ['Synthesize', 'Idiophones', '#/synthesize/idiophones'],
     ['Analyze', 'Listen', '#/analyze/listen'],
-    ['Analyze', 'Live BPM', '#/analyze/bpm'],
+    ['Analyze', 'Rhythm', '#/analyze/rhythm'],
     ['Reference', 'Glossary', '#/glossary'],
   ]);
 });
@@ -49,7 +51,7 @@ test('STU-017: the three placeholder pages name their physics and a new ticket',
   assert.match(PLACEHOLDERS['synthesize/membranophones'].lines.join(' '), /1, 1\.59, 2\.14, 2\.30, 2\.65 and 2\.92/);
 });
 
-test('STU-005: the left menu is a nav named Studio with the groups Synthesize (five items), Analyze (Listen, Live BPM) and Reference (Glossary) and a link back to the main app', () => {
+test('STU-005: the left menu is a nav named Studio with the groups Synthesize (five items), Analyze (Listen, Rhythm) and Reference (Glossary) and a link back to the main app', () => {
   const html = read('../../studio/index.html');
   const nav = html.match(/<nav class="site-nav" aria-label="Studio">([\s\S]*?)<\/nav>/)[1];
   assert.deepEqual([...nav.matchAll(/<h2 [^>]*>([^<]*)<\/h2>/g)].map((m) => m[1]), ['Synthesize', 'Analyze', 'Reference']);
@@ -91,26 +93,20 @@ test('STU-009: the Player code path stays in the shared module and is reachable 
   none.dispose();
 });
 
-test('STU-010: the standalone caption leaves out the player and the Analyze tab drops the temporary note', () => {
-  assert.match(CAPTION, /The player and this tool can run together/);
-  assert.doesNotMatch(CAPTION_STANDALONE, /player/i);
-  assert.match(CAPTION_STANDALONE, /Nothing is recorded or uploaded/);
-  const mic = createMicCard({ standalone: true });
-  assert.equal(mic.node.querySelector('.mt-caption').textContent, CAPTION_STANDALONE);
-  mic.dispose();
-  const panel = document.createElement('div');
-  const dispose = mountTools(panel, { standalone: true });
-  assert.equal(panel.querySelector('.stu-tools-note'), null);
-  assert.ok(panel.querySelector('.mt-card') && panel.querySelector('.hm-card'));
-  dispose();
-  assert.equal(TOOLS_NOTE, 'Temporary home for audio tools.');
+test('STU-010: the Rhythm caption leaves out the player and keeps the privacy sentence', () => {
+  assert.doesNotMatch(CAPTION, /player/i);
+  assert.match(CAPTION, /Nothing is recorded or uploaded/);
+  const rhythm = createRhythmCard();
+  assert.equal(rhythm.node.querySelector('.mt-caption').textContent, CAPTION);
+  rhythm.dispose();
 });
 
-test('STU-006: Live BPM, Listen and Chordophones are separate pages, each with one card and a dispose', () => {
+test('STU-006: Rhythm, Listen and Chordophones are separate pages, each with one card and a dispose', () => {
   const bpm = document.createElement('div');
-  const stopBpm = mountMic(bpm, { standalone: true });
-  assert.ok(bpm.querySelector('.mt-card'));
+  const stopBpm = mountRhythm(bpm);
+  assert.ok(bpm.querySelector('.rh-card'));
   assert.equal(bpm.querySelector('.hm-card'), null);
+  assert.equal(bpm.querySelector('.ls-card'), null);
   stopBpm();
   const listen = document.createElement('div');
   const stopListen = mountListen(listen);
@@ -126,10 +122,11 @@ test('STU-006: Live BPM, Listen and Chordophones are separate pages, each with o
   stopLab();
 });
 
-test('STU-018: Listen shows the level meter, the waveform, spectrum with the peak readout, spectrogram and beat bands, in that order', () => {
+test('STU-018: Listen shows the level meter, the waveform, spectrum with the peak readout and spectrogram, in that order, and no beat bands', () => {
   const card = createListenCard();
   assert.equal(card.node.querySelector('h2').textContent, 'Listen');
-  assert.deepEqual(card.node.querySelectorAll('h3').map((h) => h.textContent), ['Level', 'Waveform', 'Spectrum', 'Spectrogram', 'Beat bands']);
+  assert.deepEqual(card.node.querySelectorAll('h3').map((h) => h.textContent), ['Level', 'Waveform', 'Spectrum', 'Spectrogram']);
+  assert.equal(card.node.querySelector('.hm-bands'), null);
   assert.equal(card.node.querySelector('.lv-read').textContent, '< -90 dBFS');
   assert.equal(card.node.querySelector('.hm-peak').textContent, 'Peak: -');
   assert.equal(card.node.querySelector('.hm-state').textContent, 'Tap Start to listen');
@@ -161,9 +158,9 @@ test('STU-001, STU-014: the site page and headers match the spec', () => {
 
 test('STU-002, STU-012: the entry imports the shared tool modules and none of the main app state', () => {
   const main = read('../../studio/main.js');
-  assert.match(main, /import \{ mountMic, mountListen, mountChordophones \} from '\.\.\/web\/js\/studio-tools\.js'/);
+  assert.match(main, /import \{ mountRhythm, mountListen, mountChordophones \} from '\.\.\/web\/js\/studio-tools\.js'/);
   assert.match(main, /from '\.\.\/web\/js\/simple-tone\.js'/);
-  for (const name of ['studio-tools', 'simple-tone', 'mic-tool', 'harmonics', 'harmonics-input', 'listen', 'listen-views']) {
+  for (const name of ['studio-tools', 'simple-tone', 'rhythm', 'mic-bpm', 'harmonics', 'harmonics-input', 'listen', 'listen-views']) {
     assert.doesNotMatch(read(`./${name}.js`), /from '\.\/(api|store|guest|storage)\.js'|localStorage|sessionStorage|fetch\(/, name);
   }
 });
