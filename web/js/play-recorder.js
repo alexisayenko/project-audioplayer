@@ -19,7 +19,8 @@ const DROP_STATUSES = new Set([400, 404, 409, 410, 413, 422]);
 export function newBatchKey() {
   const c = globalThis.crypto;
   if (c?.randomUUID) return c.randomUUID();
-  return `b${Date.now().toString(36)}${Math.random().toString(36).slice(2, 12)}`;
+  const bytes = c.getRandomValues(new Uint8Array(12));
+  return `b${Date.now().toString(36)}${Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('')}`;
 }
 
 function readJson(key, fallback) {
