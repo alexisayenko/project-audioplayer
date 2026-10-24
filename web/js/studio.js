@@ -32,14 +32,13 @@ const nudgeLabel = (side, d) => `${SIDES[side].text} ${d > 0 ? 'later' : 'earlie
 
 export const TOOLS_FAILED = 'The tools could not be loaded. Check the connection and try again.';
 
-function mountToolsTab(pane, env) {
-  const loadTools = env.loadTools ?? (() => import('./studio-tools.js'));
+function mountLazyTab(pane, load, mount) {
   let stop = null;
   let gone = false;
   const attempt = () => {
-    Promise.resolve(loadTools()).then((m) => {
+    Promise.resolve(load()).then((m) => {
       if (gone) return;
-      stop = m.mountTools(pane, env.tools);
+      stop = mount(m);
     }, () => {
       if (gone) return;
       pane.replaceChildren(el('div', { class: 'state card' },
@@ -73,9 +72,11 @@ export function renderStudio(root, env = {}) {
   const tabs = studioTabs(tab);
   const body = el('div', { class: 'stu', id: 'stu-track', role: 'tabpanel', 'aria-labelledby': 'stu-tab-track', hidden: tab !== 'track' });
   const toolsPane = el('div', { class: 'stu', id: 'stu-tools', role: 'tabpanel', 'aria-labelledby': 'stu-tab-tools', hidden: tab !== 'tools' });
-  root.append(head, tabs.bar, body, toolsPane);
+  const simplePane = el('div', { class: 'stu', id: 'stu-simple', role: 'tabpanel', 'aria-labelledby': 'stu-tab-simple', hidden: tab !== 'simple' });
+  root.append(head, tabs.bar, body, toolsPane, simplePane);
   tabs.restoreFocus();
-  if (tab === 'tools') return mountToolsTab(toolsPane, env);
+  if (tab === 'tools') return mountLazyTab(toolsPane, env.loadTools ?? (() => import('./studio-tools.js')), (m) => m.mountTools(toolsPane, env.tools));
+  if (tab === 'simple') return mountLazyTab(simplePane, env.loadSimple ?? (() => import('./simple-tone.js')), (m) => m.mountSimple(simplePane, env.simple));
   const loop = player.loop;
 
   let shownId = null;

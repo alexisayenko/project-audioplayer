@@ -119,3 +119,5 @@ input.hm-num { width: 7.5rem; flex: none; }
 .conn-note:not([hidden]) ~ .loop-chip { top: calc(-1 * (var(--control) + var(--space-6) + var(--space-2))); }
 .loop-off { display: grid; place-items: center; width: var(--control); height: var(--control); padding: 0; border: 0; border-radius: var(--radius-pill); background: transparent; color: inherit; }
 @media (hover: hover) { .loop-off:hover { background-image: linear-gradient(var(--hover-wash), var(--hover-wash)); } }
+.sm-ctl { display: grid; gap: var(--space-4); align-items: start; min-width: 0; }
+@media (min-width: 720px) { .sm-ctl { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-4) var(--space-5); } }

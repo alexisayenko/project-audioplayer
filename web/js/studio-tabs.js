@@ -3,9 +3,13 @@ import { el } from './dom.js';
 export const TABS = [
   { id: 'track', label: 'Track', hash: '#/studio' },
   { id: 'tools', label: 'Tools', hash: '#/studio/tools' },
+  { id: 'simple', label: 'Simple', hash: '#/studio/simple' },
 ];
 
-export const tabFromHash = (hash) => (/^#\/?studio\/tools$/.test(hash || '') ? 'tools' : 'track');
+export const tabFromHash = (hash) => {
+  const m = /^#\/?studio\/(tools|simple)$/.exec(hash || '');
+  return m ? m[1] : 'track';
+};
 
 let refocus = false;
 

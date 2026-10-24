@@ -54,9 +54,10 @@ test('WEB-175: #/studio is the Track tab, #/studio/tools the Tools tab, and app.
   assert.equal(tabFromHash(''), 'track');
   assert.equal(tabFromHash('#/studio'), 'track');
   assert.equal(tabFromHash('#/studio/tools'), 'tools');
+  assert.equal(tabFromHash('#/studio/simple'), 'simple');
   assert.equal(tabFromHash('#/studio/other'), 'track');
-  assert.deepEqual(TABS.map((t) => [t.label, t.hash]), [['Track', '#/studio'], ['Tools', '#/studio/tools']]);
-  assert.match(read('./app.js'), /if \(name === 'studio\/tools'\) name = 'studio';/);
+  assert.deepEqual(TABS.map((t) => [t.label, t.hash]), [['Track', '#/studio'], ['Tools', '#/studio/tools'], ['Simple', '#/studio/simple']]);
+  assert.match(read('./app.js'), /if \(name === 'studio\/tools' \|\| name === 'studio\/simple'\) name = 'studio';/);
 });
 
 test('WEB-175: the tabs reuse the Library switch classes with the tablist pattern and a roving tabindex', () => {
@@ -64,10 +65,10 @@ test('WEB-175: the tabs reuse the Library switch classes with the tablist patter
   assert.equal(t.bar.getAttribute('role'), 'tablist');
   assert.match(t.bar.className, /\bseg\b/);
   const tabs = t.bar.querySelectorAll('[role=tab]');
-  assert.deepEqual(tabs.map((b) => b.textContent), ['Track', 'Tools']);
-  assert.deepEqual(tabs.map((b) => b.getAttribute('aria-selected')), ['false', 'true']);
-  assert.deepEqual(tabs.map((b) => b.getAttribute('tabindex')), ['-1', '0']);
-  assert.deepEqual(tabs.map((b) => b.getAttribute('aria-controls')), ['stu-track', 'stu-tools']);
+  assert.deepEqual(tabs.map((b) => b.textContent), ['Track', 'Tools', 'Simple']);
+  assert.deepEqual(tabs.map((b) => b.getAttribute('aria-selected')), ['false', 'true', 'false']);
+  assert.deepEqual(tabs.map((b) => b.getAttribute('tabindex')), ['-1', '0', '-1']);
+  assert.deepEqual(tabs.map((b) => b.getAttribute('aria-controls')), ['stu-track', 'stu-tools', 'stu-simple']);
   assert.ok(tabs.every((b) => /\bseg-btn\b/.test(b.className)));
 });
 
