@@ -70,6 +70,8 @@ test('css: the sidebar mini-player shows only when collapsed and a song is loade
   assert.match(css, /@media \(min-width: 480px\) \{\n  body\.mini-compact\.has-mini \.side-mini \{ display: flex;/);
   const open = css.match(/body\.mini-compact\.has-mini:not\(\.side-collapsed\) \.side-mini \{[^}]*\}/)[0];
   assert.ok(!/border-bottom/.test(open));
+  assert.match(css, /body\.mini-compact\.has-mini #nav \{ margin-bottom: var\(--space-6\); \}/);
+  assert.match(css, /body\.mini-compact\.has-mini\.side-collapsed \.side-mini \{ padding: calc\(var\(--space-4\) \+ \(var\(--control\) - var\(--control-xl\)\) \/ 2\) 0 calc\(var\(--space-1\) \+ var\(--space-2\) - \(var\(--control-xl\) - var\(--control\)\) \/ 2\); \}/);
   assert.match(css, /body\.mini-compact\.has-mini \.side-mini \{ display: flex;[^}]*border-top: var\(--stroke-hairline\) solid var\(--line\)/);
   assert.ok(!/\.side-mini \{[^}]*overflow: hidden/.test(css.slice(css.indexOf('side mini-player: the dock'))));
   assert.match(css, /\.sm-line \{[^}]*height: var\(--stroke-medium\); border-radius: var\(--radius-pill\)/);
