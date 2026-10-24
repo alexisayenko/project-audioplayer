@@ -2,7 +2,7 @@
 
 What shipped, newest first. One line each; the web UI and server are live at https://electrophone.cc. Everything listed here is deployed except the sections marked "built, not deployed" (the 2026-10-14 release went out once the SSH access in [task-0027](tasks/task-0027.md) was restored; the live visualizer files match `origin/main` as of 2026-10-15). Why: [tech/decisions.md](tech/decisions.md); runbook: [tech/deploy.md](tech/deploy.md).
 
-## 2026-10-24 (harmonics lab: piano-style strings, web, built, not deployed)
+## 2026-10-24 (harmonics lab: piano-style strings, web, deployed as `8c7ede1`)
 
 - Web (task-0109, WEB-186, WEB-187, ADR-0048 amended; owner decision FX1, 2026-10-24; no tests run, `node --check` and a local Chromium page with the real `AudioContext` only): the "Pitch and harmonics" card has "Strings per note" (1, 2 or 3; default 1, the old sound) and, from 2 strings, "Detune between strings (cents)" (0 to 5, default 2). Each string is its own stack of harmonics with the same roll-off and decay, offset symmetrically in cents (3 strings: -d, 0, +d), gains divided by the string count so the sum stays at or below 0.3; a changed string count or detune glides without clicks. The card shows the explainer "A real piano note has up to 3 strings tuned a hair apart; their slow beating gives the shimmer.", a live "H1 beats about X Hz" and a beats hint under the waveform; the views show the real summed signal. Measured: 96 oscillators for 3 strings, H1 at 439.492, 440 and 440.509 Hz for 440 Hz and 2 cents, the analyser peak swelling between about 0.03 and 0.20 every 2 s, no horizontal scroll at 375 px. Not verified: how it sounds, and the Mac app.
 
