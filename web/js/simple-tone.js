@@ -20,7 +20,15 @@ export const SCOPE_TICKS = 4;
 export const SLOW = 1000;
 export const FAST_SLOWED_HZ = 5;
 export const MAX_FRAME_MS = 100;
-export const WAVELENGTH_PX = 120;
+export const SOUND_SPEED = 343;
+export const AIR_ROWS = 5;
+export const AIR_GAP = 12;
+export const AIR_MAX_COLS = 56;
+export const AIR_SHIFT_FRAC = 0.12;
+export const AIR_SHIFT_MIN = 16;
+export const AIR_SHIFT_MAX = 48;
+export const AIR_NOW_TEXT = 'now';
+export const AIR_AGO_TEXT = 'one cycle ago';
 export const CONE_TITLE = 'Slow motion: the speaker cone';
 export const CONE_NOTE = 'Swing exaggerated. The real cone moves a fraction of a millimetre. Here its sine motion runs 1000 times slower, and each position of the cone matches a position in time on the sine wave above (the dot).';
 export const PAUSE_TEXT = 'Pause animation';
@@ -115,7 +123,35 @@ export const coneOffset = (phase, amp) => (amp / MAX_AMP) * Math.sin(2 * Math.PI
 
 export const scopeMarker = (phase, amp) => ({ frac: phase, level: amp * Math.sin(2 * Math.PI * phase) });
 
-export const waveShift = (phase, dist, wavelength = WAVELENGTH_PX) => Math.sin(2 * Math.PI * (phase - dist / wavelength));
+export const waveShift = (phase, dist, wavelength) => Math.sin(2 * Math.PI * (phase - dist / wavelength));
+
+export function wavelengthM(freq) {
+  return SOUND_SPEED / freq;
+}
+
+export function fmtWavelength(freq) {
+  const m = wavelengthM(freq);
+  if (m >= 0.995) return `${fmtSig(m)} m`;
+  return `${+(m * 100).toPrecision(2)} cm`;
+}
+
+export const airNote = (freq) => `The dots are the air in front of the cone: one dense bunch (high pressure) and one thin gap (low pressure) are one cycle of the wave; the dot on the oscilloscope is the cone's present position. The spacing is schematic: the real wavelength of ${trim(freq, 2)} Hz is about ${fmtWavelength(freq)}.`;
+
+export function airGeometry(base, right) {
+  const avail = Math.max(0, right - base);
+  const shift = clamp(avail * AIR_SHIFT_FRAC, AIR_SHIFT_MIN, AIR_SHIFT_MAX);
+  const wavelength = Math.max(1, avail - 2 * shift);
+  const cols = clamp(Math.round(wavelength / AIR_GAP), 1, AIR_MAX_COLS);
+  return { start: base + shift, wavelength, shift, cols, gap: wavelength / cols };
+}
+
+export const airRest = (geo, col, row) => (col + 0.25 + 0.5 * (row % 2)) * geo.gap;
+
+export const airX = (phase, amp, geo, dist) => geo.start + dist + (amp / MAX_AMP) * geo.shift * waveShift(phase, dist, geo.wavelength);
+
+export const airBunchFrac = (phase) => phase - Math.floor(phase);
+
+export const airSpacing = (phase, amp, geo, dist) => 1 - ((amp / MAX_AMP) * geo.shift * 2 * Math.PI / geo.wavelength) * Math.cos(2 * Math.PI * (phase - dist / geo.wavelength));
 
 export function scopeSeries(amp, points, cycles = CYCLES) {
   const out = new Array(points);
@@ -248,19 +284,35 @@ function drawCone(g, colors, phase, amp) {
   ctx.fillText('rest', restX, h - 2);
   ctx.textBaseline = 'top';
   ctx.fillText('magnet', magnetX + magnetW / 2, cy + magnetH / 2 + 4);
-  const startX = restX + travel + 22;
-  const gap = 14;
-  const cols = Math.max(0, Math.floor((w - 8 - startX) / gap) + 1);
-  const rows = 5;
-  const dotAmp = (amp / MAX_AMP) * travel * 0.5;
+  const geo = airGeometry(restX + travel + 6, w - 8);
+  const areaL = geo.start;
+  const areaR = geo.start + geo.wavelength;
+  const legendY = h - 16;
+  ctx.save();
+  ctx.strokeStyle = colors.line;
+  ctx.lineWidth = 1;
+  ctx.setLineDash?.([2, 3]);
+  ctx.beginPath();
+  for (const x of [areaL, areaR]) { ctx.moveTo(x, cy - radius); ctx.lineTo(x, legendY); }
+  ctx.stroke();
+  ctx.setLineDash?.([]);
+  ctx.beginPath();
+  ctx.moveTo(areaL, legendY); ctx.lineTo(areaR, legendY);
+  for (const x of [areaL, areaR]) { ctx.moveTo(x, legendY - 3); ctx.lineTo(x, legendY + 3); }
+  ctx.stroke();
+  ctx.restore();
+  ctx.fillStyle = colors.muted;
+  ctx.textBaseline = 'top';
+  ctx.textAlign = 'center';
+  ctx.fillText(AIR_NOW_TEXT, areaL, legendY + 5);
+  ctx.textAlign = 'right';
+  ctx.fillText(AIR_AGO_TEXT, areaR, legendY + 5);
   ctx.fillStyle = colors.fill;
   ctx.globalAlpha = 0.85;
-  for (let r = 0; r < rows; r += 1) {
-    const y = cy - radius + ((r + 0.5) * 2 * radius) / rows;
-    const stagger = r % 2 ? gap / 2 : 0;
-    for (let c = 0; c < cols; c += 1) {
-      const rest = startX + stagger + c * gap;
-      const x = rest + dotAmp * waveShift(phase, rest - restX);
+  for (let r = 0; r < AIR_ROWS; r += 1) {
+    const y = cy - radius + ((r + 0.5) * 2 * radius) / AIR_ROWS;
+    for (let c = 0; c < geo.cols; c += 1) {
+      const x = airX(phase, amp, geo, airRest(geo, c, r));
       ctx.beginPath(); ctx.arc(x, y, 2.2, 0, 2 * Math.PI); ctx.fill();
     }
   }
@@ -366,6 +418,7 @@ export function createSimpleCard(env = {}) {
   const readoutOut = el('p', { class: 'hm-cap muted t-caption' });
   const coneCanvas = el('canvas', { class: 'hm-canvas', role: 'img' });
   const slowOut = el('p', { class: 'hm-cap muted t-caption' });
+  const airOut = el('p', { class: 'hm-cap muted t-caption sm-air' });
   const pauseButton = el('button', { class: 'btn outline small', type: 'button', onclick: () => togglePause() }, reduced ? PLAY_ANIM_TEXT : PAUSE_TEXT);
 
   const field = (id, title, ...rest) => el('div', { class: 'hm-field' }, el('label', { htmlFor: id }, title), ...rest);
@@ -390,7 +443,8 @@ export function createSimpleCard(env = {}) {
       el('div', { class: 'hm-head' }, el('h3', { class: 't-subhead' }, CONE_TITLE), pauseButton),
       el('div', { class: 'hm-view sm-cone' }, coneCanvas),
       slowOut,
-      el('p', { class: 'hm-cap muted t-caption' }, CONE_NOTE)),
+      el('p', { class: 'hm-cap muted t-caption' }, CONE_NOTE),
+      airOut),
     el('a', { class: 'gl-link t-subhead', href: GLOSSARY_HREF }, GLOSSARY_LINK));
 
   const active = () => doc?.activeElement;
@@ -416,8 +470,9 @@ export function createSimpleCard(env = {}) {
     contBox.checked = p.continuous;
     readoutOut.textContent = readout(p);
     canvas.setAttribute('aria-label', `Sine wave, ${p.freq} Hz, amplitude ${fmtPct(p.amp * 100)} % of full scale, one cycle`);
-    coneCanvas.setAttribute('aria-label', `Side view of a speaker cone moving ${SLOW} times slower than real, matching the ${p.freq} Hz sine wave above, swing in proportion to the amplitude, ${fmtPct(p.amp * 100)} % of full scale`);
+    coneCanvas.setAttribute('aria-label', `Side view of a speaker cone moving ${SLOW} times slower than real, matching the ${p.freq} Hz sine wave above, swing in proportion to the amplitude, ${fmtPct(p.amp * 100)} % of full scale; the air dots in front of the cone show one cycle of the wave as one dense bunch and one thin gap`);
     slowOut.textContent = slowReadout(p.freq);
+    airOut.textContent = airNote(p.freq);
   }
 
   function say(key) {

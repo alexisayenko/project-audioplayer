@@ -43,7 +43,7 @@ const RAW = [
   { id: 'trails', term: 'Trails (afterglow)', text: 'the spectrum keeps a fading ghost of recent peaks, like a phosphor screen: you see where the energy has been, not only where it is. You can set how long the glow lasts.', see: ['spectrum'], demo: { page: 'analyze/listen', label: 'Listen' } },
   { id: 'vibration', term: 'Vibration', text: 'an oscillation of a physical object, such as a string or a speaker cone. The cone vibrates; the air pressure it creates oscillates.', see: ['oscillation', 'sound'] },
   { id: 'waveform', term: 'Waveform', text: 'the shape of the sound over time, with time across and amplitude up. An oscilloscope draws it.', see: ['amplitude', 'sine-wave', 'spectrum'], demo: { page: 'synthesize/simple', label: 'Primitive' } },
-  { id: 'wavelength', term: 'Wavelength', text: 'the distance between two peaks of the wave; a larger wavelength means a lower frequency.', see: ['frequency', 'amplitude', 'cycle-and-period'] },
+  { id: 'wavelength', term: 'Wavelength', text: 'the distance between two peaks of the wave; a larger wavelength means a lower frequency. At 440 Hz about 78 cm in air.', see: ['frequency', 'amplitude', 'cycle-and-period'] },
 ];
 
 const byTerm = (a, b) => a.term.localeCompare(b.term, 'en', { sensitivity: 'base' });

@@ -102,8 +102,44 @@ test('WEB-204: the cone and the oscilloscope dot share one phase: far point on t
   const peak = s.scopeMarker(0.25, 0.3);
   assert.ok(near(peak.level, 0.3) && peak.frac === 0.25);
   assert.ok(near(s.scopeMarker(0.5, 0.3).level, 0, 1e-12));
-  assert.ok(near(s.waveShift(0.25, 0), 1));
-  assert.ok(near(s.waveShift(0.25, s.WAVELENGTH_PX / 4), 0, 1e-12));
+  assert.ok(near(s.waveShift(0.25, 0, 200), 1));
+  assert.ok(near(s.waveShift(0.25, 50, 200), 0, 1e-12));
+});
+
+test('WEB-204: the air pattern is exactly one wavelength across the visible area, matching the one-cycle oscilloscope', () => {
+  const geo = s.airGeometry(122, 367);
+  assert.ok(near(geo.start + geo.wavelength + geo.shift, 367, 1e-9));
+  assert.ok(near(s.waveShift(0.3, 0, geo.wavelength), s.waveShift(0.3, geo.wavelength, geo.wavelength), 1e-12));
+  assert.ok(near(s.airX(0.3, 0.8, geo, 0) - geo.start, s.airX(0.3, 0.8, geo, geo.wavelength) - geo.start - geo.wavelength, 1e-9));
+  assert.ok(near(s.airBunchFrac(1.25), 0.25, 1e-12));
+  assert.ok(near(s.airBunchFrac(0.25), s.airBunchFrac(1.25), 1e-12));
+  for (const phase of [0, 0.25, 0.6, 0.9]) {
+    let best = 0;
+    let found = 0;
+    let count = 0;
+    const n = 400;
+    const sp = [];
+    for (let i = 0; i < n; i += 1) sp.push(s.airSpacing(phase, 0.8, geo, (i / n) * geo.wavelength));
+    for (let i = 0; i < n; i += 1) {
+      if (sp[i] < sp[best]) best = i;
+      if (sp[i] < sp[(i + n - 1) % n] && sp[i] <= sp[(i + 1) % n]) { count += 1; found = i; }
+    }
+    assert.equal(count, 1);
+    assert.ok(Math.abs(found / n - s.airBunchFrac(phase)) < 1.5 / n || Math.abs(found / n - s.airBunchFrac(phase)) > 1 - 1.5 / n);
+  }
+  assert.ok(s.airSpacing(0.25, 0.8, geo, 0.25 * geo.wavelength) < 1);
+  assert.ok(s.airSpacing(0.25, 0.8, geo, 0.75 * geo.wavelength) > 1);
+  assert.ok(s.airGeometry(122, 367).cols * s.AIR_ROWS < 300);
+  assert.ok(s.airGeometry(122, 5000).cols * s.AIR_ROWS < 300);
+});
+
+test('WEB-204: the real wavelength is 343 m/s over the live frequency', () => {
+  assert.ok(near(s.wavelengthM(440), 0.7795, 1e-3));
+  assert.equal(s.fmtWavelength(440), '78 cm');
+  assert.equal(s.fmtWavelength(100), '3.43 m');
+  assert.equal(s.fmtWavelength(20000), '1.7 cm');
+  assert.match(s.airNote(440), /one dense bunch \(high pressure\) and one thin gap \(low pressure\) are one cycle of the wave/);
+  assert.match(s.airNote(440), /the real wavelength of 440 Hz is about 78 cm\.$/);
 });
 
 test('WEB-204: Primitive has no Cycles shown selector, a Pause animation control and honours reduced motion', () => {
