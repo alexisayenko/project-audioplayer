@@ -12,7 +12,8 @@ import { disposeAll } from './marquee.js';
 import { LIBRARY_FRESH_MS } from './constants.js';
 import { songRow, coverTile, paintDownloadRows } from './library-rows.js';
 import { playlistStore } from './playlists-store.js';
-import { totalText, moveId, insertId, exportName, queueNotes } from './playlists-model.js';
+import { totalText, moveId, insertId, exportName, queueNotes, addedText } from './playlists-model.js';
+import { addSongsPanel } from './playlist-add.js';
 import { createOrderSync, attachDrag } from './playlist-order.js';
 import { playlistForm } from './playlist-dialogs.js';
 import { deleteWithUndo } from './playlists-list.js';
@@ -51,8 +52,15 @@ export function renderPlaylistPage(root, id) {
   const songsNow = () => ids.map((sid) => store.get(sid)).filter(Boolean);
   const say = (text) => { live.textContent = ''; setTimeout(() => { live.textContent = text; }, 50); };
 
+  let queue = Promise.resolve();
+  let posting = Promise.resolve();
+  const adder = addSongsPanel({ held: () => new Set(ids), onAdd: (song) => addFound(song) });
+
   const sync = createOrderSync({
-    send: (order) => playlistStore.order(id, order),
+    send: async (order) => {
+      await posting;
+      return playlistStore.order(id, order);
+    },
     onError: (ex) => {
       toast(ex.status === 422 ? 'The playlist changed elsewhere. Reloaded.' : `Could not save the order: ${ex.message}`);
       if (!gone) void load();
@@ -124,7 +132,7 @@ export function renderPlaylistPage(root, id) {
     } else if (!ids.length) {
       status.replaceChildren(el('div', { class: 'state card' },
         el('p', { class: 't-headline' }, 'No songs yet'),
-        el('p', { class: 'muted t-subhead' }, 'Use "Add to playlist" on a song in the Library to put it here.'),
+        el('p', { class: 'muted t-subhead' }, 'Search above to add songs, or use "Add to playlist" on a song in the Library.'),
         el('a', { class: 'btn outline small', href: '#/library' }, 'Open Library')));
     } else {
       status.replaceChildren();
@@ -137,6 +145,8 @@ export function renderPlaylistPage(root, id) {
     group.hidden = !ids.length;
     paintRows();
     paintStatus();
+    adder.node.hidden = !detail;
+    adder.refresh();
   }
 
   function adopt(next) {
@@ -209,6 +219,37 @@ export function renderPlaylistPage(root, id) {
     deleteWithUndo({ id, name: detail.name }, () => { location.hash = '#/playlists'; });
   }
 
+  function dropOptimistic(sid) {
+    ids = ids.filter((x) => x !== sid);
+    detail = { ...detail, songs: detail.songs.filter((x) => x !== sid) };
+  }
+
+  async function postAdd(sid) {
+    if (gone) return;
+    const request = playlistStore.add(id, [sid]);
+    posting = request.catch(() => {});
+    try {
+      await request;
+    } catch (ex) {
+      if (gone) return;
+      dropOptimistic(sid);
+      paintAll();
+      toast(`Could not add: ${ex.message}`);
+    }
+  }
+
+  function addFound(song) {
+    const sid = song.id;
+    if (!detail || ids.includes(sid)) return;
+    ids = [...ids, sid];
+    detail = { ...detail, songs: [...detail.songs, sid] };
+    if (sync.pending()) sync.schedule(ids);
+    paintAll();
+    toast(addedText(detail.name, { added: 1, skipped: [] }, 1));
+    say(`Added ${titleLine(song)}`);
+    queue = queue.then(() => postAdd(sid));
+  }
+
   async function restoreSong(sid, index) {
     try {
       await playlistStore.add(id, [sid]);
@@ -227,6 +268,7 @@ export function renderPlaylistPage(root, id) {
     const index = ids.indexOf(sid);
     const song = store.get(sid);
     try {
+      await queue;
       await sync.flush();
       await playlistStore.removeSong(id, sid);
     } catch (ex) {
@@ -290,7 +332,7 @@ export function renderPlaylistPage(root, id) {
     },
   });
 
-  root.append(back, head, actions, group, status, live);
+  root.append(back, head, actions, adder.node, group, status, live);
 
   const unsubLibrary = store.subscribe(() => {
     if (gone || !detail || list.classList.contains('is-dragging')) return;

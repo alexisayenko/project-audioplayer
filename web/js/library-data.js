@@ -1,10 +1,9 @@
 import { store } from './store.js';
 import { storeGet, storeSet } from './storage.js';
 import { sortKey, compareKeys, displayYear } from './credits.js';
-import { songSearchText } from './search-text.js';
-import { matchesQuery } from './search-query.js';
+import { songMatches } from './song-match.js';
 import { referenceSongIds } from './references.js';
-import { filterableTags, canonicalTag, tagSearchText, categoryOf, withRuntimeDecade } from './tagname.js';
+import { canonicalTag, categoryOf, withRuntimeDecade } from './tagname.js';
 
 const UNSET_KEYS = { genres: 'genre', years: 'decade', countries: 'country' };
 const UNSET_NOUN = { genres: 'genre', years: 'year', countries: 'country' };
@@ -93,8 +92,7 @@ export function visibleSongs(sel = prefs.sel) {
     if (!matchesSelection(s, sel)) return false;
     if (prefs.never && listening && !neverListened(s)) return false;
     if (!q) return true;
-    const hay = songSearchText(s, filterableTags(withRuntimeDecade(s).tags).map(tagSearchText));
-    return matchesQuery(hay, q);
+    return songMatches(s, q);
   });
   const [, cmp, missing] = SORTS[prefs.sort];
   list.sort(cmp);

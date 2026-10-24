@@ -1,4 +1,4 @@
-/* Playlists (PLS-001, PLS-005, PLS-008..PLS-014): the list, the playlist page and the Add to playlist picker */
+/* Playlists (PLS-001, PLS-005, PLS-008..PLS-014, PLS-129..PLS-133): the list, the playlist page, its add-by-search box and the Add to playlist picker */
 body.guest #nav a[data-route="playlists"] { display: none; }
 
 .pl-back { display: inline-flex; align-items: center; gap: var(--space-1); align-self: flex-start; padding-left: 0; margin-bottom: var(--space-1); text-decoration: none; }
@@ -27,6 +27,23 @@ body.guest #nav a[data-route="playlists"] { display: none; }
 .pl-songs .song.dragging { opacity: .5; }
 .pl-songs .song.drop-before { box-shadow: inset 0 var(--stroke-focus) 0 var(--accent); }
 .pl-songs .song.drop-end { box-shadow: inset 0 calc(-1 * var(--stroke-focus)) 0 var(--accent); }
+
+.pl-add { margin: 0 0 var(--space-4); }
+.pl-add[hidden], .pl-found-panel[hidden], .pl-found-list[hidden] { display: none; }
+.pl-found-panel { margin-top: var(--space-2); padding-top: var(--space-1); padding-bottom: var(--space-1); }
+.pl-found-note { margin: 0; padding: var(--space-2) 0; }
+.pl-found-list { --pl-found-row: calc(var(--cover-sm) + 2 * var(--space-2)); list-style: none; margin: 0; padding: 0; max-height: calc(8.5 * var(--pl-found-row)); overflow-y: auto; overscroll-behavior: contain; }
+.pl-found { display: flex; align-items: center; gap: var(--space-3); min-height: var(--pl-found-row); padding: var(--space-2); border-radius: var(--radius-key); cursor: pointer; font: var(--font-subhead); }
+.pl-found .row-cover { --cover-size: var(--cover-sm); flex: none; }
+.pl-found.active { background-color: var(--surface-sunken); }
+.pl-add:focus-within .pl-found.active { box-shadow: inset 0 0 0 var(--stroke-focus) var(--accent); }
+@media (hover: hover) { .pl-found:hover { background-color: var(--surface-sunken); } }
+.pl-found-info { flex: 1 1 auto; min-width: 0; display: grid; }
+.pl-found-title, .pl-found-sub { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pl-found.no-audio .pl-found-title { color: var(--muted); }
+.pl-found.no-audio .cover { opacity: 0.6; }
+.pl-found-meta { flex: none; color: var(--muted); font-variant-numeric: tabular-nums; }
+.pl-found-add { flex: none; width: var(--control); height: var(--control); color: var(--accent-ink); }
 
 .pl-desc {
   width: 100%; min-height: calc(var(--hit) * 2); padding: var(--space-3); border: 0; border-radius: var(--radius-key); resize: vertical;

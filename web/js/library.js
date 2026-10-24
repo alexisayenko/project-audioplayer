@@ -17,6 +17,7 @@ import { loadReferences, onReferencesChange, cachedReferences, referenceSongIds,
 import { disposeAll } from './marquee.js';
 import { isRowControl, keepCovers } from './row-cover.js';
 import { mountScrollTop } from './scroll-top.js';
+import { searchBox } from './search-box.js';
 import { draftStore } from './drafts-store.js';
 import { countText } from './drafts-model.js';
 
@@ -37,22 +38,12 @@ export function prioritizeCovers(rows, count = EAGER_COVERS) {
 }
 
 export function renderLibrary(root) {
-  const search = el('input', {
-    type: 'search', placeholder: 'Search title, artist, album, remix or tag', value: prefs.query,
-    'aria-label': 'Search',
-    oninput: (e) => { prefs.query = e.target.value; paintClear(); renderList(); },
-    onkeydown: (e) => { if (e.key === 'Escape' && search.value) { e.preventDefault(); clearSearch(); } },
+  const searchField = searchBox({
+    placeholder: 'Search title, artist, album, remix or tag', value: prefs.query,
+    onChange: (text) => { prefs.query = text; renderList(); },
   });
-  const clearSearchBtn = el('button', { class: 'icon search-clear', type: 'button', hidden: !prefs.query, 'aria-label': 'Clear search', title: 'Clear search' }, icon('clear', 'inline'));
-  clearSearchBtn.addEventListener('click', () => clearSearch());
-  function paintClear() { clearSearchBtn.hidden = !search.value; }
-  function clearSearch() {
-    search.value = '';
-    prefs.query = '';
-    paintClear();
-    renderList();
-    search.focus();
-  }
+  const search = searchField.input;
+  const { paintClear } = searchField;
   const sort = el('select', {
     'aria-label': 'Sort',
     onchange: (e) => { prefs.sort = e.target.value; renderList(); },
@@ -144,7 +135,7 @@ export function renderLibrary(root) {
     draftsPane);
   songsPane.append(
     el('div', { class: 'toolbar' },
-      el('label', { class: 'search' }, icon('search', 'action'), search, clearSearchBtn),
+      searchField.node,
       showPlaying,
       cats),
     el('div', { class: 'sortbar' },
