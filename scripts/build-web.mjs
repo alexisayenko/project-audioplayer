@@ -36,13 +36,28 @@ function sourceDigest(sheets) {
   return hash.digest('hex');
 }
 
+function npmCli() {
+  const bin = dirname(process.execPath);
+  const candidates = [
+    join(bin, '..', 'lib', 'node_modules', 'npm', 'bin', 'npm-cli.js'),
+    join(bin, 'node_modules', 'npm', 'bin', 'npm-cli.js'),
+    '/opt/homebrew/lib/node_modules/npm/bin/npm-cli.js',
+    '/usr/local/lib/node_modules/npm/bin/npm-cli.js',
+    '/usr/lib/node_modules/npm/bin/npm-cli.js',
+    '/usr/share/nodejs/npm/bin/npm-cli.js',
+  ];
+  const found = candidates.find((p) => existsSync(p));
+  if (!found) throw new Error(`npm-cli.js not found; looked in:\n${candidates.join('\n')}`);
+  return found;
+}
+
 function loadEsbuild() {
   const dir = join(tmpdir(), `electrophone-esbuild-${ESBUILD}`);
   const pkg = join(dir, 'node_modules', 'esbuild', 'package.json');
   if (!existsSync(pkg) || JSON.parse(readFileSync(pkg, 'utf8')).version !== ESBUILD) {
     mkdirSync(dir, { recursive: true });
     writeFileSync(join(dir, 'package.json'), '{"private":true}\n');
-    execFileSync('npm', ['install', '--prefix', dir, '--no-audit', '--no-fund', '--loglevel=error', `esbuild@${ESBUILD}`], { stdio: 'inherit' });
+    execFileSync(process.execPath, [npmCli(), 'install','--prefix', dir, '--no-audit', '--no-fund', '--loglevel=error', `esbuild@${ESBUILD}`], { stdio: 'inherit' });
   }
   return createRequire(join(dir, 'x.js'))('esbuild');
 }
