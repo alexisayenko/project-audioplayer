@@ -354,12 +354,31 @@ def _download_soundcloud(video_id: str, out_dir: Path, hook: Callable[[dict[str,
     }
 
 
+_YTIMG_COVER = re.compile(r"/vi/[A-Za-z0-9_-]{11}/hqdefault\.jpg")
+_SNDCDN_HOST = re.compile(r"(?:[a-z0-9-]+\.)*sndcdn\.com")
+
+
+def _is_cover_address(url: str) -> bool:
+    """https on the default port, no credentials, and either the fixed ytimg path of a YouTube id or an sndcdn.com host."""
+    parts = urlparse(url)
+    try:
+        port = parts.port
+    except ValueError:
+        return False
+    if parts.scheme != "https" or port not in (None, 443) or parts.username is not None or parts.password is not None:
+        return False
+    host = (parts.hostname or "").lower()
+    if host == "i.ytimg.com":
+        return bool(_YTIMG_COVER.fullmatch(parts.path)) and not parts.query and not parts.fragment
+    return bool(_SNDCDN_HOST.fullmatch(host))
+
+
 def fetch_cover(video_id: str, dest: Path, artwork: str | None = None) -> None:
     """Download the cover for a song id to dest (fixed ytimg host, or sndcdn.com for SoundCloud artwork)."""
     import urllib.request
 
     url = cover_url(video_id, artwork)
-    if not url:
+    if not url or not _is_cover_address(url):
         raise ValueError("no cover available")
     dest.parent.mkdir(parents=True, exist_ok=True)
     with urllib.request.urlopen(url, timeout=20) as r:
