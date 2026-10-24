@@ -2,6 +2,10 @@
 
 What shipped, newest first. One line each; the web UI and server are live at https://electrophone.cc. Everything listed here is deployed except the sections marked "built, not deployed" (the 2026-10-14 release went out once the SSH access in [task-0027](tasks/task-0027.md) was restored; the live visualizer files match `origin/main` as of 2026-10-15). Why: [tech/decisions.md](tech/decisions.md); runbook: [tech/deploy.md](tech/deploy.md).
 
+## 2026-10-24 (Studio site grouped menu, built, not deployed)
+
+- Web (task-0114, STU-005, STU-006, STU-007, STU-017; owner decision GV1 2026-10-24; no tests run, `node --check`, the build and the Browser pane at desktop and 375 px only): the studio site's left menu is grouped by instrument family: Synthesize (Simple tone, Chordophones, Aerophones, Membranophones, Idiophones) and Analyze (Live BPM), group titles as plain headings, `aria-current` on the open link. Routes `#/synthesize/simple` (default), `#/synthesize/chordophones`, `#/synthesize/aerophones`, `#/synthesize/membranophones`, `#/synthesize/idiophones`, `#/analyze/bpm`; `#/synthesize` and `#/analyze` stay as aliases of the first and last (the main app's redirects), unknown hashes fall back to Simple tone. The harmonics lab is now its own page (Chordophones) and no longer shares a page with Live BPM (`mountMic` and `mountChordophones` in `studio-tools.js`; `mountTools` stays). Aerophones, Membranophones and Idiophones are placeholders with a short physics note and "Coming soon" pointing to the new tickets [task-0115](tasks/task-0115.md), [task-0116](tasks/task-0116.md) and [task-0117](tasks/task-0117.md). `studio-site.test.mjs` updated, not run. The main app bundle files are unchanged (only the `web/dist` manifest source hash).
+
 ## 2026-10-24 (harmonics lab counters, web, deployed as `037e025`)
 
 - Web (WEB-180; owner request 2026-10-24; no tests run): "Number of harmonics" and "Decay across harmonics" are counters (minus, number input, plus; new `stepper.js`) instead of sliders, the decay one with "dB/oct" beside it and whole-dB steps.

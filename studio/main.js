@@ -1,11 +1,16 @@
 import { el } from '../web/js/dom.js';
-import { mountTools } from '../web/js/studio-tools.js';
+import { mountMic, mountChordophones } from '../web/js/studio-tools.js';
 import { mountSimple } from '../web/js/simple-tone.js';
 import { PAGES, pageFromHash } from './routes.js';
+import { mountPlaceholder } from './placeholders.js';
 
 const MOUNT = {
-  analyze: (pane) => mountTools(pane, { standalone: true }),
-  synthesize: (pane) => mountSimple(pane),
+  'synthesize/simple': (pane) => mountSimple(pane),
+  'synthesize/chordophones': (pane) => mountChordophones(pane),
+  'synthesize/aerophones': (pane) => mountPlaceholder(pane, 'synthesize/aerophones'),
+  'synthesize/membranophones': (pane) => mountPlaceholder(pane, 'synthesize/membranophones'),
+  'synthesize/idiophones': (pane) => mountPlaceholder(pane, 'synthesize/idiophones'),
+  'analyze/bpm': (pane) => mountMic(pane, { standalone: true }),
 };
 
 const root = document.getElementById('app');
@@ -22,7 +27,7 @@ function show() {
     if (a.dataset.page === page) a.setAttribute('aria-current', 'page');
     else a.removeAttribute('aria-current');
   }
-  const pane = el('div', { class: 'stu', id: `stu-${page}` });
+  const pane = el('div', { class: 'stu', id: `stu-${page.replace('/', '-')}` });
   root.replaceChildren(pane);
   stop = MOUNT[page](pane);
   document.title = `${PAGES.find((p) => p.id === page).label} - Electrophone Studio`;

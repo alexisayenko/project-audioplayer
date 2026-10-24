@@ -7,24 +7,50 @@ installDom();
 const { PAGES, pageFromHash, DEFAULT_PAGE } = await import('../../studio/routes.js');
 const { createHarmonicsCard, PLAYER_NEEDS_APP, APP_URL } = await import('./harmonics.js');
 const { createMicCard, CAPTION, CAPTION_STANDALONE } = await import('./mic-tool.js');
-const { mountTools, TOOLS_NOTE } = await import('./studio-tools.js');
+const { mountTools, mountMic, mountChordophones, TOOLS_NOTE } = await import('./studio-tools.js');
+const { PLACEHOLDERS, mountPlaceholder } = await import('../../studio/placeholders.js');
 const read = (rel) => readFileSync(new URL(rel, import.meta.url), 'utf8');
 
 const player = (available) => ({ available, playing: false, analyser: null, sampleRate: 0, failed: false, ensure() {} });
 
-test('STU-006: #/synthesize is the default, #/analyze the second route, anything else falls back to Synthesize', () => {
-  assert.equal(DEFAULT_PAGE, 'synthesize');
-  assert.equal(pageFromHash('#/synthesize'), 'synthesize');
-  assert.equal(pageFromHash('#/analyze'), 'analyze');
-  assert.equal(pageFromHash(''), 'synthesize');
-  assert.equal(pageFromHash('#/bogus'), 'synthesize');
-  assert.equal(pageFromHash('#/studio/tools'), 'synthesize');
-  assert.deepEqual(PAGES.map((p) => [p.label, p.hash]), [['Synthesize', '#/synthesize'], ['Analyze', '#/analyze']]);
+test('STU-006: six routes, #/synthesize/simple is the default, the old two-page hashes are aliases, anything else falls back', () => {
+  assert.equal(DEFAULT_PAGE, 'synthesize/simple');
+  for (const id of ['synthesize/simple', 'synthesize/chordophones', 'synthesize/aerophones', 'synthesize/membranophones', 'synthesize/idiophones', 'analyze/bpm']) {
+    assert.equal(pageFromHash(`#/${id}`), id);
+  }
+  assert.equal(pageFromHash('#/synthesize/chordophones/'), 'synthesize/chordophones');
+  assert.equal(pageFromHash('#/synthesize'), 'synthesize/simple');
+  assert.equal(pageFromHash('#/analyze'), 'analyze/bpm');
+  assert.equal(pageFromHash(''), 'synthesize/simple');
+  assert.equal(pageFromHash('#/bogus'), 'synthesize/simple');
+  assert.equal(pageFromHash('#/analyze/bogus'), 'synthesize/simple');
+  assert.equal(pageFromHash('#/studio/tools'), 'synthesize/simple');
+  assert.deepEqual(PAGES.map((p) => [p.group, p.label, p.hash]), [
+    ['Synthesize', 'Simple tone', '#/synthesize/simple'],
+    ['Synthesize', 'Chordophones', '#/synthesize/chordophones'],
+    ['Synthesize', 'Aerophones', '#/synthesize/aerophones'],
+    ['Synthesize', 'Membranophones', '#/synthesize/membranophones'],
+    ['Synthesize', 'Idiophones', '#/synthesize/idiophones'],
+    ['Analyze', 'Live BPM', '#/analyze/bpm'],
+  ]);
 });
 
-test('STU-005: the left menu is a nav named Studio with Synthesize then Analyze and a link back to the main app', () => {
+test('STU-017: the three placeholder pages name their physics and a new ticket', () => {
+  assert.deepEqual(Object.keys(PLACEHOLDERS), ['synthesize/aerophones', 'synthesize/membranophones', 'synthesize/idiophones']);
+  for (const [id, { task }] of Object.entries(PLACEHOLDERS)) {
+    const pane = document.createElement('div');
+    mountPlaceholder(pane, id);
+    assert.match(pane.querySelector('.stu-soon').textContent, new RegExp(`Coming soon: see ${task}$`));
+    assert.ok(read(`../../docs/tasks/${task}.md`).includes('status: to do'));
+  }
+  assert.match(PLACEHOLDERS['synthesize/membranophones'].lines.join(' '), /1, 1\.59, 2\.14, 2\.30, 2\.65 and 2\.92/);
+});
+
+test('STU-005: the left menu is a nav named Studio with the groups Synthesize (five items) and Analyze (Live BPM) and a link back to the main app', () => {
   const html = read('../../studio/index.html');
-  assert.match(html, /<nav class="site-nav" aria-label="Studio">\s*<a [^>]*href="#\/synthesize"[^>]*>Synthesize<\/a>\s*<a [^>]*href="#\/analyze"[^>]*>Analyze<\/a>\s*<\/nav>/);
+  const nav = html.match(/<nav class="site-nav" aria-label="Studio">([\s\S]*?)<\/nav>/)[1];
+  assert.deepEqual([...nav.matchAll(/<h2 [^>]*>([^<]*)<\/h2>/g)].map((m) => m[1]), ['Synthesize', 'Analyze']);
+  assert.deepEqual([...nav.matchAll(/<a [^>]*href="([^"]*)"[^>]*data-page="([^"]*)"[^>]*>([^<]*)<\/a>/g)].map((m) => [m[1], m[2], m[3]]), PAGES.map((p) => [p.hash, p.id, p.label]));
   assert.ok(html.indexOf('class="site-nav"') < html.indexOf('class="site-home'));
   assert.match(html, /<a class="site-home[^"]*" href="https:\/\/electrophone\.cc\/">Back to Electrophone<\/a>/);
   assert.doesNotMatch(read('../../studio/main.js'), /studio-tabs|role: 'tab/);
@@ -69,6 +95,19 @@ test('STU-010: the standalone caption leaves out the player and the Analyze tab 
   assert.equal(TOOLS_NOTE, 'Temporary home for audio tools.');
 });
 
+test('STU-006: Live BPM and Chordophones are separate pages, each with one card and a dispose', () => {
+  const bpm = document.createElement('div');
+  const stopBpm = mountMic(bpm, { standalone: true });
+  assert.ok(bpm.querySelector('.mt-card'));
+  assert.equal(bpm.querySelector('.hm-card'), null);
+  stopBpm();
+  const lab = document.createElement('div');
+  const stopLab = mountChordophones(lab, { harmonics: { player: player(false) } });
+  assert.ok(lab.querySelector('.hm-card'));
+  assert.equal(lab.querySelector('.mt-card'), null);
+  stopLab();
+});
+
 test('STU-001, STU-014: the site page and headers match the spec', () => {
   const html = read('../../studio/index.html');
   assert.match(html, /<meta name="robots" content="noindex,nofollow">/);
@@ -83,7 +122,7 @@ test('STU-001, STU-014: the site page and headers match the spec', () => {
 
 test('STU-002, STU-012: the entry imports the shared tool modules and none of the main app state', () => {
   const main = read('../../studio/main.js');
-  assert.match(main, /from '\.\.\/web\/js\/studio-tools\.js'/);
+  assert.match(main, /import \{ mountMic, mountChordophones \} from '\.\.\/web\/js\/studio-tools\.js'/);
   assert.match(main, /from '\.\.\/web\/js\/simple-tone\.js'/);
   for (const name of ['studio-tools', 'simple-tone', 'mic-tool', 'harmonics', 'harmonics-input']) {
     assert.doesNotMatch(read(`./${name}.js`), /from '\.\/(api|store|guest|storage)\.js'|localStorage|sessionStorage|fetch\(/, name);
