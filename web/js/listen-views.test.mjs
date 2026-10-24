@@ -176,6 +176,25 @@ test('WEB-205: createTrails is off by default, clears on every toggle, caps dt a
   assert.equal(t.levels(7), t.levels(7));
 });
 
+test('WEB-205: the trail length sets the decay rate (40 dB over the length), is clamped to 0.5-10 s and applies live', () => {
+  assert.equal(v.trailRate(2), v.TRAIL_DECAY_DB_S);
+  const t = v.createTrails();
+  assert.equal(t.length, 2);
+  t.set(true);
+  const live = Float32Array.from([-10]);
+  const low = new Float32Array(1).fill(-Infinity);
+  t.step(live, 0);
+  t.setLength(1);
+  assert.equal(t.buf[0], -10);
+  assert.deepEqual([...t.step(low, 250)], [-20]);
+  t.setLength(100);
+  assert.equal(t.length, 10);
+  t.setLength(0.1);
+  assert.equal(t.length, 0.5);
+  t.setLength(2);
+  assert.equal(v.trailLengthText(0.5), '0.5 s');
+});
+
 test('WEB-205: the trail is stored per analyser bin, so curveLevels maps it through the current axis', () => {
   const bins = new Float32Array(1024).fill(-120);
   bins[Math.round(220 / (24000 / 1024))] = -20;

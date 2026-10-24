@@ -6,7 +6,7 @@ import { mixColor } from './viz-color.js';
 import {
   MAX_RUN_MS, AUDIBLE_MAX_HZ, ANALYSER_DB_OFFSET, SPECTRUM_MIN_HZ, SPECTRUM_MAX_HZ, DB_MIN,
   LIVE_VIEW_NAMES, clamp, noteInfo, fmtHz, axisText, axisCaption, linearTicks, pickLabels, gramTicks, fit, css, drawSpecGrid,
-  specHover, drawSpecHover, trackHover, createTrails, createTrailControl, TRAIL_FILL_ALPHA, TRAIL_LINE_ALPHA,
+  specHover, drawSpecHover, trackHover, createTrails, createTrailControl, trailLengthText, TRAIL_FILL_ALPHA, TRAIL_LINE_ALPHA,
   createFeeder, createColors, createAxisControl, createGramView, createBandsView, view,
 } from './listen-views.js';
 
@@ -1220,7 +1220,7 @@ export function createHarmonicsCard(env = {}) {
     bands.describe('the synthesized tone');
     const own = eachShown() ? ' The faint coloured lines are single strings played alone.' : '';
     waveCap.textContent = `${VIEW_NAMES.wave} Window: ${shown}; the bright line is the sum.${own}`;
-    specCap.textContent = `${VIEW_NAMES.spectrum} Frequency axis ${axisCaption(rangeNow())}, level in dBFS, one bar per harmonic.${trails.on ? ' The faint ghost bars show where each harmonic recently was; they fade about 20 dB per second.' : ''}`;
+    specCap.textContent = `${VIEW_NAMES.spectrum} Frequency axis ${axisCaption(rangeNow())}, level in dBFS, one bar per harmonic.${trails.on ? ` The faint ghost bars show where each harmonic recently was; they fade out in about ${trailLengthText(trails.length)}.` : ''}`;
     gram.caption.textContent = `${VIEW_NAMES.gram} The last 10 seconds, frequency axis ${axisCaption(rangeNow())}. It fills while the tone plays and clears when the axis changes.`;
     const lead = leadN(params);
     const beat = beatRate(params.freq * lead, params.strings, params.detune);

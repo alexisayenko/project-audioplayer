@@ -63,6 +63,10 @@ input.hm-step-num:disabled { opacity: var(--disabled-opacity); }
 .hm-checks { display: flex; flex-wrap: wrap; align-items: center; gap: 0 var(--space-4); }
 .hm-check { display: inline-flex; align-items: center; gap: var(--space-2); min-height: var(--hit); }
 .hm-check label { margin: 0; }
+.hm-trail-ctl { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 0 var(--space-4); max-width: 100%; }
+.hm-trail-len { display: inline-flex; flex-wrap: wrap; align-items: center; gap: var(--space-1) var(--space-2); min-width: 0; }
+.hm-trail-len[hidden] { display: none; }
+.hm-trail-len label { margin: 0; }
 .hm-check input[type="checkbox"] { width: var(--icon-nav); height: var(--icon-nav); accent-color: var(--fill); flex: none; margin: 0; }
 .hm-view { position: relative; width: 100%; border-radius: var(--radius-key); background: var(--surface-sunken); overflow: hidden; }
 .hm-wave { height: 160px; }

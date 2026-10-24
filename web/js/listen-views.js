@@ -1,5 +1,6 @@
 import { el } from './dom.js';
 import { segmented } from './segmented.js';
+import { stepper } from './stepper.js';
 import { parseColor, mixColor } from './viz-color.js';
 import { detectPitch, harmonicMarks, foundList, createPitchTracker, PITCH_EVERY_MS, HARMONIC_LABEL_GAP_PX } from './pitch-detect.js';
 
@@ -27,7 +28,14 @@ export const PEAK_EVERY_MS = 200;
 export const METER_WINDOW_S = 0.1;
 export const METER_EVERY_MS = 100;
 export const METER_FALL_DB_S = 40;
-export const TRAIL_DECAY_DB_S = 20;
+export const TRAIL_FADE_DB = 40;
+export const TRAIL_LENGTH_S = 2;
+export const TRAIL_LENGTH_MIN_S = 0.5;
+export const TRAIL_LENGTH_MAX_S = 10;
+export const TRAIL_LENGTH_STEP_S = 0.5;
+export const TRAIL_DECAY_DB_S = TRAIL_FADE_DB / TRAIL_LENGTH_S;
+export const trailRate = (seconds) => TRAIL_FADE_DB / seconds;
+export const trailLengthText = (seconds) => `${+seconds.toFixed(1)} s`;
 export const TRAIL_FLOOR_DB = -200;
 export const TRAILS_HINT = 'The spectrum keeps a fading ghost of recent peaks, like a phosphor screen.';
 export const RMS_SINE_DB =10 * Math.log10(2);
@@ -280,6 +288,8 @@ export function decayTrail(trail, current, dt, rate = TRAIL_DECAY_DB_S, floor = 
   return trail;
 }
 
+let trailSeconds = TRAIL_LENGTH_S;
+
 export function createTrails() {
   let on = false;
   let buf = null;
@@ -290,6 +300,11 @@ export function createTrails() {
   return {
     get on() { return on; },
     get buf() { return on ? buf : null; },
+    get length() { return trailSeconds; },
+    setLength(next) {
+      const n = Number(next);
+      if (Number.isFinite(n)) trailSeconds = clamp(n, TRAIL_LENGTH_MIN_S, TRAIL_LENGTH_MAX_S);
+    },
     set(next) { on = Boolean(next); clear(); },
     clear,
     step(current, t, items = null) {
@@ -303,7 +318,7 @@ export function createTrails() {
       }
       const dt = at === null ? 0 : clamp((t - at) / 1000, 0, 0.25);
       at = t;
-      return decayTrail(buf, current, dt);
+      return decayTrail(buf, current, dt, trailRate(trailSeconds));
     },
     levels(count) {
       if (!scratch || scratch.length !== count) scratch = new Float32Array(count);
@@ -314,9 +329,20 @@ export function createTrails() {
 
 export function createTrailControl({ uid, trails, onChange }) {
   const id = `${uid}-trails`;
-  const box = el('input', { id, type: 'checkbox', checked: trails.on, onchange: () => { trails.set(box.checked); onChange(); } });
-  const node = el('span', { class: 'hm-check', title: TRAILS_HINT }, box, el('label', { htmlFor: id }, 'Trails'));
-  return { node, paint() { box.checked = trails.on; } };
+  const box = el('input', { id, type: 'checkbox', checked: trails.on, onchange: () => { trails.set(box.checked); lengthField.hidden = !trails.on; onChange(); } });
+  const check = el('span', { class: 'hm-check', title: TRAILS_HINT }, box, el('label', { htmlFor: id }, 'Trails'));
+  const lengthId = `${uid}-trail-len`;
+  const length = stepper({
+    id: lengthId, label: 'Trail length', min: TRAIL_LENGTH_MIN_S, max: TRAIL_LENGTH_MAX_S, step: TRAIL_LENGTH_STEP_S,
+    get: () => trails.length, set: (v) => { trails.setLength(v); length.sync(); onChange(); },
+    unit: 's', inputmode: 'decimal', decLabel: 'Shorter trail', incLabel: 'Longer trail',
+  });
+  const lengthField = el('span', { class: 'hm-trail-len', hidden: !trails.on }, el('label', { htmlFor: lengthId }, 'Trail length'), length.group);
+  const node = el('span', { class: 'hm-trail-ctl' }, check, lengthField);
+  return {
+    node,
+    paint() { box.checked = trails.on; lengthField.hidden = !trails.on; length.sync(); },
+  };
 }
 
 export function createMarkControl({ uid, get, set }) {
@@ -1019,7 +1045,7 @@ export function createLiveSpectrum({ uid, colors, now, feed, range, axisControl,
   function describe() {
     const r = range();
     canvas.setAttribute('aria-label', `Spectrum of ${what()} signal, ${axisText(r)}`);
-    const ghost = trails.on ? ' The faint ghost behind the curve is where recent peaks were; it fades about 20 dB per second.' : '';
+    const ghost = trails.on ? ` The faint ghost behind the curve is where recent peaks were; it fades out in about ${trailLengthText(trails.length)}.` : '';
     const ticks = marking ? ' The ticks above the curve mark the detected pitch and its harmonics: solid where a real peak sits, hollow where a harmonic is missing.' : '';
     caption.textContent = `${LIVE_VIEW_NAMES.spectrum} Frequency axis ${axisCaption(r)}, level in dBFS. The dot marks the loudest frequency.${ghost}${ticks}`;
   }
