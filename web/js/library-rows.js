@@ -41,7 +41,7 @@ function queueButton(s, queued) {
   const note = queued ? queueNote(player.queuePosition(s.id)) : '';
   const tip = queued ? `${note}. Click to remove` : 'Add to queue';
   return el('button', {
-    class: `icon sq-btn${queued ? ' on' : ''}`, type: 'button', title: tip,
+    class: `icon sq-btn act-queue${queued ? ' on' : ''}`, type: 'button', title: tip,
     'aria-label': `${queued ? 'Remove from queue' : 'Add to queue'}: ${titleLine(s)}`, 'aria-pressed': String(queued),
     onclick: (e) => { e.stopPropagation(); player.toggleInPlaylist(s.id); },
   }, icon(queued ? 'playlist' : 'listAdd', 'inline'));
@@ -51,17 +51,19 @@ function playlistButton(s) {
   if (!playlistsOn()) return null;
   const label = `Add to playlist: ${titleLine(s)}`;
   return el('button', {
-    class: 'icon sq-btn pl-add', type: 'button', title: 'Add to playlist...', 'aria-label': label, 'aria-haspopup': 'dialog',
+    class: 'icon sq-btn act-pl', type: 'button', title: 'Add to playlist...', 'aria-label': label, 'aria-haspopup': 'dialog',
     onclick: (e) => { e.stopPropagation(); void openPlaylistPicker(s, e.currentTarget); },
   }, icon('playlistPlus', 'inline'));
 }
 
-function stateControl(s, { audio, queueable, queued, dl }) {
-  if (!audio) {
-    const act = rowActions({ audio, ring: dl });
-    if (act.ring) return ringNode(dl, () => autodl.retry(s.id));
-    if (act.download) return dlButton(s);
-  }
+function fetchControl(s, { audio, dl }) {
+  if (audio) return null;
+  const act = rowActions({ audio, ring: dl });
+  if (act.ring) return ringNode(dl, () => autodl.retry(s.id));
+  return act.download ? dlButton(s) : null;
+}
+
+function queueControl(s, { audio, queueable, queued }) {
   return queueable && (audio || queued) ? queueButton(s, queued) : null;
 }
 
@@ -106,10 +108,12 @@ export function songRow(s, cur, flashId, listened = null) {
   const open = openTitle(s, full, tip);
   const genres = genreText(s.tags);
   const dl = audio ? null : ringModel(autodl.view(s.id));
-  const row = el('li', { class: `song${here ? ' current' : ''}${audio ? '' : ' no-audio'}${flashId === s.id ? ' flash' : ''}`, 'aria-current': here ? 'true' : null, 'data-id': s.id },
+  const fetchNode = fetchControl(s, { audio, dl });
+  const row = el('li', { class: `song has-acts${here ? ' current' : ''}${audio ? '' : ' no-audio'}${flashId === s.id ? ' flash' : ''}`, 'aria-current': here ? 'true' : null, 'data-id': s.id },
+    el('div', { class: 'row-acts' }, playlistButton(s), fetchNode ? null : queueControl(s, { audio, queueable, queued })),
     coverCell(s, full, { audio, queueable, here, link, queued: queued ? player.queuePosition(s.id) : null }),
     el('div', { class: 'info' },
-      el('div', { class: 'title-line' }, open, refStar(s), stateControl(s, { audio, queueable, queued, dl }), playlistButton(s), audio && s.duration ? el('span', { class: 'title-len t-time', title: 'Length' }, fmtTime(s.duration)) : null),
+      el('div', { class: 'title-line' }, open, refStar(s), fetchNode, audio && s.duration ? el('span', { class: 'title-len t-time', title: 'Length' }, fmtTime(s.duration)) : null),
       subLine(s)),
     el('div', { class: 'c-genres t-subhead' }, el('span', { class: 'g-txt', title: genres || null }, genres)),
     listened == null ? null : statsCell(listened),

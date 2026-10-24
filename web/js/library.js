@@ -234,7 +234,7 @@ export function renderLibrary(root) {
       ? [el('li', { class: 'empty muted t-subhead' }, 'No songs match. Clear the search or the filters.')]
       : [];
     const focusedEl = document.activeElement;
-    const focusedCls = ['row-cover', 'sq-btn'].find((c) => focusedEl?.classList?.contains(c));
+    const focusedCls = ['row-cover', 'act-pl', 'act-queue', 'sq-btn'].find((c) => focusedEl?.classList?.contains(c));
     const focusedId = focusedCls ? focusedEl.closest('li.song')?.dataset.id : null;
     const prevRows = [...list.querySelectorAll('li.song')];
     const rows = songs.map((s) => songRow(s, cur, flashId, data ? data.songs[s.id]?.listened?.all || 0 : null));
