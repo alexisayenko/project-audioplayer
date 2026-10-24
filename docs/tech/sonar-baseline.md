@@ -10,6 +10,26 @@ Read-only baseline taken before the refactoring and architecture pass, so the re
 - Coverage: none imported (Automatic Analysis cannot read coverage reports). The "server about 99%, web about 96%" figures in the docs are manual measurements and are not in Sonar.
 - Scope caveat: Automatic Analysis uses default scope. `server/tests`, `*.test.mjs`, and the big `server/data/*.json` files are counted as source; `web/dist/*.js` (generated bundle) is not (only `web/dist/manifest.json` shows up). This inflates lines of code and the issue count.
 
+## Scope (owner decision FH1, 2026-10-24, step 1)
+
+The numbers in this document are the "before" values, taken with Sonar's default scope. Step 1 narrows the scope to real source code and fixes the new-code period; the bugs (step 2) and the hotspot refactors (step 3) follow.
+
+- **File.** [`.sonarcloud.properties`](../../.sonarcloud.properties) in the repo root. Automatic Analysis does **not** read `sonar-project.properties` (SonarCloud docs, "Automatic analysis": it ignores that file); it reads only `.sonarcloud.properties` from the default branch. The file honours `sonar.sources`, `sonar.exclusions`, `sonar.inclusions`, `sonar.tests`, `sonar.test.exclusions`, `sonar.test.inclusions`, `sonar.sourceEncoding`, `sonar.cpd.exclusions`, `sonar.python.version`; where the UI and the file differ, the file wins. `sonar.organization` and `sonar.projectKey` are not needed (the project is already bound), `sonar.coverage.exclusions` has no effect (Automatic Analysis imports no coverage). If a CI scan is ever added, a real `sonar-project.properties` is needed then ([ci-cd.md](ci-cd.md)), and Automatic Analysis must be turned off first.
+- **Sources:** `server/app`, `web`, `scripts`, `ios/Sources`, `ios/MacSources`. **Tests:** `server/tests`, `ios/Tests`, and every `*.test.mjs` (in `web/js` and `scripts`, matched by `sonar.test.inclusions`).
+- **Excluded:** all `*.json` (`server/data` 38k lines, fixtures, `web/data`, `server/app/data`), `web/dist`, `web/img`, the generated `web/tokens.css` and `ios/Sources/DesignTokens.swift`, `server/backups-*`, `docs`, `node_modules`. No `sonar.cpd.exclusions`: the excluded paths are already out of duplication, and the mirrored Swift and JS pairs are only 0.7% of the code, below the gate limit, so they are left visible.
+- **Expected effect (to check after the first analysis):** ncloc falls from 159,482 to roughly 60k (JSON about 41k and test code about 40k leave the main code); the JSON smells and issues disappear; the 344 `python:S9073` composite-assertion smells and other issues in test files move to the test scope, where Sonar may still list them as issues (test code is analysed with a smaller rule set) but they do not count as lines of code, duplication or coverage; the bugs (27) and vulnerabilities (13) are unchanged because they sit in real source.
+- **Not settable from the repo:** the gate stays ERROR until the new-code period is set in the UI (below). Whether wildcards work in `sonar.exclusions` of `.sonarcloud.properties` is documented ambiguously ("Wildcard patterns are not allowed", yet wildcards are allowed in `sonar.exclusions` but not in `sonar.sources`); the result of the first analysis is recorded in the changelog, and if the exclusions are ignored, the same patterns go into the UI (Administration, Analysis Scope).
+
+### Owner steps in the SonarCloud UI
+
+No token is available (the stored one is expired), so these are manual. All under the project `alexisayenko_project-audioplayer` at sonarcloud.io.
+
+1. **New Code period.** Administration > New Code. Choose "Specific analysis" and pick the 2026-10-24 baseline analysis of `c61777b`, so the existing debt is not new code. If the list is awkward, "Number of days" with 30 is the fallback ("Reference branch" does not apply with one branch; "Previous version" stays unset because the project has no version). After this, `new_reliability_rating` and `new_security_rating` rate only code written after the baseline, and the gate can go green.
+2. **Quality gate.** Administration > Quality Gate: keep "Sonar way" (the default), no change.
+3. **Scope fallback (only if needed).** Administration > Analysis Scope: paste the exclusions from `.sonarcloud.properties` there if the first analysis ignored the file.
+4. **False positives.** For each issue judged not real, open it > Resolve as "False positive" or "Won't fix" with a comment. The candidates are listed in the section "Vulnerability review 2026-10-24" of this document, or in `docs/tech/sonar-vulnerability-review.md`, whichever exists on `main` (the CLI scripts reading `sys.argv`: `pythonsecurity:S8705` and `S8707`; the non-security `random` in `web/js/play-recorder.js`; `PATH` in `scripts/build-web.mjs`). Marking issues needs a logged-in account with project administration; no token is required for that.
+5. **Token (optional).** My Account > Security > Generate Tokens, only if scripted writes or a CI scan is wanted; store it in `~/.config/sonar/token.env`, `chmod 600`. Not needed for this scope change.
+
 ## Headline
 
 | Item | Value |
@@ -25,8 +45,7 @@ Read-only baseline taken before the refactoring and architecture pass, so the re
 | Coverage | not available |
 | Size | 886 files, 159,482 ncloc, 17,055 functions, 515 classes, cognitive complexity 22,373, cyclomatic 37,524 |
 
-Trend (open issues, from analysis history): 244 on 10-13, 595 on 10-17, 48 on 10-19, 303 on 10-20, 794 on 10-24. The jump follows new code (genre work) and new rules (`python:S9073`); ncloc grew from 10k to 159k, mostly JSON data and tests entering scope. The 87-issue figure in [ci-cd.md](ci-cd.md) is stale.
-
+Trend (open issues, from analysis history): 244 on 10-13, 595 on 10-17, 48 on 10-19, 303 on 10-20, 794 on 10-24. The jump follows new code (genre work) and new rules (`python:S9073`); ncloc grew from 10k to 159k, mostly JSON data and tests entering scope.
 ## Lines of code per language
 
 | Language | ncloc | Note |
@@ -131,7 +150,7 @@ By issue count: `server/tests/test_genre_levels.py` 65, `test_genre_others.py` 4
 
 ## Refactor and architecture candidates (a list, not changes)
 
-1. Scope first: add a committed `sonar-project.properties` (exclude `server/data/*.json`, `docs/`, generated files; mark tests as tests) and set a real new-code baseline, so the gate and counts mean something. Needs a new token if the scan moves to CI.
+1. Scope first (done in step 1, see [Scope](#scope-owner-decision-fh1-2026-10-24-step-1)): a committed `.sonarcloud.properties` (excludes data, generated files and docs; marks tests as tests); the new-code baseline is the owner's UI step.
 2. Fix the 27 bugs and 13 vulnerabilities (small, concrete); this alone turns reliability and security from E to the target and clears the gate. Most bugs are unhandled promises in `player.js` and `play-recorder.js`.
 3. Path handling: one validated-path helper (resolve inside a base directory) used by `downloads.py`, `jsonio.py`, `extractor.py`, `features.py` and the scripts, to retire the traversal family at the source.
 4. Genre map code: `genre-force-view.js` (758) and `genres-rework.js` (567) carry about a third of the web cognitive complexity; split into layout, simulation and rendering modules; same for `genre_vocab.py`, `genre-ops.py`, `build-genre-sources.mjs`.

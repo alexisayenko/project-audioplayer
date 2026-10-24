@@ -240,7 +240,7 @@ Two paths to TestFlight, same steps: `expo prebuild`, `pod install`,
 
 Code quality: the SonarCloud project `alexisayenko_project-audioplayer`
 analyses every push to `main` automatically; there is no CI workflow for
-it. Status 2026-10-13 (read from the SonarCloud API): 87 open issues (about 821 minutes of debt); quality gate ERROR, failing only on `new_security_rating` (3, threshold 1); reliability, maintainability, duplication and hotspot review conditions pass. The five vulnerabilities (`javascript:S2245`, `pythonsecurity:S2083`, `python:S5659`, `python:S5332`) were fixed in code on 2026-10-13. Won't-fix,
+it. Analysis mode: Automatic Analysis, scoped by `.sonarcloud.properties` (it ignores `sonar-project.properties`); current counts, scope and owner UI steps: [sonar-baseline.md](sonar-baseline.md). The five vulnerabilities (`javascript:S2245`, `pythonsecurity:S2083`, `python:S5659`, `python:S5332`) were fixed in code on 2026-10-13. Won't-fix,
 resolved in the SonarCloud UI by the owner: Swift protocol-fixed
 parameters, `javascript:S7785` (top-level await).
 

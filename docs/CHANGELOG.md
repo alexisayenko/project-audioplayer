@@ -2,6 +2,10 @@
 
 What shipped, newest first. One line each; the web UI and server are live at https://electrophone.cc. Everything listed here is deployed except the sections marked "built, not deployed" (the 2026-10-14 release went out once the SSH access in [task-0027](tasks/task-0027.md) was restored; the live visualizer files match `origin/main` as of 2026-10-15). Why: [tech/decisions.md](tech/decisions.md); runbook: [tech/deploy.md](tech/deploy.md).
 
+## 2026-10-24 (SonarCloud analysis scope, config and docs only)
+
+- Config and docs (owner decision FH1 step 1, 2026-10-24): new `.sonarcloud.properties` narrows what SonarCloud Automatic Analysis counts to real source (`server/app`, `web`, `scripts`, `ios/Sources`, `ios/MacSources`), marks `server/tests`, `ios/Tests` and `*.test.mjs` as tests, and excludes JSON data, `web/dist`, generated tokens, backups and docs; Automatic Analysis ignores `sonar-project.properties`, which is why the file has this name. [sonar-baseline.md](tech/sonar-baseline.md) gets a "Scope" section with expected effects and the owner's UI steps (New Code period, gate, false positives); the stale 87-issue line in [ci-cd.md](tech/ci-cd.md) points there. No runtime change, no deploy, no tests.
+
 ## 2026-10-24 (SonarCloud baseline, docs only)
 
 - Docs (owner request 2026-10-24): [sonar-baseline.md](tech/sonar-baseline.md) records the SonarCloud state of `c61777b` (gate ERROR, 27 bugs, 13 vulnerabilities, 754 code smells, 0.7% duplication, no coverage) with the files and rules to refactor first; read from the public API, no scan, no code change; the stored `SONAR_TOKEN` is rejected and needs renewing.
