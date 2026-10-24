@@ -2,9 +2,9 @@
 
 What shipped, newest first. One line each; the web UI and server are live at https://electrophone.cc. Everything listed here is deployed except the sections marked "built, not deployed" (the 2026-10-14 release went out once the SSH access in [task-0027](tasks/task-0027.md) was restored; the live visualizer files match `origin/main` as of 2026-10-15). Why: [tech/decisions.md](tech/decisions.md); runbook: [tech/deploy.md](tech/deploy.md).
 
-## 2026-10-24 (playlist page: Add to queue before Shuffle, web, built, not deployed)
+## 2026-10-24 (playlist page: Add to queue before Shuffle, web, deployed)
 
-- Web (owner, 2026-10-24: "swap shuffle and add to queue"; PLS-124; `node --check` only, no tests run, no test assertions affected): the playlist page actions are now Play playlist, Add to queue, Shuffle, Export, Edit, Delete (`web/js/playlist-view.js`; the buttons are built in one place, so keyboard Tab order follows; the row menu has no such actions). Built, not deployed.
+- Web (owner, 2026-10-24: "swap shuffle and add to queue"; PLS-124; deployed 2026-10-24 as `8487026`; `node --check` only, no tests run, no test assertions affected): the playlist page actions are now Play playlist, Add to queue, Shuffle, Export, Edit, Delete (`web/js/playlist-view.js`; the buttons are built in one place, so keyboard Tab order follows; the row menu has no such actions).
 
 ## 2026-10-24 (Add songs shortcut on the playlist list rows, web, deployed)
 
