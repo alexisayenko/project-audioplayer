@@ -89,8 +89,8 @@ function near(s, n) {
 
 function liftPass(s) {
   let any = false;
-  for (const n of [...s.pending]) {
-    const kid = (s.env.childrenOf.get(n.id) || []).find(s.ready);
+  for (const n of s.pending) {
+    const kid =(s.env.childrenOf.get(n.id) || []).find(s.ready);
     if (!kid) continue;
     nearArc(s, n, kid);
     settle(s, n);
@@ -122,7 +122,7 @@ function fanGroups(s) {
 
 function nearNeighbours(s) {
   let any = false;
-  for (const n of [...s.pending]) if (near(s, n)) any = true;
+  for (const n of s.pending) if (near(s, n)) any = true;
   return any;
 }
 

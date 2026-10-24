@@ -235,34 +235,43 @@ export function createForceView(canvas, { onSelect, onHover, onMoved, reducedMot
     return true;
   }
 
+  function stepLayout() {
+    if (!layout || layout.done || reducedMotion) return false;
+    if (layout.step(LAYOUT_SLICE_MS) || layout.done) {
+      layout.apply();
+      syncLinkLength();
+      if (sim) { sim.reheat(0.25); awake = true; }
+    }
+    return true;
+  }
+
+  function tickSim() {
+    if (!sim || !awake || reducedMotion || (rigid && drag?.moved)) return false;
+    awake = sim.tick();
+    perf.ticks++;
+    hashDirty = true;
+    if (!awake) perf.sleeps++;
+    return true;
+  }
+
+  function settlePull() {
+    if (!pull || drag?.node) return;
+    if (!reducedMotion && awake) return;
+    stepFollow(1);
+    clearPull();
+  }
+
   function frame(now) {
     raf = 0;
     if (!active) return;
     const t0 = performance.now();
     const dt = Math.min(64, Math.max(1, last ? now - last : 16));
     last = now;
-    let again = false;
-    if (layout && !layout.done && !reducedMotion) {
-      if (layout.step(LAYOUT_SLICE_MS) || layout.done) {
-        layout.apply();
-        syncLinkLength();
-        if (sim) { sim.reheat(0.25); awake = true; }
-      }
-      again = true;
-    }
+    let again = stepLayout();
     if (pull && stepPull(dt)) again = true;
     if (springs.size && stepSprings(dt)) again = true;
-    if (sim && awake && !reducedMotion && !(rigid && drag?.moved)) {
-      awake = sim.tick();
-      perf.ticks++;
-      hashDirty = true;
-      again = awake;
-      if (!awake) perf.sleeps++;
-    }
-    if (pull && !drag?.node && (reducedMotion || !awake)) {
-      stepFollow(1);
-      clearPull();
-    }
+    if (tickSim()) again = awake;
+    settlePull();
     const t1 = performance.now();
     if (stepVis(dt)) again = true;
     if (stepCamera(now)) again = true;
@@ -496,7 +505,6 @@ export function createForceView(canvas, { onSelect, onHover, onMoved, reducedMot
   function moveDragNode(p) {
     const w = toWorld(p.x, p.y);
     const n = drag.node;
-    const px = drag.ax, py = drag.ay;
     drag.ax = w.x; drag.ay = w.y;
     hashDirty = true;
     if (rigid) {
@@ -513,24 +521,33 @@ export function createForceView(canvas, { onSelect, onHover, onMoved, reducedMot
     setHover(n, null);
   }
 
+  function dropMovedNode(d) {
+    d.node.hx = d.ax; d.node.hy = d.ay;
+    syncLinkLength();
+    d.node.dropped = true; d.node.fx = d.ax; d.node.fy = d.ay;
+    if (rigid) {
+      for (const { c } of d.sub || []) if (c.target === 1) { c.dropped = true; c.fx = c.x; c.fy = c.y; }
+    }
+    if (sim && !reducedMotion && !rigid) { sim.setAlphaTarget(sim.restTarget()); sim.reheat(RELEASE_ALPHA); awake = true; }
+    movedIds.add(d.node.id);
+    for (const { c } of d.sub || []) movedIds.add(c.id);
+    onMoved?.();
+  }
+
+  function finishNodeDrag(d, ev) {
+    for (const p of d.held || []) unpin(p);
+    releaseGhosts();
+    if (d.moved) { dropMovedNode(d); return; }
+    if (!d.node.dropped) unpin(d.node);
+    if (ev.type === 'pointerup') onSelect?.(d.node.id);
+  }
+
   function endDrag(ev) {
     const d = drag;
     drag = null;
     if (!d) return;
-    if (d.node) {
-      for (const p of d.held || []) unpin(p);
-      releaseGhosts();
-      if (d.moved) { d.node.hx = d.ax; d.node.hy = d.ay; syncLinkLength(); }
-      if (d.moved) { d.node.dropped = true; d.node.fx = d.ax; d.node.fy = d.ay; } else if (!d.node.dropped) unpin(d.node);
-      if (rigid && d.moved) for (const { c } of d.sub || []) if (c.target === 1) { c.dropped = true; c.fx = c.x; c.fy = c.y; }
-      if (sim && d.moved && !reducedMotion && !rigid) { sim.setAlphaTarget(sim.restTarget()); sim.reheat(RELEASE_ALPHA); awake = true; }
-      if (d.moved) {
-        movedIds.add(d.node.id);
-        for (const { c } of d.sub || []) movedIds.add(c.id);
-        onMoved?.();
-      }
-      if (!d.moved && ev.type === 'pointerup') onSelect?.(d.node.id);
-    } else if (!d.moved && ev.type === 'pointerup') onSelect?.(null);
+    if (d.node) finishNodeDrag(d, ev);
+    else if (!d.moved && ev.type === 'pointerup') onSelect?.(null);
     if (ev.pointerType === 'touch') setHover(null);
     canvas.style.cursor = hover ? 'pointer' : 'grab';
     request();
@@ -562,7 +579,32 @@ export function createForceView(canvas, { onSelect, onHover, onMoved, reducedMot
     if (ev.pointerType !== 'touch') setHover(hit, ev);
   });
 
-  canvas.addEventListener('pointermove', (ev) => {
+  function pinchMove() {
+    const [a, b] = [...pointers.values()];
+    const d = Math.hypot(a.x - b.x, a.y - b.y) || 1;
+    zoomAt((a.x + b.x) / 2, (a.y + b.y) / 2, d / pinch.d);
+    pinch.d = d;
+  }
+
+  function panBy(p) {
+    tf = { ...tf, x: tf.x + p.x - drag.lx, y: tf.y + p.y - drag.ly };
+    userMoved = true;
+    follow = false;
+    canvas.style.cursor = 'grabbing';
+  }
+
+  function dragMove(ev, p) {
+    if (!drag.moved) {
+      if (!isDragMove(ev.clientX - drag.sx, ev.clientY - drag.sy)) return;
+      drag.moved = true;
+      if (drag.node) startNodeDrag(); else onHover?.(null);
+    }
+    if (drag.node) moveDragNode(p); else panBy(p);
+    drag.lx = p.x; drag.ly = p.y;
+    request();
+  }
+
+  function onPointerMove(ev) {
     if ((drag || pinch) && ev.pointerType !== 'touch' && ev.buttons === 0) stop();
     if (!pointers.has(ev.pointerId)) {
       if (ev.pointerType !== 'touch') queueHover(ev);
@@ -570,29 +612,11 @@ export function createForceView(canvas, { onSelect, onHover, onMoved, reducedMot
     }
     const p = local(ev);
     pointers.set(ev.pointerId, p);
-    if (pinch && pointers.size === 2) {
-      const [a, b] = [...pointers.values()];
-      const d = Math.hypot(a.x - b.x, a.y - b.y) || 1;
-      zoomAt((a.x + b.x) / 2, (a.y + b.y) / 2, d / pinch.d);
-      pinch.d = d;
-      return;
-    }
-    if (!drag) return;
-    if (!drag.moved) {
-      if (!isDragMove(ev.clientX - drag.sx, ev.clientY - drag.sy)) return;
-      drag.moved = true;
-      if (drag.node) startNodeDrag(); else onHover?.(null);
-    }
-    if (drag.node) moveDragNode(p);
-    else {
-      tf = { ...tf, x: tf.x + p.x - drag.lx, y: tf.y + p.y - drag.ly };
-      userMoved = true;
-      follow = false;
-      canvas.style.cursor = 'grabbing';
-    }
-    drag.lx = p.x; drag.ly = p.y;
-    request();
-  });
+    if (pinch && pointers.size === 2) pinchMove();
+    else if (drag) dragMove(ev, p);
+  }
+
+  canvas.addEventListener('pointermove', onPointerMove);
 
   const up = (ev) => {
     canvas.releasePointerCapture?.(ev.pointerId);
@@ -622,8 +646,8 @@ export function createForceView(canvas, { onSelect, onHover, onMoved, reducedMot
 
   function zoomToNode(id) {
     const n = byId.get(id);
-    if (!n || n.target !== 1) return;
-    const group = [n, ...[...(adj.get(id) || [])].map((x) => byId.get(x)).filter((x) => x.target === 1)];
+    if (n?.target !== 1) return;
+    const group =[n, ...[...(adj.get(id) || [])].map((x) => byId.get(x)).filter((x) => x.target === 1)];
     const to = fitFor(group, { maxK: 2.4, pad: 40 });
     if (to) moveTo(to);
   }
@@ -719,14 +743,14 @@ export function createForceView(canvas, { onSelect, onHover, onMoved, reducedMot
     setMarks(map) { marks = map instanceof Map ? map : new Map(); request(); },
     select(id) {
       const n = id ? byId.get(id) : null;
-      sel = n && n.target === 1 ? n : null;
+      sel = n?.target === 1 ? n : null;
       refocus();
       request();
     },
     setMatches(ids) { matches = new Set(ids); request(); },
     focusNode(id) {
       const n = byId.get(id);
-      if (!n || n.target !== 1) return;
+      if (n?.target !== 1) return;
       const k = Math.max(tf.k, FOCUS_K);
       const w = Math.max(1, W - PAD.l - focusInset.r);
       const h = Math.max(1, H - PAD.t - PAD.b - focusInset.b);
@@ -740,8 +764,8 @@ export function createForceView(canvas, { onSelect, onHover, onMoved, reducedMot
       const out = new Map();
       for (const id of movedIds) {
         const n = byId.get(id);
-        const x = n ? n.hx ?? n.x : NaN;
-        const y = n ? n.hy ?? n.y : NaN;
+        const x = n ? n.hx ?? n.x : Number.NaN;
+        const y = n ? n.hy ?? n.y : Number.NaN;
         if (Number.isFinite(x) && Number.isFinite(y)) out.set(id, [Math.round(x), Math.round(y)]);
       }
       return out;
