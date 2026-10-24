@@ -30,10 +30,63 @@ test('harmonicList keeps the summed gain at 0.3 and skips harmonics above 20 kHz
 });
 
 test('clampParams keeps every control in range', () => {
-  assert.deepEqual(h.clampParams({ freq: 1, count: 99, rolloff: -90, tau: 99, repeat: 0, strings: 9, detune: 40 }), { freq: 20, count: 32, rolloff: -24, decay: false, tau: 5, repeat: 1, strings: 3, detune: 5 });
+  const wild = h.clampParams({ freq: 1, count: 99, rolloff: -90, tau: 99, repeat: 0, strings: 9, detune: 40, thumpDb: 5, inharmB: 1, strike: 0.9 });
+  assert.deepEqual(wild, { ...h.DEFAULTS, freq: 20, count: 32, rolloff: -24, tau: 5, repeat: 1, strings: 3, detune: 5, thumpDb: -12, inharmB: 0.002, strike: 0.25 });
   assert.deepEqual(h.clampParams({}), h.DEFAULTS);
-  assert.deepEqual(h.DEFAULTS, { freq: 220, count: 10, rolloff: -12, decay: false, tau: 1.2, repeat: 3, strings: 1, detune: 2 });
+  assert.deepEqual(h.DEFAULTS, {
+    freq: 220, count: 10, rolloff: -12, decay: false, tau: 1.2, repeat: 3, strings: 1, detune: 2,
+    thump: true, thumpDb: -24, twoStage: true, inharm: true, inharmB: 0.0004, hammer: true, strike: 1 / 8,
+  });
   assert.equal(h.clampParams({ strings: 0 }).strings, 1);
+  assert.equal(h.clampParams({ thumpDb: -90 }).thumpDb, -48);
+  assert.equal(h.clampParams({ strike: 0.01 }).strike, 1 / 12);
+});
+
+test('the piano realism features only apply while the piano-like decay is on', () => {
+  const off = h.realism({ decay: false });
+  assert.deepEqual(off, { thumpGain: 0, twoStage: false, inharmB: 0, strike: 0 });
+  const on = h.realism({ decay: true });
+  assert.ok(Math.abs(on.thumpGain - 10 ** (-24 / 20)) < 1e-12);
+  assert.deepEqual({ ...on, thumpGain: 0 }, { thumpGain: 0, twoStage: true, inharmB: 0.0004, strike: 1 / 8 });
+  assert.equal(h.realism({ decay: true, thump: false, inharm: false, hammer: false, twoStage: false }).strike, 0);
+  assert.equal(h.realism({ decay: true, thumpDb: -48 }).thumpGain, 0);
+  assert.deepEqual(h.harmonicList({ freq: 440, count: 10, decay: false }), h.harmonicList({ freq: 440, count: 10, decay: true, thump: false, twoStage: false, inharm: false, hammer: false }));
+});
+
+test('inharmonicity makes partial n sharp: f_n = n f sqrt(1 + B n^2)', () => {
+  assert.equal(h.partialFreq(7, 440, 0), 3080);
+  assert.ok(Math.abs(h.partialFreq(10, 440, 0.0004) - 4400 * Math.sqrt(1.04)) < 1e-9);
+  assert.ok(Math.abs(h.harmonicList({ freq: 440, count: 10, decay: true })[9].freq - 4487.14) < 0.01);
+  assert.equal(h.harmonicList({ freq: 440, count: 10, decay: true, inharm: false })[9].freq, 4400);
+  assert.ok(h.linearMax(440, 32, 0.002) >= h.partialFreq(32, 440, 0.002));
+});
+
+test('the strike position weakens partials with a node at the hammer', () => {
+  assert.equal(h.strikeFactor(8, 1 / 8), h.HAMMER_FLOOR);
+  assert.equal(h.strikeFactor(16, 1 / 8), h.HAMMER_FLOOR);
+  assert.ok(Math.abs(h.strikeFactor(4, 1 / 8) - 1) < 1e-12);
+  assert.equal(h.strikeFactor(3, 0), 1);
+  const rows = h.harmonicList({ freq: 440, count: 10, rolloff: 0, decay: true, inharm: false });
+  assert.ok(rows[7].gain < rows[6].gain / 10);
+  assert.ok(Math.abs(rows.reduce((s, r) => s + r.gain, 0) - h.TOTAL_GAIN) < 1e-12);
+});
+
+test('two-stage decay is a fast and a slow exponential that sum to the strike level', () => {
+  assert.deepEqual(h.stageWeights(false), { fast: 1, slow: 0 });
+  assert.deepEqual(h.stageWeights(true), { fast: 0.75, slow: 0.25 });
+  assert.equal(h.twoStageValue(0, 0.2, 1), 0.2);
+  assert.ok(Math.abs(h.twoStageValue(2, 0.2, 1) - 0.2 * (0.75 * Math.exp(-2) + 0.25 * Math.exp(-0.5))) < 1e-12);
+  assert.ok(h.twoStageValue(3, 1, 1) > Math.exp(-3));
+});
+
+test('strike position and thump level have readable values', () => {
+  assert.equal(h.fmtStrike(1 / 8), '1/8');
+  assert.equal(h.fmtStrike(1 / 12), '1/12');
+  assert.equal(h.strikeToSlider(1 / 12), 0);
+  assert.equal(h.strikeToSlider(1 / 4), 8);
+  assert.equal(h.sliderToStrike(h.strikeToSlider(1 / 8)), 1 / 8);
+  assert.equal(h.fmtThump(-48), 'off');
+  assert.equal(h.fmtThump(-24), '-24 dB');
 });
 
 test('strings are detuned symmetrically by cents', () => {

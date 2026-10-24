@@ -9,7 +9,24 @@ export const MAX_COUNT = 32;
 export const MIN_ROLLOFF = -24;
 export const MAX_STRINGS = 3;
 export const MAX_DETUNE = 5;
-export const DEFAULTS = { freq: 220, count: 10, rolloff: -12, decay: false, tau: 1.2, repeat: 3, strings: 1, detune: 2 };
+export const DEFAULTS = {
+  freq: 220, count: 10, rolloff: -12, decay: false, tau: 1.2, repeat: 3, strings: 1, detune: 2,
+  thump: true, thumpDb: -24, twoStage: true, inharm: true, inharmB: 0.0004, hammer: true, strike: 1 / 8,
+};
+export const MIN_THUMP_DB = -48;
+export const MAX_THUMP_DB = -12;
+export const MAX_INHARM = 0.002;
+export const MIN_STRIKE = 1 / 12;
+export const MAX_STRIKE = 1 / 4;
+export const HAMMER_FLOOR = 0.03;
+export const FAST_SHARE = 0.75;
+export const SLOW_MULT = 4;
+export const THUMP_S = 0.06;
+export const THUMP_TAU = 0.012;
+export const THUMP_RISE_S = 0.002;
+export const THUMP_LOW_HZ = 150;
+export const THUMP_HIGH_HZ = 2500;
+export const THUMP_NORM = 4;
 export const MIN_TAU = 0.2;
 export const MAX_TAU = 5;
 export const MIN_REPEAT = 1;
@@ -43,6 +60,10 @@ export const TEXT = {
   unsupported: 'This browser cannot play audio',
   failed: 'Could not start the sound',
 };
+export const THUMP_NOTE = 'Hammer thump: the felt hammer hitting the strings makes a short burst of noise.';
+export const TWO_NOTE = 'Two-stage decay: a quick fade first, then a long quiet tail called the aftersound.';
+export const INHARM_NOTE = 'Inharmonicity: partials are slightly sharp, because a stiff string resists bending.';
+export const HAMMER_NOTE = 'Hammer position: partials with a node at the strike point are very quiet.';
 export const STRINGS_NOTE = 'A real piano note has up to 3 strings tuned a hair apart; their slow beating gives the shimmer.';
 export const BEAT_HINT = 'With detuned strings the loudness swells slowly: beats';
 export const ABOUT_TITLE ='What are harmonics?';
@@ -57,6 +78,7 @@ export const ABOUT = [
 const NOTE_NAMES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
 const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
 const num = (v, fallback) => (Number.isFinite(v) ? v : fallback);
+const flag = (v, fallback) => (typeof v === 'boolean' ? v : fallback);
 
 export function clampParams(p = {}) {
   return {
@@ -68,7 +90,56 @@ export function clampParams(p = {}) {
     repeat: clamp(num(p.repeat, DEFAULTS.repeat), MIN_REPEAT, MAX_REPEAT),
     strings: clamp(Math.round(num(p.strings, DEFAULTS.strings)), 1, MAX_STRINGS),
     detune: clamp(num(p.detune, DEFAULTS.detune), 0, MAX_DETUNE),
+    thump: flag(p.thump, DEFAULTS.thump),
+    thumpDb: clamp(num(p.thumpDb, DEFAULTS.thumpDb), MIN_THUMP_DB, MAX_THUMP_DB),
+    twoStage: flag(p.twoStage, DEFAULTS.twoStage),
+    inharm: flag(p.inharm, DEFAULTS.inharm),
+    inharmB: clamp(num(p.inharmB, DEFAULTS.inharmB), 0, MAX_INHARM),
+    hammer: flag(p.hammer, DEFAULTS.hammer),
+    strike: clamp(num(p.strike, DEFAULTS.strike), MIN_STRIKE, MAX_STRIKE),
   };
+}
+
+export function realism(params) {
+  const p = clampParams(params);
+  return {
+    thumpGain: p.decay && p.thump && p.thumpDb > MIN_THUMP_DB ? 10 ** (p.thumpDb / 20) : 0,
+    twoStage: p.decay && p.twoStage,
+    inharmB: p.decay && p.inharm ? p.inharmB : 0,
+    strike: p.decay && p.hammer ? p.strike : 0,
+  };
+}
+
+export function partialFreq(n, freq, B = 0) {
+  return n * freq * Math.sqrt(1 + B * n * n);
+}
+
+export function strikeFactor(n, p) {
+  return p > 0 ? Math.max(HAMMER_FLOOR, Math.abs(Math.sin(n * Math.PI * p))) : 1;
+}
+
+export function stageWeights(twoStage) {
+  return twoStage ? { fast: FAST_SHARE, slow: 1 - FAST_SHARE } : { fast: 1, slow: 0 };
+}
+
+export function twoStageValue(t, gain, tauFast) {
+  return gain * (FAST_SHARE * Math.exp(-t / tauFast) + (1 - FAST_SHARE) * Math.exp(-t / (SLOW_MULT * tauFast)));
+}
+
+export function fmtStrike(p) {
+  return `1/${Math.round(1 / p)}`;
+}
+
+export function strikeToSlider(p) {
+  return clamp(12 - Math.round(1 / clamp(p, MIN_STRIKE, MAX_STRIKE)), 0, 8);
+}
+
+export function sliderToStrike(i) {
+  return 1 / (12 - clamp(Math.round(i), 0, 8));
+}
+
+export function fmtThump(db) {
+  return db <= MIN_THUMP_DB ? 'off' : `${Math.round(db)} dB`;
 }
 
 export function stringOffsets(strings, detune) {
@@ -121,14 +192,15 @@ export function playableLimit(sampleRate = 48000) {
 
 export function harmonicList(params, sampleRate = 48000) {
   const { freq, count, rolloff, strings, detune } = clampParams(params);
+  const real = realism(params);
   const limit = playableLimit(sampleRate);
   const widest = centsRatio(strings > 1 ? detune : 0);
   const rows = [];
   let sum = 0;
   for (let n = 1; n <= count; n += 1) {
-    const f = n * freq;
+    const f = partialFreq(n, freq, real.inharmB);
     const played = f * widest < limit;
-    const amp = amplitude(n, rolloff);
+    const amp = amplitude(n, rolloff) * strikeFactor(n, real.strike);
     if (played) sum += amp;
     rows.push({ n, freq: f, amp, played, gain: 0, db: -Infinity });
   }
@@ -250,16 +322,16 @@ export function niceCeil(v) {
   return (m ?? 10) * e;
 }
 
-export function linearMax(freq, count) {
-  return Math.min(AUDIBLE_MAX_HZ, niceCeil(Math.max(AXIS_MIN_MULT, count + 1) * freq));
+export function linearMax(freq, count, B = 0) {
+  return Math.min(AUDIBLE_MAX_HZ, niceCeil(Math.max(AXIS_MIN_MULT * freq, partialFreq(count, freq, B) + freq)));
 }
 
 export function freqPos(f, axis, max) {
   return axis === 'log' ? logPos(f) : clamp(f / max, 0, 1);
 }
 
-export function axisRange(axis, freq, count) {
-  return axis === 'log' ? { axis, min: SPECTRUM_MIN_HZ, max: SPECTRUM_MAX_HZ } : { axis, min: 0, max: linearMax(freq, count) };
+export function axisRange(axis, freq, count, B = 0) {
+  return axis === 'log' ? { axis, min: SPECTRUM_MIN_HZ, max: SPECTRUM_MAX_HZ } : { axis, min: 0, max: linearMax(freq, count, B) };
 }
 
 export function fmtTick(f) {
@@ -322,12 +394,23 @@ export function createSynth(env = {}) {
       osc.type = 'sine';
       const gain = live.ctx.createGain();
       gain.gain.value = 0;
+      const gain2 = live.ctx.createGain();
+      gain2.gain.value = 0;
       osc.connect(gain);
+      osc.connect(gain2);
       gain.connect(trim);
+      gain2.connect(trim);
       osc.start(t);
-      voices.push({ osc, gain, env: { t0: 0, gain: 0, tau: Infinity } });
+      voices.push({ osc, gain, gain2, env: { t0: 0, gain: 0, tau: Infinity }, env2: { t0: 0, gain: 0, tau: Infinity } });
     }
     return { trim, voices, fresh: true };
+  }
+
+  function release(v) {
+    try { v.osc.stop(); } catch { /* already stopped */ }
+    v.osc.disconnect();
+    v.gain.disconnect();
+    v.gain2.disconnect();
   }
 
   function retire(s, t) {
@@ -336,9 +419,44 @@ export function createSynth(env = {}) {
     g.setValueAtTime(g.value, t);
     g.linearRampToValueAtTime(0, t + FADE_S);
     setTimeout(() => {
-      for (const v of s.voices) { try { v.osc.stop(); } catch { /* already stopped */ } v.osc.disconnect(); v.gain.disconnect(); }
+      for (const v of s.voices) release(v);
       s.trim.disconnect();
     }, FADE_S * 1000 + 40);
+  }
+
+  function hold(param, t) {
+    const held = param.value;
+    param.cancelScheduledValues(t);
+    param.setValueAtTime(held, t);
+    return held;
+  }
+
+  function shape(param, prev, at, from, level, tau) {
+    param.cancelScheduledValues(from);
+    param.setValueAtTime(envelopeValue(prev, from), from);
+    param.linearRampToValueAtTime(0, at);
+    if (level > 0) {
+      param.linearRampToValueAtTime(level, at + ATTACK_S);
+      param.setTargetAtTime(0, at + ATTACK_S, tau);
+    }
+    return { t0: at + ATTACK_S, gain: level, tau };
+  }
+
+  function thump(at, level) {
+    const { gain, hp } = live.thump;
+    const g = gain.gain;
+    const end = at + THUMP_S + 0.04;
+    g.cancelScheduledValues(at);
+    g.setValueAtTime(0, at);
+    g.linearRampToValueAtTime(level, at + THUMP_RISE_S);
+    g.setTargetAtTime(0, at + THUMP_RISE_S, THUMP_TAU);
+    g.setValueAtTime(0, end);
+    const src = live.ctx.createBufferSource();
+    src.buffer = live.noise;
+    src.connect(hp);
+    src.onended = () => src.disconnect();
+    src.start(at);
+    src.stop(end);
   }
 
   function syncStrings(n) {
@@ -355,6 +473,7 @@ export function createSynth(env = {}) {
     const offsets = stringOffsets(p.strings, p.detune);
     const t = live.ctx.currentTime;
     const limit = playableLimit(live.ctx.sampleRate) - 1;
+    const B = live.decay ? live.struckB : 0;
     live.strings.forEach((s, k) => {
       const direct = initial || s.fresh;
       s.fresh = false;
@@ -362,15 +481,19 @@ export function createSynth(env = {}) {
       else s.trim.gain.setTargetAtTime(1 / p.strings, t, SMOOTH_S);
       s.voices.forEach((v, i) => {
         const gain = rows[i]?.played ? rows[i].gain : 0;
-        const hz = Math.min((i + 1) * p.freq, limit);
+        const hz = Math.min(partialFreq(i + 1, p.freq, B), limit);
         if (direct) {
           v.osc.frequency.value = hz;
           v.osc.detune.value = offsets[k];
           v.gain.gain.value = live.decay ? 0 : gain;
+          v.gain2.gain.value = 0;
         } else {
           v.osc.frequency.setTargetAtTime(hz, t, SMOOTH_S);
           v.osc.detune.setTargetAtTime(offsets[k], t, SMOOTH_S);
-          if (!live.decay) v.gain.gain.setTargetAtTime(gain, t, SMOOTH_S);
+          if (!live.decay) {
+            v.gain.gain.setTargetAtTime(gain, t, SMOOTH_S);
+            v.gain2.gain.setTargetAtTime(0, t, SMOOTH_S);
+          }
         }
       });
     });
@@ -378,23 +501,24 @@ export function createSynth(env = {}) {
 
   function strike(at, params, strings = live.strings) {
     const now = live.ctx.currentTime;
-    const rows = harmonicList(params, live.ctx.sampleRate);
-    const tau1 = clampParams(params).tau;
+    const p = clampParams(params);
+    const real = realism(p);
+    const weights = stageWeights(real.twoStage);
+    const rows = harmonicList(p, live.ctx.sampleRate);
+    const limit = playableLimit(live.ctx.sampleRate) - 1;
     const from = Math.max(now, at - RELEASE_S);
     voicesOf(strings).forEach((v, j) => {
       const i = j % MAX_COUNT;
-      const p = v.gain.gain;
       const gain = rows[i]?.played ? rows[i].gain : 0;
-      const tau = tauOf(i + 1, tau1);
-      p.cancelScheduledValues(from);
-      p.setValueAtTime(envelopeValue(v.env, from), from);
-      p.linearRampToValueAtTime(0, at);
-      if (gain > 0) {
-        p.linearRampToValueAtTime(gain, at + ATTACK_S);
-        p.setTargetAtTime(0, at + ATTACK_S, tau);
-      }
-      v.env = { t0: at + ATTACK_S, gain, tau };
+      const tau = tauOf(i + 1, p.tau);
+      v.osc.frequency.setValueAtTime(Math.min(partialFreq(i + 1, p.freq, real.inharmB), limit), at);
+      v.env = shape(v.gain.gain, v.env, at, from, gain * weights.fast, tau);
+      v.env2 = shape(v.gain2.gain, v.env2, at, from, gain * weights.slow, tau * SLOW_MULT);
     });
+    if (strings === live.strings) {
+      live.struckB = real.inharmB;
+      if (real.thumpGain > 0 && rows[0]?.played) thump(at, rows[0].gain * real.thumpGain * THUMP_NORM);
+    }
   }
 
   function pump() {
@@ -412,14 +536,12 @@ export function createSynth(env = {}) {
   function enterDecay(params) {
     const t = live.ctx.currentTime;
     for (const v of voicesOf(live.strings)) {
-      const p = v.gain.gain;
-      const held = p.value;
-      p.cancelScheduledValues(t);
-      p.setValueAtTime(held, t);
-      v.env = { t0: 0, gain: held, tau: Infinity };
+      v.env = { t0: 0, gain: hold(v.gain.gain, t), tau: Infinity };
+      v.env2 = { t0: 0, gain: hold(v.gain2.gain, t), tau: Infinity };
     }
     live.decay = true;
     live.params = clampParams(params);
+    live.struckB = realism(live.params).inharmB;
     live.next = t + 0.02;
     pump();
   }
@@ -430,11 +552,12 @@ export function createSynth(env = {}) {
     live.last = 0;
     const t = live.ctx.currentTime;
     for (const v of voicesOf(live.strings)) {
-      const p = v.gain.gain;
-      const held = p.value;
-      p.cancelScheduledValues(t);
-      p.setValueAtTime(held, t);
+      hold(v.gain.gain, t);
+      hold(v.gain2.gain, t);
     }
+    const g = live.thump.gain.gain;
+    hold(g, t);
+    g.setTargetAtTime(0, t, SMOOTH_S);
   }
 
   function strikeNew(added, params) {
@@ -466,7 +589,24 @@ export function createSynth(env = {}) {
       analyser.connect(ctx.destination);
       const clamped = clampParams(params);
       const t = ctx.currentTime;
-      live = { ctx, master, analyser, strings: [], decay: clamped.decay, params: clamped, next: 0, last: 0, timer: 0 };
+      const hp = ctx.createBiquadFilter();
+      hp.type = 'highpass';
+      hp.frequency.value = THUMP_LOW_HZ;
+      const lp = ctx.createBiquadFilter();
+      lp.type = 'lowpass';
+      lp.frequency.value = THUMP_HIGH_HZ;
+      const tg = ctx.createGain();
+      tg.gain.value = 0;
+      hp.connect(lp);
+      lp.connect(tg);
+      tg.connect(master);
+      const noise = ctx.createBuffer(1, Math.ceil(ctx.sampleRate * (THUMP_S + 0.04)), ctx.sampleRate);
+      const data = noise.getChannelData(0);
+      for (let i = 0; i < data.length; i += 1) data[i] = Math.random() * 2 - 1;
+      live = {
+        ctx, master, analyser, strings: [], decay: clamped.decay, params: clamped, next: 0, last: 0, timer: 0,
+        struckB: realism(clamped).inharmB, noise, thump: { hp, lp, gain: tg },
+      };
       syncStrings(clamped.strings);
       apply(params, true);
       master.gain.setValueAtTime(0, t);
@@ -500,8 +640,11 @@ export function createSynth(env = {}) {
       r.master.gain.setValueAtTime(r.master.gain.value, t);
       r.master.gain.linearRampToValueAtTime(0, t + FADE_S);
       setTimeout(() => {
-        for (const v of voicesOf(r.strings)) { try { v.osc.stop(); } catch { /* already stopped */ } v.osc.disconnect(); v.gain.disconnect(); }
+        for (const v of voicesOf(r.strings)) release(v);
         for (const s of r.strings) s.trim.disconnect();
+        r.thump.hp.disconnect();
+        r.thump.lp.disconnect();
+        r.thump.gain.disconnect();
         r.master.disconnect();
         r.analyser.disconnect();
         void r.ctx.close?.();
@@ -760,6 +903,33 @@ export function createHarmonicsCard(env = {}) {
     el('label', { htmlFor: `${uid}-ur` }, 'Detune between strings (cents)'),
     el('div', { class: 'hm-pair' }, detuneRange, detuneOut),
     beatOut);
+  const realBox = (key, text) => {
+    const box = el('input', { id: `${uid}-${key}`, type: 'checkbox', checked: params[key], onchange: () => change({ [key]: box.checked }) });
+    return { box, row: el('span', { class: 'hm-check' }, box, el('label', { htmlFor: `${uid}-${key}` }, text)) };
+  };
+  const realRange = (key, label, min, max, step, value) => {
+    const range = el('input', { id: `${uid}-${key}-r`, class: 'slider hm-range', type: 'range', min: String(min), max: String(max), step: String(step), value: String(value) });
+    const out = el('output', { class: 'hm-val t-subhead', htmlFor: `${uid}-${key}-r` }, '');
+    const field = el('div', { class: 'hm-field', hidden: true },
+      el('label', { htmlFor: `${uid}-${key}-r` }, label),
+      el('div', { class: 'hm-pair' }, range, out));
+    return { range, out, field };
+  };
+  const thumpBox = realBox('thump', 'Hammer thump');
+  const thumpCtl = realRange('thump', 'Thump level (dB relative to H1)', MIN_THUMP_DB, MAX_THUMP_DB, 1, params.thumpDb);
+  const twoBox = realBox('twoStage', 'Two-stage decay');
+  const inharmBox = realBox('inharm', 'Inharmonicity');
+  const inharmCtl = realRange('inharm', 'Inharmonicity B', 0, MAX_INHARM, 0.00005, params.inharmB);
+  const hammerBox = realBox('hammer', 'Hammer position');
+  const strikeCtl = realRange('strike', 'Strike position (fraction of the string)', 0, 8, 1, strikeToSlider(params.strike));
+  const feat = (box, note, field) => el('div', { class: 'hm-feat' }, box.row, el('p', { class: 'hm-cap muted t-caption' }, note), ...(field ? [field] : []));
+  const realGroup = el('div', { class: 'hm-real', role: 'group', 'aria-labelledby': `${uid}-pl`, hidden: true },
+    el('h3', { id: `${uid}-pl`, class: 't-subhead' }, 'Piano realism'),
+    el('div', { class: 'hm-feats' },
+      feat(thumpBox, THUMP_NOTE, thumpCtl.field),
+      feat(twoBox, TWO_NOTE),
+      feat(inharmBox, INHARM_NOTE, inharmCtl.field),
+      feat(hammerBox, HAMMER_NOTE, strikeCtl.field)));
   const axisBtns = AXES.map((a) => el('button', {
     class: 'seg-btn', type: 'button', role: 'radio', 'aria-checked': 'false', onclick: () => setAxis(a),
   }, AXIS_LABELS[a]));
@@ -817,7 +987,8 @@ export function createHarmonicsCard(env = {}) {
       tauField,
       repeatField,
       stringsField,
-      detuneField),
+      detuneField,
+      realGroup),
     el('p', { class: 'hm-cap muted t-caption' }, STRINGS_NOTE),
     el('div', { class: 'hm-play' }, button, state),
     skipNote,
@@ -852,7 +1023,15 @@ export function createHarmonicsCard(env = {}) {
     const note = noteInfo(params.freq);
     const piano = params.decay ? `, piano-like decay, fade ${params.tau} s, repeat every ${params.repeat} s` : '';
     const multi = params.strings > 1 ? `, ${params.strings} strings detuned by ${params.detune} cents` : '';
-    const base = `${params.count} harmonics of ${fmtHz(params.freq)}, ${note.name}, decay ${params.rolloff} dB per octave${piano}${multi}`;
+    const real = realism(params);
+    const parts = [
+      real.thumpGain > 0 ? `hammer thump ${params.thumpDb} dB` : '',
+      real.twoStage ? 'two-stage decay' : '',
+      real.inharmB > 0 ? `inharmonicity B ${+real.inharmB.toFixed(5)}` : '',
+      real.strike > 0 ? `hammer at ${fmtStrike(real.strike)} of the string` : '',
+    ].filter(Boolean);
+    const extra = parts.length ? `, ${parts.join(', ')}` : '';
+    const base = `${params.count} harmonics of ${fmtHz(params.freq)}, ${note.name}, decay ${params.rolloff} dB per octave${piano}${multi}${extra}`;
     const where = axisText();
     waveCanvas.setAttribute('aria-label', `Waveform of the synthesized tone, 3.5 cycles: ${base}`);
     specCanvas.setAttribute('aria-label', `Spectrum of the synthesized tone, ${where}, one bar per harmonic: ${base}`);
@@ -861,7 +1040,7 @@ export function createHarmonicsCard(env = {}) {
     gramCap.textContent = `The last 10 seconds: time across, frequency up (${axisCaption()}), colour is level. It fills while the tone plays and clears when the axis changes.`;
   }
 
-  const rangeNow = () => axisRange(axis, params.freq, params.count);
+  const rangeNow = () => axisRange(axis, params.freq, params.count, realism(params).inharmB);
 
   function axisText() {
     const r = rangeNow();
@@ -895,6 +1074,20 @@ export function createHarmonicsCard(env = {}) {
     repeatOut.textContent = `${params.repeat} s`;
     tauField.hidden = !params.decay;
     repeatField.hidden = !params.decay;
+    realGroup.hidden = !params.decay;
+    thumpBox.box.checked = params.thump;
+    twoBox.box.checked = params.twoStage;
+    inharmBox.box.checked = params.inharm;
+    hammerBox.box.checked = params.hammer;
+    thumpCtl.field.hidden = !params.thump;
+    inharmCtl.field.hidden = !params.inharm;
+    strikeCtl.field.hidden = !params.hammer;
+    fill(thumpCtl.range, params.thumpDb, MIN_THUMP_DB, MAX_THUMP_DB);
+    fill(inharmCtl.range, params.inharmB, 0, MAX_INHARM);
+    fill(strikeCtl.range, strikeToSlider(params.strike), 0, 8);
+    thumpCtl.out.textContent = fmtThump(params.thumpDb);
+    inharmCtl.out.textContent = `B ${+params.inharmB.toFixed(5)}`;
+    strikeCtl.out.textContent = fmtStrike(params.strike);
     fill(detuneRange, params.detune, 0, MAX_DETUNE);
     detuneOut.textContent = `${params.detune} cents`;
     const beat = beatRate(params.freq, params.strings, params.detune);
@@ -1123,6 +1316,9 @@ export function createHarmonicsCard(env = {}) {
   tauRange.addEventListener('input', () => change({ tau: Number(tauRange.value) }));
   repeatRange.addEventListener('input', () => change({ repeat: Number(repeatRange.value) }));
   detuneRange.addEventListener('input', () => change({ detune: Number(detuneRange.value) }));
+  thumpCtl.range.addEventListener('input', () => change({ thumpDb: Number(thumpCtl.range.value) }));
+  inharmCtl.range.addEventListener('input', () => change({ inharmB: Number(inharmCtl.range.value) }));
+  strikeCtl.range.addEventListener('input', () => change({ strike: sliderToStrike(Number(strikeCtl.range.value)) }));
 
   let ro = null;
   if (typeof ResizeObserver !== 'undefined') {
