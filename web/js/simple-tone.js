@@ -27,6 +27,19 @@ export const ABOUT = [
   ['Power', 'is the energy per second the sound carries. It is proportional to the amplitude squared.'],
   ['Length', 'is how long the cone keeps moving, in seconds.'],
 ];
+export const GLOSSARY_TITLE = 'Sound, tone, note: what is what?';
+export const GLOSSARY = [
+  ['Sound', 'any air pressure vibration you can hear.'],
+  ['Oscillation', 'any repeating back-and-forth change, such as a pendulum, a voltage or air pressure.'],
+  ['Vibration', 'an oscillation of a physical object, such as a string or a speaker cone. The cone vibrates; the air pressure it creates oscillates.'],
+  ['Frequency', 'how many swings per second (Hz), a number you can measure and set.'],
+  ['Pitch', 'how high or low a sound seems to you; it follows the fundamental frequency.'],
+  ['Tone', 'a sound with a clear pitch; a pure tone is a single sine wave.'],
+  ['Harmonic 1 (H1)', 'the lowest frequency inside a tone, its fundamental. H2 = 2 x H1, H3 = 3 x H1, and so on.'],
+  ['Note', 'the musical name of a pitch (A4 = 440 Hz). It is named after the fundamental (H1); the other harmonics only colour the sound (timbre).'],
+  ['Timbre', 'the mix of harmonics; why a flute and a piano playing the same note sound different.'],
+];
+export const SINE_NOTE = 'One sine wave = one frequency = H1 only.';
 export const TEXT = {
   idle: 'Ready',
   stopped: 'Stopped',
@@ -236,10 +249,14 @@ export function createSimpleCard(env = {}) {
     el('div', { class: 'hm-block' },
       el('h3', { class: 't-subhead' }, 'Waveform'),
       el('div', { class: 'hm-view hm-wave' }, canvas),
-      readoutOut),
+      readoutOut,
+      el('p', { class: 'hm-cap muted t-caption' }, SINE_NOTE)),
     el('details', { class: 'hm-about', open: true },
       el('summary', { class: 't-subhead' }, ABOUT_TITLE),
-      el('dl', { class: 'hm-defs' }, ...ABOUT.flatMap(([term, text]) => [el('dt', { class: 't-subhead' }, term), el('dd', { class: 't-subhead muted' }, text)]))));
+      el('dl', { class: 'hm-defs' }, ...ABOUT.flatMap(([term, text]) => [el('dt', { class: 't-subhead' }, term), el('dd', { class: 't-subhead muted' }, text)]))),
+    el('details', { class: 'hm-about', open: true },
+      el('summary', { class: 't-subhead' }, GLOSSARY_TITLE),
+      el('dl', { class: 'hm-defs' }, ...GLOSSARY.flatMap(([term, text]) => [el('dt', { class: 't-subhead' }, term), el('dd', { class: 't-subhead muted' }, text)]))));
 
   const active = () => doc?.activeElement;
 
