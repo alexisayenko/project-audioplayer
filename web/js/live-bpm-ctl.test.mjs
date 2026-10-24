@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { createLiveBpmController, LIVE_BPM_KEY } from './live-bpm-ctl.js';
+import { createLiveBpmController, LIVE_BPM_KEY, PUBLISH_MS } from './live-bpm-ctl.js';
 import { segment, concat } from './live-bpm-synth.mjs';
 
 const RATE = 44100;
@@ -33,7 +33,7 @@ function rig({ stored = '0', bpm = 139, stream = new Float32Array(0), graph = tr
     for (let n = 0; n < blocks; n += 1) {
       clock.pos += BLOCK;
       for (const { f, ms } of intervals.values()) if (ms === 40) f();
-      if (n % 25 === 24) for (const { f, ms } of intervals.values()) if (ms === 1000) f();
+      if (n % 25 === 12 || n % 25 === 24) for (const { f, ms } of intervals.values()) if (ms === PUBLISH_MS) f();
     }
   };
   return { ctl, mem, audio, player, intervals, clock, run };
@@ -95,13 +95,33 @@ test('values above 200 BPM are reported as measured', () => {
   assert.ok(Math.abs(r.ctl.value - 1000) <= 20, `got ${r.ctl.value}`);
 });
 
-test('a tempo step is followed within 8 seconds', () => {
+test('a tempo step is followed within 3 seconds', () => {
   const stream = concat([kicks(120, 14, 1), kicks(174, 14, 2)]);
   const r = rig({ stored: '1', bpm: 140, stream });
   r.run(13);
   assert.ok(Math.abs(r.ctl.value - 120) <= 2, `got ${r.ctl.value}`);
-  r.run(9);
+  r.run(4);
   assert.ok(Math.abs(r.ctl.value - 174) <= 3, `got ${r.ctl.value}`);
+});
+
+test('the value keeps one decimal', () => {
+  const r = rig({ stored: '1', bpm: 127, stream: kicks(141) });
+  r.run(12);
+  assert.equal(r.ctl.value, Math.round(r.ctl.value * 10) / 10);
+});
+
+test('silence for 1.5 seconds sets silent and clears the value, sound brings it back', () => {
+  const stream = concat([kicks(120, 10, 1), new Float32Array(RATE * 4), kicks(120, 12, 2)]);
+  const r = rig({ stored: '1', bpm: 120, stream });
+  r.run(10);
+  assert.ok(r.ctl.value !== null);
+  assert.equal(r.ctl.silent, false);
+  r.run(3);
+  assert.equal(r.ctl.silent, true);
+  assert.equal(r.ctl.value, null);
+  r.run(10);
+  assert.equal(r.ctl.silent, false);
+  assert.ok(r.ctl.value !== null);
 });
 
 test('a long gap between samples drops the history', () => {
@@ -110,7 +130,7 @@ test('a long gap between samples drops the history', () => {
   assert.ok(r.ctl.value !== null);
   r.clock.pos += RATE * 3;
   for (const { f, ms } of r.intervals.values()) if (ms === 40) f();
-  for (let i = 0; i < 4; i += 1) for (const { f, ms } of r.intervals.values()) if (ms === 1000) f();
+  for (let i = 0; i < 8; i += 1) for (const { f, ms } of r.intervals.values()) if (ms === PUBLISH_MS) f();
   assert.equal(r.ctl.value, null);
 });
 

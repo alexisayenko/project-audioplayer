@@ -154,7 +154,7 @@ test('WEB-177: without getUserMedia the card says so and does not start', async 
 test('WEB-177: the engine adapter shows idle for silence and the engine value for sound, and the meter maps decibels', () => {
   const pushed = [];
   let reset = 0;
-  const mic = createMicBpm({ create: () => ({ pushSamples: (s, r) => pushed.push([s.length, r]), estimate: () => 140, reset: () => { reset += 1; } }) });
+  const mic = createMicBpm({ create: () => ({ pushSamples: (s, r) => pushed.push([s.length, r]), estimateExact: () => 140, reset: () => { reset += 1; } }) });
   const loud = new Float32Array(48000).fill(0.2);
   const quiet = new Float32Array(48000);
   mic.push(loud, 48000);

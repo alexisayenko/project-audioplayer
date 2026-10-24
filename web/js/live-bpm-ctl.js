@@ -3,8 +3,16 @@ import { storeGet, storeSet } from './storage.js';
 
 export const LIVE_BPM_KEY = 'ap.liveBpm';
 const SAMPLE_MS = 40;
-const PUBLISH_MS = 1000;
+export const PUBLISH_MS = 500;
+export const SILENT_RMS = 0.002;
+export const SILENT_HOLD_S = 1.5;
 const SMOOTH_COUNT = 3;
+
+function rmsOf(samples) {
+  let sum = 0;
+  for (let i = 0; i < samples.length; i += 1) sum += samples[i] * samples[i];
+  return samples.length ? Math.sqrt(sum / samples.length) : 0;
+}
 
 function median(values) {
   const sorted = values.slice().sort((a, b) => a - b);
@@ -22,6 +30,8 @@ export function createLiveBpmController({ audio, player, getAnalyser, getContext
   let buffer = null;
   let lastTime = null;
   let recent = [];
+  let quietS = 0;
+  let silent = false;
 
   const emit = () => { for (const fn of listeners) fn(); };
 
@@ -31,7 +41,7 @@ export function createLiveBpmController({ audio, player, getAnalyser, getContext
     if (exact !== null) recent.push(exact);
     else recent.shift();
     if (recent.length > SMOOTH_COUNT) recent.shift();
-    const next = recent.length ? Math.round(median(recent)) : null;
+    const next = recent.length ? Math.round(median(recent) * 10) / 10 : null;
     if (next !== value) { value = next; emit(); }
   };
 
@@ -50,13 +60,25 @@ export function createLiveBpmController({ audio, player, getAnalyser, getContext
     const fresh = Math.round((t - before) * rate);
     if (fresh <= 0) return;
     if (fresh > size) { det.reset(); recent = []; return; }
-    det.pushSamples(buffer.subarray(size - fresh), rate);
+    const block = buffer.subarray(size - fresh);
+    quietS = rmsOf(block) < SILENT_RMS ? quietS + fresh / rate : 0;
+    const quiet = quietS >= SILENT_HOLD_S;
+    if (quiet !== silent) {
+      silent = quiet;
+      if (quiet) { det.reset(); recent = []; value = null; }
+      emit();
+    }
+    if (!quiet) det.pushSamples(block, rate);
   };
 
   const clearValue = () => {
     det.reset();
     recent = [];
     lastTime = null;
+    quietS = 0;
+    const wasSilent = silent;
+    silent = false;
+    if (wasSilent) emit();
     if (value !== null) { value = null; emit(); }
   };
 
@@ -86,16 +108,18 @@ export function createLiveBpmController({ audio, player, getAnalyser, getContext
 
   const unsubscribe = player.onChange(sync);
   const onSeeked = () => { clearValue(); };
-  const onPlay = () => { clearValue(); sync(); };
+  const onPlay = () => { clearValue(); sync(); emit(); };
+  const onPause = () => { sync(); emit(); };
   audio.addEventListener('seeked', onSeeked);
   audio.addEventListener('play', onPlay);
-  audio.addEventListener('pause', sync);
+  audio.addEventListener('pause', onPause);
   songId = player.current?.id ?? null;
   sync();
 
   return {
     get on() { return on; },
     get value() { return on ? value : null; },
+    get silent() { return silent; },
     get songId() { return songId; },
     setOn(next) {
       on = Boolean(next);
@@ -104,6 +128,6 @@ export function createLiveBpmController({ audio, player, getAnalyser, getContext
       emit();
     },
     onChange(fn) { listeners.add(fn); return () => listeners.delete(fn); },
-    dispose() { stop(); unsubscribe(); audio.removeEventListener('seeked', onSeeked); audio.removeEventListener('play', onPlay); audio.removeEventListener('pause', sync); listeners.clear(); },
+    dispose() { stop(); unsubscribe(); audio.removeEventListener('seeked', onSeeked); audio.removeEventListener('play', onPlay); audio.removeEventListener('pause', onPause); listeners.clear(); },
   };
 }

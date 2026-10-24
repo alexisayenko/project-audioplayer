@@ -88,13 +88,13 @@ test('reset clears the audio', () => {
   assert.equal(det.envelopeLength(), 0);
 });
 
-test('a tempo step is followed within 8 seconds', () => {
+test('a tempo step is followed within 3.5 seconds', () => {
   const det = createLiveBpm();
   const first = segment({ bpm: 120, seconds: 12, kind: 'kick', seed: 1 });
   const second = segment({ bpm: 174, seconds: 12, kind: 'kick', seed: 2 });
   feed(det, first);
   assert.ok(near(det.estimateExact(), 120, 0.01));
-  feed(det, second.subarray(0, 44100 * 8));
+  feed(det, second.subarray(0, Math.round(44100 * 3.5)));
   assert.ok(near(det.estimateExact(), 174, 0.01), `got ${det.estimateExact()}`);
 });
 

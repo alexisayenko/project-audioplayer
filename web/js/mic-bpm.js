@@ -1,7 +1,8 @@
 import { createLiveBpm } from './live-bpm.js';
 
 export const MAX_RUN_MS = 10 * 60 * 1000;
-export const PUBLISH_MS = 1000;
+export const PUBLISH_MS = 500;
+const SMOOTH_COUNT = 3;
 export const METER_MS = 100;
 export const SILENT_RMS = 0.002;
 export const SILENT_HOLD_S = 1.5;
@@ -26,6 +27,7 @@ export function createMicBpm({ create = createLiveBpm } = {}) {
   const det = create();
   let quietS = 0;
   let silent = true;
+  let recent = [];
 
   return {
     get silent() { return silent; },
@@ -33,17 +35,22 @@ export function createMicBpm({ create = createLiveBpm } = {}) {
       if (!samples.length || !(sampleRate > 0)) return;
       quietS = rmsOf(samples) < SILENT_RMS ? quietS + samples.length / sampleRate : 0;
       const quiet = quietS >= SILENT_HOLD_S;
-      if (quiet && !silent) det.reset();
+      if (quiet && !silent) { det.reset(); recent = []; }
       silent = quiet;
       if (!quiet) det.pushSamples(samples, sampleRate);
     },
     value() {
       if (silent) return null;
-      const bpm = det.estimate();
-      return Number.isFinite(bpm) && bpm > 0 ? bpm : null;
+      const bpm = det.estimateExact();
+      if (Number.isFinite(bpm) && bpm > 0) recent.push(bpm);
+      else recent.shift();
+      if (recent.length > SMOOTH_COUNT) recent.shift();
+      if (!recent.length) return null;
+      return Math.round(recent.slice().sort((a, b) => a - b)[recent.length >> 1]);
     },
     reset() {
       det.reset();
+      recent = [];
       quietS = 0;
       silent = true;
     },

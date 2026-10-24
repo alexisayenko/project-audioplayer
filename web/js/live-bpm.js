@@ -2,6 +2,8 @@ export const MIN_BPM = 30;
 export const MAX_BPM = 1200;
 export const WINDOW_S = 6;
 export const MIN_SPAN_S = 4;
+export const SHORT_S = 3;
+export const AGREE_TOLERANCE = 0.03;
 export const ENV_RATE = 400;
 export const HINT_TOLERANCE = 0.04;
 export const TIE_MARGIN = 0.15;
@@ -227,9 +229,9 @@ function crest(env) {
   return total > 0 ? top / count / (total / sorted.length) : 0;
 }
 
-export function estimateFromEnvelope(env, rate, hint = null) {
+export function estimateFromEnvelope(env, rate, hint = null, minSpanS = MIN_SPAN_S) {
   const n = env.length;
-  if (n < MIN_SPAN_S * rate) return null;
+  if (n < minSpanS * rate) return null;
   if (crest(env) < CREST_MIN) return null;
   const w = taperWindow(n, rate);
   let weight = 0;
@@ -252,7 +254,12 @@ export function estimateFromEnvelope(env, rate, hint = null) {
   return found;
 }
 
-export function createLiveBpm({ windowS = WINDOW_S } = {}) {
+function sameTempo(a, b) {
+  const octaves = Math.log2(a / b);
+  return Math.abs(2 ** (octaves - Math.round(octaves)) - 1) <= AGREE_TOLERANCE;
+}
+
+export function createLiveBpm({ windowS = WINDOW_S, shortS = SHORT_S } = {}) {
   let hint = null;
   let extractor = null;
   let extractorRate = 0;
@@ -296,7 +303,14 @@ export function createLiveBpm({ windowS = WINDOW_S } = {}) {
     envelopeLength() { return filled; },
     estimateExact() {
       if (!extractor) return null;
-      return estimateFromEnvelope(env.subarray(0, filled), extractor.rate, hint);
+      const rate = extractor.rate;
+      const all = env.subarray(0, filled);
+      const long = estimateFromEnvelope(all, rate, hint);
+      const recentN = Math.round(shortS * rate);
+      if (filled < recentN) return long;
+      const short = estimateFromEnvelope(all.subarray(filled - recentN), rate, hint, shortS);
+      if (short === null || long === null) return long === null && filled < MIN_SPAN_S * rate ? short : long;
+      return sameTempo(short, long) ? long : short;
     },
     estimate() {
       const exact = this.estimateExact();

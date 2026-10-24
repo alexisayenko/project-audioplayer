@@ -31,7 +31,7 @@ test('the BPM badge is a toggle button, off by default', () => {
   document.getElementById('song-card').close();
 });
 
-test('clicking turns live mode on, persists it, shows the stored value with ~ until locked', () => {
+test('clicking turns live mode on, persists it, shows - - - while nothing plays', () => {
   resetLiveBpmForTests();
   publish([SONG]);
   openSongCard(SONG);
@@ -39,7 +39,8 @@ test('clicking turns live mode on, persists it, shows the stored value with ~ un
   const b = badge();
   assert.equal(b.getAttribute('aria-pressed'), 'true');
   assert.ok(b.classList.contains('on'));
-  assert.ok(b.textContent.startsWith('~139'));
+  assert.ok(b.textContent.startsWith('- - -'));
+  assert.equal(b.getAttribute('aria-label'), 'Live BPM, nothing playing');
   assert.equal(localStorage.getItem(LIVE_BPM_KEY), '1');
   document.getElementById('song-card').close();
 });

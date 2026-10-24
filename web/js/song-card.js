@@ -12,7 +12,7 @@ import { changeCover, openGenreCard, openPlaylistPicker } from './lazy-ui.js';
 import { playlistsOn } from './playlists-store.js';
 import { creditParts, subtitle, titleNodes, detailsLines, yearFact, albumOf, albumsOf, displayLine } from './credits.js';
 import { icon } from './icons.js';
-import { bpmLabel } from './bpm-label.js';
+import { bpmLabel, liveBpmLabel, LIVE_IDLE } from './bpm-label.js';
 import { visibleTags, tagGroups, tagLabel, splitTag } from './tagname.js';
 import { genreLines, resolveNode } from './genre-levels.js';
 import { cachedTree, loadGenreTree } from './genre-tree.js';
@@ -217,8 +217,11 @@ export function resetLiveBpmForTests() {
 function bpmView(stored, songId) {
   const ctl = liveBpm();
   if (!ctl.on) return { text: stored, label: `BPM ${stored}`, on: false };
-  const live = player.current?.id === songId ? ctl.value : null;
-  return { text: live === null ? `~${stored}` : String(live), label: live === null ? `Live BPM, about ${stored}` : `Live BPM ${live}`, on: true };
+  const current = player.current?.id === songId;
+  if (!current || !player.playing || ctl.silent) return { text: LIVE_IDLE, label: 'Live BPM, nothing playing', on: true };
+  const live = ctl.value;
+  const shown = live === null ? '' : liveBpmLabel(live);
+  return { text: live === null ? `~${stored}` : shown, label: live === null ? `Live BPM, about ${stored}` : `Live BPM ${shown}`, on: true };
 }
 
 function paintBpmBadge(btn) {
