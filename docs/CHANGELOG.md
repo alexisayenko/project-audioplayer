@@ -2,7 +2,7 @@
 
 What shipped, newest first. One line each; the web UI and server are live at https://electrophone.cc. Everything listed here is deployed except the sections marked "built, not deployed" (the 2026-10-14 release went out once the SSH access in [task-0027](tasks/task-0027.md) was restored; the live visualizer files match `origin/main` as of 2026-10-15). Why: [tech/decisions.md](tech/decisions.md); runbook: [tech/deploy.md](tech/deploy.md).
 
-## 2026-10-24 (Studio Simple tab glossary, web, to deploy)
+## 2026-10-24 (Studio Simple tab glossary, web, deployed as `5bff132`)
 
 - Web (WEB-201; owner request 2026-10-24; no tests run): the Simple tab gets a collapsible "Sound, tone, note: what is what?" glossary (Sound, Oscillation, Vibration, Frequency, Pitch, Tone, Harmonic 1, Note, Timbre) under "What do these mean?", and the line "One sine wave = one frequency = H1 only." under the tone readout.
 
