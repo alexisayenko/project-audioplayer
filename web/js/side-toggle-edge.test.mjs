@@ -36,11 +36,13 @@ test('the toggle exists only from 720px', () => {
 });
 
 test('the open sidebar has the tight proposal top and the 1.5x lockup, the rail shares its vertical layout: same top padding, same 48px brand block, same mark', () => {
-  assert.match(rule('body.side-collapsed .side'), /padding-inline: var\(--space-2\)/);
-  assert.doesNotMatch(rule('body.side-collapsed .side'), /padding:/);
+  assert.equal(rule('body.side-collapsed .side'), '');
+  assert.match(css, /--nav-pad: calc\(\(var\(--rail-min\) - var\(--stroke-hairline\) - 2 \* var\(--space-4\) - var\(--icon-nav\)\) \/ 2\);/);
+  assert.match(css, /#nav > a, #nav > \.nav-group > \.nav-parent \{ justify-content: flex-start; padding: 0 var\(--nav-pad\); \}/);
+  assert.doesNotMatch(css, /side-collapsed #nav :where\(a, \.nav-parent\) \{ justify-content: center; \}/);
   assert.match(css, /^\s*\.side \{ --side-lockup-gap: var\(--space-3\); padding: var\(--space-2\) var\(--space-4\) var\(--space-4\); \}/m);
   assert.doesNotMatch(css, /has-mini:not\(\.side-collapsed\) \.side \{ padding-bottom/);
-  assert.match(css, /\.brand \{ flex: none; align-items: flex-start; padding: 0 0 0 var\(--space-2\); \}/);
+  assert.match(css, /\.brand \{ flex: none; align-items: flex-start; padding: 0 0 0 var\(--nav-pad\); margin-right: calc\(-1 \* var\(--space-4\)\); \}/);
   assert.match(css, /\.brand-lockup \{ gap: var\(--space-1\); \}/);
   assert.match(rule('.brand-mark .ic'), /width: calc\(var\(--icon-nav\) \* 1\.5\); height: calc\(var\(--icon-nav\) \* 1\.5\)/);
   assert.equal(rule('body.side-collapsed .brand-mark .ic'), '');
@@ -52,6 +54,6 @@ test('the open sidebar has the tight proposal top and the 1.5x lockup, the rail 
   assert.match(hidden, /max-width: 0/);
   assert.doesNotMatch(hidden, /display: none/);
   assert.match(hidden, /padding: 0/);
-  assert.match(rule('body.side-collapsed .brand'), /padding: 0;/);
+  assert.equal(rule('body.side-collapsed .brand'), '');
   assert.match(rule('body.side-collapsed .build-line:not([hidden])'), /display: block; visibility: hidden; white-space: nowrap/);
 });
