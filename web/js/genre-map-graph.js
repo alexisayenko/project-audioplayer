@@ -1,6 +1,6 @@
 import { familyIndex, pieIndices, isHiddenFamily, FAMILY_ORDER } from './genre-data.js';
 import { mulberry32 } from './genre-sim.js';
-import { ancestorIds, filterIds, subfamilyOrder } from './genre-levels.js';
+import { ancestorIds, filterIds, pairKey, subfamilyOrder } from './genre-levels.js';
 
 export const FAMILY_MIN_R = 14;
 export const GENRE_MIN_R = 3.8;
@@ -40,7 +40,7 @@ export function buildMapGraph(tree) {
   for (const n of tree.byId.values()) {
     for (const r of n.related) {
       const t = tree.byId.get(`g:${r}`) || tree.byId.get(`s:${r}`);
-      const key = t && [n.id, t.id].sort().join('|');
+      const key = t && pairKey(n.id, t.id);
       if (!t || t.id === n.id || assoc.has(key) || !byId.has(n.id) || !byId.has(t.id)) continue;
       assoc.add(key);
       links.push({ source: n.id, target: t.id, kind: 'assoc' });

@@ -1,5 +1,5 @@
 import { familyIndex, isHiddenFamily, pieIndices, OTHER_COLOR } from './genre-data.js';
-import { ancestorIds, subfamilyOrder, populatedFamilies } from './genre-levels.js';
+import { ancestorIds, pairKey, subfamilyOrder, populatedFamilies } from './genre-levels.js';
 export const R2 = 220;
 export const STAGGER2 = 30;
 export const R3 = 420;
@@ -94,7 +94,7 @@ export function layoutRadial(tree, rootGenre = defaultRoot(tree), { related = fa
     for (const n of nodes) {
       for (const r of n.node.related) {
         const t = pos.get(`g:${r}`) || pos.get(`s:${r}`);
-        const key = t && [n.id, t.id].sort().join('|');
+        const key = t && pairKey(n.id, t.id);
         if (!t || t.id === n.id || seen.has(key) || (hidden && t.id === root.id)) continue;
         seen.add(key);
         edges.push({ from: n.id, to: t.id, dotted: true });

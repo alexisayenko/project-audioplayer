@@ -282,7 +282,7 @@ export function createForceView(canvas, { onSelect, onHover, onMoved, reducedMot
     const t1 = performance.now();
     if (stepVis(dt)) again = true;
     if (stepCamera(now)) again = true;
-    draw(now);
+    draw();
     if (flashing) again = true;
     perf.frames++;
     perf.simMs += t1 - t0;

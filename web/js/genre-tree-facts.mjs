@@ -1,7 +1,7 @@
-import { buildTree, applyCounts, ancestorIds, genreLines, visibleRows, allExpandable } from './genre-levels.js';
+import { buildTree, applyCounts, ancestorIds, byCode, genreLines, visibleRows, allExpandable } from './genre-levels.js';
 import { layoutRadial } from './genre-radial.js';
 
-const sortSet = (s) => [...s].sort();
+const sortSet = (s) => [...s].sort(byCode);
 
 export function treeFacts(vocab) {
   const t0 = buildTree(vocab);

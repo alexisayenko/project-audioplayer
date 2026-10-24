@@ -427,7 +427,11 @@ export function cleanSubfamilies(list) {
     .sort((a, b) => a.order - b.order);
 }
 
-export const subfamilyOrder = (tree, name) => tree?.subfamilies?.find((s) => s.name === name)?.order || 0;
+export const byCode = (a, b) => (a < b ? -1 : a > b ? 1 : 0);
+
+export const pairKey = (a, b) => [a, b].sort(byCode).join('|');
+
+export const subfamilyOrder =(tree, name) => tree?.subfamilies?.find((s) => s.name === name)?.order || 0;
 
 function assignFamilies(roots, byId) {
   const order = new Map(roots.map((r, i) => [r.name, i]));
