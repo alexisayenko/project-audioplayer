@@ -5136,15 +5136,15 @@
    ],
    "family": "trance",
    "flavours": [],
-   "level": 3,
+   "level": 4,
    "modifiers": [],
    "parents": [
-    "psytrance"
+    "dark psytrance"
    ],
    "provisional": false,
    "related": [
-    "dark psytrance",
-    "full-on psytrance"
+    "full-on psytrance",
+    "psycore"
    ],
    "status": "approved",
    "subfamily": "Trance",

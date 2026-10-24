@@ -46,8 +46,8 @@
    "trance": {
     "total": 22,
     "level2": 14,
-    "level3": 7,
-    "level4": 1
+    "level3": 6,
+    "level4": 2
    },
    "drum and bass": {
     "total": 2,
@@ -2303,11 +2303,11 @@
  },
  "hi-tech psytrance": {
   "parents": [
-   "psytrance"
+   "dark psytrance"
   ],
   "related": [
-   "dark psytrance",
-   "full-on psytrance"
+   "full-on psytrance",
+   "psycore"
   ],
   "display": "hi-tech psy-trance",
   "synonyms": [

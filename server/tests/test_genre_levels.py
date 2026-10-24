@@ -432,10 +432,10 @@ def test_parents_are_validated_and_served():
 def test_psytrance_sits_under_trance_and_its_branch_ends_at_level_three():
     p = ENTRIES["psytrance"]
     assert (p["parents"], p["discogs"], p["display"], p["level"], p["families"]) == (["trance"], True, "psy-trance", 2, ["trance"])
-    assert [k for k, v in ENTRIES.items() if v["level"] == 4] == ["chillstep", "psycore"]
+    assert [k for k, v in ENTRIES.items() if v["level"] == 4] == ["chillstep", "hi-tech psytrance", "psycore"]
     assert ENTRIES["psybient"]["level"] == 3 and RAW["psytrance"]["subfamily"] == "Trance"
     kids = {k for k, v in ENTRIES.items() if "psytrance" in v["parents"]}
-    assert kids == {"dark psytrance", "forest psytrance", "progressive psytrance", "full-on psytrance", "hi-tech psytrance", "goa trance", "psybient"}
+    assert kids == {"dark psytrance", "forest psytrance", "progressive psytrance", "full-on psytrance", "goa trance", "psybient"}
     for k in kids:
         assert ENTRIES[k]["family"] == "trance" and ENTRIES[k]["level"] == 3
     assert ENTRIES["goa trance"]["parents"] == ["psytrance"]
@@ -636,7 +636,7 @@ def test_the_second_families_left_are_appended_and_parents_zero_is_unchanged():
 
 def test_the_deepest_level_is_four_because_of_the_dubstep_branch():
     assert max(v["level"] for v in ENTRIES.values()) == 4
-    assert {k for k, v in ENTRIES.items() if v["level"] == 4} == {"chillstep", "psycore"}
+    assert {k for k, v in ENTRIES.items() if v["level"] == 4} == {"chillstep", "hi-tech psytrance", "psycore"}
     assert {k for k, v in ENTRIES.items() if v["level"] == 3 and "psytrance" in v["parents"]} == {c for c, v in ENTRIES.items() if "psytrance" in v["parents"]}
 
 

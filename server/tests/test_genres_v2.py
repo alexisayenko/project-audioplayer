@@ -28,11 +28,11 @@ def test_the_shipped_file_has_the_six_super_genres_psytrance_and_its_six_childre
     out = genres_v2.parse(json.loads(genres_v2.FILE.read_text(encoding="utf-8")), set(genre_vocab.load().entries))
     assert [g["name"] for g in out["genres"]] == ALL
     by = {g["id"]: g for g in out["genres"]}
-    assert [g["level"] for g in out["genres"]] == [1] * 6 + [2] + [3] * 6 + [4]
+    assert [g["level"] for g in out["genres"]] == [1] * 6 + [2] + [3] * 5 + [4] * 2
     assert all(g["parents"] == [] for g in out["genres"][:6]) and all(g["cluster"] == "edm-dance" for g in out["genres"])
     assert by["psytrance"]["parents"] == ["trance"] and by["goa-trance"]["parents"] == ["psytrance"]
-    assert all(by[i]["parents"] == ["psytrance"] for i in ["dark-psytrance", "progressive-psytrance", "forest-psytrance", "full-on-psytrance", "hi-tech-psytrance"])
-    assert by["dark-psytrance"]["synonyms"] == ["darkpsy", "dark psychedelic trance", "horror trance"] and by["psycore"]["parents"] == ["dark-psytrance"]
+    assert all(by[i]["parents"] == ["psytrance"] for i in ["dark-psytrance", "progressive-psytrance", "forest-psytrance", "full-on-psytrance"])
+    assert by["dark-psytrance"]["synonyms"] == ["darkpsy", "dark psychedelic trance", "horror trance"] and by["psycore"]["parents"] == ["dark-psytrance"] and by["hi-tech-psytrance"]["parents"] == ["dark-psytrance"]
     assert by["psytrance"]["synonyms"] == ["psychedelic trance", "psy-trance"] and by["goa-trance"]["synonyms"] == ["goa"]
     assert [c["name"] for c in out["clusters"]] == ["EDM / Dance"]
     assert out["clusters"][0]["colour"] == "#D52633"
