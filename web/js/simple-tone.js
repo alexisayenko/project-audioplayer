@@ -1,6 +1,5 @@
 import { el } from './dom.js';
 import { icon } from './icons.js';
-import { segmented } from './segmented.js';
 
 export const TITLE = 'Primitive';
 export const PRIMITIVE_NOTE = 'A primitive sound: one sine wave, one frequency, H1 only. It models a speaker cone driven by an electrical signal.';
@@ -16,10 +15,16 @@ export const FADE_S = 0.03;
 export const SMOOTH_S = 0.015;
 export const MAX_RUN_MS = 10 * 60 * 1000;
 export const FFT_SIZE = 32768;
-export const CYCLES_CHOICES = [1, 2, 4];
 export const CYCLES = 1;
-export const CYCLE_NAMES = { 1: 'one cycle', 2: 'two cycles', 4: 'four cycles' };
 export const SCOPE_TICKS = 4;
+export const SLOW = 1000;
+export const FAST_SLOWED_HZ = 5;
+export const MAX_FRAME_MS = 100;
+export const WAVELENGTH_PX = 120;
+export const CONE_TITLE = 'Slow motion: the speaker cone';
+export const CONE_NOTE = 'Swing exaggerated. The real cone moves a fraction of a millimetre. Here its sine motion runs 1000 times slower, and each position of the cone matches a position in time on the sine wave above (the dot).';
+export const PAUSE_TEXT = 'Pause animation';
+export const PLAY_ANIM_TEXT = 'Play animation';
 export const POWER_NOTE = 'Power grows with the square of the amplitude: double the amplitude, four times the power.';
 export const DB_NOTE = 'In decibels of full scale: dBFS = 20 x log10(amplitude). 0 dBFS is the loudest tone the device can play.';
 export const AMP_NOTE = 'How far the speaker cone moves.';
@@ -89,6 +94,29 @@ export function readout(p) {
   return `Period ${fmtMs(periodMs(p.freq))} ms = 1/f; pressure swings ±${fmtPct(p.amp * 100)} % of full scale; power ${fmtPct(powerPct(p.amp))} %; sound lasts ${lasts}.`;
 }
 
+export const slowedHz = (freq) => freq / SLOW;
+
+export function advancePhase(phase, freq, dtMs) {
+  const next = phase + (slowedHz(freq) * Math.max(0, dtMs)) / 1000;
+  return next - Math.floor(next);
+}
+
+export const fmtSig = (v) => String(+v.toPrecision(3));
+
+export function slowReadout(freq) {
+  const rate = slowedHz(freq);
+  const hz = trim(freq, 2);
+  const swings = rate === 1 ? 'swing' : 'swings';
+  const fast = rate > FAST_SLOWED_HZ ? ' Too fast to follow at this frequency.' : '';
+  return `Slowed ${SLOW}×: real ${hz} Hz = ${fmtSig(rate)} ${swings} per second (one swing every ${fmtSig(1 / rate)} s); the real cone makes ${hz} swings each second.${fast}`;
+}
+
+export const coneOffset = (phase, amp) => (amp / MAX_AMP) * Math.sin(2 * Math.PI * phase);
+
+export const scopeMarker = (phase, amp) => ({ frac: phase, level: amp * Math.sin(2 * Math.PI * phase) });
+
+export const waveShift = (phase, dist, wavelength = WAVELENGTH_PX) => Math.sin(2 * Math.PI * (phase - dist / wavelength));
+
 export function scopeSeries(amp, points, cycles = CYCLES) {
   const out = new Array(points);
   for (let i = 0; i < points; i += 1) out[i] = amp * Math.sin(2 * Math.PI * cycles * (i / (points - 1)));
@@ -150,7 +178,96 @@ function fit(canvas) {
   return { ctx, w, h };
 }
 
-function drawScope(g, colors, series, need, p, cycles) {
+function drawMarker(g, colors, marker) {
+  const { ctx, w, h } = g;
+  const left = 40;
+  const bottom = 18;
+  const pad = 8;
+  const mid = (h - bottom) / 2;
+  const x = left + marker.frac * Math.max(1, w - left - pad);
+  const y = mid - marker.level * (mid - pad);
+  ctx.save();
+  ctx.strokeStyle = colors.fill;
+  ctx.fillStyle = colors.fill;
+  ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(x, mid); ctx.lineTo(x, y); ctx.stroke();
+  ctx.beginPath(); ctx.arc(x, y, 5, 0, 2 * Math.PI); ctx.fill();
+  ctx.restore();
+}
+
+function drawCone(g, colors, phase, amp) {
+  const { ctx, w, h } = g;
+  const cy = h / 2;
+  const travel = clamp(w * 0.07, 16, 28);
+  const swing = coneOffset(phase, amp) * travel;
+  const magnetX = 10;
+  const magnetW = 26;
+  const magnetH = 44;
+  const restX = magnetX + magnetW + 54;
+  const radius = Math.max(20, Math.min(50, h / 2 - 12));
+  const rimX = restX + swing;
+  const apexX = rimX - 22;
+  ctx.clearRect(0, 0, w, h);
+  ctx.lineJoin = 'round';
+  ctx.lineCap = 'round';
+  ctx.strokeStyle = colors.line;
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  for (const s of [-1, 1]) {
+    ctx.moveTo(magnetX + magnetW, cy + s * (magnetH / 2));
+    ctx.lineTo(restX - 8, cy + s * (radius + 6));
+    ctx.lineTo(restX - 2, cy + s * (radius + 6));
+  }
+  ctx.stroke();
+  ctx.save();
+  ctx.setLineDash?.([4, 3]);
+  ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(restX, cy - radius - 10); ctx.lineTo(restX, cy + radius + 10); ctx.stroke();
+  ctx.restore();
+  ctx.fillStyle = colors.muted;
+  ctx.fillRect(magnetX, cy - magnetH / 2, magnetW, magnetH);
+  ctx.strokeStyle = colors.muted;
+  ctx.lineWidth = 3;
+  ctx.beginPath(); ctx.moveTo(magnetX + magnetW, cy); ctx.lineTo(apexX, cy); ctx.stroke();
+  ctx.fillStyle = colors.fill;
+  ctx.strokeStyle = colors.fill;
+  ctx.lineWidth = 4;
+  ctx.beginPath();
+  ctx.moveTo(rimX, cy - radius);
+  ctx.lineTo(apexX, cy - 7);
+  ctx.lineTo(apexX, cy + 7);
+  ctx.lineTo(rimX, cy + radius);
+  ctx.globalAlpha = 0.25;
+  ctx.fill();
+  ctx.globalAlpha = 1;
+  ctx.stroke();
+  ctx.font = `10px ${colors.font}`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'bottom';
+  ctx.fillStyle = colors.muted;
+  ctx.fillText('rest', restX, h - 2);
+  ctx.textBaseline = 'top';
+  ctx.fillText('magnet', magnetX + magnetW / 2, cy + magnetH / 2 + 4);
+  const startX = restX + travel + 22;
+  const gap = 14;
+  const cols = Math.max(0, Math.floor((w - 8 - startX) / gap) + 1);
+  const rows = 5;
+  const dotAmp = (amp / MAX_AMP) * travel * 0.5;
+  ctx.fillStyle = colors.fill;
+  ctx.globalAlpha = 0.85;
+  for (let r = 0; r < rows; r += 1) {
+    const y = cy - radius + ((r + 0.5) * 2 * radius) / rows;
+    const stagger = r % 2 ? gap / 2 : 0;
+    for (let c = 0; c < cols; c += 1) {
+      const rest = startX + stagger + c * gap;
+      const x = rest + dotAmp * waveShift(phase, rest - restX);
+      ctx.beginPath(); ctx.arc(x, y, 2.2, 0, 2 * Math.PI); ctx.fill();
+    }
+  }
+  ctx.globalAlpha = 1;
+}
+
+function drawScope(g, colors, series, need, p, cycles, marker) {
   const { ctx, w, h } = g;
   const left = 40;
   const bottom = 18;
@@ -189,18 +306,20 @@ function drawScope(g, colors, series, need, p, cycles) {
     ctx.restore();
   }
   const n = series.length;
-  if (n < 2) return;
-  const step = Math.max(1, Math.floor(n / (plotW * 2)));
-  ctx.strokeStyle = colors.fill;
-  ctx.lineWidth = 2;
-  ctx.lineJoin = 'round';
-  ctx.beginPath();
-  for (let i = 0; i < n; i += step) {
-    const x = left + (i / (need - 1)) * plotW;
-    const y = mid - clamp(series[i], -1.2, 1.2) * scale;
-    if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+  if (n >= 2) {
+    const step = Math.max(1, Math.floor(n / (plotW * 2)));
+    ctx.strokeStyle = colors.fill;
+    ctx.lineWidth = 2;
+    ctx.lineJoin = 'round';
+    ctx.beginPath();
+    for (let i = 0; i < n; i += step) {
+      const x = left + (i / (need - 1)) * plotW;
+      const y = mid - clamp(series[i], -1.2, 1.2) * scale;
+      if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    }
+    ctx.stroke();
   }
-  ctx.stroke();
+  if (marker) drawMarker(g, colors, marker);
 }
 
 export function createSimpleCard(env = {}) {
@@ -213,7 +332,14 @@ export function createSimpleCard(env = {}) {
   let live = null;
   let state = 'idle';
   let frame = 0;
-  let cycles = CYCLES;
+  let looping = false;
+  const cycles = CYCLES;
+  const matchMedia = env.matchMedia ?? globalThis.matchMedia;
+  const reduced = typeof matchMedia === 'function' && !!matchMedia.call(globalThis, '(prefers-reduced-motion: reduce)')?.matches;
+  let phase = reduced ? 0.25 : 0;
+  let paused = reduced;
+  let inView = true;
+  let animLast = 0;
   let colors = null;
   let colorsAt = 0;
   let gone = false;
@@ -238,10 +364,9 @@ export function createSimpleCard(env = {}) {
   const stateOut = el('p', { class: 'hm-state t-subhead', role: 'status', 'aria-live': 'polite' }, TEXT.idle);
   const canvas = el('canvas', { class: 'hm-canvas', role: 'img' });
   const readoutOut = el('p', { class: 'hm-cap muted t-caption' });
-  const cyclesSeg = segmented(CYCLES_CHOICES.map((c) => [c, String(c)]), () => cycles, (c) => setCycles(c), { 'aria-labelledby': `${uid}-cl` });
-  const cyclesField = el('div', { class: 'hm-axis' },
-    el('span', { id: `${uid}-cl`, class: 'hm-lbl' }, 'Cycles shown'),
-    cyclesSeg.group);
+  const coneCanvas = el('canvas', { class: 'hm-canvas', role: 'img' });
+  const slowOut = el('p', { class: 'hm-cap muted t-caption' });
+  const pauseButton = el('button', { class: 'btn outline small', type: 'button', onclick: () => togglePause() }, reduced ? PLAY_ANIM_TEXT : PAUSE_TEXT);
 
   const field = (id, title, ...rest) => el('div', { class: 'hm-field' }, el('label', { htmlFor: id }, title), ...rest);
   const cap = (id, text) => el('p', { id, class: 'hm-cap muted t-caption' }, text);
@@ -258,10 +383,14 @@ export function createSimpleCard(env = {}) {
     el('div', { class: 'hm-play' }, button, stateOut),
     el('div', { class: 'hm-block' },
       el('h3', { class: 't-subhead' }, 'Waveform'),
-      cyclesField,
       el('div', { class: 'hm-view hm-wave' }, canvas),
       readoutOut,
       el('p', { class: 'hm-cap muted t-caption' }, SINE_NOTE)),
+    el('div', { class: 'hm-block' },
+      el('div', { class: 'hm-head' }, el('h3', { class: 't-subhead' }, CONE_TITLE), pauseButton),
+      el('div', { class: 'hm-view sm-cone' }, coneCanvas),
+      slowOut,
+      el('p', { class: 'hm-cap muted t-caption' }, CONE_NOTE)),
     el('a', { class: 'gl-link t-subhead', href: GLOSSARY_HREF }, GLOSSARY_LINK));
 
   const active = () => doc?.activeElement;
@@ -286,8 +415,9 @@ export function createSimpleCard(env = {}) {
     lenNum.disabled = p.continuous;
     contBox.checked = p.continuous;
     readoutOut.textContent = readout(p);
-    canvas.setAttribute('aria-label', `Sine wave, ${p.freq} Hz, amplitude ${fmtPct(p.amp * 100)} % of full scale, ${CYCLE_NAMES[cycles]}`);
-    cyclesSeg.paint();
+    canvas.setAttribute('aria-label', `Sine wave, ${p.freq} Hz, amplitude ${fmtPct(p.amp * 100)} % of full scale, one cycle`);
+    coneCanvas.setAttribute('aria-label', `Side view of a speaker cone moving ${SLOW} times slower than real, matching the ${p.freq} Hz sine wave above, swing in proportion to the amplitude, ${fmtPct(p.amp * 100)} % of full scale`);
+    slowOut.textContent = slowReadout(p.freq);
   }
 
   function say(key) {
@@ -316,27 +446,65 @@ export function createSimpleCard(env = {}) {
     if (!g) return;
     const c = currentColors();
     const points = Math.max(64, Math.round(g.w * 2));
+    const marker = scopeMarker(phase, params.amp);
     if (live) {
       live.analyser.getFloatTimeDomainData(live.buf);
       const win = liveWindow(live.buf, live.ctx.sampleRate, params.freq, cycles, points);
-      drawScope(g, c, win.samples, win.need, params, cycles);
+      drawScope(g, c, win.samples, win.need, params, cycles, marker);
     } else {
-      drawScope(g, c, scopeSeries(params.amp, points, cycles), points, params, cycles);
+      drawScope(g, c, scopeSeries(params.amp, points, cycles), points, params, cycles, marker);
     }
   }
 
-  function setCycles(next) {
-    if (next === cycles || !CYCLE_NAMES[next]) return;
-    cycles = next;
-    paintOutputs();
+  function paintCone() {
+    if (gone) return;
+    const g = fit(coneCanvas);
+    if (!g) return;
+    drawCone(g, currentColors(), phase, params.amp);
+    coneCanvas.setAttribute('data-phase', phase.toFixed(4));
+    coneCanvas.setAttribute('data-offset', coneOffset(phase, params.amp).toFixed(4));
+  }
+
+  function paintAll() {
     paintScope();
+    paintCone();
+  }
+
+  const animOn = () => !gone && !paused && inView && !doc?.hidden;
+
+  function schedule() {
+    looping = true;
+    frame = raf(tick);
   }
 
   function tick() {
+    looping = false;
     frame = 0;
-    if (gone || !live) return;
-    paintScope();
-    frame = raf(tick);
+    if (gone) return;
+    const t = now();
+    const running = animOn();
+    if (running) phase = advancePhase(phase, params.freq, Math.min(t - animLast, MAX_FRAME_MS));
+    animLast = t;
+    if (running) paintAll(); else paintScope();
+    if (live || running) schedule();
+  }
+
+  function syncLoop() {
+    const want = !gone && (!!live || animOn());
+    if (want && !looping) {
+      animLast = now();
+      schedule();
+    } else if (!want && looping) {
+      looping = false;
+      caf(frame);
+      frame = 0;
+    }
+  }
+
+  function togglePause() {
+    paused = !paused;
+    pauseButton.textContent = paused ? PLAY_ANIM_TEXT : PAUSE_TEXT;
+    syncLoop();
   }
 
   function listen(target, type, fn) {
@@ -353,8 +521,7 @@ export function createSimpleCard(env = {}) {
     Promise.resolve(s.ctx.close?.()).catch(() => {});
     if (live === s) {
       live = null;
-      caf(frame);
-      frame = 0;
+      syncLoop();
       while (off.length) off.pop()();
     }
   }
@@ -365,7 +532,7 @@ export function createSimpleCard(env = {}) {
     if (gone) return;
     say(key);
     paintButton();
-    paintScope();
+    paintAll();
   }
 
   function stop(key = 'stopped', hard = false) {
@@ -429,7 +596,7 @@ export function createSimpleCard(env = {}) {
     listen(doc, 'visibilitychange', () => { if (doc.hidden) stop('hidden', true); });
     say('playing');
     paintButton();
-    frame = raf(tick);
+    syncLoop();
   }
 
   function applyLive(ampChanged) {
@@ -455,7 +622,7 @@ export function createSimpleCard(env = {}) {
     params = clampParams({ ...params, ...next });
     paintOutputs();
     applyLive(params.amp !== before);
-    if (!live) paintScope();
+    if (!looping) paintAll();
   }
 
   const typed = (input, apply) => {
@@ -473,25 +640,45 @@ export function createSimpleCard(env = {}) {
 
   let ro = null;
   if (typeof ResizeObserver !== 'undefined') {
-    ro = new ResizeObserver(() => { if (!gone && !live) paintScope(); });
+    ro = new ResizeObserver(() => { if (!gone && !looping) paintAll(); });
     ro.observe(node);
+  }
+
+  const onVisibility = () => syncLoop();
+  doc?.addEventListener?.('visibilitychange', onVisibility);
+  const IO = env.IntersectionObserver ?? globalThis.IntersectionObserver;
+  let io = null;
+  if (typeof IO === 'function') {
+    io = new IO((entries) => {
+      inView = entries[entries.length - 1].isIntersecting;
+      syncLoop();
+    });
+    io.observe(coneCanvas.parentElement);
   }
 
   paintOutputs(true);
   paintButton();
-  if (typeof requestAnimationFrame === 'function') raf(() => { if (!gone && !live) paintScope(); });
+  if (typeof requestAnimationFrame === 'function') raf(() => { if (!gone && !looping) paintAll(); });
+  syncLoop();
 
   return {
     node,
     get running() { return !!live && !live.stopping; },
     get state() { return state; },
     get params() { return { ...params }; },
+    get phase() { return phase; },
+    get animating() { return looping && animOn(); },
+    get paused() { return paused; },
     start,
     stop: () => stop('stopped'),
     change,
+    togglePause,
     dispose() {
       gone = true;
       ro?.disconnect();
+      io?.disconnect();
+      doc?.removeEventListener?.('visibilitychange', onVisibility);
+      syncLoop();
       if (live) teardown(live);
     },
   };

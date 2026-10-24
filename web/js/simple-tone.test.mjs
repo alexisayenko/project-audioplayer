@@ -79,6 +79,46 @@ test('WEB-201: the live window starts on a rising zero crossing and holds exactl
   }
 });
 
+test('WEB-204: the phase of the slowed cone accumulates f/1000 cycles per second and stays continuous', () => {
+  assert.ok(near(s.advancePhase(0, 440, 1000), 0.44));
+  assert.ok(near(s.advancePhase(0.9, 440, 1000), 0.34, 1e-9));
+  const a = s.advancePhase(s.advancePhase(0.1, 440, 500), 220, 500);
+  assert.ok(near(a, 0.1 + 0.22 + 0.11, 1e-9));
+  assert.equal(s.advancePhase(0.3, 440, -5), 0.3);
+});
+
+test('WEB-204: the readout states the slowed rate and warns above 5 swings per second', () => {
+  assert.equal(s.slowReadout(440), 'Slowed 1000×: real 440 Hz = 0.44 swings per second (one swing every 2.27 s); the real cone makes 440 swings each second.');
+  assert.ok(s.slowReadout(20000).endsWith('Too fast to follow at this frequency.'));
+  assert.ok(!s.slowReadout(5000).includes('Too fast'));
+  assert.ok(s.slowReadout(5001).includes('Too fast'));
+  assert.match(s.slowReadout(1000), /= 1 swing per second \(one swing every 1 s\)/);
+});
+
+test('WEB-204: the cone and the oscilloscope dot share one phase: far point on the peak, middle on a zero crossing', () => {
+  assert.ok(near(s.coneOffset(0.25, 0.8), 1));
+  assert.ok(near(s.coneOffset(0.25, 0.3), 0.375));
+  assert.ok(near(s.coneOffset(0.5, 0.3), 0, 1e-12));
+  const peak = s.scopeMarker(0.25, 0.3);
+  assert.ok(near(peak.level, 0.3) && peak.frac === 0.25);
+  assert.ok(near(s.scopeMarker(0.5, 0.3).level, 0, 1e-12));
+  assert.ok(near(s.waveShift(0.25, 0), 1));
+  assert.ok(near(s.waveShift(0.25, s.WAVELENGTH_PX / 4), 0, 1e-12));
+});
+
+test('WEB-204: Primitive has no Cycles shown selector, a Pause animation control and honours reduced motion', () => {
+  const env = { ...fakeCtx().env, matchMedia: () => ({ matches: true }) };
+  const card = s.createSimpleCard(env);
+  assert.ok(!card.node.textContent.includes('Cycles shown'));
+  const btn = [...card.node.querySelectorAll('button')].find((b) => /animation/i.test(b.textContent));
+  assert.equal(btn.textContent, 'Play animation');
+  assert.equal(card.paused, true);
+  assert.equal(card.phase, 0.25);
+  card.togglePause();
+  assert.equal(btn.textContent, 'Pause animation');
+  card.dispose();
+});
+
 function fakeCtx() {
   const made = [];
   const param = () => ({ value: 0, calls: [], setValueAtTime(...a) { this.calls.push(['set', ...a]); }, linearRampToValueAtTime(...a) { this.calls.push(['ramp', ...a]); }, setTargetAtTime(...a) { this.calls.push(['target', ...a]); }, cancelScheduledValues() {} });
