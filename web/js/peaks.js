@@ -114,7 +114,7 @@ export async function decodeInBrowser(id, signal, win = window) {
   const res = await fetchWhenReady(`/files/${q(id)}`, { signal });
   if (!res.ok) throw new Error(`file ${res.status}`);
   const declared = Number(res.headers.get('content-length'));
-  if (declared > CLIENT_DECODE_MAX) { res.body?.cancel?.(); throw new Error('file too large to decode here'); }
+  if (declared > CLIENT_DECODE_MAX) { void Promise.resolve(res.body?.cancel?.()).catch(() => {}); throw new Error('file too large to decode here'); }
   const bytes = await res.arrayBuffer();
   if (bytes.byteLength > CLIENT_DECODE_MAX) throw new Error('file too large to decode here');
   const buffer = await new Ctx(1, 1, 44100).decodeAudioData(bytes);

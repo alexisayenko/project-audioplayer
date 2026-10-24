@@ -258,7 +258,7 @@ export const player = {
       syncDownloads();
     };
     const wait = countsWait(true);
-    if (wait) wait.then(begin); else begin();
+    if (wait === null) begin(); else void wait.then(begin).catch(fail);
     return { count: r.count, skipped: songs.length - playable.length, replaced: r.replaced, fetching: pendingDownloads() };
   },
 
@@ -355,13 +355,13 @@ export const player = {
   next(auto = false) {
     if (advancing) return;
     const wait = countsWait(roundStarts());
-    if (!wait) { player.advance(auto); return; }
+    if (wait === null) { player.advance(auto); return; }
     advancing = true;
     const from = player.currentId;
-    wait.then(() => {
+    void wait.then(() => {
       advancing = false;
       if (player.currentId === from) player.advance(auto);
-    });
+    }).catch(fail);
   },
 
   advance(auto = false) {
@@ -718,8 +718,8 @@ export function initPlayer() {
   });
   const miniOpen = $('mini-open');
   miniOpen.setAttribute('aria-label', 'Song info');
-  miniOpen.addEventListener('click', () => { if (player.current) openSongCard(player.current, miniOpen); });
-  $('p-view').addEventListener('click', () => { if (player.current) openSongCard(player.current, $('p-view')); });
+  miniOpen.addEventListener('click', () => { if (player.current) void openSongCard(player.current, miniOpen); });
+  $('p-view').addEventListener('click', () => { if (player.current) void openSongCard(player.current, $('p-view')); });
 
   document.addEventListener('keydown', (e) => {
     if (e.repeat || e.ctrlKey || e.metaKey || e.altKey || !player.current) return;

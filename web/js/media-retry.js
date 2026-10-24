@@ -70,10 +70,10 @@ export function createMediaRetry({ audio, onChange = () => {}, onGone = () => {}
     at = audio.currentTime > 0 ? audio.currentTime : at;
     want = intent || !audio.paused;
     const my = ++seq;
-    Promise.resolve(probe(src)).then((verdict) => {
+    void Promise.resolve(probe(src)).catch(() => 'retry').then((verdict) => {
       if (my !== seq) return;
       if (verdict === 'gone') { setState('ok'); onGone(); } else schedule();
-    });
+    }).catch(() => setState('failed'));
   }
 
   audio.addEventListener('error', () => {

@@ -10,7 +10,7 @@ async function fetchBytes(src) {
   const res = await fetch(src);
   if (!res.ok) throw new Error(`file ${res.status}`);
   const declared = Number(res.headers.get('content-length'));
-  if (declared > MAX_BYTES) { res.body?.cancel?.(); throw new Error('file too large to decode here'); }
+  if (declared > MAX_BYTES) { void Promise.resolve(res.body?.cancel?.()).catch(() => {}); throw new Error('file too large to decode here'); }
   const bytes = await res.arrayBuffer();
   if (bytes.byteLength > MAX_BYTES) throw new Error('file too large to decode here');
   return bytes;

@@ -115,7 +115,7 @@ export function createPlayRecorder({
         if (mismatchLogged !== id) { mismatchLogged = id; log('ignored', 'id-flicker', { id2: id }); }
       } else {
         end(openSrc ? 'src-change' : 'id-change');
-        flush();
+        flushQuiet();
       }
     } else mismatchLogged = null;
     if (!open && id && !audio.paused && canRecord()) begin(id);
@@ -156,24 +156,28 @@ export function createPlayRecorder({
     }
   }
 
+  const flushQuiet = (opts) => {
+    void flush(opts).catch((ex) => log('error', 'flush', { msg: String(ex?.message ?? ex) }));
+  };
+
   const onPlay = () => { tick(); };
   const onPause = () => {
     tick();
     lastT = null;
     persistOpen();
-    flush();
+    flushQuiet();
   };
   const onEnded = () => {
     tick();
     end('ended');
-    flush();
+    flushQuiet();
   };
   const onSeek = () => { lastT = null; };
   const onHidden = () => {
     tick();
     log('info', 'hide');
     persistOpen();
-    flush({ keepalive: true });
+    flushQuiet({ keepalive: true });
   };
   const onPageHide = () => {
     tick();
@@ -186,7 +190,7 @@ export function createPlayRecorder({
       open = { timestamp: now().toISOString(), song_id: closed.song_id, listened_s: 0, cont: true };
       lastT = null;
     }
-    flush({ keepalive: true });
+    flushQuiet({ keepalive: true });
   };
   const onVisibility = () => { if (doc?.visibilityState === 'hidden') onHidden(); };
 
@@ -202,9 +206,9 @@ export function createPlayRecorder({
   for (const n of TRACKED) audio.addEventListener(n, note);
   if (win) win.apPlaysLog = () => storeGet(LOG_KEY);
   recover();
-  timer = setInterval(() => { persistOpen(); flush(); }, intervalMs);
+  timer = setInterval(() => { persistOpen(); flushQuiet(); }, intervalMs);
   timer?.unref?.();
-  flush();
+  flushQuiet();
 
   return {
     sync,
