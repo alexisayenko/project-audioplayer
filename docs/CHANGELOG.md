@@ -2,7 +2,7 @@
 
 What shipped, newest first. One line each; the web UI and server are live at https://electrophone.cc. Everything listed here is deployed except the sections marked "built, not deployed" (the 2026-10-14 release went out once the SSH access in [task-0027](tasks/task-0027.md) was restored; the live visualizer files match `origin/main` as of 2026-10-15). Why: [tech/decisions.md](tech/decisions.md); runbook: [tech/deploy.md](tech/deploy.md).
 
-## 2026-10-24 (harmonics lab counters, web, built, not deployed)
+## 2026-10-24 (harmonics lab counters, web, deployed as `037e025`)
 
 - Web (WEB-180; owner request 2026-10-24; no tests run): "Number of harmonics" and "Decay across harmonics" are counters (minus, number input, plus; new `stepper.js`) instead of sliders, the decay one with "dB/oct" beside it and whole-dB steps.
 
