@@ -3,8 +3,8 @@ import assert from 'node:assert/strict';
 
 const { TERMS, termById } = await import('./glossary-terms.js');
 const {
-  DOMAINS, DOMAIN_OF, RELATIONS, buildGraph, neighbourMap, relationsOf, layoutGraph, layoutDomains, boxBounds, nodeWidth, initialView, boundsOf, fitView, zoomAbout, edgeEnds, neighbourInDirection, matchSet, shapeFor, mapLabel,
-} = await import('./glossary-map.js');
+  DOMAINS, DOMAIN_OF, RELATIONS, buildGraph, neighbourMap, relationsOf, layoutGraph, layoutDomains, boxBounds, nodeWidth, initialView, boundsOf, fitView, zoomAbout, edgeEnds, neighbourInDirection, matchSet, shapeFor, mapLabel, pillScale, PILL_K, LABEL_PAD, placeLabels,
+} =await import('./glossary-map.js');
 const { glossaryViewFromHash, glossaryTermFromHash, glossaryMapTermFromHash, pageFromHash } = await import('../../studio/routes.js');
 
 test('STU-037: every relation ends at an existing term, with a label, no self loop and no duplicate', () => {
@@ -183,6 +183,24 @@ test('STU-038: fitView centres the bounds, zoomAbout keeps the point under the c
   assert.equal(zoomAbout({ k: 0.2, x: 0, y: 0 }, 0, 0, 0.1, 0.15, 3).k, 0.15);
   const e = edgeEnds({ x: 0, y: 0, w: 100, h: 20 }, { x: 200, y: 0, w: 60, h: 20 }, 0);
   assert.deepEqual([e.x1, e.y1, e.x2, e.y2], [50, 0, 170, 0]);
+});
+
+test('STU-038: semantic zoom keeps the pill at its natural size from 1x up and shrinks it only below 1x', () => {
+  assert.equal(pillScale(3), 1);
+  assert.equal(pillScale(1), 1);
+  assert.equal(pillScale(1.6), 1);
+  assert.equal(pillScale(0.5), 0.5);
+  assert.equal(PILL_K, 1);
+});
+
+test('STU-038: link names are placed greedily, longest edge first, only when the edge is at least label width plus 8 px long and the label hits nothing', () => {
+  const mk = (i, len, x, y, extra = {}) => ({ i, len, w: 60, x, y, force: false, ...extra });
+  assert.equal(LABEL_PAD, 8);
+  assert.deepEqual([...placeLabels([mk(0, 67, 0, 0), mk(1, 68, 100, 0)], [])].sort(), [1]);
+  assert.deepEqual([...placeLabels([mk(0, 400, 0, 0), mk(1, 300, 20, 5), mk(2, 200, 200, 100)], [])].sort(), [0, 2]);
+  assert.deepEqual([...placeLabels([mk(0, 90, 0, 0)], [{ x: 10, y: 0, w: 40, h: 26 }])], []);
+  assert.deepEqual([...placeLabels([mk(0, 90, 0, 0)], [{ x: 200, y: 0, w: 40, h: 26 }])], [0]);
+  assert.deepEqual([...placeLabels([mk(0, 10, 0, 0, { force: true }), mk(1, 400, 5, 0)], [{ x: 0, y: 0, w: 40, h: 26 }])].sort(), [0]);
 });
 
 test('STU-039: arrow keys pick the neighbour in that direction and the filter matches like the list', () => {

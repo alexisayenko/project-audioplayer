@@ -1,7 +1,7 @@
 import { el } from '../web/js/dom.js';
 import { termById } from '../web/js/glossary-terms.js';
 import {
-  DOMAINS, buildGraph, neighbourMap, relationsOf, layoutDomains, boxBounds, fitView, initialView, zoomAbout, edgeEnds, neighbourInDirection, shapeFor,
+  DOMAINS, buildGraph, neighbourMap, relationsOf, layoutDomains, boxBounds, fitView, initialView, zoomAbout, edgeEnds, neighbourInDirection, shapeFor, pillScale, placeLabels,
 } from '../web/js/glossary-map.js';
 
 const NS = 'http://www.w3.org/2000/svg';
@@ -29,6 +29,7 @@ export function createGlossaryMap({ terms, onSelect } = {}) {
   const adj = neighbourMap(edges);
   const nodeEls = new Map();
   const edgeEls = [];
+  const labelEls = [];
   let shape = 'wide';
   let boxes = [];
   let tf = { k: 1, x: 0, y: 0 };
@@ -41,6 +42,8 @@ export function createGlossaryMap({ terms, onSelect } = {}) {
   let focused = null;
   let matches = null;
   let minK = 0.1;
+  let paintedK = NaN;
+  let pNow = 0;
   let drag = null;
   let pinch = null;
   const pointers = new Map();
@@ -70,53 +73,140 @@ export function createGlossaryMap({ terms, onSelect } = {}) {
     const line = svgEl('line', { class: 'gm-edge', 'marker-end': 'url(#gm-arr)' }, svgEl('title', {}, `${a.term} ${e.label} ${b.term}`));
     edgeEls.push(line);
     edgeLayer.append(line);
+    const text = svgEl('text', { class: 'gm-el', 'text-anchor': 'middle' }, e.label);
+    labelEls.push(text);
+    labelLayer.append(text);
   }
+  const rawW = edges.map(() => 0);
+  const ends = edges.map(() => ({ x1: 0, y1: 0, x2: 0, y2: 0 }));
+  const edgeDim = edges.map(() => false);
+  const edgeOn = edges.map(() => false);
+  const labelSeen = edges.map(() => ({ show: false, x: NaN, y: NaN, dim: false, on: false }));
 
   const order = (n) => DOMAINS.findIndex((d) => d.id === n.domain);
   const tabOrder = [...nodes].sort((a, b) => order(a) - order(b) || a.label.localeCompare(b.label, 'en', { sensitivity: 'base' }));
   for (const n of tabOrder) {
     const g = svgEl('g', { class: 'gm-n', 'data-id': n.id, tabindex: '0', role: 'button', 'aria-pressed': 'false', 'aria-label': `${n.term}, ${domainOf(n.domain).label}${n.aliases.length ? `. Also called: ${n.aliases.join(', ')}` : ''}` },
-      svgEl('rect', { x: -n.w / 2, y: -n.h / 2, width: n.w, height: n.h, rx: n.h / 2 }),
-      svgEl('text', { 'text-anchor': 'middle', y: 4.2 }, n.label),
+      svgEl('rect', {}),
+      svgEl('text', { 'text-anchor': 'middle' }, n.label),
       n.aliases.length ? svgEl('title', {}, `${n.term}. Also called: ${n.aliases.join(', ')}`) : null);
     g.style.setProperty('--dc', `var(${domainOf(n.domain).token})`);
     nodeEls.set(n.id, g);
     nodeLayer.append(g);
   }
 
-  const setTf = (next) => {
-    tf = next;
-    world.setAttribute('transform', `translate(${tf.x.toFixed(2)} ${tf.y.toFixed(2)}) scale(${tf.k.toFixed(4)})`);
-  };
+  const nodeList = nodes.map((n) => nodeEls.get(n.id));
+  const sc = nodes.map((n) => ({ x: 0, y: 0, w: n.w, h: n.h }));
+  const scOf = new Map(nodes.map((n, i) => [n.id, sc[i]]));
+  const focusId = () => hover ?? focused ?? selected;
 
-  function paintGeometry() {
-    for (const n of nodes) {
-      const g = nodeEls.get(n.id);
-      g.setAttribute('transform', `translate(${n.x.toFixed(1)} ${n.y.toFixed(1)})`);
-      g.firstChild.setAttribute('x', (-n.w / 2).toFixed(1));
-      g.firstChild.setAttribute('width', n.w.toFixed(1));
-    }
-    for (const b of boxes) {
-      const g = hulls.get(b.id);
+  function applyPill(p) {
+    pNow = p;
+    svg.style.setProperty('--gm-p', p.toFixed(4));
+    nodes.forEach((n, i) => {
+      const g = nodeList[i];
+      const w = n.w * p;
+      const h = n.h * p;
       const rect = g.firstChild;
-      rect.setAttribute('x', b.x0.toFixed(1));
-      rect.setAttribute('y', b.y0.toFixed(1));
-      rect.setAttribute('width', b.w.toFixed(1));
-      rect.setAttribute('height', b.h.toFixed(1));
-      g.lastChild.setAttribute('x', (b.x0 + 14).toFixed(1));
-      g.lastChild.setAttribute('y', (b.y0 + 19).toFixed(1));
-    }
-    edges.forEach((e, i) => {
-      const p = edgeEnds(byId.get(e.from), byId.get(e.to));
-      const line = edgeEls[i];
-      line.setAttribute('x1', p.x1.toFixed(1));
-      line.setAttribute('y1', p.y1.toFixed(1));
-      line.setAttribute('x2', p.x2.toFixed(1));
-      line.setAttribute('y2', p.y2.toFixed(1));
+      rect.setAttribute('x', (-w / 2).toFixed(1));
+      rect.setAttribute('y', (-h / 2).toFixed(1));
+      rect.setAttribute('width', w.toFixed(1));
+      rect.setAttribute('height', h.toFixed(1));
+      rect.setAttribute('rx', (h / 2).toFixed(1));
+      rect.nextSibling.setAttribute('y', (4.2 * p).toFixed(2));
+    });
+    for (const g of hulls.values()) g.firstChild.setAttribute('rx', (18 * p).toFixed(1));
+  }
+
+  function paintLabels() {
+    const f = focusId();
+    const cands = edges.map((e, i) => {
+      if (!rawW[i]) {
+        const len = labelEls[i].getComputedTextLength?.() ?? 0;
+        if (len > 0 && pNow > 0) rawW[i] = len / pNow;
+      }
+      const en = ends[i];
+      return {
+        i,
+        len: Math.hypot(en.x2 - en.x1, en.y2 - en.y1),
+        w: (rawW[i] || e.label.length * 5.9) * pNow,
+        x: (en.x1 + en.x2) / 2,
+        y: (en.y1 + en.y2) / 2,
+        force: edgeOn[i],
+      };
+    });
+    const shown = placeLabels(cands, sc);
+    cands.forEach((c) => {
+      const seen = labelSeen[c.i];
+      const t = labelEls[c.i];
+      const show = shown.has(c.i);
+      if (show !== seen.show) {
+        t.classList.toggle('show', show);
+        seen.show = show;
+      }
+      if (!show) return;
+      if (c.x !== seen.x || c.y !== seen.y) {
+        t.setAttribute('x', c.x.toFixed(1));
+        t.setAttribute('y', c.y.toFixed(1));
+        seen.x = c.x;
+        seen.y = c.y;
+      }
+      const dim = edgeDim[c.i] && !c.force;
+      if (dim !== seen.dim) {
+        t.classList.toggle('dim', dim);
+        seen.dim = dim;
+      }
+      if (c.force !== seen.on) {
+        t.classList.toggle('on', c.force);
+        seen.on = c.force;
+      }
     });
   }
 
-  const focusId = () => hover ?? focused ?? selected;
+  function paintView() {
+    const k = tf.k;
+    const p = pillScale(k);
+    if (p !== pNow) applyPill(p);
+    nodes.forEach((n, i) => {
+      const s = sc[i];
+      s.x = n.x * k;
+      s.y = n.y * k;
+      s.w = n.w * p;
+      s.h = n.h * p;
+      nodeList[i].setAttribute('transform', `translate(${s.x.toFixed(1)} ${s.y.toFixed(1)})`);
+    });
+    for (const b of boxes) {
+      const g = hulls.get(b.id);
+      const x = b.x0 * k;
+      const y = b.y0 * k;
+      const rect = g.firstChild;
+      rect.setAttribute('x', x.toFixed(1));
+      rect.setAttribute('y', y.toFixed(1));
+      rect.setAttribute('width', (b.w * k).toFixed(1));
+      rect.setAttribute('height', (b.h * k).toFixed(1));
+      g.lastChild.setAttribute('x', (x + 14 * p).toFixed(1));
+      g.lastChild.setAttribute('y', (y + 19 * p).toFixed(1));
+    }
+    edges.forEach((e, i) => {
+      const q = edgeEnds(scOf.get(e.from), scOf.get(e.to));
+      ends[i] = q;
+      const line = edgeEls[i];
+      line.setAttribute('x1', q.x1.toFixed(1));
+      line.setAttribute('y1', q.y1.toFixed(1));
+      line.setAttribute('x2', q.x2.toFixed(1));
+      line.setAttribute('y2', q.y2.toFixed(1));
+    });
+    paintLabels();
+  }
+
+  const setTf = (next) => {
+    tf = next;
+    world.setAttribute('transform', `translate(${tf.x.toFixed(2)} ${tf.y.toFixed(2)})`);
+    if (tf.k !== paintedK) {
+      paintedK = tf.k;
+      paintView();
+    }
+  };
 
   function paintState() {
     const f = focusId();
@@ -129,21 +219,17 @@ export function createGlossaryMap({ terms, onSelect } = {}) {
       g.classList.toggle('dim', !!dim);
       g.setAttribute('aria-pressed', String(n.id === selected));
     }
-    const labels = [];
     edges.forEach((e, i) => {
       const line = edgeEls[i];
       const on = !!f && (e.from === f || e.to === f);
-      const dim = (f && !on) || (matches && !(matches.has(e.from) && matches.has(e.to)));
+      const dim = !!((f && !on) || (matches && !(matches.has(e.from) && matches.has(e.to))));
+      edgeOn[i] = on;
+      edgeDim[i] = dim;
       line.classList.toggle('on', on);
-      line.classList.toggle('dim', !!dim);
+      line.classList.toggle('dim', dim);
       line.setAttribute('marker-end', on ? 'url(#gm-arr-on)' : 'url(#gm-arr)');
-      if (on) {
-        const x = (+line.getAttribute('x1') + +line.getAttribute('x2')) / 2;
-        const y = (+line.getAttribute('y1') + +line.getAttribute('y2')) / 2;
-        labels.push(svgEl('text', { class: 'gm-el', x, y, 'text-anchor': 'middle' }, e.label));
-      }
     });
-    labelLayer.replaceChildren(...labels);
+    paintLabels();
   }
 
   const panel = el('aside', { class: 'gm-panel', 'aria-label': 'Selected term', 'aria-live': 'polite' });
@@ -180,8 +266,9 @@ export function createGlossaryMap({ terms, onSelect } = {}) {
     const m = 24;
     const sx = n.x * tf.k + tf.x;
     const sy = n.y * tf.k + tf.y;
-    const hw = (n.w / 2) * tf.k;
-    const hh = (n.h / 2) * tf.k;
+    const p = pillScale(tf.k);
+    const hw = (n.w / 2) * p;
+    const hh = (n.h / 2) * p;
     let dx = 0;
     let dy = 0;
     if (sx - hw < m) dx = m - (sx - hw);
@@ -212,7 +299,7 @@ export function createGlossaryMap({ terms, onSelect } = {}) {
   function fit({ all = true } = {}) {
     if (!W || !H) return;
     const b = boxBounds(boxes);
-    minK = Math.min(fitView(b, W, H).k * 0.5, 0.5);
+    minK = fitView(b, W, H).k;
     userMoved = false;
     fitted = true;
     setTf(all ? fitView(b, W, H) : initialView(b, W, H));
@@ -220,7 +307,9 @@ export function createGlossaryMap({ terms, onSelect } = {}) {
 
   function relayout() {
     boxes = layoutDomains(nodes, edges, shape).boxes;
-    paintGeometry();
+    paintedK = tf.k;
+    pNow = 0;
+    paintView();
     paintState();
   }
 
@@ -242,7 +331,10 @@ export function createGlossaryMap({ terms, onSelect } = {}) {
       relayout();
       fit({ all: false });
     } else if (!userMoved) fit({ all: false });
-    else if (ow > 10 && oh > 10) setTf({ ...tf, x: tf.x + (W - ow) / 2, y: tf.y + (H - oh) / 2 });
+    else {
+      minK = fitView(boxBounds(boxes), W, H).k;
+      if (ow > 10 && oh > 10) setTf({ ...tf, k: Math.max(tf.k, minK), x: tf.x + (W - ow) / 2, y: tf.y + (H - oh) / 2 });
+    }
   }
 
   const local = (ev) => {
@@ -351,7 +443,7 @@ export function createGlossaryMap({ terms, onSelect } = {}) {
   const stage = el('div', { class: 'gm-stage' }, svg, tools);
   const legend = el('ul', { class: 'gm-legend t-caption', 'aria-label': 'Domains' },
     ...DOMAINS.map((d) => el('li', {}, dotFor(d.id), `${d.label} (${nodes.filter((n) => n.domain === d.id).length})`)));
-  const hint = el('p', { class: 'hm-cap muted t-caption' }, 'Select a term to highlight its neighbours and label the links. Drag to pan; scroll, pinch or use + and − to zoom; Fit shows everything. Arrow keys move between neighbours.');
+  const hint = el('p', { class: 'hm-cap muted t-caption' }, 'Select a term to highlight its neighbours and label the links. Drag to pan; scroll, pinch or use + and − to zoom (terms keep their size and spread apart, and link names appear when there is room); Fit shows everything. Arrow keys move between neighbours.');
   const node = el('div', { class: 'gm' }, legend, el('div', { class: 'gm-body' }, stage, panel), hint);
 
   let ro = null;

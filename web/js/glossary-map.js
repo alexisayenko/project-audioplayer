@@ -369,6 +369,33 @@ export function edgeEnds(a, b, gap = 1) {
   return { x1: p.x, y1: p.y, x2: q.x, y2: q.y };
 }
 
+export const PILL_K = 1;
+export const LABEL_PAD = 8;
+export const LABEL_H = 14;
+
+export const pillScale = (k) => Math.min(1, k / PILL_K);
+
+export function placeLabels(cands, obstacles, { pad = LABEL_PAD, h = LABEL_H } = {}) {
+  const rectOf = (c) => ({ x0: c.x - c.w / 2, x1: c.x + c.w / 2, y0: c.y - h + 4, y1: c.y + 4 });
+  const hit = (a, b) => a.x0 < b.x1 && b.x0 < a.x1 && a.y0 < b.y1 && b.y0 < a.y1;
+  const solid = obstacles.map((o) => ({ x0: o.x - o.w / 2, x1: o.x + o.w / 2, y0: o.y - o.h / 2, y1: o.y + o.h / 2 }));
+  const placed = [];
+  const shown = new Set();
+  const forced = cands.filter((c) => c.force);
+  for (const c of forced) {
+    placed.push(rectOf(c));
+    shown.add(c.i);
+  }
+  const rest = cands.filter((c) => !c.force && c.len >= c.w + pad).sort((a, b) => b.len - a.len || a.i - b.i);
+  for (const c of rest) {
+    const r = rectOf(c);
+    if (solid.some((s) => hit(r, s)) || placed.some((s) => hit(r, s))) continue;
+    placed.push(r);
+    shown.add(c.i);
+  }
+  return shown;
+}
+
 export function neighbourInDirection(from, others, dx, dy) {
   const len = Math.hypot(dx, dy) || 1;
   let best = null;

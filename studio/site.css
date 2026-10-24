@@ -59,21 +59,25 @@
 .gm-svg { display: block; width: 100%; height: 100%; touch-action: none; cursor: grab; user-select: none; -webkit-user-select: none; }
 .gm-svg.dragging { cursor: grabbing; }
 .gm-tools { position: absolute; top: var(--space-2); right: var(--space-2); display: flex; gap: var(--space-1); }
-.gm-hull rect { fill: var(--dc); fill-opacity: 0.08; stroke: var(--dc); stroke-opacity: 0.35; stroke-width: 1; }
-.gm-hull text { fill: var(--ink-muted); font-family: inherit; font-size: 11px; font-weight: 600; pointer-events: none; }
-.gm-edge { fill: none; stroke: var(--ink-muted); stroke-width: 1.2; opacity: 0.5; }
-.gm-edge.on { stroke: var(--accent-ink); stroke-width: 2; opacity: 1; }
+.gm-svg { --gm-p: 1; }
+.gm-hull rect { fill: var(--dc); fill-opacity: 0.08; stroke: var(--dc); stroke-opacity: 0.35; stroke-width: calc(1px * var(--gm-p)); }
+.gm-hull text { fill: var(--ink-muted); font-family: inherit; font-size: calc(11px * var(--gm-p)); font-weight: 600; pointer-events: none; }
+.gm-edge { fill: none; stroke: var(--ink-muted); stroke-width: calc(1.2px * var(--gm-p)); opacity: 0.5; }
+.gm-edge.on { stroke: var(--accent-ink); stroke-width: calc(2px * var(--gm-p)); opacity: 1; }
 .gm-edge.dim { opacity: 0.08; }
 .gm-arr { fill: var(--ink-muted); }
 .gm-arr-on { fill: var(--accent-ink); }
 .gm-n { cursor: pointer; outline: none; }
-.gm-n rect { fill: var(--surface); stroke: var(--dc); stroke-width: 1.6; }
-.gm-n text { fill: var(--ink); font-family: inherit; font-size: 12px; pointer-events: none; }
-.gm-n.near rect { stroke-width: 2.6; }
-.gm-n.sel rect { fill: var(--accent-tint); stroke-width: 3.2; }
+.gm-n rect { fill: var(--surface); stroke: var(--dc); stroke-width: calc(1.6px * var(--gm-p)); }
+.gm-n text { fill: var(--ink); font-family: inherit; font-size: calc(12px * var(--gm-p)); pointer-events: none; }
+.gm-n.near rect { stroke-width: calc(2.6px * var(--gm-p)); }
+.gm-n.sel rect { fill: var(--accent-tint); stroke-width: calc(3.2px * var(--gm-p)); }
 .gm-n.dim { opacity: 0.2; }
-.gm-n:focus-visible rect { stroke: var(--ring-color); stroke-width: 3.6; }
-.gm-el { fill: var(--accent-ink); font-family: inherit; font-size: 11px; paint-order: stroke; stroke: var(--surface-sunken); stroke-width: 4px; stroke-linejoin: round; }
+.gm-n:focus-visible rect { stroke: var(--ring-color); stroke-width: calc(3.6px * var(--gm-p)); }
+.gm-el { visibility: hidden; fill: var(--ink-muted); font-family: inherit; font-size: calc(11px * var(--gm-p)); pointer-events: none; paint-order: stroke; stroke: var(--surface-sunken); stroke-width: 4px; stroke-linejoin: round; }
+.gm-el.show { visibility: visible; }
+.gm-el.on { fill: var(--accent-ink); }
+.gm-el.dim { opacity: 0.15; }
 .gm-panel { min-width: 0; display: grid; gap: var(--space-2); align-content: start; padding: var(--space-3); border-radius: var(--radius-sm); border: var(--stroke-hairline) solid var(--line); }
 .gm-panel > * { margin: 0; }
 .gm-ph { display: flex; align-items: center; gap: var(--space-2); }
