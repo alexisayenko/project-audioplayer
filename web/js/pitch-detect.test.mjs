@@ -108,6 +108,109 @@ test('WEB-206: the markers fade out over about 300 ms when the pitch is lost and
   assert.equal(t.update({ freq: 330, confidence: 0.9 }, 1500).freq, 330);
 });
 
+const OFFSET = 13.56;
+const OWNER_DB = [-42, -26, -45, -52, -55, -58, -60, -62, -64, -66, -68, -70];
+const additive = (f0, levels) => {
+  const out = new Float32Array(N);
+  for (let i = 0; i < N; i += 1) out[i] = levels.reduce((s, l, k) => s + 10 ** (l / 20) * Math.sin((2 * Math.PI * (k + 1) * f0 * i) / SR), 0);
+  return out;
+};
+const analyserDb = (x) => {
+  const re = new Float64Array(N);
+  const im = new Float64Array(N);
+  const bits = Math.log2(N);
+  for (let i = 0; i < N; i += 1) {
+    let r = 0;
+    for (let b = 0; b < bits; b += 1) r |= ((i >> b) & 1) << (bits - 1 - b);
+    re[r] = x[i] * (0.42 - 0.5 * Math.cos((2 * Math.PI * i) / N) + 0.08 * Math.cos((4 * Math.PI * i) / N));
+  }
+  for (let len = 2; len <= N; len <<= 1) {
+    for (let i = 0; i < N; i += len) {
+      for (let k = 0; k < len / 2; k += 1) {
+        const wr = Math.cos((-2 * Math.PI * k) / len);
+        const wi = Math.sin((-2 * Math.PI * k) / len);
+        const a = i + k;
+        const b = a + len / 2;
+        const tr = re[b] * wr - im[b] * wi;
+        const ti = re[b] * wi + im[b] * wr;
+        re[b] = re[a] - tr;
+        im[b] = im[a] - ti;
+        re[a] += tr;
+        im[a] += ti;
+      }
+    }
+  }
+  return Float32Array.from({ length: N / 2 }, (_, k) => 20 * Math.log10(Math.hypot(re[k], im[k]) / N + 1e-12));
+};
+const corrected = (x) => {
+  const est = p.detectPitch(x, SR);
+  return { est, fix: p.correctOctave(est, analyserDb(x), SR, { offsetDb: OFFSET, maxHz: 20000 }) };
+};
+
+test('WEB-206: octave error: a real recording with a weak H1 (-42 dBFS) under a loud H2 (-26 dBFS) is read as 84 Hz, not 168 Hz', () => {
+  const { est, fix } = corrected(additive(83.9, OWNER_DB));
+  assert.ok(cents(est.freq, 167.8) < 10, `YIN alone locks on H2: ${est.freq}`);
+  assert.ok(cents(fix.freq, 83.9) < 10, String(fix.freq));
+  assert.equal(fix.div, 2);
+  assert.ok(cents(fix.raw, 167.8) < 10);
+});
+
+test('WEB-206: octave correction leaves a sine, a sawtooth, an odd-only tone and a missing fundamental alone', () => {
+  const cases = [
+    [220, tone(220, [1])],
+    [220, tone(220, range(1, 10))],
+    [220, tone(220, [1, 3, 5, 7])],
+    [220, tone(220, range(2, 8))],
+    [168, tone(168, [1, 3, 5, 7])],
+    [84, tone(84, range(1, 12))],
+  ];
+  for (const [hz, x] of cases) {
+    const { fix } = corrected(x);
+    assert.ok(cents(fix.freq, hz) < 5, `${hz} -> ${fix.freq}`);
+    assert.equal(fix.div, 1);
+  }
+});
+
+test('WEB-206: lowerPitch needs a peak at the odd multiples of the lower candidate, a clear H1 and no lower than 60 Hz', () => {
+  const data = analyserDb(additive(83.9, OWNER_DB));
+  assert.equal(p.lowerPitch(data, SR, 167.8, { offsetDb: OFFSET }).div, 2);
+  assert.equal(p.lowerPitch(data, SR, 83.9, { offsetDb: OFFSET }).div, 1);
+  assert.equal(p.lowerPitch(data, SR, 112, { offsetDb: OFFSET }).div, 1);
+  assert.equal(p.lowerPitch(data, SR, 100, { offsetDb: OFFSET }).freq, 100);
+  assert.equal(p.lowerPitch(new Float32Array(8), SR, 200).div, 1);
+  assert.equal(p.lowerPitch(data, SR, 0).div, 1);
+  const noH1 = analyserDb(additive(83.9, [-120, ...OWNER_DB.slice(1)]));
+  assert.equal(p.lowerPitch(noH1, SR, 167.8, { offsetDb: OFFSET }).div, 1);
+});
+
+test('WEB-206: correctOctave passes null through and keeps the confidence', () => {
+  assert.equal(p.correctOctave(null, new Float32Array(64), SR), null);
+  const fix = p.correctOctave({ freq: 220, confidence: 0.9 }, new Float32Array(64).fill(-120), SR);
+  assert.deepEqual(fix, { freq: 220, confidence: 0.9, raw: 220, div: 1 });
+});
+
+test('WEB-206: the tracker switches octave only after 3 consistent estimates and reports the raw pitch when it is lower', () => {
+  const t = p.createPitchTracker();
+  const feed = (freq, raw, at) => t.update({ freq, raw, confidence: 0.95 }, at);
+  assert.equal(feed(84, 168, 0).raw, 168);
+  feed(84, 168, 70);
+  assert.equal(feed(168, 168, 140).freq, 84);
+  assert.equal(feed(84, 168, 210).freq, 84);
+  feed(168, 168, 280);
+  feed(168, 168, 350);
+  assert.equal(feed(168, 168, 420).freq, 168);
+  assert.equal(Object.hasOwn(t.state(420), 'raw'), false);
+});
+
+test('WEB-206: the tracker takes a new note at once and a pending octave flip does not drop the lock', () => {
+  const t = p.createPitchTracker();
+  t.update({ freq: 220, confidence: 0.95 }, 0);
+  assert.equal(t.update({ freq: 262, confidence: 0.95 }, 70).freq, 262);
+  const held = t.update({ freq: 131, confidence: 0.95 }, 140);
+  assert.equal(held.locked, true);
+  assert.equal(held.alpha, 1);
+});
+
 test('WEB-206: a pitch that returns during the fade locks again at full alpha', () => {
   const t = p.createPitchTracker();
   t.update({ freq: 220, confidence: 0.95 }, 0);

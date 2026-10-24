@@ -2,7 +2,7 @@ import { el } from './dom.js';
 import { segmented } from './segmented.js';
 import { stepper } from './stepper.js';
 import { parseColor, mixColor } from './viz-color.js';
-import { detectPitch, harmonicMarks, foundList, createPitchTracker, PITCH_EVERY_MS, HARMONIC_LABEL_GAP_PX } from './pitch-detect.js';
+import { detectPitch, correctOctave, harmonicMarks, foundList, createPitchTracker, PITCH_EVERY_MS, HARMONIC_LABEL_GAP_PX } from './pitch-detect.js';
 
 export const MAX_RUN_MS = 10 * 60 * 1000;
 export const AUDIBLE_MAX_HZ = 20000;
@@ -661,10 +661,15 @@ export function visibleMarks(items, range) {
   return (items ?? []).filter((m) => m.freq >= range.min && m.freq <= range.max);
 }
 
-export function pitchText(locked, f0, items, range) {
+export function pitchText(locked, f0, items, range, loudest = 0) {
   if (!locked) return NO_PITCH_TEXT;
   if (f0 < range.min || f0 > range.max) return PITCH_RANGE_TEXT;
-  return `Pitch: ${fmtHz(f0)} (${noteInfo(f0).text}), harmonics found: ${foundList(visibleMarks(items, range))}`;
+  const lower = loudest > f0 * 1.5 ? `; lower than the loudest peak (${fmtHz(loudest)})` : '';
+  return `Pitch: ${fmtHz(f0)} (${noteInfo(f0).text}), harmonics found: ${foundList(visibleMarks(items, range))}${lower}`;
+}
+
+export function loudestPeakHz(peak, raw) {
+  return peak && Math.abs(peak.freq / raw - 1) < 0.05 ? peak.freq : raw;
 }
 
 export function harmonicBars(marks, geo, range, levels) {
@@ -1068,11 +1073,12 @@ export function createLiveSpectrum({ uid, colors, now, feed, range, axisControl,
     if (t - pitchAt >= PITCH_EVERY_MS) {
       pitchAt = t;
       f.an.getFloatTimeDomainData(f.b.time);
-      const s = tracker.update(detectPitch(f.b.time, f.sr), t);
+      const est = detectPitch(f.b.time, f.sr);
+      const s = tracker.update(est && correctOctave(est, data, f.sr, { offsetDb: ANALYSER_DB_OFFSET, maxHz: AUDIBLE_MAX_HZ }), t);
       if (s.locked) items = harmonicMarks(data, f.sr, s.freq, { offsetDb: ANALYSER_DB_OFFSET, maxHz: AUDIBLE_MAX_HZ });
     }
     const s = tracker.state(t);
-    showPitch(pitchText(s.locked, s.freq, items, range()));
+    showPitch(pitchText(s.locked, s.freq, items, range(), s.raw ? loudestPeakHz(peak, s.raw) : 0));
     return { items, alpha: s.alpha };
   }
 

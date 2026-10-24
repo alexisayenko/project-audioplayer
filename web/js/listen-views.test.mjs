@@ -218,6 +218,11 @@ test('WEB-206: pitchText reads the pitch, the note and the harmonics found, or s
   assert.equal(v.pitchText(false, 0, [], lin), 'No single pitch (polyphonic or noisy sound)');
   assert.equal(v.pitchText(true, 2030, items, lin), 'Pitch outside the visible range');
   assert.equal(v.pitchText(true, 220, [{ n: 1, freq: 220, found: false }], lin), 'Pitch: 220 Hz (A3 +0 cents), harmonics found: none');
+  assert.equal(v.pitchText(true, 220, [{ n: 1, freq: 220, found: true }], lin, 440), 'Pitch: 220 Hz (A3 +0 cents), harmonics found: 1; lower than the loudest peak (440 Hz)');
+  assert.equal(v.pitchText(true, 220, [{ n: 1, freq: 220, found: true }], lin, 220), 'Pitch: 220 Hz (A3 +0 cents), harmonics found: 1');
+  assert.equal(v.loudestPeakHz({ freq: 166 }, 167.8), 166);
+  assert.equal(v.loudestPeakHz({ freq: 900 }, 167.8), 167.8);
+  assert.equal(v.loudestPeakHz(null, 167.8), 167.8);
 });
 
 test('WEB-206: harmonic markers follow the axis: only ticks inside the range, and hover snaps to one within 8 px', () => {

@@ -13,6 +13,15 @@ export const HARMONIC_TOLERANCE = 0.03;
 export const HARMONIC_RISE_DB = 6;
 export const HARMONIC_FLOOR_DB = -70;
 export const HARMONIC_LABEL_GAP_PX = 22;
+export const OCTAVE_MAX_DIV = 4;
+export const OCTAVE_CHECK_N = 12;
+export const OCTAVE_CHECK_FIRST = 8;
+export const OCTAVE_MIN_FOUND = 5;
+export const OCTAVE_MIN_SHARE = 0.7;
+export const OCTAVE_H1_RISE_DB = 25;
+export const OCTAVE_FLOOR_MIN_HZ = 40;
+export const OCTAVE_FLOOR_MAX_HZ = 5000;
+export const OCTAVE_HOLD = 3;
 
 const SINE_RMS_DB = 10 * Math.log10(2);
 const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
@@ -118,32 +127,105 @@ export function foundList(marks) {
   return list.length ? list.join(',') : 'none';
 }
 
-export function createPitchTracker({ minConf = PITCH_MIN_CONF, fadeMs = PITCH_FADE_MS, size = PITCH_MEDIAN } = {}) {
+export function spectrumFloorDb(freqData, sampleRate, { offsetDb = 0, minHz = OCTAVE_FLOOR_MIN_HZ, maxHz = OCTAVE_FLOOR_MAX_HZ } = {}) {
+  const bins = freqData?.length ?? 0;
+  if (bins < 16 || !(sampleRate > 0)) return -Infinity;
+  const bw = sampleRate / (2 * bins);
+  const lo = clamp(Math.ceil(minHz / bw), 1, bins - 2);
+  const hi = clamp(Math.floor(Math.min(maxHz, sampleRate * 0.49) / bw), lo, bins - 2);
+  const band = Float32Array.from(freqData.subarray ? freqData.subarray(lo, hi + 1) : freqData.slice(lo, hi + 1));
+  band.sort();
+  return band[band.length >> 1] + offsetDb;
+}
+
+export function subharmonicSupport(freqData, sampleRate, c, div, opts = {}) {
+  const marks = harmonicMarks(freqData, sampleRate, c, { ...opts, maxN: OCTAVE_CHECK_N });
+  const first = marks.filter((m) => m.n <= OCTAVE_CHECK_FIRST);
+  const fresh = first.filter((m) => m.n % div !== 0);
+  const hit = (list) => list.filter((m) => m.found).length;
+  return {
+    marks,
+    found: hit(marks),
+    share: first.length ? hit(first) / first.length : 0,
+    freshCount: fresh.length,
+    freshShare: fresh.length ? hit(fresh) / fresh.length : 0,
+    h1: marks[0] ?? null,
+  };
+}
+
+export function lowerPitch(freqData, sampleRate, f0, opts = {}) {
+  const { minHz = PITCH_MIN_HZ, maxDiv = OCTAVE_MAX_DIV, h1RiseDb = OCTAVE_H1_RISE_DB, offsetDb = 0 } = opts;
+  const none = { freq: f0, div: 1 };
+  if (!(f0 > 0) || (freqData?.length ?? 0) < 16) return none;
+  let floor = null;
+  for (let div = maxDiv; div >= 2; div -= 1) {
+    const c = f0 / div;
+    if (c < minHz * 0.98) continue;
+    const s = subharmonicSupport(freqData, sampleRate, c, div, opts);
+    if (!s.h1?.found || s.freshCount < 2) continue;
+    if (s.found < OCTAVE_MIN_FOUND || s.share < OCTAVE_MIN_SHARE || s.freshShare < OCTAVE_MIN_SHARE) continue;
+    floor ??= spectrumFloorDb(freqData, sampleRate, { offsetDb });
+    if (s.h1.db - floor >= h1RiseDb) return { freq: c, div };
+  }
+  return none;
+}
+
+export function correctOctave(est, freqData, sampleRate, opts = {}) {
+  if (!est || !(est.freq > 0)) return est;
+  const low = lowerPitch(freqData, sampleRate, est.freq, opts);
+  return { ...est, freq: low.freq, raw: est.freq, div: low.div };
+}
+
+const NEAR_SEMITONES = 1.5;
+const FLIP_RATIOS = [2, 3, 4];
+const near = (a, b) => Math.abs(12 * Math.log2(a / b)) <= NEAR_SEMITONES;
+const isOctaveFlip = (a, b) => FLIP_RATIOS.some((r) => near(a, b * r) || near(a * r, b));
+
+export function createPitchTracker({ minConf = PITCH_MIN_CONF, fadeMs = PITCH_FADE_MS, size = PITCH_MEDIAN, hold = OCTAVE_HOLD } = {}) {
   let hist = [];
   let freq = 0;
+  let raw = 0;
   let confidence = 0;
   let lostAt = null;
-  const median = () => [...hist].sort((p, q) => p - q)[hist.length >> 1];
-  const reset = () => { hist = []; freq = 0; confidence = 0; lostAt = null; };
+  let pending = null;
+  const median = () => [...hist].sort((p, q) => p.f - q.f)[hist.length >> 1];
+  const reset = () => { hist = []; freq = 0; raw = 0; confidence = 0; lostAt = null; pending = null; };
+  const accept = (est) => {
+    hist.push({ f: est.freq, raw: est.raw ?? est.freq });
+    if (hist.length > size) hist.shift();
+    const m = median();
+    freq = m.f;
+    raw = m.raw;
+    confidence = est.confidence;
+    lostAt = null;
+    pending = null;
+  };
   return {
     update(est, t) {
       if (est && est.confidence >= minConf) {
-        hist.push(est.freq);
-        if (hist.length > size) hist.shift();
-        freq = median();
-        confidence = est.confidence;
-        lostAt = null;
+        if (!hist.length || !(freq > 0) || near(est.freq, freq) || !isOctaveFlip(est.freq, freq)) {
+          accept(est);
+        } else {
+          pending = pending && near(est.freq, pending.freq) ? { est, count: pending.count + 1, freq: est.freq } : { est, count: 1, freq: est.freq };
+          lostAt = null;
+          if (pending.count >= hold) {
+            hist = [];
+            accept(est);
+          }
+        }
       } else if (freq > 0 && lostAt === null) {
         lostAt = t;
         hist = [];
+        pending = null;
       }
       if (lostAt !== null && t - lostAt >= fadeMs) reset();
       return this.state(t);
     },
     state(t) {
       if (!(freq > 0)) return { freq: 0, confidence: 0, locked: false, alpha: 0 };
-      if (lostAt === null) return { freq, confidence, locked: true, alpha: 1 };
-      return { freq, confidence, locked: false, alpha: clamp(1 - (t - lostAt) / fadeMs, 0, 1) };
+      const lower = raw / freq > 1.5 ? { raw } : {};
+      if (lostAt === null) return { freq, confidence, locked: true, alpha: 1, ...lower };
+      return { freq, confidence, locked: false, alpha: clamp(1 - (t - lostAt) / fadeMs, 0, 1), ...lower };
     },
     reset,
   };
