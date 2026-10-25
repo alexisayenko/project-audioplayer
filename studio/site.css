@@ -13,8 +13,10 @@
 .menu-anim .site-side { transition: grid-template-rows var(--dur-base) var(--ease-io), visibility 0s; }
 .menu-anim.menu-collapsed .site-side { transition: grid-template-rows var(--dur-base) var(--ease-io), visibility 0s linear var(--dur-base); }
 .menu-anim .site-side-in { transition: padding var(--dur-base) var(--ease-io); }
-.menu-anim main { transition: padding-top var(--dur-base) var(--ease-io); }
-.site-shell.menu-collapsed main { padding-top: calc(var(--space-2) * 2 + var(--site-btn) + env(safe-area-inset-top, 0px)); }
+.menu-anim main { transition: padding var(--dur-base) var(--ease-io); }
+@media (max-width: 720px) {
+  .site-shell.menu-collapsed main { padding-top: calc(var(--space-2) * 2 + var(--site-btn) + env(safe-area-inset-top, 0px)); }
+}
 .site-nav { display: flex; flex-direction: column; flex: 1 1 100%; min-width: 0; gap: var(--space-2); }
 .site-group { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); min-width: 0; }
 .site-group-title { flex: none; margin: 0 var(--space-1) 0 0; color: var(--ink-muted); font-weight: 600; }
@@ -122,6 +124,7 @@ body[data-route="studio"] main { max-width: none; margin: 0; padding: var(--spac
   .site-shell.menu-collapsed { grid-template-columns: 0px minmax(0, 1fr); }
   .site-shell.menu-anim { transition: grid-template-columns var(--dur-base) var(--ease-io); }
   body[data-route="studio"] main { padding-inline: var(--space-6); }
+  body[data-route="studio"] .site-shell.menu-collapsed main { padding-left: calc(var(--space-2) * 2 + var(--site-btn) + env(safe-area-inset-left, 0px)); }
   .site-side { position: sticky; top: 0; display: block; min-width: 0; height: 100dvh; border-bottom: 0; overflow: hidden; }
   .site-side-in { flex-direction: column; flex-wrap: nowrap; align-items: stretch; gap: var(--space-4); width: var(--side-open); height: 100%; padding: calc(var(--space-4) + env(safe-area-inset-top, 0px)) var(--space-4) calc(var(--space-4) + env(safe-area-inset-bottom, 0px)); border-right: var(--stroke-hairline) solid var(--line); overflow-x: hidden; overflow-y: auto; }
   .menu-collapsed .site-side-in { padding-block: calc(var(--space-4) + env(safe-area-inset-top, 0px)) calc(var(--space-4) + env(safe-area-inset-bottom, 0px)); }

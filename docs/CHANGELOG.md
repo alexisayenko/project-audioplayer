@@ -2,6 +2,10 @@
 
 What shipped, newest first. One line each; the web UI and server are live at https://electrophone.cc. Everything listed here is deployed except the sections marked "built, not deployed" (the 2026-10-14 release went out once the SSH access in [task-0027](tasks/task-0027.md) was restored; the live visualizer files match `origin/main` as of 2026-10-15). Why: [tech/decisions.md](tech/decisions.md); runbook: [tech/deploy.md](tech/deploy.md).
 
+## 2026-10-25 (Studio menu: no vertical jump on collapse, built, not deployed)
+
+- Web (STU-030; owner: "layout jerk: don't move down"; no tests run, the build and the Browser pane only): the "Expand menu" button overlays the page margin and the content never moves vertically on desktop (card top 16 px expanded and collapsed; only the left edge moves, with a padding strip so the button never covers it); on the phone the content still moves up by the top bar's height.
+
 ## 2026-10-25 (Studio Primitive: the air density curve coloured like the dots, deployed to studio.electrophone.cc as `d78750a`; the main app bundle is unchanged)
 
 - Web (WEB-204; owner requests 2026-10-25; no tests run, `node --check`, the builds and the Browser pane with a virtual clock and canvas pixel reads): the "air density" curve has no marker dot and no stem any more, is drawn with a teal-to-red vertical gradient (red above the dashed rest line, teal at and below it, the same mix as the dots) with a 12 % fill between it and the rest line, its label sits at the start of the air area above the curve, a caption sentence and the tooltip and aria-label say what the curve depicts.
