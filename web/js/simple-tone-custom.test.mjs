@@ -137,6 +137,21 @@ test('WEB-211: a drag whose pointerup was lost ends on the next move without a b
   card.dispose();
 });
 
+test('WEB-211: preset chips sit in labelled groups, Clear and Reset are a separate pair of action buttons', () => {
+  const card = customCard(fakeEnv().env);
+  const groups = card.node.querySelectorAll('.he-presets .he-group');
+  assert.deepEqual(groups.map((g) => g.getAttribute('aria-label')), ['Simple waves', 'Instrument-like', 'Odd and missing harmonics']);
+  assert.ok(groups.every((g) => g.getAttribute('role') === 'group'));
+  assert.deepEqual(groups.map((g) => g.querySelectorAll('.chip').map((b) => b.textContent)), [
+    ['Sine', 'Triangle', 'Square', 'Sawtooth'], ['Organ-like', 'Piano-like', 'Guitar-like', 'Cello-like'], ['Hollow', 'Only overtones']]);
+  assert.ok(groups.every((g) => g.querySelectorAll('.chip').every((b) => b.getAttribute('aria-pressed') !== null)));
+  const actions = card.node.querySelector('.he-presets .he-actions');
+  assert.equal(actions.getAttribute('role'), 'group');
+  assert.deepEqual(actions.querySelectorAll('.chip').map((b) => b.textContent), ['Clear', 'Reset']);
+  assert.ok(actions.querySelectorAll('.chip').every((b) => b.getAttribute('aria-pressed') === null && b.classList.contains('he-action')));
+  card.dispose();
+});
+
 test('WEB-211: presets fill the bars with the recipes (square H3 is 33.3), Reset returns to a sine, Only overtones says what it shows', () => {
   const card = customCard(fakeEnv().env);
   const chip = (t) => card.node.querySelectorAll('.he-presets .chip').find((b) => b.textContent === t);
@@ -155,11 +170,18 @@ test('WEB-211: presets fill the bars with the recipes (square H3 is 33.3), Reset
   assert.deepEqual(card.custom.bars.slice(0, 13), [100, 75, 50, 20, 3, 14, 10, 5, 3, 1, 2, 2, 0]);
   assert.equal(chip('Guitar-like').getAttribute('aria-pressed'), 'true');
   assert.equal(chip('Piano-like').getAttribute('aria-pressed'), 'false');
+  chip('Cello-like').click();
+  assert.deepEqual(card.custom.bars.slice(0, 13), [100, 70, 55, 40, 30, 22, 16, 11, 8, 5, 3, 2, 0]);
+  assert.equal(chip('Cello-like').getAttribute('aria-pressed'), 'true');
+  assert.equal(chip('Guitar-like').getAttribute('aria-pressed'), 'false');
+  assert.match(chip('Cello-like').getAttribute('title'), /simple approximation/);
   chip('Only overtones').click();
   assert.equal(card.custom.bars[0], 0);
   assert.match(chip('Only overtones').getAttribute('title'), /Missing fundamental/);
   chip('Clear').click();
   assert.ok(card.custom.bars.every((v) => v === 0));
+  assert.equal(chip('Clear').getAttribute('aria-pressed'), null);
+  assert.ok(!chip('Clear').classList.contains('on'));
   assert.ok(card.node.textContent.includes('All bars are zero: this is silence.'));
   chip('Square').click();
   chip('Reset').click();
@@ -315,6 +337,7 @@ test('WEB-211: the 0 label on the chart axis is a button that sets every bar, H1
   assert.ok(card.custom.bars.every((v) => v === 0));
   assert.equal(card.node.querySelectorAll('.he-hit')[0].getAttribute('aria-valuenow'), '0');
   assert.equal(card.node.querySelectorAll('.he-val-txt')[0].textContent, '0');
+  assert.deepEqual(card.node.querySelectorAll('.he-num').slice(0, 3).map((n) => n.textContent), ['H1', 'H2', 'H3']);
   card.setBar(3, 20);
   fire(btn, 'keydown', { key: 'Enter' });
   assert.equal(card.custom.bars[3], 0);
@@ -377,4 +400,10 @@ test('WEB-211: the chart fills its box: cell width grows with the width, never b
   assert.equal(ed.valueFit('100', 18), null);
   assert.equal(ed.valueFit('-33.3', 18), 16);
   assert.equal(ed.valueFit('-33.3', 40), null);
+  assert.equal(ed.numFit('H3', 18), null);
+  assert.equal(ed.numFit('H32', 18), 16);
+  assert.equal(ed.numFit('H32', 40), null);
+  assert.equal(ed.ED.half, 128);
+  assert.equal(ed.ED.plotBottom - ed.ED.top, 2 * ed.ED.half);
+  assert.equal(ed.ED.h, ed.ED.plotBottom + 32);
 });

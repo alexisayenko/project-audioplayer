@@ -1,10 +1,11 @@
 import { el } from './dom.js';
 import { svgEl } from './wave-shapes.js';
-import { MAX_HARMONICS, VISIBLE_HARMONICS, BAR_MIN, BAR_MAX, PRESETS, matchesPreset, snapBar, barLabel, hoverText, keyStep, stepBar, fmtBar } from './custom-wave.js';
+import { MAX_HARMONICS, VISIBLE_HARMONICS, BAR_MIN, BAR_MAX, PRESETS, PRESET_GROUPS, matchesPreset, snapBar, barLabel, hoverText, keyStep, stepBar, fmtBar } from './custom-wave.js';
 
-export const ED = { cell: 18, left: 34, right: 6, top: 10, half: 64, h: 170 };
+export const ED = { cell: 18, left: 34, right: 6, top: 10, half: 128 };
 ED.zero = ED.top + ED.half;
 ED.plotBottom = ED.zero + ED.half;
+ED.h = ED.plotBottom + 32;
 
 export const READ_DEFAULT = 'Drag a bar up or down (hold Shift for 0.1 steps), or focus one and use the arrow keys. Hover or focus a bar to see its frequency.';
 export const ZERO_LABEL = 'Set all harmonics to 0';
@@ -21,6 +22,8 @@ export const edWidth = (count, cell = ED.cell) => ED.left + count * cell + ED.ri
 export const cellFor = (avail, count) => (avail > 0 ? Math.max(ED.cell, (avail - ED.left - ED.right) / count) : ED.cell);
 
 export const valueFit = (text, cell) => (text.length * 4.6 > cell - 2 ? cell - 2 : null);
+
+export const numFit = (text, cell) => (text.length * 5.6 > cell - 2 ? cell - 2 : null);
 
 export const columnAt = (x, cell = ED.cell) => Math.floor((x - ED.left) / cell);
 
@@ -62,7 +65,7 @@ export function createHarmonicEditor(handlers) {
 
   const cols = Array.from({ length: MAX_HARMONICS }, (_, i) => {
     const bar = svgEl('rect', { class: 'ca-bar he-bar', x: columnX(i) + 3, width: ED.cell - 6, y: ED.zero, height: 0 });
-    const num = Object.assign(svgEl('text', { class: 'ca-axis-text he-num', x: columnX(i) + ED.cell / 2, y: ED.plotBottom + 13, 'text-anchor': 'middle' }), { textContent: String(i + 1) });
+    const num = Object.assign(svgEl('text', { class: 'ca-axis-text he-num', x: columnX(i) + ED.cell / 2, y: ED.plotBottom + 13, 'text-anchor': 'middle', 'lengthAdjust': 'spacingAndGlyphs' }), { textContent: `H${i + 1}` });
     const val = Object.assign(svgEl('text', { class: 'ca-axis-text he-val-txt', x: columnX(i) + ED.cell / 2, y: ED.plotBottom + 25, 'text-anchor': 'middle', 'lengthAdjust': 'spacingAndGlyphs' }), { textContent: '0' });
     const hit = svgEl('rect', {
       class: 'he-hit', x: columnX(i), y: 0, width: ED.cell, height: ED.plotBottom + 2, tabindex: 0, role: 'slider', 'data-h': i + 1,
@@ -169,12 +172,19 @@ export function createHarmonicEditor(handlers) {
   svg.addEventListener('lostpointercapture', end);
   svg.addEventListener('pointerleave', (ev) => { if (!drag) showReadout(-1); end(ev); });
 
-  const chips = PRESETS.map((p) => ({
+  const chips = PRESETS.filter((p) => p.group !== 'action').map((p) => ({
     id: p.id,
+    group: p.group,
     node: el('button', { class: 'chip', type: 'button', 'aria-pressed': 'false', title: p.title, onclick: () => handlers.onPreset(p.id) }, p.label),
   }));
-  const resetBtn = el('button', { class: 'chip', type: 'button', title: 'Back to the starting shape: a sine (H1 only), 32 bars, no build-up.', onclick: () => handlers.onReset() }, 'Reset');
-  const presets = el('div', { class: 'cl-presets he-presets', role: 'group', 'aria-label': 'Presets' }, ...chips.map((c) => c.node), resetBtn);
+  const clearPreset = PRESETS.find((p) => p.id === 'clear');
+  const clearBtn = el('button', { class: 'chip he-action', type: 'button', title: clearPreset.title, onclick: () => handlers.onPreset(clearPreset.id) }, clearPreset.label);
+  const resetBtn = el('button', { class: 'chip he-action', type: 'button', title: 'Back to the starting shape: a sine (H1 only), 32 bars, no build-up.', onclick: () => handlers.onReset() }, 'Reset');
+  const groups = PRESET_GROUPS.map((g) => el('div', { class: 'he-group', role: 'group', 'aria-label': g.label },
+    el('span', { class: 'he-group-cap t-caption', 'aria-hidden': 'true' }, g.label),
+    el('div', { class: 'he-chips' }, ...chips.filter((c) => c.group === g.id).map((c) => c.node))));
+  const actions = el('div', { class: 'he-actions', role: 'group', 'aria-label': 'Clear or reset' }, clearBtn, resetBtn);
+  const presets = el('div', { class: 'cl-presets he-presets' }, ...groups, actions);
 
   const check = (id, text, onchange) => {
     const box = el('input', { id: `${uid}-${id}`, type: 'checkbox' });
@@ -219,6 +229,8 @@ export function createHarmonicEditor(handlers) {
       c.bar.setAttribute('height', Math.max(h, v === 0 ? 1.5 : 0).toFixed(2));
       c.bar.setAttribute('class', `ca-bar he-bar${v === 0 ? ' he-zero-bar' : ''}${i >= buildN ? ' he-off' : ''}`);
       const text = fmtBar(v);
+      const nsq = numFit(c.num.textContent, state.cell);
+      if (nsq === null) c.num.removeAttribute('textLength'); else c.num.setAttribute('textLength', nsq.toFixed(1));
       c.val.textContent = text;
       const squeeze = valueFit(text, state.cell);
       if (squeeze === null) c.val.removeAttribute('textLength'); else c.val.setAttribute('textLength', squeeze.toFixed(1));

@@ -31,22 +31,30 @@ export const RECIPES = {
   organ: (n) => [100, 80, 60, 40, 30][n - 1] ?? 0,
   piano: (n) => [100, 65, 45, 30, 20, 14, 9, 6, 4, 3, 2, 1][n - 1] ?? 0,
   guitar: (n) => [100, 75, 50, 20, 3, 14, 10, 5, 3, 1, 2, 2][n - 1] ?? 0,
+  cello: (n) => [100, 70, 55, 40, 30, 22, 16, 11, 8, 5, 3, 2][n - 1] ?? 0,
   hollow: (n) => (odd(n) ? [100, 60, 40, 25, 15, 10, 6, 4][(n - 1) / 2] ?? 0 : 0),
   overtones: (n) => (n >= 2 && n <= 8 ? 100 / n : 0),
   clear: () => 0,
 };
 
 export const PRESETS = [
-  { id: 'sine', label: 'Sine', title: 'Sine: H1 only.' },
-  { id: 'triangle', label: 'Triangle', title: 'Triangle: odd harmonics at 1/n squared, signs alternate (+, -, +, ...).' },
-  { id: 'square', label: 'Square', title: 'Square: odd harmonics at 1/n.' },
-  { id: 'sawtooth', label: 'Sawtooth', title: 'Sawtooth: all harmonics at 1/n (a falling ramp; the Sawtooth option rises, the sound is the same).' },
-  { id: 'organ', label: 'Organ-like', title: 'Organ-like: a simple hand-picked approximation, not measured from a real organ. H1 100, H2 80, H3 60, H4 40, H5 30 percent.' },
-  { id: 'piano', label: 'Piano-like', title: 'Piano-like: a simple approximation of a struck string, not measured from a real piano. H1 100, H2 65, H3 45, H4 30, H5 20, H6 14, H7 9, H8 6, H9 4, H10 3, H11 2, H12 1 percent.' },
-  { id: 'guitar', label: 'Guitar-like', title: 'Guitar-like: a simple approximation of a plucked string, not measured from a real guitar. H1 100, H2 75, H3 50, H4 20, H5 3, H6 14, H7 10, H8 5, H9 3, H10 1, H11 2, H12 2 percent.' },
-  { id: 'hollow', label: 'Hollow', title: 'Hollow: odd harmonics only, falling off.' },
-  { id: 'overtones', label: 'Only overtones', title: 'Missing fundamental: H1 is 0, H2 to H8 at 1/n. You still hear the pitch of H1, because the wave still repeats at that rate and the brain infers it from the spacing of the overtones.' },
-  { id: 'clear', label: 'Clear', title: 'Clear: all bars to zero (silence).' },
+  { id: 'sine', group: 'waves', label: 'Sine', title: 'Sine: H1 only.' },
+  { id: 'triangle', group: 'waves', label: 'Triangle', title: 'Triangle: odd harmonics at 1/n squared, signs alternate (+, -, +, ...).' },
+  { id: 'square', group: 'waves', label: 'Square', title: 'Square: odd harmonics at 1/n.' },
+  { id: 'sawtooth', group: 'waves', label: 'Sawtooth', title: 'Sawtooth: all harmonics at 1/n (a falling ramp; the Sawtooth option rises, the sound is the same).' },
+  { id: 'organ', group: 'instruments', label: 'Organ-like', title: 'Organ-like: a simple hand-picked approximation, not measured from a real organ. H1 100, H2 80, H3 60, H4 40, H5 30 percent.' },
+  { id: 'piano', group: 'instruments', label: 'Piano-like', title: 'Piano-like: a simple approximation of a struck string, not measured from a real piano. H1 100, H2 65, H3 45, H4 30, H5 20, H6 14, H7 9, H8 6, H9 4, H10 3, H11 2, H12 1 percent.' },
+  { id: 'guitar', group: 'instruments', label: 'Guitar-like', title: 'Guitar-like: a simple approximation of a plucked string, not measured from a real guitar. H1 100, H2 75, H3 50, H4 20, H5 3, H6 14, H7 10, H8 5, H9 3, H10 1, H11 2, H12 2 percent.' },
+  { id: 'cello', group: 'instruments', label: 'Cello-like', title: 'Cello-like: a simple approximation of a bowed string, not measured from a real cello. H1 100, H2 70, H3 55, H4 40, H5 30, H6 22, H7 16, H8 11, H9 8, H10 5, H11 3, H12 2 percent.' },
+  { id: 'hollow', group: 'odd', label: 'Hollow', title: 'Hollow: odd harmonics only, falling off.' },
+  { id: 'overtones', group: 'odd', label: 'Only overtones', title: 'Missing fundamental: H1 is 0, H2 to H8 at 1/n. You still hear the pitch of H1, because the wave still repeats at that rate and the brain infers it from the spacing of the overtones.' },
+  { id: 'clear', group: 'action', label: 'Clear', title: 'Clear: all bars to zero (silence).' },
+];
+
+export const PRESET_GROUPS = [
+  { id: 'waves', label: 'Simple waves' },
+  { id: 'instruments', label: 'Instrument-like' },
+  { id: 'odd', label: 'Odd and missing harmonics' },
 ];
 
 export const presetBars = (id, count = MAX_HARMONICS) => fromRule(RECIPES[id] ?? RECIPES.clear, count);
