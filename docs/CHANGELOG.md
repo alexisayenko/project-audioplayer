@@ -2,7 +2,7 @@
 
 What shipped, newest first. One line each; the web UI and server are live at https://electrophone.cc. Everything listed here is deployed except the sections marked "built, not deployed" (the 2026-10-14 release went out once the SSH access in [task-0027](tasks/task-0027.md) was restored; the live visualizer files match `origin/main` as of 2026-10-15). Why: [tech/decisions.md](tech/decisions.md); runbook: [tech/deploy.md](tech/deploy.md).
 
-## 2026-10-25 (Studio: waveform choices in the cone animation, built, not deployed)
+## 2026-10-25 (Studio: waveform choices in the cone animation, deployed to studio.electrophone.cc as `c6bfab4`; the main app bundle is unchanged)
 
 - Web (STU-047, STU-026, task-0114; owner decision IB2; no tests run, `node --check`, the studio build, node numeric checks and the Browser pane with a stepped clock): the Glossary cone animation has a "Waveform" switch (Sine, Triangle, Square, Sawtooth). The pressure shape drives the density curve, the dots (displacement from a 512-sample cumulative-integral table with zero mean, so dots never cross and the square wave gives red and teal blocks) and the cone (a triangle path for the square wave). A "Harmonics" bar chart (H1 to H16, relative to H1 = 1) shows the Fourier series of the shape: square H3 = 1/3, triangle H3 = 1/9, sawtooth H2 = 1/2. The entries Sine wave, Triangle wave, Square wave and Sawtooth wave open it with their own shape behind "Show animation and harmonics", in the List and in the Map panel. Checked for every shape: no dot crossings, the smallest dot spacing where the pressure is highest, one pending frame, no horizontal scroll at 375 px. Not checked on a phone.
 
