@@ -22,6 +22,7 @@ export const FEATURES = [
   open('planned', 'Tools', 'Waveforms page', 'task-0118', 'Hear and see sine, triangle, square, sawtooth, pulse and noise. The Glossary has the terms; the page is not built.'),
   open('planned', 'Theory', 'Music theory page', 'task-0119', 'Scales, modes, chords and tuning with playable examples. The Glossary has the Music theory domain; the page is not built.'),
 
+  done('2026-10-25', 'Glossary', 'Choose a waveform in the cone animation and see its harmonics', 'task-0114', 'The Sound wave animation can show a sine, triangle, square or sawtooth wave, with a bar chart of its harmonics.'),
   done('2026-10-25', 'Site', 'Help menu with Features, Help and About', 'task-0114', 'Features lists what the Studio can do and what is on the way; Help says what each page does.'),
   done('2026-10-25', 'Site', 'Collapsible menu and full-width content', 'task-0114', 'A button next to the title folds the menu away, and the pages use the whole width.'),
   done('2026-10-25', 'Listen', 'Octave-error correction for Mark harmonics', 'task-0107', 'When the loudest peak is a harmonic, the Spectrum reads the lower fundamental instead.'),
