@@ -142,7 +142,16 @@ test('STU-044: Sound wave is a term with aliases, see-also links and the cone an
   assert.ok(termById('compression-and-rarefaction').see.includes('sound-wave'));
   assert.equal(termByAnchor('longitudinal-wave').id, 'sound-wave');
   assert.equal(termByAnchor('compression-wave').id, 'sound-wave');
-  assert.equal(TERMS.length, 108);
+  assert.equal(TERMS.length, 110);
+});
+
+test('WEB-211: Fourier series and Additive synthesis are glossary entries; the second links to Primitive > Custom', () => {
+  assert.equal(termById('fourier-series').term, 'Fourier series');
+  assert.match(termById('fourier-series').text, /square = odd harmonics at 1\/n\.$/);
+  assert.equal(termById('additive-synthesis').text, 'Building a sound by adding sine waves (harmonics). Primitive > Custom lets you do that with sliders.');
+  assert.equal(termById('additive-synthesis').demo.type, 'link');
+  assert.equal(termById('additive-synthesis').demo.href, '#/synthesize/simple?wave=custom');
+  assert.ok(termById('primitive').see.includes('additive-synthesis'));
 });
 
 test('STU-056: a term with the demo has an Open the demo link to the Sound wave page and no animation', () => {
@@ -152,7 +161,7 @@ test('STU-056: a term with the demo has an Open the demo link to the Sound wave 
   const link = pane.querySelector('#gl-sound-wave .gl-demo-link');
   assert.equal(link.textContent, 'Open the demo →');
   assert.equal(link.getAttribute('href'), '#/learn/sound-wave');
-  assert.equal(pane.querySelectorAll('.gl-demo-link').length, 6);
+  assert.equal(pane.querySelectorAll('.gl-demo-link').length, 7);
   assert.equal(pane.querySelectorAll('canvas').length, 0);
   assert.equal(pane.querySelectorAll('button').filter((b) => /animation/i.test(b.textContent)).length, 0);
   stop();

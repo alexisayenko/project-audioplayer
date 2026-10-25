@@ -70,6 +70,7 @@ export const WAVE_GLYPH = {
   triangle: 'M2 10 L8 3 L20 17 L26 10',
   square: 'M2 17 V3 H14 V17 H26',
   sawtooth: 'M2 17 L14 3 V17 L26 3',
+  custom: 'M4 8 V12 M9 3 V17 M14 6 V14 M19 2 V18 M24 7 V13',
 };
 
 export const waveGlyph = (wave) => svgEl('svg', { class: 'ca-glyph', viewBox: '0 0 28 20', 'aria-hidden': 'true', focusable: 'false' },

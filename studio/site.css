@@ -44,6 +44,24 @@
 @container stu (min-width: 560px) { .sm-wv-txt { display: inline; } }
 .sm-wave .seg-btn:focus-visible { outline: 2px solid var(--fill); outline-offset: 1px; }
 .sm-harm { gap: var(--space-2); }
+.sm-harm-head { min-height: 0; }
+.ca-harm.he-gone, .he[hidden] { display: none; }
+.he { display: grid; gap: var(--space-3); min-width: 0; }
+.he-scroll { overflow-x: auto; max-width: 100%; overscroll-behavior-x: contain; }
+.he-svg { user-select: none; -webkit-user-select: none; touch-action: none; }
+.he-svg.he-wide { width: 100%; min-width: 560px; max-width: 720px; touch-action: pan-x; }
+.he-hit { fill: transparent; cursor: ns-resize; outline: none; }
+.he-hit:hover { fill: var(--accent-tint); fill-opacity: 0.5; }
+.he-hit:focus-visible { fill: var(--accent-tint); stroke: var(--fill); stroke-width: 1.5; }
+.he-zero { stroke: var(--ink-muted); stroke-width: 1; }
+.he-bar.he-zero-bar { fill: var(--ink-muted); }
+.he-bar.he-off { opacity: 0.25; }
+.he-num { font-size: 9px; pointer-events: none; }
+.he-read { min-height: 1.5em; }
+.he-opts { gap: 0 var(--space-5); }
+.he-build { gap: var(--space-2); }
+.he-notes:empty { display: none; }
+.he-note { color: var(--ink); }
 .sm-lab { display: flex; align-items: center; gap: var(--space-2); min-height: var(--control-sm); }
 .sm-lab label { margin: 0; }
 .sm-info { position: relative; flex: none; display: inline-grid; place-items: center; width: var(--space-5); height: var(--space-5); padding: 0; border: var(--stroke-hairline) solid var(--line); border-radius: var(--radius-pill); background: none; color: var(--ink-muted); font: var(--font-caption); font-style: italic; cursor: pointer; }

@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { installDom, flush } from './test-dom.mjs';
+import { installDom, flush, fire } from './test-dom.mjs';
 
 installDom();
 globalThis.location = { hash: '#/studio/simple', href: 'http://localhost/' };
@@ -219,11 +219,12 @@ test('STU-046: Primitive is compact: one intro line, the helper texts behind inf
   const card = s.createSimpleCard(fakeCtx().env);
   const text = card.node.textContent;
   assert.ok(text.includes('A primitive sound: a single repeating shape (sine, triangle, square or sawtooth) at one frequency. Sine is one pure frequency (H1 only); the other shapes add harmonics.'));
+  assert.ok(text.includes('Pick a standard shape or build your own from harmonics.'));
   assert.ok(!text.includes('The four numbers that describe a sound from a speaker.'));
-  const buttons = card.node.querySelectorAll('.sm-info');
+  const buttons = card.node.querySelectorAll('.sm-ctl .sm-info');
   assert.equal(buttons.length, 4);
   const texts = [
-    'The shape of one cycle. Sine is one pure frequency; the others add harmonics: triangle and square only odd ones, sawtooth all of them.',
+    'The shape of one cycle. Sine is one pure frequency; the others add harmonics: triangle and square only odd ones, sawtooth all of them. Custom lets you set every harmonic yourself.',
     'How far the speaker cone moves. Limited to 80 % of full scale to protect your hearing and the speaker. Amplitude is the level of a sine with the same loudness; square waves are scaled down so that all shapes sound about equally loud.',
     `${s.POWER_NOTE} ${s.POWER_EQUIV_NOTE} ${s.DB_NOTE}`,
     'A new length applies the next time you press Play. Continuous stops after 10 minutes.',
@@ -252,7 +253,8 @@ function fakeCtx() {
   const param = () => ({ value: 0, calls: [], setValueAtTime(...a) { this.calls.push(['set', ...a]); }, linearRampToValueAtTime(...a) { this.calls.push(['ramp', ...a]); }, setTargetAtTime(...a) { this.calls.push(['target', ...a]); }, cancelScheduledValues() {} });
   class Ctx {
     constructor() { this.state = 'running'; this.currentTime = 0; this.sampleRate = 48000; this.destination = {}; this.closed = false; made.push(this); }
-    createOscillator() { const o = { type: '', frequency: param(), connect() {}, disconnect() {}, start(t) { this.started = t; }, stop(t) { this.stopped = t; } }; this.osc = o; return o; }
+    createOscillator() { const o = { type: '', frequency: param(), connect() {}, disconnect() {}, start(t) { this.started = t; }, stop(t) { this.stopped = t; }, setPeriodicWave(w) { this.wave = w; this.waveCalls = (this.waveCalls || 0) + 1; } }; this.osc = o; return o; }
+    createPeriodicWave(real, imag, opts) { return { real, imag, opts }; }
     createGain() { this.gain = { gain: param(), connect() {}, disconnect() {} }; return this.gain; }
     createAnalyser() { return { fftSize: 0, connect() {}, disconnect() {}, getFloatTimeDomainData() {} }; }
     close() { this.closed = true; return Promise.resolve(); }
@@ -292,20 +294,20 @@ function trackedEnv() {
   return { ...f, env: { ...f.env, AudioContext: Tracked }, oscs, gains };
 }
 
-test('WEB-210: Primitive has a Waveform switch with Sine, Triangle, Square and Sawtooth, Sine by default, keyboard-navigable like a radio group', () => {
+test('WEB-210: Primitive has a Waveform switch with Sine, Triangle, Square, Sawtooth and Custom, Sine by default, keyboard-navigable like a radio group', () => {
   const card = s.createSimpleCard(fakeCtx().env);
   const group = card.node.querySelectorAll('.sm-wave .seg')[0];
   assert.equal(group.getAttribute('role'), 'radiogroup');
   const buttons = card.node.querySelectorAll('.sm-wave .seg-btn');
-  assert.deepEqual(buttons.map((b) => b.getAttribute('aria-label')), ['Sine', 'Triangle', 'Square', 'Sawtooth']);
-  assert.deepEqual(buttons.map((b) => b.getAttribute('aria-checked')), ['true', 'false', 'false', 'false']);
+  assert.deepEqual(buttons.map((b) => b.getAttribute('aria-label')), ['Sine', 'Triangle', 'Square', 'Sawtooth', 'Custom']);
+  assert.deepEqual(buttons.map((b) => b.getAttribute('aria-checked')), ['true', 'false', 'false', 'false', 'false']);
   assert.equal(card.params.wave, 'sine');
   buttons[2].click();
   assert.equal(card.params.wave, 'square');
-  assert.deepEqual(buttons.map((b) => b.getAttribute('aria-checked')), ['false', 'false', 'true', 'false']);
+  assert.deepEqual(buttons.map((b) => b.getAttribute('aria-checked')), ['false', 'false', 'true', 'false', 'false']);
   assert.ok(card.node.textContent.includes('Square: odd harmonics only, falling as 1/n (hollow). Your tone is the sum of these sine waves.'));
   assert.ok(card.node.textContent.includes('One square wave = H1 plus odd harmonics (chart below).'));
-  const bars = card.node.querySelectorAll('.sm-harm rect');
+  const bars = card.node.querySelectorAll('.sm-harm .ca-harm:not(.he-svg) rect');
   assert.equal(bars.length, 16);
   assert.equal(bars[2].getAttribute('data-amp'), (1 / 3).toFixed(4));
   assert.equal(bars[1].getAttribute('data-amp'), '0.0000');

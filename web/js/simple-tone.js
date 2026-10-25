@@ -3,9 +3,16 @@ import { icon } from './icons.js';
 import { segmented } from './segmented.js';
 import { attachInfo } from './info-popover.js';
 import { WAVES, WAVE_DEFAULT, WAVE_LABEL, WAVE_TEXT, HARM_TEXT, HARM_TITLE, waveName, waveValue, loudnessScale, oscNorm, wavePowerPct, waveGlyph, createHarmonicsChart } from './wave-shapes.js';
+import {
+  CUSTOM, MAX_HARMONICS, VISIBLE_HARMONICS, SMALL_JUMP, PLAY_LIMIT_HZ, defaultBars, presetBars, partialBars, analyzeBars, customGain, periodicCoefficients,
+  tableSeries, componentSeries, strongest, maxJump, aboveLimit, snapBar,
+} from './custom-wave.js';
+import { createHarmonicEditor, TITLE as EDITOR_TITLE, TIP as EDITOR_TIP } from './harmonic-editor.js';
 
 export const TITLE = 'Primitive';
-export const INTRO = 'A primitive sound: a single repeating shape (sine, triangle, square or sawtooth) at one frequency. Sine is one pure frequency (H1 only); the other shapes add harmonics. It models a speaker cone driven by an electrical signal. Choose the shape, set the four numbers, press Play.';
+export const INTRO = 'A primitive sound: a single repeating shape (sine, triangle, square or sawtooth) at one frequency. Sine is one pure frequency (H1 only); the other shapes add harmonics. It models a speaker cone driven by an electrical signal. Pick a standard shape or build your own from harmonics. Set the four numbers, press Play.';
+export const PRIMITIVE_WAVES = [...WAVES, CUSTOM];
+export const PRIMITIVE_WAVE_TEXT = { ...WAVE_TEXT, [CUSTOM]: 'Custom' };
 export const MIN_HZ = 20;
 export const MAX_HZ = 20000;
 export const MAX_AMP = 0.8;
@@ -48,8 +55,13 @@ export const SHAPE_NOTE = {
   triangle: 'One triangle wave = H1 plus odd harmonics (chart below).',
   square: 'One square wave = H1 plus odd harmonics (chart below).',
   sawtooth: 'One sawtooth wave = H1 plus all harmonics (chart below).',
+  [CUSTOM]: 'Custom wave = the sum of the harmonic bars below, drawn from one table of 1024 points.',
 };
-export const WAVE_TIP = 'The shape of one cycle. Sine is one pure frequency; the others add harmonics: triangle and square only odd ones, sawtooth all of them.';
+export const WAVE_TIP = 'The shape of one cycle. Sine is one pure frequency; the others add harmonics: triangle and square only odd ones, sawtooth all of them. Custom lets you set every harmonic yourself.';
+export const CUSTOM_HARM_TEXT = 'Custom: any repeating shape is a sum of sine waves; the standard shapes are particular recipes.';
+export const LIMIT_HZ_NOTE = 'Harmonics above 20 kHz are not played.';
+export const HIDDEN_NOTE = 'Harmonics 17 to 32 are hidden but still play.';
+export const SILENT_NOTE = 'All bars are zero: this is silence.';
 export const EQUIV_NOTE = 'Amplitude is the level of a sine with the same loudness; square waves are scaled down so that all shapes sound about equally loud.';
 export const POWER_EQUIV_NOTE = 'Power here is the sine-equivalent power.';
 export const HARM_SUM_NOTE = 'Your tone is the sum of these sine waves.';
@@ -70,19 +82,31 @@ export const trim = (v, digits) => String(+v.toFixed(digits));
 
 export const roundAmp = (amp) => Math.round(clamp(num(amp, DEFAULTS.amp), 0, MAX_AMP) * 100) / 100;
 
+export const primitiveWave = (wave) => (wave === CUSTOM ? CUSTOM : waveName(wave));
+
+export function waveFromHash(hash) {
+  const q = new URLSearchParams(String(hash ?? '').split('?').slice(1).join('?'));
+  const w = q.get('wave');
+  return PRIMITIVE_WAVES.includes(w) ? w : null;
+}
+
 export function clampParams(p = {}) {
   return {
     freq: clamp(num(p.freq, DEFAULTS.freq), MIN_HZ, MAX_HZ),
     amp: roundAmp(p.amp),
     length: clamp(num(p.length, DEFAULTS.length), MIN_LEN, MAX_LEN),
     continuous: p.continuous === undefined ? DEFAULTS.continuous : !!p.continuous,
-    wave: waveName(p.wave),
+    wave: primitiveWave(p.wave),
   };
 }
 
-export const oscGain = (wave, amp) => (amp > 0 ? Math.min(MAX_AMP, (amp * loudnessScale(waveName(wave))) / oscNorm(wave)) : 0);
+export const oscGain = (wave, amp, rms = 0) => (wave === CUSTOM
+  ? customGain(amp, rms, MAX_AMP)
+  : amp > 0 ? Math.min(MAX_AMP, (amp * loudnessScale(waveName(wave))) / oscNorm(wave)) : 0);
 
-export const shapeLevel = (wave, amp) => oscGain(wave, amp) * oscNorm(wave);
+export const shapeLevel = (wave, amp, rms = 0) => (wave === CUSTOM ? oscGain(wave, amp, rms) : oscGain(wave, amp) * oscNorm(wave));
+
+export const shapePowerPct = (wave, peak, rms = 0) => (wave === CUSTOM ? 200 * (peak * rms) ** 2 : wavePowerPct(waveName(wave), peak));
 
 export const shapeAt = (wave, u) => (wave === 'sine' || !WAVES.includes(wave) ? Math.sin(2 * Math.PI * u) : waveValue(wave, wave === 'sawtooth' ? u + 0.5 : u));
 
@@ -124,10 +148,10 @@ export const periodMs = (freq) => 1000 / freq;
 
 export const fmtMs = (ms) => String(+ms.toPrecision(3));
 
-export function readout(p) {
+export function readout(p, rms = 0) {
   const lasts = p.continuous ? 'until you press Stop' : `${trim(p.length, 2)} s`;
-  const peak = shapeLevel(p.wave, p.amp);
-  return `Period ${fmtMs(periodMs(p.freq))} ms = 1/f; pressure swings ±${ampPercent(peak)} % of full scale; power ${fmtPower(wavePowerPct(waveName(p.wave), peak))} %; sound lasts ${lasts}.`;
+  const peak = shapeLevel(p.wave, p.amp, rms);
+  return `Period ${fmtMs(periodMs(p.freq))} ms = 1/f; pressure swings ±${ampPercent(peak)} % of full scale; power ${fmtPower(shapePowerPct(p.wave, peak, rms))} %; sound lasts ${lasts}.`;
 }
 
 export function wavelengthM(freq) {
@@ -188,7 +212,8 @@ export function windowTicks(windowMs) {
 
 export const windowPoints = (width, cycles) => clamp(Math.round(cycles * 12), Math.max(64, Math.round(width * 2)), WINDOW_MAX_POINTS);
 
-export function scopeSeries(amp, points, cycles = CYCLES, wave = WAVE_DEFAULT) {
+export function scopeSeries(amp, points, cycles = CYCLES, wave = WAVE_DEFAULT, table = null) {
+  if (wave === CUSTOM && table) return tableSeries(table, amp, points, cycles);
   const out = new Array(points);
   for (let i = 0; i < points; i += 1) out[i] = amp * shapeAt(wave, cycles * (i / (points - 1)));
   return out;
@@ -287,20 +312,30 @@ export function drawScope(g, colors, series, need, p, view) {
     }
     ctx.restore();
   }
-  const n = series.length;
-  if (n >= 2) {
+  const trace = (data) => {
+    const n = data.length;
+    if (n < 2) return;
     const step = Math.max(1, Math.floor(n / (plotW * 2)));
-    ctx.strokeStyle = colors.fill;
-    ctx.lineWidth = 2;
-    ctx.lineJoin = 'round';
     ctx.beginPath();
     for (let i = 0; i < n; i += step) {
       const x = left + (i / (need - 1)) * plotW;
-      const y = mid - clamp(series[i], -1.2, 1.2) * scale;
+      const y = mid - clamp(data[i], -1.2, 1.2) * scale;
       if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
     }
     ctx.stroke();
+  };
+  if (view.extras?.length) {
+    ctx.save();
+    ctx.globalAlpha = 0.4;
+    ctx.strokeStyle = colors.fill;
+    ctx.lineWidth = 1;
+    for (const data of view.extras) trace(data);
+    ctx.restore();
   }
+  ctx.strokeStyle = colors.fill;
+  ctx.lineWidth = 2;
+  ctx.lineJoin = 'round';
+  trace(series);
   if (bracket) drawCycleBracket(g, colors, p.freq);
 }
 
@@ -386,10 +421,10 @@ export function createSimpleCard(env = {}) {
   const lenTip = info('length', LENGTH_NOTE);
   const waveTip = info('waveform', WAVE_TIP);
 
-  const waveSeg = segmented(WAVES.map((n) => [n, el('span', { class: 'sm-wv' }, waveGlyph(n), el('span', { class: 'sm-wv-txt' }, WAVE_TEXT[n]))]), () => params.wave, (n) => change({ wave: n }), { 'aria-labelledby': `${uid}-wvl` });
+  const waveSeg = segmented(PRIMITIVE_WAVES.map((n) => [n, el('span', { class: 'sm-wv' }, waveGlyph(n), el('span', { class: 'sm-wv-txt' }, PRIMITIVE_WAVE_TEXT[n]))]), () => params.wave, (n) => change({ wave: n }), { 'aria-labelledby': `${uid}-wvl` });
   waveSeg.group.querySelectorAll('button').forEach((b, i) => {
-    b.setAttribute('aria-label', WAVE_TEXT[WAVES[i]]);
-    b.setAttribute('title', WAVE_TEXT[WAVES[i]]);
+    b.setAttribute('aria-label', PRIMITIVE_WAVE_TEXT[PRIMITIVE_WAVES[i]]);
+    b.setAttribute('title', PRIMITIVE_WAVE_TEXT[PRIMITIVE_WAVES[i]]);
   });
   const waveField = el('div', { class: 'hm-field sm-wave' },
     el('div', { class: 'sm-lab' }, el('span', { id: `${uid}-wvl`, class: 'sm-wlab' }, WAVE_LABEL), waveTip),
@@ -397,6 +432,27 @@ export function createSimpleCard(env = {}) {
   const harm = createHarmonicsChart();
   const harmOut = el('p', { class: 'hm-cap muted t-caption' });
   const shapeNoteOut = el('p', { class: 'hm-cap muted t-caption' });
+  const harmTitle = el('h3', { class: 't-subhead' }, HARM_TITLE);
+  const editorTip = info('the harmonics editor', EDITOR_TIP);
+  editorTip.hidden = true;
+
+  const custom = { bars: defaultBars(), count: VISIBLE_HARMONICS, buildN: MAX_HARMONICS, playBuild: false, showEach: false };
+  let soundKey = custom.bars.join(',');
+  let sound = analyzeBars(custom.bars);
+  let view = sound;
+  let soundDirty = false;
+  const hasRaf = !!env.raf || typeof globalThis.requestAnimationFrame === 'function';
+
+  const editor = createHarmonicEditor({
+    onSet: (i, v) => setBar(i, v),
+    onPreset: (id) => { custom.bars = presetBars(id); customChanged(); },
+    onReset: () => { custom.bars = defaultBars(); custom.buildN = MAX_HARMONICS; custom.playBuild = false; custom.showEach = false; custom.count = VISIBLE_HARMONICS; customChanged(); },
+    onMore: (on) => { custom.count = on ? MAX_HARMONICS : VISIBLE_HARMONICS; customChanged(); },
+    onEach: (on) => { custom.showEach = on; customChanged(); },
+    onBuild: (n) => { custom.buildN = Math.min(MAX_HARMONICS, Math.max(1, n)); customChanged(); },
+    onPlayBuild: (on) => { custom.playBuild = on; customChanged(); },
+  });
+  editor.node.hidden = true;
 
   const node = el('section', { class: 'card hm-card sm-card', 'aria-label': TITLE },
     el('h2', { class: 't-headline' }, TITLE),
@@ -423,15 +479,33 @@ export function createSimpleCard(env = {}) {
         windowCapOut,
         manyOut)),
     el('div', { class: 'hm-block sm-harm' },
-      el('h3', { class: 't-subhead' }, HARM_TITLE),
+      el('div', { class: 'sm-lab sm-harm-head' }, harmTitle, editorTip),
       harm.svg,
+      editor.node,
       harmOut),
     el('p', { class: 'sm-links' },
       el('a', { class: 'gl-link t-subhead', href: WAVE_HREF }, WAVE_LINK),
       el('a', { class: 'gl-link t-subhead', href: GLOSSARY_HREF }, GLOSSARY_LINK)));
 
   const active = () => doc?.activeElement;
-  const shownParams = () => ({ ...params, amp: shapeLevel(params.wave, params.amp) });
+  const shownParams = () => ({ ...params, amp: shapeLevel(params.wave, params.amp, sound.rms) });
+  const isCustom = () => params.wave === CUSTOM;
+  const soundBars = () => (custom.playBuild ? partialBars(custom.bars, custom.buildN) : custom.bars);
+  const viewBars = () => partialBars(custom.bars, custom.buildN);
+
+  function refreshShape() {
+    const key = soundBars().join(',');
+    if (key !== soundKey) { soundKey = key; sound = analyzeBars(soundBars()); }
+    view = custom.playBuild || custom.buildN >= MAX_HARMONICS ? sound : analyzeBars(viewBars());
+  }
+
+  function customNotes() {
+    const out = [];
+    if (aboveLimit(params.freq, soundBars(), PLAY_LIMIT_HZ)) out.push(LIMIT_HZ_NOTE);
+    if (custom.count < MAX_HARMONICS && custom.bars.slice(custom.count).some((v) => v !== 0)) out.push(HIDDEN_NOTE);
+    if (!(sound.rms > 0)) out.push(SILENT_NOTE);
+    return out;
+  }
 
   function setValue(input, value, force) {
     if (force || active() !== input) input.value = value;
@@ -452,16 +526,22 @@ export function createSimpleCard(env = {}) {
     setValue(lenNum, String(p.length), force);
     lenNum.disabled = p.continuous;
     contBox.checked = p.continuous;
-    readoutOut.textContent = readout(p);
-    const peak = ampPercent(shapeLevel(p.wave, p.amp));
+    readoutOut.textContent = readout(p, sound.rms);
+    const peak = ampPercent(shapeLevel(p.wave, p.amp, sound.rms));
     canvas.setAttribute('aria-label', `Waveform: one cycle, ${p.wave} wave, ${p.freq} Hz, peak ${peak} % of full scale; ${cycleLabels(p.freq)[0]}, at 20 °C`);
     const cyc = windowCycles(p.freq, win);
     windowCapOut.textContent = windowCaption(p.freq, win);
     manyOut.hidden = !tooManyCycles(cyc);
     windowCanvas.setAttribute('aria-label', `Waveform: time window, ${p.wave} wave, ${p.freq} Hz, peak ${peak} % of full scale, ${windowCaption(p.freq, win)}`);
     shapeNoteOut.textContent = SHAPE_NOTE[p.wave];
-    harmOut.textContent = `${HARM_TEXT[p.wave]} ${HARM_SUM_NOTE}`;
-    harm.paint(p.wave);
+    const onCustom = p.wave === CUSTOM;
+    harmOut.textContent = `${onCustom ? CUSTOM_HARM_TEXT : HARM_TEXT[p.wave]} ${HARM_SUM_NOTE}`;
+    harmTitle.textContent = onCustom ? EDITOR_TITLE : HARM_TITLE;
+    harm.svg.classList.toggle('he-gone', onCustom);
+    editor.node.hidden = !onCustom;
+    editorTip.hidden = !onCustom;
+    if (onCustom) editor.paint({ bars: custom.bars, count: custom.count, freq: p.freq, buildN: custom.buildN, playBuild: custom.playBuild, showEach: custom.showEach, notes: customNotes() });
+    else harm.paint(p.wave);
     waveSeg.paint();
     winSeg.paint();
     canvas.setAttribute('title', `${cycleLabels(p.freq)[0]} (speed of sound 343 m/s at 20 °C)`);
@@ -500,14 +580,17 @@ export function createSimpleCard(env = {}) {
     if (!g) return;
     const c = currentColors();
     const points = Math.max(64, Math.round(g.w * 2));
-    const view = { ticks: scopeTicks(cycles, params.freq) };
     const shown = shownParams();
-    if (live) {
+    const opts = { ticks: scopeTicks(cycles, params.freq) };
+    if (isCustom() && custom.showEach) {
+      opts.extras = strongest(viewBars()).map((e) => componentSeries(e, view.scale * shown.amp, points, cycles));
+    }
+    if (live && !isCustom()) {
       live.analyser.getFloatTimeDomainData(live.buf);
       const lw = liveWindow(live.buf, live.ctx.sampleRate, params.freq, cycles, points);
-      drawScope(g, c, lw.samples, lw.need, shown, view);
+      drawScope(g, c, lw.samples, lw.need, shown, opts);
     } else {
-      drawScope(g, c, scopeSeries(shown.amp, points, cycles, params.wave), points, shown, view);
+      drawScope(g, c, scopeSeries(shown.amp, points, cycles, params.wave, view.table), points, shown, opts);
     }
   }
 
@@ -518,7 +601,7 @@ export function createSimpleCard(env = {}) {
     const cyc = windowCycles(params.freq, win);
     const points = windowPoints(g.w, cyc);
     const shown = shownParams();
-    drawScope(g, currentColors(), scopeSeries(shown.amp, points, cyc, params.wave), points, shown, { ticks: windowTicks(win), bracket: false });
+    drawScope(g, currentColors(), scopeSeries(shown.amp, points, cyc, params.wave, view.table), points, shown, { ticks: windowTicks(win), bracket: false });
   }
 
   function paintAll() {
@@ -535,6 +618,7 @@ export function createSimpleCard(env = {}) {
     looping = false;
     frame = 0;
     if (gone) return;
+    if (soundDirty) { soundDirty = false; applyLive(); }
     paintScope();
     if (live) schedule();
   }
@@ -602,9 +686,14 @@ export function createSimpleCard(env = {}) {
     paintButton();
   }
 
+  function makeWave(ctx) {
+    const { real, imag } = periodicCoefficients(soundBars(), sound.scale, MAX_HARMONICS);
+    return ctx.createPeriodicWave(real, imag, { disableNormalization: true });
+  }
+
   function addVoice(s, vg, type) {
     const osc = s.ctx.createOscillator();
-    osc.type = type;
+    if (type === CUSTOM) osc.setPeriodicWave(makeWave(s.ctx)); else osc.type = type;
     osc.frequency.value = params.freq;
     osc.connect(vg);
     vg.connect(s.gain);
@@ -634,6 +723,7 @@ export function createSimpleCard(env = {}) {
     try { old.osc.stop(t + FADE_S); } catch { /* already stopped */ }
     s.voice = next;
     s.wave = params.wave;
+    s.shape = sound;
   }
 
   function start() {
@@ -647,8 +737,8 @@ export function createSimpleCard(env = {}) {
       const voiceGain = ctx.createGain();
       const gain = ctx.createGain();
       const analyser = ctx.createAnalyser();
-      const level = oscGain(params.wave, params.amp);
-      s ={ ctx, voice: null, voices: [], gain, analyser, buf: null, amp: level, wave: params.wave, length: params.length, endT: null, stopping: false, safety: 0, fallback: 0 };
+      const level = oscGain(params.wave, params.amp, sound.rms);
+      s = { ctx, voice: null, voices: [], gain, analyser, buf: null, amp: level, wave: params.wave, shape: sound, length: params.length, endT: null, stopping: false, safety: 0, fallback: 0 };
       voiceGain.gain.value = 1;
       s.voice = addVoice(s, voiceGain, params.wave);
       analyser.fftSize = FFT_SIZE;
@@ -687,8 +777,17 @@ export function createSimpleCard(env = {}) {
     const t = s.ctx.currentTime;
     s.voice.osc.frequency.setTargetAtTime(params.freq, t, SMOOTH_S);
     if (s.endT != null && s.endT - t < 0.1) return;
-    if (params.wave !== s.wave) crossfade(s, t);
-    const level = oscGain(params.wave, params.amp);
+    if (params.wave !== s.wave) {
+      crossfade(s, t);
+    } else if (params.wave === CUSTOM && s.shape !== sound) {
+      if (maxJump(s.shape.table, sound.table) <= SMALL_JUMP) {
+        s.voice.osc.setPeriodicWave(makeWave(s.ctx));
+        s.shape = sound;
+      } else {
+        crossfade(s, t);
+      }
+    }
+    const level = oscGain(params.wave, params.amp, sound.rms);
     if (level === s.amp) return;
     const cur = Number.isFinite(s.gain.gain.value) ? s.gain.gain.value : s.amp;
     s.gain.gain.cancelScheduledValues(t);
@@ -707,6 +806,29 @@ export function createSimpleCard(env = {}) {
     applyLive();
     paintWindow();
     if (!looping) paintScope();
+  }
+
+  function customChanged() {
+    refreshShape();
+    paintOutputs();
+    paintWindow();
+    paintScope();
+    if (!live || !isCustom()) return;
+    if (hasRaf && looping) soundDirty = true; else applyLive();
+  }
+
+  function setBar(i, value) {
+    if (!(i >= 0 && i < MAX_HARMONICS)) return;
+    const v = Number.isFinite(value) ? snapBar(value, true) : 0;
+    if (custom.bars[i] === v) return;
+    custom.bars = custom.bars.slice();
+    custom.bars[i] = v;
+    customChanged();
+  }
+
+  function applyHash() {
+    const w = waveFromHash(globalThis.location?.hash);
+    if (w && w !== params.wave) change({ wave: w });
   }
 
   const typed = (input, apply) => {
@@ -732,6 +854,9 @@ export function createSimpleCard(env = {}) {
     ro.observe(node);
   }
 
+  globalThis.addEventListener?.('hashchange', applyHash);
+  const startWave = waveFromHash(globalThis.location?.hash);
+  if (startWave) params = clampParams({ ...params, wave: startWave });
   paintOutputs(true);
   paintButton();
   if (typeof requestAnimationFrame === 'function') raf(() => { if (!gone && !looping) paintAll(); });
@@ -742,12 +867,17 @@ export function createSimpleCard(env = {}) {
     get state() { return state; },
     get params() { return { ...params }; },
     get window() { return win; },
+    get custom() { return { ...custom, bars: custom.bars.slice() }; },
+    get sound() { return sound; },
+    setBar,
+    setPreset: (id) => { custom.bars = presetBars(id); customChanged(); },
     setWindow: setWin,
     start,
     stop: () => stop('stopped'),
     change,
     dispose() {
       gone = true;
+      globalThis.removeEventListener?.('hashchange', applyHash);
       for (const d of detach) d();
       ro?.disconnect();
       syncLoop();

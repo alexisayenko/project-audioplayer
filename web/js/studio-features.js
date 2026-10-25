@@ -22,6 +22,7 @@ export const FEATURES = [
   open('planned', 'Tools', 'Waveforms page', 'task-0118', 'Hear and see sine, triangle, square, sawtooth, pulse and noise. The Glossary has the terms; the page is not built.'),
   open('planned', 'Theory', 'Music theory page', 'task-0119', 'Scales, modes, chords and tuning with playable examples. The Glossary has the Music theory domain; the page is not built.'),
 
+  done('2026-10-25', 'Primitive', 'Primitive: custom waveform from harmonics', 'task-0114', 'A fifth waveform, Custom: drag up to 32 harmonic bars (or use the arrow keys) to build your own shape, with presets, a build-up slider that shows how a square wave sharpens, and the real frequency of every harmonic.'),
   done('2026-10-25', 'Clicks to tone', 'Clicks to tone: a beat becomes a pitch', 'task-0114', 'A repeating click from 1 to 1000 per second. Slow it is a rhythm; around 20 per second it flutters; fast it is a tone whose pitch is the click rate (100 per second is 100 Hz, 440 is A4).'),
   done('2026-10-25', 'Glossary', 'Sound wave animation: realistic cone motion (parabolic arcs for a square wave)', 'task-0114', 'The speaker cone now moves the way a real speaker cone does: the pressure follows how hard the cone is pushed, so a square wave comes from smooth parabolic arcs, not straight lines.'),
   done('2026-10-25', 'Site', 'Learn menu with a Sound wave page', 'task-0114', 'The speaker cone animation has its own page, Sound wave, with a short guide to reading it. The Glossary links to it from the wave terms. The menu group Reference is now called Learn.'),

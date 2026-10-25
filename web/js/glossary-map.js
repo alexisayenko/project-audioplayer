@@ -10,11 +10,11 @@ export const DOMAINS = [
 ];
 
 const MEMBERS = {
-  physics: ['sound', 'oscillation', 'vibration', 'compression-and-rarefaction', 'sound-wave', 'cycle-and-period','frequency', 'wavelength', 'amplitude', 'power', 'speed-of-sound', 'sine-wave', 'sawtooth-wave', 'square-wave', 'triangle-wave', 'pulse-wave', 'duty-cycle', 'white-noise', 'pink-noise', 'infrasound-and-ultrasound', 'soundboard', 'bridge', 'length', 'click-train', 'repetition-rate'],
+  physics: ['sound', 'oscillation', 'vibration', 'compression-and-rarefaction', 'sound-wave', 'cycle-and-period','frequency', 'wavelength', 'amplitude', 'power', 'speed-of-sound', 'sine-wave', 'fourier-series', 'sawtooth-wave', 'square-wave', 'triangle-wave', 'pulse-wave', 'duty-cycle', 'white-noise', 'pink-noise', 'infrasound-and-ultrasound', 'soundboard', 'bridge', 'length', 'click-train', 'repetition-rate'],
   perception: ['pitch', 'timbre', 'missing-fundamental', 'cent', 'loudness', 'flutter-and-roughness'],
   music: ['note', 'tone', 'fundamental', 'harmonic-1', 'harmonics', 'overtone', 'partial', 'inharmonicity', 'beating', 'hammer-strike-position', 'strings-per-note', 'decay-across-harmonics', 'rhythm', 'beat', 'tempo', 'meter', 'bar', 'downbeat', 'onset', 'syncopation', 'subdivision', 'swing'],
   theory: ['scale', 'major-scale', 'minor-scale', 'chromatic-scale', 'pentatonic-scale', 'mode', 'key', 'tonic', 'semitone', 'whole-tone', 'octave', 'interval', 'third', 'fourth', 'fifth', 'consonance', 'dissonance', 'tuning', 'equal-temperament', 'just-intonation', 'pythagorean-tuning', 'reference-pitch', 'circle-of-fifths', 'chord', 'triad', 'seventh-chord', 'root', 'inversion', 'chord-progression', 'cadence', 'harmony', 'melody'],
-  instruments: ['chordophones', 'aerophones', 'membranophones', 'idiophones', 'electrophones', 'primitive'],
+  instruments: ['chordophones', 'aerophones', 'membranophones', 'idiophones', 'electrophones', 'primitive', 'additive-synthesis'],
   analysis: ['waveform', 'oscilloscope', 'spectrum', 'spectrogram', 'beat-bands', 'tempo-grid', 'bpm', 'analysis-window', 'trails', 'harmonic-markers', 'pitch-detection', 'octave-error', 'dbfs', 'db-spl', 'time-window', 'spectrum-analyzer', 'fourier-transform'],
 };
 
@@ -171,6 +171,9 @@ export const RELATIONS = [
   rel('spectrum-analyzer', 'shows the', 'spectrum'),
   rel('fourier-transform', 'is used by the', 'spectrum-analyzer'),
   rel('fourier-transform', 'splits any wave into', 'sine-wave'),
+  rel('fourier-series', 'builds', 'waveform'),
+  rel('additive-synthesis', 'uses', 'harmonics'),
+  rel('square-wave', 'is the recipe', 'fourier-series'),
   rel('rhythm', 'is built from', 'beat'),
   rel('beat', 'repeats at the', 'tempo'),
   rel('tempo', 'is measured in', 'bpm'),
