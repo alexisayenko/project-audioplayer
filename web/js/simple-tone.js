@@ -56,6 +56,8 @@ export const AIR_THIN_TEXT = 'at rest or thinner';
 export const AIR_NOW_TEXT = 'now';
 export const AIR_AGO_TEXT = 'one cycle ago';
 export const AIR_CURVE_TEXT = 'air density';
+export const AIR_CURVE_TITLE = 'Air density: the density along the air in front of the cone, right now';
+export const AIR_CURVE_NOTE = 'The curve is the air density along the path in front of the cone, right now: above the dashed line the air is denser than at rest (compression), below it thinner (rarefaction). It is the same wave as the oscilloscope, seen in space instead of time.';
 export const CONE_TITLE = 'Slow motion: the speaker cone';
 export const coneNote = (slow = SLOW) => `Swing exaggerated. The real cone moves a fraction of a millimetre. Here its motion runs ${slow} times slower. The cone is a quarter cycle behind the pressure: the air is squeezed hardest when the cone moves fastest, in the middle of its swing.`;
 export const CONE_NOTE = coneNote();
@@ -196,7 +198,7 @@ export function scopeGeometry(w, h, bracket = true) {
   return { left, bottom, pad, row, mid, scale: mid - pad, plotW: Math.max(1, w - left - pad), rowTop: h - bottom - row };
 }
 
-export const airNote = (freq) => `The dots are the air in front of the cone: one dense bunch (high pressure) and one thin gap (low pressure) are one cycle of the wave; the curve above them is the oscilloscope curve mirrored in time, and the dot on the oscilloscope is the pressure now. Red dots are the compression: air squeezed closer than at rest (high pressure). Teal dots are at rest or spread thinner. The spacing is schematic: the real wavelength of ${trim(freq, 2)} Hz is about ${fmtWavelength(freq)}.`;
+export const airNote = (freq) => `The dots are the air in front of the cone: one dense bunch (high pressure) and one thin gap (low pressure) are one cycle of the wave; the curve above them is the oscilloscope curve mirrored in time, and the dot on the oscilloscope is the pressure now. Red dots are the compression: air squeezed closer than at rest (high pressure). Teal dots are at rest or spread thinner. The spacing is schematic: the real wavelength of ${trim(freq, 2)} Hz is about ${fmtWavelength(freq)}. ${AIR_CURVE_NOTE}`;
 
 export function airGeometry(base, right) {
   const avail = Math.max(0, right - base);
@@ -370,8 +372,15 @@ function drawAirCurve(g, colors, geo, phase, amp) {
   ctx.setLineDash?.([2, 3]);
   ctx.beginPath(); ctx.moveTo(x0, mid); ctx.lineTo(x0 + geo.wavelength, mid); ctx.stroke();
   ctx.setLineDash?.([]);
-  ctx.strokeStyle = colors.fill;
-  ctx.fillStyle = colors.fill;
+  const swing = airCurveSwing(amp);
+  let paint = colors.fill;
+  if (swing > 0.5 && ctx.createLinearGradient) {
+    paint = ctx.createLinearGradient(0, mid, 0, mid - swing);
+    paint.addColorStop(0, colors.fill);
+    paint.addColorStop(1, colors.hot ?? colors.fill);
+  }
+  ctx.strokeStyle = paint;
+  ctx.fillStyle = paint;
   ctx.lineWidth = 1.5;
   ctx.lineJoin = 'round';
   ctx.beginPath();
@@ -382,15 +391,17 @@ function drawAirCurve(g, colors, geo, phase, amp) {
     if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
   }
   ctx.stroke();
-  const level = airCurveY(phase, amp, 0);
-  ctx.lineWidth = 1;
-  ctx.beginPath(); ctx.moveTo(x0, mid); ctx.lineTo(x0, mid - level); ctx.stroke();
-  ctx.beginPath(); ctx.arc(x0, mid - level, 4, 0, 2 * Math.PI); ctx.fill();
+  ctx.lineTo(x0 + geo.wavelength, mid);
+  ctx.lineTo(x0, mid);
+  ctx.closePath();
+  ctx.globalAlpha = 0.12;
+  ctx.fill();
+  ctx.globalAlpha = 1;
   ctx.font = `10px ${colors.font}`;
-  ctx.textAlign = 'right';
-  ctx.textBaseline = 'middle';
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'top';
   ctx.fillStyle = colors.muted;
-  ctx.fillText(AIR_CURVE_TEXT, x0 - 10, mid);
+  ctx.fillText(AIR_CURVE_TEXT, x0, 2);
   ctx.restore();
 }
 
@@ -691,7 +702,8 @@ export function createSimpleCard(env = {}) {
     windowCanvas.setAttribute('aria-label', `Oscilloscope: time window, sine wave, ${p.freq} Hz, amplitude ${fmtPct(p.amp * 100)} % of full scale, ${windowCaption(p.freq, win)}`);
     winSeg.paint();
     canvas.setAttribute('title', `${cycleLabels(p.freq)[0]} (speed of sound 343 m/s at 20 °C)`);
-    coneCanvas.setAttribute('aria-label', `Side view of a speaker cone moving ${slow} times slower than real at ${p.freq} Hz, swing in proportion to the amplitude, ${fmtPct(p.amp * 100)} % of full scale; the cone is a quarter cycle behind the pressure on the oscilloscope above; the air dots in front of the cone show one cycle of the wave as one dense bunch and one thin gap, and the curve above them is the oscilloscope curve mirrored in time, the air density; red dots are the compression, air squeezed closer than at rest, and teal dots are at rest or spread thinner`);
+    coneCanvas.setAttribute('aria-label', `Side view of a speaker cone moving ${slow} times slower than real at ${p.freq} Hz, swing in proportion to the amplitude, ${fmtPct(p.amp * 100)} % of full scale; the cone is a quarter cycle behind the pressure on the oscilloscope above; the air dots in front of the cone show one cycle of the wave as one dense bunch and one thin gap, and the curve above them is the oscilloscope curve mirrored in time, the density along the air, red above the dashed rest line where the air is denser than at rest and teal below it; red dots are the compression, air squeezed closer than at rest, and teal dots are at rest or spread thinner`);
+    coneCanvas.setAttribute('title', AIR_CURVE_TITLE);
     slowOut.textContent = slowReadout(p.freq, slow);
     coneNoteOut.textContent = coneNote(slow);
     airOut.textContent = airNote(p.freq);
