@@ -2,6 +2,10 @@
 
 What shipped, newest first. One line each; the web UI and server are live at https://electrophone.cc. Everything listed here is deployed except the sections marked "built, not deployed" (the 2026-10-14 release went out once the SSH access in [task-0027](tasks/task-0027.md) was restored; the live visualizer files match `origin/main` as of 2026-10-15). Why: [tech/decisions.md](tech/decisions.md); runbook: [tech/deploy.md](tech/deploy.md).
 
+## 2026-10-25 (Studio Rhythm: lane BPM moved to the left, built, not deployed)
+
+- Web (STU-042, WEB-191; owner request; no tests run, `node --check`, the build and a Browser pane check with a fake 120 BPM microphone only): the per-lane BPM, its confidence bar and the ratio chip sit under the lane name and range on the left, and the right end keeps only the level bar, so the plot is 40 px wider; the label gutter is 152 px (74 px under 520 px, where the row wraps under the range).
+
 ## 2026-10-25 (Studio Rhythm: a BPM for each Beat bands lane, deployed to studio.electrophone.cc and electrophone.cc as `af8dcf7`)
 
 - Web (STU-042, WEB-191, task-0073, task-0108; owner decision HW1; no tests run, `node --check`, the build, node checks of the lane estimator on synthetic audio and a Browser pane check with a fake microphone only): every lane of the Beat bands shows the BPM of its own hits over the last 8 s at its right end, with a tiny confidence bar and a ratio chip (`x2`, `x4`, `x1/2`, `x1/4`, `x3/2`) when it is a simple multiple of the main BPM within 3 percent; a lane that is neither gets the orange highlight of the per-window row and a lane without a regular pattern shows a dash. New `estimateEnvelope` in `live-bpm.js` (the per-window estimator on any envelope), lane helpers in `beat-bands.js`, a caption line and a longer glossary entry; the Chordophones lab shows the BPM without chips. On a synthetic 120 BPM pattern the kick lanes read 120.0, the snare lanes 60.0 (`x1/2`) and the hat lanes 240 (`x2`); all 12 lanes cost about 1.1 ms per second. Not checked with a real microphone or a real track.

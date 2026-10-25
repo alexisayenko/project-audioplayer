@@ -59,7 +59,6 @@ export const LANE_UPDATE_MS = 1000;
 export const LANE_START_SLACK_S = 0.05;
 export const LANE_MIN_CONFIDENCE = 0.5;
 export const LANE_RATIO_TOLERANCE = 0.03;
-export const LANE_BPM_W = 40;
 export const LANE_NO_DATA_TIP = `No regular pattern in the last ${LANE_WINDOW_S} s (needs more than ${MIN_PERIODS} beats)`;
 export const LANE_CAPTION = `Each lane shows the repeat rate of its own hits over the last ${LANE_WINDOW_S} s. The kick lane usually matches the main beat; hi-hats often run at 2x or 4x, a snare at 1/2.`;
 
