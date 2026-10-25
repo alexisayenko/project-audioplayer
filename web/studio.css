@@ -87,6 +87,10 @@ input.hm-step-num:disabled { opacity: var(--disabled-opacity); }
 .rh-bar { display: block; height: var(--space-1); border-radius: var(--radius-pill); background: var(--surface-sunken); overflow: hidden; }
 .rh-bar i { display: block; width: 0; height: 100%; border-radius: var(--radius-pill); background: var(--fill); }
 .rh-cap { margin: 0; }
+.rh-key { margin: 0; }
+.rh-key-drift { display: inline-block; width: var(--space-3); height: var(--space-3); margin-right: var(--space-1); vertical-align: middle; border: var(--stroke-hairline) solid var(--chart-5); border-radius: var(--radius-key); background: color-mix(in srgb, var(--chart-5) 14%, var(--surface-key)); }
+.rh-key-bar { display: inline-block; width: var(--space-5); height: var(--space-1); margin-right: var(--space-1); vertical-align: middle; border-radius: var(--radius-pill); background: var(--surface-sunken); overflow: hidden; }
+.rh-key-bar i { display: block; width: 60%; height: 100%; border-radius: var(--radius-pill); background: var(--fill); }
 .rh-graph { height: 200px; }
 .rh-legend { display: flex; flex-wrap: wrap; align-items: center; gap: 0 var(--space-3); }
 .rh-leg { display: inline-flex; align-items: center; gap: var(--space-2); min-height: var(--hit); padding: 0 var(--space-1); border: 0; background: none; color: var(--ink); font: var(--font-caption); font-variant-numeric: tabular-nums; cursor: pointer; }

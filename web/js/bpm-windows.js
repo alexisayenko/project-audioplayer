@@ -11,7 +11,10 @@ export const DRIFT_TOLERANCE = 0.03;
 export const NO_DATA_TIP = `Needs at least ${MIN_PERIODS} beats in the window`;
 export const WINDOWS_TITLE = 'Tempo by analysis window';
 export const WINDOWS_CAPTION = 'Short windows react fast but are noisy; long windows are stable. If all agree the tempo is steady.';
-export const GRAPH_TITLE = 'BPM over time';
+export const KEY_DRIFT = ` = differs from the main BPM by more than ${DRIFT_TOLERANCE * 100} percent.`;
+export const KEY_BAR = ' = confidence: how clearly the rhythm repeats in that window.';
+export const KEY_DASH = `- = not enough beats in the window yet (needs at least ${MIN_PERIODS}).`;
+export const GRAPH_TITLE ='BPM over time';
 export const SPANS = [60, 120, 300];
 export const DEFAULT_SPAN_S = 120;
 export const SPAN_LABELS = { 60: '1 min', 120: '2 min', 300: '5 min' };
@@ -321,6 +324,9 @@ export function createBpmWindowsView({ uid, colors, now = () => Date.now() }) {
     el('h3', { class: 't-subhead' }, WINDOWS_TITLE),
     list,
     el('p', { class: 'rh-cap muted t-caption' }, WINDOWS_CAPTION),
+    el('p', { class: 'rh-key muted t-caption' },
+      el('span', { class: 'rh-key-drift', 'aria-hidden': 'true' }), 'Red', KEY_DRIFT, ' ',
+      el('span', { class: 'rh-key-bar', 'aria-hidden': 'true' }, el('i')), 'Bar', KEY_BAR, ' ', KEY_DASH),
     el('div', { class: 'hm-head' },
       el('h3', { class: 't-subhead' }, GRAPH_TITLE),
       el('div', { class: 'hm-axis' }, el('span', { id: `${uid}-sl`, class: 'hm-lbl' }, 'Time span'), spanSeg.group)),
