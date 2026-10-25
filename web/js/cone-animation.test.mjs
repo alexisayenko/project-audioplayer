@@ -272,6 +272,161 @@ test('STU-043: pause and a hidden document stop the loop, play and a visible doc
   anim.destroy();
 });
 
+test('STU-047: the shape functions: sine, triangle (+1 at 1/4, -1 at 3/4), square (+1 then -1) and sawtooth (a rising ramp, the jump at 0)', () => {
+  assert.deepEqual(c.WAVES, ['sine', 'triangle', 'square', 'sawtooth']);
+  assert.ok(near(c.waveValue('sine', 0.25), 1) && near(c.waveValue('sine', 0.75), -1));
+  assert.ok(near(c.waveValue('triangle', 0.25), 1) && near(c.waveValue('triangle', 0.75), -1));
+  assert.ok(near(c.waveValue('triangle', 0), 0) && near(c.waveValue('triangle', 0.5), 0) && near(c.waveValue('triangle', 0.125), 0.5));
+  assert.equal(c.waveValue('square', 0), 1);
+  assert.equal(c.waveValue('square', 0.4999), 1);
+  assert.equal(c.waveValue('square', 0.5), -1);
+  assert.equal(c.waveValue('square', 0.9999), -1);
+  assert.ok(near(c.waveValue('sawtooth', 0), -1) && near(c.waveValue('sawtooth', 0.5), 0) && near(c.waveValue('sawtooth', 0.9999), 0.9998));
+  for (const wave of c.WAVES) {
+    assert.ok(near(c.waveValue(wave, 1.3), c.waveValue(wave, 0.3), 1e-12));
+    assert.ok(near(c.waveValue(wave, -0.7), c.waveValue(wave, 0.3), 1e-12));
+    let sum = 0;
+    for (let i = 0; i < 4000; i += 1) sum += c.waveValue(wave, (i + 0.5) / 4000) / 4000;
+    assert.ok(near(sum, 0, 1e-9), wave);
+  }
+});
+
+test('STU-047: the cumulative-integral table has zero mean and the right extremes, and its slope is the pressure', () => {
+  const peaks = { sine: [-1 / (2 * Math.PI), 1 / (2 * Math.PI)], triangle: [-0.125, 0.125], square: [-0.25, 0.25], sawtooth: [-1 / 12, 1 / 6] };
+  for (const wave of c.WAVES) {
+    const { values } = c.waveTable(wave);
+    assert.equal(values.length, c.WAVE_TABLE_N + 1);
+    assert.equal(values[c.WAVE_TABLE_N], values[0]);
+    let mean = 0;
+    for (let i = 0; i < c.WAVE_TABLE_N; i += 1) mean += values[i] / c.WAVE_TABLE_N;
+    assert.ok(near(mean, 0, 1e-7), wave);
+    assert.ok(near(Math.min(...values), peaks[wave][0], 1e-6), wave);
+    assert.ok(near(Math.max(...values), peaks[wave][1], 1e-6), wave);
+    assert.equal(c.waveTable(wave), c.waveTable(wave));
+    for (const u of [0.07, 0.31, 0.62, 0.9]) {
+      const h = 1e-3;
+      const slope = (c.wavePotential(wave, u + h) - c.wavePotential(wave, u - h)) / (2 * h);
+      assert.ok(near(slope, c.waveValue(wave, u), 0.02), `${wave} ${u}`);
+    }
+    assert.ok(near(c.wavePotential(wave, 1.25), c.wavePotential(wave, 0.25), 1e-6));
+  }
+  assert.ok(near(c.wavePotential('sine', 0.3), -Math.cos(2 * Math.PI * 0.3) / (2 * Math.PI), 1e-12));
+});
+
+test('STU-047: the cone follows the integral of the pressure: sine and square keep their extremes, the square wave moves in a triangle path', () => {
+  assert.ok(near(c.coneOffset(0, 0.8, 'sine'), -1) && near(c.coneOffset(0.5, 0.8, 'sine'), 1));
+  assert.ok(near(c.coneOffset(0, 0.8, 'square'), -1) && near(c.coneOffset(0.5, 0.8, 'square'), 1, 1e-6));
+  assert.ok(near(c.coneOffset(0.25, 0.8, 'square'), 0, 1e-6));
+  assert.ok(near(c.coneOffset(0.5, 0.3, 'square'), 0.375, 1e-6));
+  assert.ok(near(c.coneOffset(0.1, 0.8, 'square') - c.coneOffset(0, 0.8, 'square'), c.coneOffset(0.3, 0.8, 'square') - c.coneOffset(0.2, 0.8, 'square'), 1e-5));
+  assert.ok(near(c.coneOffset(0, 0.8, 'sawtooth'), 1, 1e-6) && near(c.coneOffset(0.5, 0.8, 'sawtooth'), -0.5, 1e-6));
+  for (const wave of c.WAVES) {
+    let hi = -Infinity;
+    let lo = Infinity;
+    for (let i = 0; i <= 1000; i += 1) {
+      const v = c.coneOffset(i / 1000, 0.8, wave);
+      hi = Math.max(hi, v);
+      lo = Math.min(lo, v);
+    }
+    assert.ok(near(Math.max(hi, -lo), 1, 1e-3), wave);
+    for (const phase of [0.13, 0.4, 0.66]) {
+      const dt = 1e-4;
+      const velocity = (c.coneOffset(phase + dt, 0.8, wave) - c.coneOffset(phase - dt, 0.8, wave)) / (2 * dt);
+      assert.ok(near(velocity * c.wavePeak(wave), c.waveValue(wave, phase), 0.03), `${wave} ${phase}`);
+    }
+  }
+});
+
+test('STU-047: the dots of every shape never cross, are densest where the pressure is highest and keep the density 1 - ds/dx', () => {
+  for (const wave of c.WAVES) {
+    const geo = c.airGeometry(122, 367, wave);
+    assert.ok(geo.shift >= geo.wavelength * c.AIR_K * c.wavePeak(wave) - 1e-9, wave);
+    for (const phase of [0, 0.2, 0.45, 0.8]) {
+      let last = -Infinity;
+      let tightest = Infinity;
+      let tightestAt = 0;
+      for (let i = 0; i < 400; i += 1) {
+        const d = (i / 400) * geo.wavelength;
+        const x = c.airX(phase, 0.8, geo, d, wave);
+        assert.ok(x > last, `${wave} ${phase} ${i}`);
+        if (i > 0) {
+          const spacing = (x - last) / (geo.wavelength / 400);
+          if (spacing < tightest) { tightest = spacing; tightestAt = d - geo.wavelength / 800; }
+        }
+        last = x;
+      }
+      assert.ok(near(tightest, 1 - c.airK(0.8), 0.02), `${wave} ${phase}`);
+      assert.ok(c.pressureAt(phase, tightestAt, geo.wavelength, wave) > 0.97, `${wave} ${phase}`);
+    }
+  }
+  const sq = c.airGeometry(122, 367, 'square');
+  const colours = [0, 0.1, 0.3, 0.6, 0.9].map((u) => c.airHeat(0.25, 0.8, sq, u * sq.wavelength, 'square'));
+  assert.deepEqual(colours, [1, 1, 0, 0, 1]);
+});
+
+test('STU-047: the harmonic amplitudes are the Fourier series of the shape, strongest bar 1', () => {
+  assert.equal(c.HARM_COUNT, 16);
+  const sine = c.harmonicAmps('sine');
+  assert.equal(sine.length, 16);
+  assert.equal(sine[0], 1);
+  assert.ok(sine.slice(1).every((a) => a === 0));
+  const square = c.harmonicAmps('square');
+  assert.ok(near(square[0], 1) && near(square[2], 1 / 3) && near(square[4], 1 / 5));
+  assert.ok(square.filter((_, i) => i % 2 === 1).every((a) => a === 0));
+  const triangle = c.harmonicAmps('triangle');
+  assert.ok(near(triangle[0], 1) && near(triangle[2], 1 / 9) && near(triangle[4], 1 / 25));
+  assert.ok(triangle.filter((_, i) => i % 2 === 1).every((a) => a === 0));
+  const saw = c.harmonicAmps('sawtooth');
+  assert.ok(near(saw[0], 1) && near(saw[1], 1 / 2) && near(saw[15], 1 / 16));
+  assert.ok(near(c.harmonicRaw('square', 1), 4 / Math.PI) && near(c.harmonicRaw('sawtooth', 1), 2 / Math.PI) && near(c.harmonicRaw('triangle', 1), 8 / (Math.PI * Math.PI)));
+  for (const wave of c.WAVES) {
+    const K = 4096;
+    const amps = c.harmonicAmps(wave);
+    const dft = amps.map((_, i) => {
+      const n = i + 1;
+      let re = 0;
+      let im = 0;
+      for (let j = 0; j < K; j += 1) {
+        const u = (j + 0.5) / K;
+        re += c.waveValue(wave, u) * Math.cos(2 * Math.PI * n * u);
+        im += c.waveValue(wave, u) * Math.sin(2 * Math.PI * n * u);
+      }
+      return (Math.hypot(re, im) * 2) / K;
+    });
+    amps.forEach((a, i) => assert.ok(near(a, dft[i] / dft[0], 2e-3), `${wave} H${i + 1}`));
+  }
+});
+
+test('STU-047: the Waveform switch, the harmonics chart and its captions follow the chosen shape', () => {
+  const { env } = clock();
+  const anim = c.createConeAnimation({}, env);
+  assert.equal(anim.wave, 'sine');
+  const text = () => anim.node.textContent;
+  const bars = () => anim.node.querySelectorAll('rect').map((r) => r.getAttribute('data-amp'));
+  assert.ok(text().includes('Waveform'));
+  for (const label of ['Sine', 'Triangle', 'Square', 'Sawtooth']) assert.ok(anim.node.querySelectorAll('button').some((b) => b.textContent === label), label);
+  assert.equal(anim.node.querySelectorAll('rect').length, 16);
+  assert.ok(text().includes('Harmonics: relative amplitude, H1 = 1'));
+  assert.ok(text().includes('Sine: only H1. The shape is the sum of these sine waves.'));
+  assert.equal(bars()[0], '1.0000');
+  assert.ok(bars().slice(1).every((a) => a === '0.0000'));
+  anim.setWave('square');
+  assert.equal(anim.wave, 'square');
+  assert.ok(text().includes('Square: odd harmonics only, falling as 1/n (hollow).'));
+  assert.equal(bars()[2], '0.3333');
+  anim.setWave('triangle');
+  assert.ok(text().includes('Triangle: odd harmonics, falling as 1/n squared (soft, flute-like).'));
+  assert.equal(bars()[2], '0.1111');
+  anim.setWave('sawtooth');
+  assert.ok(text().includes('Sawtooth: all harmonics, falling as 1/n (buzzy).'));
+  assert.equal(bars()[1], '0.5000');
+  anim.setWave('wobble');
+  assert.equal(anim.wave, 'sawtooth');
+  assert.ok(c.createConeAnimation({ wave: 'square' }, env).wave === 'square');
+  assert.equal(c.createConeAnimation({ wave: 'nope' }, env).wave, 'sine');
+  anim.destroy();
+});
+
 test('STU-043: with reduced motion the animation starts paused at phase 1/4', () => {
   const { env, frames, step } = clock({ matchMedia: () => ({ matches: true }) });
   const anim = c.createConeAnimation({}, env);

@@ -53,6 +53,12 @@
 .ca-view { height: 288px; }
 .ca-key { display: flex; flex-wrap: wrap; gap: var(--space-1) var(--space-4); }
 .ca-key-item { display: inline-flex; align-items: center; gap: var(--space-2); }
+.ca-harm-title { margin-top: var(--space-3); }
+.ca-harm { display: block; width: 100%; max-width: 480px; height: auto; }
+.ca-axis { stroke: var(--line); stroke-width: 1; }
+.ca-axis-text { fill: var(--ink-muted); font: 10px var(--font-sans); }
+.ca-bar { fill: var(--fill); }
+.ca-tick { fill: var(--ink-muted); }
 .ca-dot { width: 10px; height: 10px; border-radius: 50%; flex: none; }
 .ca-dot.dense { background: var(--chart-5); }
 .ca-dot.thin { background: var(--fill); }

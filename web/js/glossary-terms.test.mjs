@@ -158,7 +158,35 @@ test('STU-044: a term with the demo has a Show animation button that expands and
   button.click();
   assert.equal(button.textContent, 'Show animation');
   assert.equal(item.querySelector('canvas'), null);
-  assert.equal(pane.querySelectorAll('.gl-demo').length, 2);
+  assert.equal(pane.querySelectorAll('.gl-demo').length, 6);
+  stop();
+});
+
+test('STU-047: the four wave entries open the animation with their own shape behind Show animation and harmonics', () => {
+  for (const wave of ['sine', 'triangle', 'square', 'sawtooth']) {
+    const t = termById(`${wave}-wave`);
+    assert.equal(t.demo.type, 'cone-animation');
+    assert.equal(t.demo.wave, wave);
+    assert.match(t.text, /Press Show animation to see how it squeezes the air\.$/);
+  }
+  assert.equal(termById('sine-wave').demo.page, 'synthesize/simple');
+  assert.equal(termById('pulse-wave').demo, undefined);
+  const pane = document.createElement('div');
+  const win = { location: { hash: '' }, addEventListener() {}, removeEventListener() {} };
+  const stop = mountGlossary(pane, win);
+  for (const wave of ['sine', 'triangle', 'square', 'sawtooth']) {
+    const item = pane.querySelector(`#gl-${wave}-wave`);
+    const button = item.querySelector('.gl-demo button');
+    assert.equal(button.textContent, 'Show animation and harmonics');
+    button.click();
+    assert.equal(button.textContent, 'Hide animation and harmonics');
+    assert.equal(item.querySelectorAll('rect')[2].getAttribute('data-amp'), { sine: '0.0000', triangle: '0.1111', square: '0.3333', sawtooth: '0.3333' }[wave]);
+    const on = item.querySelectorAll('.seg')[0].querySelectorAll('button').filter((b) => b.getAttribute('aria-checked') === 'true');
+    assert.equal(on.length, 1);
+    assert.equal(on[0].textContent.toLowerCase(), wave);
+    button.click();
+  }
+  assert.equal(pane.querySelector('#gl-sound-wave .gl-demo button').textContent, 'Show animation');
   stop();
 });
 

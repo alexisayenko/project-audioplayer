@@ -3,8 +3,13 @@ import { createConeAnimation } from '../web/js/cone-animation.js';
 
 export const SHOW_TEXT = 'Show animation';
 export const HIDE_TEXT = 'Hide animation';
+export const SHOW_WAVE_TEXT = 'Show animation and harmonics';
+export const HIDE_WAVE_TEXT = 'Hide animation and harmonics';
 
-const BUILDERS = { 'cone-animation': () => createConeAnimation({ frequency: 440, amplitude: 0.3 }) };
+const BUILDERS = { 'cone-animation': (term) => createConeAnimation({ frequency: 440, amplitude: 0.3, wave: term.demo.wave }) };
+
+export const showText = (term) => (term.demo?.wave ? SHOW_WAVE_TEXT : SHOW_TEXT);
+export const hideText = (term) => (term.demo?.wave ? HIDE_WAVE_TEXT : HIDE_TEXT);
 
 export const hasAnimation = (term) => !!BUILDERS[term.demo?.type];
 
@@ -16,16 +21,16 @@ export function createDemoToggle(term, { id, onOpen } = {}) {
   const button = el('button', {
     type: 'button', class: 'btn outline small', 'aria-expanded': 'false', 'aria-controls': `${id}-host`,
     onclick: () => (anim ? close() : open()),
-  }, SHOW_TEXT);
+  }, showText(term));
   const node = el('div', { class: 'gl-demo' }, button, host);
 
   function open() {
     if (anim) return;
     onOpen?.();
-    anim = BUILDERS[term.demo.type]();
+    anim = BUILDERS[term.demo.type](term);
     host.replaceChildren(anim.node);
     host.hidden = false;
-    button.textContent = HIDE_TEXT;
+    button.textContent = hideText(term);
     button.setAttribute('aria-expanded', 'true');
   }
 
@@ -35,7 +40,7 @@ export function createDemoToggle(term, { id, onOpen } = {}) {
     anim = null;
     host.replaceChildren();
     host.hidden = true;
-    button.textContent = SHOW_TEXT;
+    button.textContent = showText(term);
     button.setAttribute('aria-expanded', 'false');
   }
 
