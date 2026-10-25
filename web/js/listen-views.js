@@ -47,7 +47,7 @@ export const TRAILS_HINT = 'The spectrum keeps a fading ghost of recent peaks, l
 export const RMS_SINE_DB =10 * Math.log10(2);
 export const DBFS_NOTE = 'dBFS is the digital level: 0 is the loudest the device can record; it is not dB SPL (room loudness), which needs a calibrated microphone.';
 export const LIVE_VIEW_NAMES = {
-  wave: 'Oscilloscope view: time across, amplitude up.',
+  wave: 'Oscilloscope: shows the waveform of the sound it hears: time across, amplitude up.',
   spectrum: 'Spectrum analyzer (FFT): frequency across, level up.',
   gram: 'Spectrogram (sonogram): time across, frequency up, colour = level.',
   bands: 'Band-energy / onset view: which frequency range carries the beat.',
@@ -1169,14 +1169,14 @@ export function createLiveWave({ uid, colors, feed, what, freq }) {
   const caption = el('p', { class: 'hm-cap muted t-caption' });
   const seg = segmented(WAVE_WINDOWS.map((c) => [c, WAVE_WINDOW_LABELS[c]]), () => win, (c) => set(c), { 'aria-labelledby': `${uid}-wl` });
   const node = el('div', { class: 'hm-block' },
-    el('h3', { class: 't-subhead' }, 'Waveform'),
+    el('h3', { class: 't-subhead' }, 'Oscilloscope'),
     el('div', { class: 'hm-axis' }, el('span', { id: `${uid}-wl`, class: 'hm-lbl' }, 'Time window'), seg.group),
     view(canvas, 'hm-wave'),
     caption);
 
   function describe() {
     const shown = win ? `${WAVE_WINDOW_LABELS[win]} of the loudest tone` : `${WAVE_MS} ms`;
-    canvas.setAttribute('aria-label', `Waveform of ${what()} signal, ${shown}`);
+    canvas.setAttribute('aria-label', `Oscilloscope of ${what()} signal, ${shown}`);
     const span = win
       ? `Window: ${WAVE_WINDOW_LABELS[win]} of the loudest tone (${WAVE_MS} ms while no tone is found).`
       : `Window ${WAVE_MS} ms.`;

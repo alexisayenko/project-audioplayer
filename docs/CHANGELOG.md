@@ -2,6 +2,10 @@
 
 What shipped, newest first. One line each; the web UI and server are live at https://electrophone.cc. Everything listed here is deployed except the sections marked "built, not deployed" (the 2026-10-14 release went out once the SSH access in [task-0027](tasks/task-0027.md) was restored; the live visualizer files match `origin/main` as of 2026-10-15). Why: [tech/decisions.md](tech/decisions.md); runbook: [tech/deploy.md](tech/deploy.md).
 
+## 2026-10-25 (Studio: names by role, built, not deployed)
+
+- Web (STU-006, STU-018, STU-026, WEB-196, WEB-201, WEB-207; owner decision IA1 amended; no tests run, `node --check`, the builds and the Browser pane): synthesis pages draw the signal the synth will produce and say Waveform (Primitive "Waveform: one cycle" and "Waveform: time window" with new one-line descriptions, Chordophones "Waveform"), Listen reads incoming sound and says Oscilloscope (heading, description, aria-label); the Glossary keeps separate Waveform and Oscilloscope entries (105 terms, 156 relations), Time window says "waveform or oscilloscope", and the cone captions say waveform.
+
 ## 2026-10-25 (Studio Primitive: compact layout, deployed to studio.electrophone.cc and electrophone.cc as `b1e80a2`; the main app only gets the stylesheet)
 
 - Web (STU-046, WEB-197, WEB-201, WEB-207, task-0114; owner decision HY; no tests run, `node --check`, the builds and the Browser pane): Primitive is compact: one intro line, the four controls with the Play button and its status in one row from 1100 px content width (two columns from 560 px, one on a phone), the helper texts of Amplitude, Power and Length behind small "i" buttons (collapsed by default, text unchanged), the two oscilloscopes side by side from 900 px with one-line descriptions and 160 px canvases (the card is 610 px tall instead of 1924 px at 1440 px). The main app only loses the unused Primitive styles from its stylesheet.

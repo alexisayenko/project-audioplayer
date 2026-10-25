@@ -122,10 +122,10 @@ test('STU-006: Rhythm, Listen and Chordophones are separate pages, each with one
   stopLab();
 });
 
-test('STU-018: Listen shows the level meter, the waveform, spectrum with the peak readout and spectrogram, in that order, and no beat bands', () => {
+test('STU-018: Listen shows the level meter, the oscilloscope, spectrum with the peak readout and spectrogram, in that order, and no beat bands', () => {
   const card = createListenCard();
   assert.equal(card.node.querySelector('h2').textContent, 'Listen');
-  assert.deepEqual(card.node.querySelectorAll('h3').map((h) => h.textContent), ['Level', 'Waveform', 'Spectrum', 'Spectrogram']);
+  assert.deepEqual(card.node.querySelectorAll('h3').map((h) => h.textContent), ['Level', 'Oscilloscope', 'Spectrum', 'Spectrogram']);
   assert.equal(card.node.querySelector('.hm-bands'), null);
   assert.equal(card.node.querySelector('.lv-read').textContent, '< -90 dBFS');
   assert.equal(card.node.querySelector('.hm-peak').textContent, 'Peak: -');

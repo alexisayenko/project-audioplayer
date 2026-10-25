@@ -98,6 +98,7 @@ export const BEAT_HINT = 'With detuned strings the loudness swells slowly: beats
 export const STRINGS_HINT = 'Strings are only slightly apart, so you need the Beating view below to see the difference.';
 export const VIEW_NAMES = {
   ...LIVE_VIEW_NAMES,
+  wave: 'Waveform of the synth tone you will hear: time across, amplitude up.',
   beating: 'Amplitude envelope view: the slow swell when two strings are slightly out of tune.',
 };
 export const BEATING_MIN_S = 2;

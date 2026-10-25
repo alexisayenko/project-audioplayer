@@ -128,10 +128,11 @@ test('WEB-207: the time window covers frequency x window cycles, with a caption,
 test('WEB-207: Primitive has the second oscilloscope beside the first with a Time window switch that follows the settings', () => {
   const card = s.createSimpleCard(fakeCtx().env);
   const heads = card.node.querySelectorAll('h3').map((h) => h.textContent);
-  assert.ok(heads.indexOf('Oscilloscope: one cycle') >= 0);
-  assert.equal(heads.indexOf('Oscilloscope: time window'), heads.indexOf('Oscilloscope: one cycle') + 1);
-  assert.ok(card.node.textContent.includes('Waveform over one cycle: time across, amplitude up.'));
-  assert.ok(card.node.textContent.includes('Waveform over a period of time: time across, amplitude up.'));
+  assert.ok(heads.indexOf('Waveform: one cycle') >= 0);
+  assert.equal(heads.indexOf('Waveform: time window'), heads.indexOf('Waveform: one cycle') + 1);
+  assert.ok(card.node.textContent.includes('Waveform of the tone you will hear over one cycle: time across, amplitude up.'));
+  assert.ok(card.node.textContent.includes('Waveform of the tone you will hear over a period of time: time across, amplitude up.'));
+  assert.ok(!/oscilloscope/i.test(card.node.textContent));
   assert.equal(card.node.querySelectorAll('.sm-scopes .hm-block').length, 2);
   assert.equal(card.window, 20);
   assert.ok(card.node.textContent.includes('about 8.8 cycles in 20 ms'));
