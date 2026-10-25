@@ -2,6 +2,10 @@
 
 What shipped, newest first. One line each; the web UI and server are live at https://electrophone.cc. Everything listed here is deployed except the sections marked "built, not deployed" (the 2026-10-14 release went out once the SSH access in [task-0027](tasks/task-0027.md) was restored; the live visualizer files match `origin/main` as of 2026-10-15). Why: [tech/decisions.md](tech/decisions.md); runbook: [tech/deploy.md](tech/deploy.md).
 
+## 2026-10-25 (Primitive custom presets Organ-like, Piano-like and Guitar-like, deployed to studio.electrophone.cc as `de47c6e`; the main app is unchanged)
+
+- Web (WEB-211, task-0114; the custom-wave, simple-tone-custom, simple-tone, harmonics-stack and glossary-terms tests pass; live bundle checked for the three labels, not checked in a browser or by ear): the Organ preset is renamed Organ-like, and Piano-like and Guitar-like are added, all simple hand-picked approximations, not measured from real instruments.
+
 ## 2026-10-25 (Glossary Timbre entry extended, deployed to studio.electrophone.cc as `652c35c`; the main app is unchanged)
 
 - Web (STU-061, task-0114; the glossary-terms tests pass, glossary-map has one known failure, "initial view is readable" at zoom 0.694 < 0.7, not fixed; live bundle checked for the new text, not checked in a browser): Timbre now explains that A4 = 440 Hz is only H1, that instruments add tens of harmonics in their own mix, and the parts of timbre beyond it (inharmonicity, body formants, envelope, noise); six new see-also links and two map relations (184 relations).
