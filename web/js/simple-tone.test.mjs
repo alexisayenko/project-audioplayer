@@ -211,24 +211,44 @@ test('WEB-204: the air pattern is exactly one wavelength across the visible area
   assert.ok(s.airGeometry(122, 5000).cols * s.AIR_ROWS < 300);
 });
 
-test('WEB-204: the compression band sits on the densest bunch, the rarefaction band half an area behind, and both fade at the wrap', () => {
+test('WEB-204: a dot is red in proportion to the local density at its rest position, teal at rest or thinner', () => {
   const geo = s.airGeometry(122, 367);
   for (const phase of [0, 0.25, 0.5, 0.75, 0.9]) {
-    const x = s.airBandX(geo, phase);
-    const frac = (x - geo.start) / geo.wavelength;
-    assert.ok(near(s.airCurve(phase, 0.8, frac), 1, 1e-9));
-    assert.ok(near(s.airDensity(phase, 0.8, geo, frac * geo.wavelength), 1 + s.airK(0.8), 1e-9));
-    assert.ok(near(s.airX(phase, 0.8, geo, frac * geo.wavelength), x, 1e-9));
-    assert.ok(near(s.airCurve(phase, 0.8, s.airBandFrac(phase, true)), -1, 1e-9));
+    const dist = s.airBunchFrac(phase) * geo.wavelength;
+    assert.ok(near(s.airHeat(phase, 0.8, geo, dist), 1, 1e-9));
+    assert.ok(near(s.airDensity(phase, 0.8, geo, dist), 1 + s.airK(0.8), 1e-9));
+    assert.ok(near(s.airHeat(phase, 0.8, geo, ((s.airBunchFrac(phase) + 0.5) % 1) * geo.wavelength), 0, 1e-9));
+    for (let c = 0; c < geo.cols; c += 1) {
+      const d = s.airRest(geo, c, 0);
+      const heat = s.airHeat(phase, 0.3, geo, d);
+      assert.ok(heat >= 0 && heat <= 1);
+      assert.ok(near(heat, Math.max(0, (s.airDensity(phase, 0.3, geo, d) - 1) / s.airK(0.3)), 1e-9));
+    }
   }
-  assert.ok(near(s.airBandFrac(0.25), 0, 1e-12));
-  assert.ok(near(s.airBandFrac(0.5), 0.25, 1e-12));
-  assert.ok(near(s.airBandFrac(0.25, true), 0.5, 1e-12));
-  assert.equal(s.airBandFade(0), 0);
-  assert.equal(s.airBandFade(0.5), 1);
-  assert.ok(near(s.airBandFade(0.05), 0.5, 1e-12));
-  assert.ok(near(s.airBandFade(0.95), 0.5, 1e-12));
-  assert.ok(s.airCurveHalf() * 2 >= 80);
+  assert.equal(s.airHeat(0.25, 0, geo, 0), 0);
+  assert.equal(s.airHeatStep(0), 0);
+  assert.equal(s.airHeatStep(1), s.AIR_HEAT_STEPS);
+  assert.ok(near(s.airDotRadius(1), s.AIR_DOT_R * 1.1, 1e-12));
+  assert.equal(s.airDotRadius(0), s.AIR_DOT_R);
+  assert.deepEqual(s.parseColor('#d2601a'), [210, 96, 26]);
+  assert.deepEqual(s.parseColor('rgb(1, 2, 3)'), [1, 2, 3]);
+  const ramp = s.airRamp('#2298b1', '#d2601a');
+  assert.equal(ramp.length, s.AIR_HEAT_STEPS + 1);
+  assert.equal(ramp[0], '#2298b1');
+  assert.equal(ramp[s.AIR_HEAT_STEPS], 'rgb(210,96,26)');
+});
+
+test('WEB-204: the density curve is drawn three times larger than before, kept inside the strip, and the marker follows it', () => {
+  const geo = s.airGeometry(122, 367);
+  assert.ok(near(s.airCurveSwing(0.3), 3 * s.AIR_CURVE_REF * 0.375, 1e-9));
+  assert.ok(s.airCurveSwing(0.8) <= s.airCurveHalf());
+  assert.ok(s.airCurveHalf() >= 48);
+  assert.equal(s.airCurveSwing(0), 0);
+  for (const phase of [0, 0.25, 0.5, 0.75]) {
+    assert.ok(near(s.airCurveY(phase, 0.3, 0), s.airCurve(phase, 0.3, 0) / 0.375 * s.airCurveSwing(0.3), 1e-9));
+    assert.ok(Math.abs(s.airCurveY(phase, 0.8, 0.3)) <= s.airCurveHalf() + 1e-9);
+  }
+  assert.ok(geo.cols > 0);
 });
 
 test('WEB-204: the real wavelength is 343 m/s over the live frequency', () => {
@@ -237,7 +257,7 @@ test('WEB-204: the real wavelength is 343 m/s over the live frequency', () => {
   assert.equal(s.fmtWavelength(100), '3.43 m');
   assert.equal(s.fmtWavelength(20000), '1.7 cm');
   assert.match(s.airNote(440), /one dense bunch \(high pressure\) and one thin gap \(low pressure\) are one cycle of the wave/);
-  assert.match(s.airNote(440), /The highlighted band follows the densest bunch of air \(highest pressure\) as it travels away from the cone; it crosses the density curve at its peak\./);
+  assert.match(s.airNote(440), /Red dots are the compression: air squeezed closer than at rest \(high pressure\)\. Teal dots are at rest or spread thinner\./);
   assert.match(s.airNote(440), /the real wavelength of 440 Hz is about 78 cm\.$/);
 });
 

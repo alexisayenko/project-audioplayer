@@ -71,7 +71,12 @@ input.hm-step-num:disabled { opacity: var(--disabled-opacity); }
 .hm-view { position: relative; width: 100%; border-radius: var(--radius-key); background: var(--surface-sunken); overflow: hidden; }
 .hm-wave { height: 160px; }
 .hm-wave.sm-wave { height: 190px; }
-.sm-cone { height: 256px; }
+.sm-cone { height: 288px; }
+.sm-key { display: flex; flex-wrap: wrap; gap: var(--space-1) var(--space-4); }
+.sm-key-item { display: inline-flex; align-items: center; gap: var(--space-2); }
+.sm-dot { width: 10px; height: 10px; border-radius: 50%; flex: none; }
+.sm-dot.dense { background: var(--chart-5); }
+.sm-dot.thin { background: var(--fill); }
 .hm-axis .hm-seg { flex-wrap: wrap; }
 @media (max-width: 480px) { .hm-axis .hm-seg .seg-btn { padding: 0 var(--space-3); } }
 .hm-spec { height: clamp(210px, 60vh, 420px); }

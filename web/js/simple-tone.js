@@ -44,14 +44,15 @@ export const AIR_MAX_COLS = 56;
 export const AIR_SHIFT_FRAC = 0.07;
 export const AIR_SHIFT_MIN = 16;
 export const AIR_K = 0.45;
-export const AIR_CURVE_H = 116;
+export const AIR_CURVE_H = 148;
 export const AIR_CURVE_MARGIN = 16;
-export const AIR_BAND_W = 8;
-export const AIR_BAND_FADE = 0.1;
-export const AIR_BAND_ALPHA = 0.25;
-export const AIR_BAND_RARE_ALPHA = 0.12;
-export const AIR_COMPRESSION_TEXT = 'compression';
-export const AIR_RAREFACTION_TEXT = 'rarefaction';
+export const AIR_CURVE_REF = 42;
+export const AIR_CURVE_GAIN = 3;
+export const AIR_DOT_R = 2.2;
+export const AIR_DOT_GROW = 0.1;
+export const AIR_HEAT_STEPS = 16;
+export const AIR_DENSE_TEXT = 'dense (compression)';
+export const AIR_THIN_TEXT = 'at rest or thinner';
 export const AIR_NOW_TEXT = 'now';
 export const AIR_AGO_TEXT = 'one cycle ago';
 export const AIR_CURVE_TEXT = 'air density';
@@ -195,7 +196,7 @@ export function scopeGeometry(w, h, bracket = true) {
   return { left, bottom, pad, row, mid, scale: mid - pad, plotW: Math.max(1, w - left - pad), rowTop: h - bottom - row };
 }
 
-export const airNote = (freq) => `The dots are the air in front of the cone: one dense bunch (high pressure) and one thin gap (low pressure) are one cycle of the wave; the curve above them is the oscilloscope curve mirrored in time, and the dot on the oscilloscope is the pressure now. The highlighted band follows the densest bunch of air (highest pressure) as it travels away from the cone; it crosses the density curve at its peak. The fainter band marks the thinnest air. The spacing is schematic: the real wavelength of ${trim(freq, 2)} Hz is about ${fmtWavelength(freq)}.`;
+export const airNote = (freq) => `The dots are the air in front of the cone: one dense bunch (high pressure) and one thin gap (low pressure) are one cycle of the wave; the curve above them is the oscilloscope curve mirrored in time, and the dot on the oscilloscope is the pressure now. Red dots are the compression: air squeezed closer than at rest (high pressure). Teal dots are at rest or spread thinner. The spacing is schematic: the real wavelength of ${trim(freq, 2)} Hz is about ${fmtWavelength(freq)}.`;
 
 export function airGeometry(base, right) {
   const avail = Math.max(0, right - base);
@@ -218,16 +219,37 @@ export const airBunchFrac = (phase) => {
   return u < 0 ? u + 1 : u;
 };
 
-export function airBandFrac(phase, rarefaction = false) {
-  const f = airBunchFrac(phase) + (rarefaction ? 0.5 : 0);
-  return f - Math.floor(f);
+export const airHeat = (phase, amp, geo, dist) => (amp > 0 ? clamp(pressureAt(phase, dist, geo.wavelength), 0, 1) : 0);
+
+export const airHeatStep = (heat) => Math.round(clamp(heat, 0, 1) * AIR_HEAT_STEPS);
+
+export const airDotRadius = (heat) => AIR_DOT_R * (1 + AIR_DOT_GROW * clamp(heat, 0, 1));
+
+export function parseColor(text) {
+  const s = String(text ?? '').trim();
+  let m = /^#([0-9a-f]{3})$/i.exec(s);
+  if (m) return [...m[1]].map((c) => parseInt(c + c, 16));
+  m = /^#([0-9a-f]{6})/i.exec(s);
+  if (m) return [0, 2, 4].map((i) => parseInt(m[1].slice(i, i + 2), 16));
+  m = /^rgba?\(\s*([\d.]+)[\s,]+([\d.]+)[\s,]+([\d.]+)/i.exec(s);
+  if (m) return [+m[1], +m[2], +m[3]];
+  return null;
 }
 
-export const airBandX = (geo, phase, rarefaction = false) => geo.start + airBandFrac(phase, rarefaction) * geo.wavelength;
+export function mixColor(from, to, t) {
+  const a = parseColor(from);
+  const b = parseColor(to);
+  if (!a || !b) return t >= 0.5 ? to : from;
+  return `rgb(${[0, 1, 2].map((i) => Math.round(a[i] + (b[i] - a[i]) * t)).join(',')})`;
+}
 
-export const airBandFade = (frac) => clamp(Math.min(frac, 1 - frac) / AIR_BAND_FADE, 0, 1);
+export const airRamp = (cool, hot) => Array.from({ length: AIR_HEAT_STEPS + 1 }, (_, k) => (k === 0 ? cool : mixColor(cool, hot, k / AIR_HEAT_STEPS)));
 
 export const airCurveHalf = () => AIR_CURVE_H / 2 - AIR_CURVE_MARGIN;
+
+export const airCurveSwing = (amp) => Math.min(airCurveHalf(), AIR_CURVE_GAIN * AIR_CURVE_REF * (amp / MAX_AMP));
+
+export const airCurveY = (phase, amp, frac) => pressureAt(phase, frac, 1) * airCurveSwing(amp);
 
 export const airSpeedPx =(geo, freq, slow = SLOW) => (geo.wavelength * slowedHz(freq, slow));
 
@@ -297,10 +319,14 @@ export function scopeTicks(cycles, freq) {
 function readColors(node) {
   const css = node.ownerDocument?.defaultView?.getComputedStyle?.(node);
   const get = (name, fallback) => css?.getPropertyValue(name).trim() || fallback;
+  const fill = get('--fill', '#2298b1');
+  const hot = get('--chart-5', '#d2601a');
   return {
     muted: get('--ink-muted', '#5f6669'),
     line: get('--line', '#ddd5c6'),
-    fill: get('--fill', '#2298b1'),
+    fill,
+    hot,
+    ramp: airRamp(fill, hot),
     font: get('--font-sans', 'system-ui, sans-serif'),
   };
 }
@@ -336,7 +362,6 @@ function drawMarker(g, colors, marker) {
 function drawAirCurve(g, colors, geo, phase, amp) {
   const { ctx } = g;
   const mid = AIR_CURVE_H / 2;
-  const half = airCurveHalf();
   const x0 = geo.start;
   const steps = clamp(Math.round(geo.wavelength / 2), 24, 400);
   ctx.save();
@@ -353,14 +378,14 @@ function drawAirCurve(g, colors, geo, phase, amp) {
   for (let i = 0; i <= steps; i += 1) {
     const frac = i / steps;
     const x = x0 + frac * geo.wavelength;
-    const y = mid - airCurve(phase, amp, frac) * half;
+    const y = mid - airCurveY(phase, amp, frac);
     if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
   }
   ctx.stroke();
-  const level = airCurve(phase, amp, 0);
+  const level = airCurveY(phase, amp, 0);
   ctx.lineWidth = 1;
-  ctx.beginPath(); ctx.moveTo(x0, mid); ctx.lineTo(x0, mid - level * half); ctx.stroke();
-  ctx.beginPath(); ctx.arc(x0, mid - level * half, 4, 0, 2 * Math.PI); ctx.fill();
+  ctx.beginPath(); ctx.moveTo(x0, mid); ctx.lineTo(x0, mid - level); ctx.stroke();
+  ctx.beginPath(); ctx.arc(x0, mid - level, 4, 0, 2 * Math.PI); ctx.fill();
   ctx.font = `10px ${colors.font}`;
   ctx.textAlign = 'right';
   ctx.textBaseline = 'middle';
@@ -369,47 +394,7 @@ function drawAirCurve(g, colors, geo, phase, amp) {
   ctx.restore();
 }
 
-function drawAirBands(g, colors, geo, phase, amp, bottom, fade) {
-  if (!(amp > 0)) return;
-  const { ctx, w } = g;
-  const mid = AIR_CURVE_H / 2;
-  const half = airCurveHalf();
-  const roomy = w > NARROW_PX;
-  ctx.save();
-  ctx.font = `10px ${colors.font}`;
-  ctx.textAlign = 'center';
-  ctx.fillStyle = colors.fill;
-  ctx.strokeStyle = colors.fill;
-  for (const rare of [true, false]) {
-    const frac = airBandFrac(phase, rare);
-    const a = fade ? airBandFade(frac) : 1;
-    if (a <= 0) continue;
-    const x = geo.start + frac * geo.wavelength;
-    const y = mid - airCurve(phase, amp, frac) * half;
-    ctx.globalAlpha = a * (rare ? AIR_BAND_RARE_ALPHA : AIR_BAND_ALPHA);
-    ctx.fillRect(x - AIR_BAND_W / 2, 0, AIR_BAND_W, bottom);
-    ctx.globalAlpha = a;
-    if (rare) {
-      ctx.lineWidth = 1.5;
-      ctx.beginPath(); ctx.arc(x, y, 3, 0, 2 * Math.PI); ctx.stroke();
-    } else {
-      ctx.fillRect(x - 0.5, 0, 1, bottom);
-      ctx.beginPath(); ctx.arc(x, y, 4, 0, 2 * Math.PI); ctx.fill();
-    }
-    if (roomy) {
-      const text = rare ? AIR_RAREFACTION_TEXT : AIR_COMPRESSION_TEXT;
-      const tw = ctx.measureText(text).width;
-      const tx = clamp(x, 4 + tw / 2, w - 4 - tw / 2);
-      ctx.fillStyle = colors.muted;
-      ctx.textBaseline = rare ? 'top' : 'bottom';
-      ctx.fillText(text, tx, rare ? Math.min(AIR_CURVE_H - 11, y + 6) : Math.max(11, y - 6));
-      ctx.fillStyle = colors.fill;
-    }
-  }
-  ctx.restore();
-}
-
-function drawCone(g, colors, phase, amp, fade = true) {
+function drawCone(g, colors, phase, amp) {
   const { ctx, w, h } = g;
   const top = AIR_CURVE_H;
   const cy = top + (h - top) / 2;
@@ -487,14 +472,16 @@ function drawCone(g, colors, phase, amp, fade = true) {
   ctx.textAlign = 'right';
   ctx.fillText(AIR_AGO_TEXT, areaR, legendY + 5);
   drawAirCurve(g, colors, geo, phase, amp);
-  drawAirBands(g, colors, geo, phase, amp, cy + radius, fade);
-  ctx.fillStyle = colors.fill;
+  const ramp = colors.ramp ?? [colors.fill];
   ctx.globalAlpha = 0.85;
   for (let r = 0; r < AIR_ROWS; r += 1) {
     const y = cy - radius + ((r + 0.5) * 2 * radius) / AIR_ROWS;
     for (let c = 0; c < geo.cols; c += 1) {
-      const x = airX(phase, amp, geo, airRest(geo, c, r));
-      ctx.beginPath(); ctx.arc(x, y, 2.2, 0, 2 * Math.PI); ctx.fill();
+      const dist = airRest(geo, c, r);
+      const x = airX(phase, amp, geo, dist);
+      const heat = airHeat(phase, amp, geo, dist);
+      ctx.fillStyle = ramp[Math.min(airHeatStep(heat), ramp.length - 1)];
+      ctx.beginPath(); ctx.arc(x, y, airDotRadius(heat), 0, 2 * Math.PI); ctx.fill();
     }
   }
   ctx.globalAlpha = 1;
@@ -669,6 +656,9 @@ export function createSimpleCard(env = {}) {
       el('div', { class: 'hm-view sm-cone' }, coneCanvas),
       slowOut,
       coneNoteOut,
+      el('p', { class: 'hm-cap muted t-caption sm-key' },
+        el('span', { class: 'sm-key-item' }, el('span', { class: 'sm-dot dense', 'aria-hidden': 'true' }), AIR_DENSE_TEXT),
+        el('span', { class: 'sm-key-item' }, el('span', { class: 'sm-dot thin', 'aria-hidden': 'true' }), AIR_THIN_TEXT)),
       airOut),
     el('a', { class: 'gl-link t-subhead', href: GLOSSARY_HREF }, GLOSSARY_LINK));
 
@@ -701,7 +691,7 @@ export function createSimpleCard(env = {}) {
     windowCanvas.setAttribute('aria-label', `Oscilloscope: time window, sine wave, ${p.freq} Hz, amplitude ${fmtPct(p.amp * 100)} % of full scale, ${windowCaption(p.freq, win)}`);
     winSeg.paint();
     canvas.setAttribute('title', `${cycleLabels(p.freq)[0]} (speed of sound 343 m/s at 20 °C)`);
-    coneCanvas.setAttribute('aria-label', `Side view of a speaker cone moving ${slow} times slower than real at ${p.freq} Hz, swing in proportion to the amplitude, ${fmtPct(p.amp * 100)} % of full scale; the cone is a quarter cycle behind the pressure on the oscilloscope above; the air dots in front of the cone show one cycle of the wave as one dense bunch and one thin gap, and the curve above them is the oscilloscope curve mirrored in time, the air density; a highlighted band follows the densest bunch of air and crosses the density curve at its peak`);
+    coneCanvas.setAttribute('aria-label', `Side view of a speaker cone moving ${slow} times slower than real at ${p.freq} Hz, swing in proportion to the amplitude, ${fmtPct(p.amp * 100)} % of full scale; the cone is a quarter cycle behind the pressure on the oscilloscope above; the air dots in front of the cone show one cycle of the wave as one dense bunch and one thin gap, and the curve above them is the oscilloscope curve mirrored in time, the air density; red dots are the compression, air squeezed closer than at rest, and teal dots are at rest or spread thinner`);
     slowOut.textContent = slowReadout(p.freq, slow);
     coneNoteOut.textContent = coneNote(slow);
     airOut.textContent = airNote(p.freq);
@@ -771,7 +761,7 @@ export function createSimpleCard(env = {}) {
     if (gone) return;
     const g = fit(coneCanvas);
     if (!g) return;
-    drawCone(g, currentColors(), phase, params.amp, !paused);
+    drawCone(g, currentColors(), phase, params.amp);
     coneCanvas.setAttribute('data-phase', phase.toFixed(4));
     coneCanvas.setAttribute('data-offset', coneOffset(phase, params.amp).toFixed(4));
   }
