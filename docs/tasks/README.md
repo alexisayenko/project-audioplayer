@@ -62,6 +62,9 @@ commit message.
   - `superseded` — replaced by later work; the body links what
     replaced it
 
+  Status is one of the values above; put explanations in the body,
+  not in the status field.
+
 ### Optional
 
 - **`concern`** — `"Cn - Concern Name"` where `Cn` maps to
