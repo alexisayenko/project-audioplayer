@@ -5,6 +5,7 @@ import { installDom, flush } from './test-dom.mjs';
 installDom();
 globalThis.location = { hash: '#/studio/simple', href: 'http://localhost/' };
 const s = await import('./simple-tone.js');
+const w = await import('./wave-shapes.js');
 
 const near = (a, b, eps = 1e-9) => Math.abs(a - b) < eps;
 
@@ -25,7 +26,9 @@ test('WEB-199: the hard limit is 80 % amplitude, which is 64 % power', () => {
 });
 
 test('WEB-198: defaults and clamps for frequency and length', () => {
-  assert.deepEqual(s.DEFAULTS, { freq: 440, amp: 0.3, length: 2, continuous: true });
+  assert.deepEqual(s.DEFAULTS, { freq: 440, amp: 0.3, length: 2, continuous: true, wave: 'sine' });
+  assert.equal(s.clampParams({ wave: 'noise' }).wave, 'sine');
+  assert.equal(s.clampParams({ wave: 'square' }).wave, 'square');
   assert.equal(s.clampParams({ freq: 5 }).freq, 20);
   assert.equal(s.clampParams({ freq: 90000 }).freq, 20000);
   assert.equal(s.clampParams({ length: 0 }).length, 0.1);
@@ -46,6 +49,55 @@ test('WEB-201: the readout states the period, the swing, the power and the lengt
   assert.match(s.readout(s.DEFAULTS), /sound lasts until you press Stop\.$/);
   assert.match(s.readout({ ...s.DEFAULTS, amp: 0.79 }), /pressure swings ±79 % of full scale; power 62 %;/);
   assert.equal(s.fmtMs(s.periodMs(20)), '50');
+});
+
+test('WEB-210: the loudness scale makes every shape as loud as a sine: sine 1, triangle 1.2247, square 0.7071, sawtooth 1.2247', () => {
+  assert.ok(near(w.loudnessScale('sine'), 1));
+  assert.ok(near(w.loudnessScale('triangle'), Math.sqrt(1.5), 1e-9));
+  assert.ok(near(w.loudnessScale('square'), Math.SQRT1_2, 1e-9));
+  assert.ok(near(w.loudnessScale('sawtooth'), Math.sqrt(1.5), 1e-9));
+  for (const wave of w.WAVES) assert.ok(near(w.waveRms(wave) * w.loudnessScale(wave), Math.SQRT1_2, 1e-9));
+});
+
+test('WEB-210: the oscillator gain divides out the browser normalisation and never exceeds 80 percent of full scale', () => {
+  assert.ok(near(s.oscGain('sine', 0.3), 0.3));
+  assert.ok(near(s.oscGain('triangle', 0.3), 0.3 * Math.sqrt(1.5), 1e-9));
+  assert.ok(near(s.oscGain('square', 0.3), (0.3 * Math.SQRT1_2) * w.GIBBS, 1e-9));
+  for (const wave of w.WAVES) {
+    assert.equal(s.oscGain(wave, 0), 0);
+    assert.ok(s.oscGain(wave, 0.8) <= 0.8 + 1e-12);
+    assert.ok(near(s.oscGain('nonsense', 0.3), 0.3));
+  }
+  assert.equal(s.oscGain('triangle', 0.8), 0.8);
+  assert.equal(s.oscGain('sawtooth', 0.8), 0.8);
+});
+
+test('WEB-210: the drawn level equals the gain times the browser normalisation, and the power follows from the RMS of the shape', () => {
+  assert.ok(near(s.shapeLevel('sine', 0.3), 0.3));
+  assert.ok(near(s.shapeLevel('square', 0.3), 0.3 * Math.SQRT1_2, 1e-9));
+  for (const wave of w.WAVES) assert.ok(near(w.wavePowerPct(wave, s.shapeLevel(wave, 0.3)), 9, 1e-9), wave);
+  assert.ok(near(w.wavePowerPct('square', 0.3), 18, 1e-9));
+  assert.ok(near(w.wavePowerPct('sine', 0.3), 9, 1e-9));
+  assert.match(s.readout({ ...s.DEFAULTS, wave: 'square', continuous: false }), /pressure swings ±21 % of full scale; power 9 %;/);
+  assert.match(s.readout({ ...s.DEFAULTS, wave: 'triangle' }), /pressure swings ±37 % of full scale; power 9 %;/);
+});
+
+test('WEB-210: the drawn shapes start at a rising zero crossing, as the oscillator does', () => {
+  const at = (wave, u) => s.shapeAt(wave, u);
+  assert.ok(near(at('sine', 0.25), 1)); assert.ok(near(at('triangle', 0.25), 1)); assert.ok(near(at('triangle', 0.75), -1));
+  assert.ok(near(at('square', 0.25), 1)); assert.ok(near(at('square', 0.75), -1));
+  assert.ok(near(at('sawtooth', 0), 0)); assert.ok(near(at('sawtooth', 0.25), 0.5)); assert.ok(near(at('sawtooth', 0.75), -0.5));
+  const v = s.scopeSeries(0.5, 801, 1, 'square');
+  assert.equal(v[200], 0.5); assert.equal(v[600], -0.5);
+  assert.equal(s.scopeSeries(0.3, 701, 1, 'sine')[175], s.scopeSeries(0.3, 701)[175]);
+});
+
+test('WEB-210: the harmonic bars follow the series: square H3 = 1/3, sawtooth H2 = 1/2, triangle H3 = 1/9, only H1 for a sine', () => {
+  assert.ok(near(w.harmonicAmps('square')[2], 1 / 3, 1e-9));
+  assert.ok(near(w.harmonicAmps('sawtooth')[1], 0.5, 1e-9));
+  assert.ok(near(w.harmonicAmps('triangle')[2], 1 / 9, 1e-9));
+  assert.deepEqual(w.harmonicAmps('sine').slice(1), new Array(15).fill(0));
+  assert.equal(w.harmonicAmps('square')[1], 0);
 });
 
 test('WEB-201: the scope series spans the chosen cycles (default one) at the set amplitude', () => {
@@ -166,13 +218,14 @@ test('STU-043: Primitive has no cone animation, no dot, no Slow motion factor an
 test('STU-046: Primitive is compact: one intro line, the helper texts behind info buttons, the same ids and controls', () => {
   const card = s.createSimpleCard(fakeCtx().env);
   const text = card.node.textContent;
-  assert.ok(text.includes('A primitive sound: one sine wave, one frequency, H1 only. It models a speaker cone driven by an electrical signal. Set the four numbers, press Play.'));
+  assert.ok(text.includes('A primitive sound: a single repeating shape (sine, triangle, square or sawtooth) at one frequency. Sine is one pure frequency (H1 only); the other shapes add harmonics.'));
   assert.ok(!text.includes('The four numbers that describe a sound from a speaker.'));
   const buttons = card.node.querySelectorAll('.sm-info');
-  assert.equal(buttons.length, 3);
+  assert.equal(buttons.length, 4);
   const texts = [
-    'How far the speaker cone moves. Limited to 80 % of full scale to protect your hearing and the speaker.',
-    `${s.POWER_NOTE} ${s.DB_NOTE}`,
+    'The shape of one cycle. Sine is one pure frequency; the others add harmonics: triangle and square only odd ones, sawtooth all of them.',
+    'How far the speaker cone moves. Limited to 80 % of full scale to protect your hearing and the speaker. Amplitude is the level of a sine with the same loudness; square waves are scaled down so that all shapes sound about equally loud.',
+    `${s.POWER_NOTE} ${s.POWER_EQUIV_NOTE} ${s.DB_NOTE}`,
     'A new length applies the next time you press Play. Continuous stops after 10 minutes.',
   ];
   for (const [i, b] of buttons.entries()) {
@@ -224,6 +277,64 @@ test('WEB-200: Play makes a 440 Hz sine at gain 0.3, fades in and out over 30 ms
   assert.equal(card.running, false);
   assert.equal(ctx.closed, true);
   assert.equal(card.state, 'done');
+  card.dispose();
+});
+
+function trackedEnv() {
+  const f = fakeCtx();
+  const Base = f.env.AudioContext;
+  const oscs = [];
+  const gains = [];
+  class Tracked extends Base {
+    createOscillator() { const o = super.createOscillator(); oscs.push(o); return o; }
+    createGain() { const g = super.createGain(); gains.push(g); return g; }
+  }
+  return { ...f, env: { ...f.env, AudioContext: Tracked }, oscs, gains };
+}
+
+test('WEB-210: Primitive has a Waveform switch with Sine, Triangle, Square and Sawtooth, Sine by default, keyboard-navigable like a radio group', () => {
+  const card = s.createSimpleCard(fakeCtx().env);
+  const group = card.node.querySelectorAll('.sm-wave .seg')[0];
+  assert.equal(group.getAttribute('role'), 'radiogroup');
+  const buttons = card.node.querySelectorAll('.sm-wave .seg-btn');
+  assert.deepEqual(buttons.map((b) => b.getAttribute('aria-label')), ['Sine', 'Triangle', 'Square', 'Sawtooth']);
+  assert.deepEqual(buttons.map((b) => b.getAttribute('aria-checked')), ['true', 'false', 'false', 'false']);
+  assert.equal(card.params.wave, 'sine');
+  buttons[2].click();
+  assert.equal(card.params.wave, 'square');
+  assert.deepEqual(buttons.map((b) => b.getAttribute('aria-checked')), ['false', 'false', 'true', 'false']);
+  assert.ok(card.node.textContent.includes('Square: odd harmonics only, falling as 1/n (hollow). Your tone is the sum of these sine waves.'));
+  assert.ok(card.node.textContent.includes('One square wave = H1 plus odd harmonics (chart below).'));
+  const bars = card.node.querySelectorAll('.sm-harm rect');
+  assert.equal(bars.length, 16);
+  assert.equal(bars[2].getAttribute('data-amp'), (1 / 3).toFixed(4));
+  assert.equal(bars[1].getAttribute('data-amp'), '0.0000');
+  assert.ok(card.node.querySelectorAll('canvas')[0].getAttribute('aria-label').includes('square wave'));
+  card.dispose();
+});
+
+test('WEB-210: Play uses the chosen shape with the compensated gain; switching while playing crossfades to a second oscillator without a jump', () => {
+  const { env, made, oscs } = trackedEnv();
+  const card = s.createSimpleCard(env);
+  card.change({ wave: 'square' });
+  card.start();
+  const ctx = made[0];
+  assert.equal(oscs[0].type, 'square');
+  assert.ok(near(ctx.gain.gain.calls[1][1], 0.3 * Math.SQRT1_2 * 1.1789797444721675, 1e-9));
+  card.change({ wave: 'triangle' });
+  assert.equal(oscs.length, 2);
+  assert.equal(oscs[1].type, 'triangle');
+  assert.equal(oscs[1].frequency.value, 440);
+  assert.ok(oscs[1].started !== undefined);
+  assert.equal(oscs[0].stopped, 0.03);
+  assert.equal(card.params.wave, 'triangle');
+  card.change({ wave: 'triangle', freq: 880 });
+  assert.equal(oscs.length, 2);
+  card.change({ wave: 'sawtooth' });
+  assert.equal(oscs.length, 3);
+  assert.equal(oscs[2].type, 'sawtooth');
+  card.stop();
+  assert.equal(oscs[2].stopped, 0.03);
   card.dispose();
 });
 

@@ -1,6 +1,15 @@
 import { el } from './dom.js';
 import { segmented } from './segmented.js';
 import { MIN_HZ, MAX_HZ, MAX_AMP, noteInfo, fmtPct, trim, wavelengthM, fit, styleReader } from './simple-tone.js';
+import {
+  WAVES, WAVE_DEFAULT, WAVE_LABEL, WAVE_TEXT, HARM_COUNT, HARM_TICKS, HARM_TITLE, HARM_NOTE, HARM_TEXT, HARM_BOX,
+  WAVE_GLYPH, waveName, waveValue, harmonicRaw, harmonicAmps, waveGlyph, harmonicCell, harmonicLabel, createHarmonicsChart,
+} from './wave-shapes.js';
+
+export {
+  WAVES, WAVE_DEFAULT, WAVE_LABEL, WAVE_TEXT, HARM_COUNT, HARM_TICKS, HARM_TITLE, HARM_NOTE, HARM_TEXT, HARM_BOX,
+  WAVE_GLYPH, waveName, waveValue, harmonicRaw, harmonicAmps, waveGlyph, harmonicCell, harmonicLabel,
+};
 
 export const DEFAULT_FREQ = 440;
 export const DEFAULT_AMP = 0.3;
@@ -31,21 +40,7 @@ export const AIR_CURVE_TEXT = 'air density';
 export const AIR_CURVE_TITLE = 'Air density: the density along the air in front of the cone, right now';
 export const AIR_CURVE_NOTE = 'The curve is the air density along the path in front of the cone, right now: above the dashed line the air is denser than at rest (compression), below it thinner (rarefaction). It is the same wave as the waveform, seen in space instead of time.';
 export const CONE_TITLE = 'Slow motion: the speaker cone';
-export const WAVES = ['sine', 'triangle', 'square', 'sawtooth'];
-export const WAVE_DEFAULT = 'sine';
-export const WAVE_LABEL = 'Waveform';
-export const WAVE_TEXT = { sine: 'Sine', triangle: 'Triangle', square: 'Square', sawtooth: 'Sawtooth' };
 export const WAVE_TABLE_N = 512;
-export const HARM_COUNT = 16;
-export const HARM_TICKS = [1, 2, 4, 8, 16];
-export const HARM_TITLE = 'Harmonics: relative amplitude, H1 = 1';
-export const HARM_NOTE = 'The shape is the sum of these sine waves.';
-export const HARM_TEXT = {
-  sine: 'Sine: only H1.',
-  triangle: 'Triangle: odd harmonics, falling as 1/n squared (soft, flute-like).',
-  square: 'Square: odd harmonics only, falling as 1/n (hollow).',
-  sawtooth: 'Sawtooth: all harmonics, falling as 1/n (buzzy).',
-};
 const CONE_SHAPE_NOTE = {
   sine: 'The cone is a quarter cycle behind the pressure: the air is squeezed hardest when the cone moves fastest, in the middle of its swing.',
   triangle: 'The cone speed follows the pressure, which rises and falls steadily, so the cone speeds up and slows down steadily and its path is made of parabola arcs.',
@@ -59,18 +54,6 @@ export const PLAY_ANIM_TEXT = 'Play animation';
 const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
 const num = (v, fallback) => (Number.isFinite(v) ? v : fallback);
 const TAU = 2 * Math.PI;
-
-export const waveName = (wave) => (WAVES.includes(wave) ? wave : WAVE_DEFAULT);
-
-export function waveValue(wave, u) {
-  const x = u - Math.floor(u);
-  switch (wave) {
-    case 'triangle': return x < 0.25 ? 4 * x : x < 0.75 ? 2 - 4 * x : 4 * x - 4;
-    case 'square': return x < 0.5 ? 1 : -1;
-    case 'sawtooth': return 2 * x - 1;
-    default: return Math.sin(TAU * x);
-  }
-}
 
 const WAVE_ANTIDERIVATIVE = {
   sine: (x) => (1 - Math.cos(TAU * x)) / TAU,
@@ -115,22 +98,6 @@ export const wavePeak = (wave) => (wave === 'sine' || !WAVES.includes(wave) ? 1 
 export const waveCone = (wave, u) => wavePotential(wave, u) / wavePeak(wave);
 
 export const WAVE_MAX_POTENTIAL = Math.max(...WAVES.map(wavePeak));
-
-export function harmonicRaw(wave, n) {
-  const odd = n % 2 === 1;
-  switch (wave) {
-    case 'triangle': return odd ? 8 / (Math.PI * Math.PI * n * n) : 0;
-    case 'square': return odd ? 4 / (Math.PI * n) : 0;
-    case 'sawtooth': return 2 / (Math.PI * n);
-    default: return n === 1 ? 1 : 0;
-  }
-}
-
-export function harmonicAmps(wave, count = HARM_COUNT) {
-  const raw = Array.from({ length: count }, (_, i) => harmonicRaw(waveName(wave), i + 1));
-  const top = Math.max(...raw);
-  return raw.map((v) => v / top);
-}
 
 export const slowedHz = (freq, slow = SLOW) => freq / slow;
 
@@ -372,63 +339,6 @@ function drawCone(g, colors, phase, amp, wave) {
     }
   }
   ctx.globalAlpha = 1;
-}
-
-const SVG_NS = 'http://www.w3.org/2000/svg';
-export const HARM_BOX = { w: 320, h: 120, left: 32, right: 316, top: 8, base: 90, bar: 11, tick: 1.5 };
-
-function svgEl(tag, attrs = {}, ...kids) {
-  const node = globalThis.document.createElementNS(SVG_NS, tag);
-  for (const [k, v] of Object.entries(attrs)) node.setAttribute(k, String(v));
-  for (const k of kids) node.append(k);
-  return node;
-}
-
-export const WAVE_GLYPH = {
-  sine: 'M2 10 C5 1 9 1 14 10 C19 19 23 19 26 10',
-  triangle: 'M2 10 L8 3 L20 17 L26 10',
-  square: 'M2 17 V3 H14 V17 H26',
-  sawtooth: 'M2 17 L14 3 V17 L26 3',
-};
-
-export const waveGlyph = (wave) => svgEl('svg', { class: 'ca-glyph', viewBox: '0 0 28 20', 'aria-hidden': 'true', focusable: 'false' },
-  svgEl('path', { d: WAVE_GLYPH[wave], fill: 'none', stroke: 'currentColor', 'stroke-width': 1.8, 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }));
-
-export const harmonicCell =(n, count = HARM_COUNT) => (HARM_BOX.right - HARM_BOX.left) / count * (n - 0.5) + HARM_BOX.left;
-
-export function harmonicLabel(wave, amps) {
-  const parts = amps.map((a, i) => (a > 0 ? `H${i + 1} ${+a.toPrecision(3)}` : null)).filter(Boolean);
-  return `Bar chart of the harmonics of a ${wave} wave, relative amplitude with H1 = 1: ${parts.join(', ')}`;
-}
-
-function createHarmonicsChart() {
-  const { w, h, left, right, top, base } = HARM_BOX;
-  const span = base - top;
-  const grid = [0, 0.5, 1].flatMap((v) => {
-    const y = base - v * span;
-    return [
-      svgEl('line', { class: 'ca-axis', x1: left, x2: right, y1: y, y2: y }),
-      Object.assign(svgEl('text', { class: 'ca-axis-text', x: left - 4, y: y + 3, 'text-anchor': 'end' }), { textContent: v === 0.5 ? '0.5' : String(v) }),
-    ];
-  });
-  const labels = HARM_TICKS.map((n) => Object.assign(svgEl('text', { class: 'ca-axis-text', x: harmonicCell(n), y: base + 14, 'text-anchor': 'middle' }), { textContent: `H${n}` }));
-  const bars = Array.from({ length: HARM_COUNT }, (_, i) => svgEl('rect', { class: 'ca-tick', 'data-h': i + 1 }));
-  const svg = svgEl('svg', { class: 'ca-harm', viewBox: `0 0 ${w} ${h}`, role: 'img', preserveAspectRatio: 'xMidYMid meet' }, ...grid, ...labels, ...bars);
-  function paint(wave) {
-    const amps = harmonicAmps(wave);
-    amps.forEach((a, i) => {
-      const bar = bars[i];
-      const bh = a > 0 ? a * span : HARM_BOX.tick;
-      bar.setAttribute('class', a > 0 ? 'ca-bar' : 'ca-tick');
-      bar.setAttribute('x', (harmonicCell(i + 1) - HARM_BOX.bar / 2).toFixed(2));
-      bar.setAttribute('y', (base - bh).toFixed(2));
-      bar.setAttribute('width', HARM_BOX.bar);
-      bar.setAttribute('height', bh.toFixed(2));
-      bar.setAttribute('data-amp', a.toFixed(4));
-    });
-    svg.setAttribute('aria-label', harmonicLabel(wave, amps));
-  }
-  return { svg, paint };
 }
 
 export function createConeAnimation({ frequency = DEFAULT_FREQ, amplitude = DEFAULT_AMP, wave = WAVE_DEFAULT } = {}, env = {}) {
