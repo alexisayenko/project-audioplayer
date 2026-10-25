@@ -2,7 +2,7 @@
 
 What shipped, newest first. One line each; the web UI and server are live at https://electrophone.cc. Everything listed here is deployed except the sections marked "built, not deployed" (the 2026-10-14 release went out once the SSH access in [task-0027](tasks/task-0027.md) was restored; the live visualizer files match `origin/main` as of 2026-10-15). Why: [tech/decisions.md](tech/decisions.md); runbook: [tech/deploy.md](tech/deploy.md).
 
-## 2026-10-25 (Studio Rhythm: legend under the tempo-per-window row, built, not deployed)
+## 2026-10-25 (Studio Rhythm: legend under the tempo-per-window row, deployed to studio.electrophone.cc and electrophone.cc as `9551f95`; the main app only gets the stylesheet)
 
 - Web (STU-041, task-0073; owner decision HX1; no tests run, `node --check` and the build only): under the caption of "Tempo by analysis window" a legend with a swatch before "Red = differs from the main BPM by more than 3 percent.", a bar sample before "Bar = confidence: how clearly the rhythm repeats in that window." and "- = not enough beats in the window yet (needs at least 4)."
 
