@@ -371,3 +371,63 @@ def test_map_file_items_are_valid_and_unique():
     rmap = json.loads((pathlib.Path(__file__).resolve().parents[2] / "docs" / "releases-map.json").read_text(encoding="utf-8"))
     assert len(gf.curated_items(rmap)) == len(rmap["items"])
     assert all(len(i["text"]) <= 110 for v in rmap["items"].values() for i in v)
+
+
+STUDIO_TASKS = {**TASKS, "task-0107": {"id": "task-0107", "title": "Studio Tools: microphone note detector", "status": "in progress", "tags": ["web", "studio"]},
+                "task-0110": {"id": "task-0110", "title": "Studio Tools: Metronome", "status": "to do", "tags": ["studio"]}}
+
+
+def test_studio_items_are_left_out_by_task_and_by_text():
+    commits = [
+        commit("a", 19, "feat: add a Mark harmonics switch task-0107", hour=1),
+        commit("b", 19, "feat: draw dense air red on Primitive", hour=2),
+        commit("c", 19, "feat: add a Map view to the Glossary", hour=3),
+        commit("d", 19, "feat: sidebar help menu task-0061", hour=4),
+    ]
+    out = gf.by_day(commits, STUDIO_TASKS, {})
+    assert [i["text"] for i in out[0]["items"]] == ["Sidebar help menu task-0061"]
+
+
+def test_a_day_with_only_studio_items_makes_no_release():
+    assert gf.by_day([commit("a", 19, "feat: add the Listen page")], STUDIO_TASKS, {}) == []
+    assert gf.by_day([commit("a", 19, "feat: tempo per window task-0107")], STUDIO_TASKS, {}) == []
+
+
+def test_studio_scope_commits_are_skipped():
+    assert gf.clean_subject("feat(studio): add a thing") is None
+    assert gf.clean_subject("feat(web): add a thing") == "Add a thing"
+
+
+def test_studio_tasks_are_not_planned_or_in_progress():
+    assert [t["id"] for t in gf.planned(STUDIO_TASKS)] == []
+    assert [t["id"] for t in gf.in_progress(STUDIO_TASKS)] == ["task-0061"]
+
+
+def test_notes_come_from_the_map_file_and_keep_only_https_urls():
+    rmap = {"notes": [{"date": "2026-10-25", "text": "Moved", "url": "https://studio.electrophone.cc/"}, {"date": "2026-10-25", "text": "Plain", "url": "http://x"},
+                      {"date": "bad", "text": "No"}, {"date": "2026-10-25", "text": " "}, "x"]}
+    assert gf.curated_notes(rmap) == [{"date": "2026-10-25", "text": "Moved", "url": "https://studio.electrophone.cc/"}, {"date": "2026-10-25", "text": "Plain"}]
+    assert gf.curated_notes({"notes": 3}) == [] and gf.curated_notes({}) == []
+
+
+def test_a_note_joins_the_release_of_its_date_or_makes_one_in_date_order():
+    releases = [{"hash": "bbbbbbb", "full": "b" * 40, "date": "2026-10-25", "items": [{"text": "A", "task": None}]},
+                {"hash": "aaaaaaa", "full": "a" * 40, "date": "2026-10-20", "items": [{"text": "B", "task": None}]}]
+    same = gf.with_notes(releases, [{"date": "2026-10-25", "text": "Moved", "url": "https://x.test/"}])
+    assert [i["text"] for i in same[0]["items"]] == ["Moved", "A"] and same[0]["items"][0]["url"] == "https://x.test/" and len(same) == 2
+    between = gf.with_notes(releases, [{"date": "2026-10-22", "text": "Moved"}])
+    assert [r["date"] for r in between] == ["2026-10-25", "2026-10-22", "2026-10-20"] and between[1]["hash"] == gf.NOTE_HASH
+    assert [r["date"] for r in gf.with_notes([], [{"date": "2026-10-22", "text": "Moved"}])] == ["2026-10-22"]
+    assert releases[0]["items"] == [{"text": "A", "task": None}]
+
+
+def test_notes_key_is_not_read_as_a_task_keyword():
+    c = commit("abcdef1234", 19, "feat: release notes shelf")
+    assert gf.task_of(c, TASKS, [], {"notes": [{"date": "2026-10-25", "text": "x"}]}) is None
+
+
+def test_map_file_note_is_valid():
+    import pathlib
+    rmap = json.loads((pathlib.Path(__file__).resolve().parents[2] / "docs" / "releases-map.json").read_text(encoding="utf-8"))
+    assert len(gf.curated_notes(rmap)) == len(rmap["notes"]) == 1
+    assert rmap["notes"][0]["url"].startswith("https://studio.electrophone.cc/")

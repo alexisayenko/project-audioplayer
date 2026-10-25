@@ -16,7 +16,14 @@ from . import buildinfo
 KEEP_TYPES = {"feat"}
 MAX_TEXT = 110
 SUBJECT = re.compile(r"^(\w+)(?:\(([^)]*)\))?!?:\s*(.+)$")
-SKIP_SCOPES = {"data"}
+SKIP_SCOPES = {"data", "studio"}
+STUDIO_TAG = "studio"
+STUDIO_TEXT = re.compile(
+    r"^studio\b|\b(primitive|chordophones?|harmonics lab|beat bands?|glossary|oscilloscope|rhythm page|on rhythm|listen page|listen spectrum"
+    r"|studio spectrum|spectrum trails?|air (dots?|density)|tempo-per-window|tempo grid|lane bpm|waveform views?|harmonic count|strike controls?|studio site|slow motion|speaker cone|analysis window)\b",
+    re.I,
+)
+NOTE_HASH = "note"
 EXCLUDE = (
     r"remov(e|al|als) .*genre", r"genres? (of|for|on|off) ", r"fix the genres", r"wrong genres", r"removal list", r"approved removals",
     r"add(ed)? .* genre to", r"^genre data:", r"^.* removal$", r"reviewed extra", r"vocabulary rows",
@@ -26,7 +33,7 @@ TASK_ID = re.compile(r"^task-\d{4}$")
 HASH_KEY = re.compile(r"^[0-9a-f]{7,40}$")
 REVISION = re.compile(r"HEAD|[0-9a-f]{7,40}(?:\.\.[0-9a-f]{7,40})?")
 DEPLOY_DAY = re.compile(r"\d{4}-\d{2}-\d{2}")
-MAP_KEYS = {"exclude", "items"}
+MAP_KEYS = {"exclude", "items", "notes"}
 TASK_FILE = re.compile(r"^docs/tasks/(task-\d{4})\.md$")
 PLANNED = "to do"
 IN_PROGRESS = "in progress"
@@ -157,6 +164,44 @@ def curated_items(rmap: dict[str, Any]) -> dict[str, list[dict[str, Any]]]:
     return out
 
 
+def studio_ids(tasks: dict[str, Any]) -> set[str]:
+    """Ids of the tasks tagged `studio`: their notes live on the studio site, not here."""
+    return {tid for tid, t in tasks.items() if STUDIO_TAG in t.get("tags", [])}
+
+
+def is_studio(item: dict[str, Any], ids: set[str]) -> bool:
+    return item.get("task") in ids or bool(STUDIO_TEXT.search(item["text"]))
+
+
+def curated_notes(rmap: dict[str, Any]) -> list[dict[str, str]]:
+    """The valid `notes` of the map file: [{date, text, url?}], one fixed entry per row (a pointer, not a commit)."""
+    table = rmap.get("notes") if isinstance(rmap, dict) else None
+    out = []
+    for n in table if isinstance(table, list) else []:
+        if not isinstance(n, dict) or not isinstance(n.get("text"), str) or not n["text"].strip() or not (isinstance(n.get("date"), str) and DEPLOY_DAY.fullmatch(n["date"])):
+            continue
+        note = {"date": n["date"], "text": n["text"].strip()}
+        if isinstance(n.get("url"), str) and n["url"].startswith("https://"):
+            note["url"] = n["url"]
+        out.append(note)
+    return out
+
+
+def with_notes(releases: list[dict[str, Any]], notes: list[dict[str, str]]) -> list[dict[str, Any]]:
+    """The releases with each note put first in the release of its date, or in a release of its own at its place by date."""
+    out = [{**r, "items": list(r["items"])} for r in releases]
+    for n in notes:
+        item = {"text": n["text"], "task": None, **({"url": n["url"]} if "url" in n else {})}
+        hit = next((r for r in out if r["date"] == n["date"]), None)
+        if hit is not None:
+            if item not in hit["items"]:
+                hit["items"].insert(0, item)
+            continue
+        at = next((i for i, r in enumerate(out) if r["date"] < n["date"]), len(out))
+        out.insert(at, {"hash": NOTE_HASH, "full": "", "date": n["date"], "items": [item]})
+    return out
+
+
 def make_release(commits: list[dict[str, Any]], tasks: dict[str, Any], rmap: dict[str, str | None]) -> tuple[str, list[dict[str, Any]]] | None:
     """(full hash of the newest commit, items) of one release; None when it has no feature items."""
     if not commits:
@@ -166,6 +211,7 @@ def make_release(commits: list[dict[str, Any]], tasks: dict[str, Any], rmap: dic
     items: list[dict[str, Any]] = []
     seen: set[str] = set()
     curated = curated_items(rmap)
+    skip = studio_ids(tasks)
     for c in ordered:
         key = next((k for k in curated if c["sha"].startswith(k)), None)
         if key is not None:
@@ -174,7 +220,7 @@ def make_release(commits: list[dict[str, Any]], tasks: dict[str, Any], rmap: dic
             text = clean_subject(c["subject"], rmap.get("exclude"))
             found = [{"text": text, "task": task_of(c, tasks, release_files, rmap)}] if text else []
         for item in found:
-            if item["text"] in seen:
+            if item["text"] in seen or is_studio(item, skip):
                 continue
             seen.add(item["text"])
             items.append(dict(item))
@@ -247,7 +293,7 @@ def status_kind(status: str) -> str:
 
 
 def tasks_with(tasks: dict[str, Any], kind: str) -> list[dict[str, Any]]:
-    rows = [{**t, "status": kind} for t in tasks.values() if status_kind(t["status"]) == kind]
+    rows = [{**t, "status": kind} for t in tasks.values() if status_kind(t["status"]) == kind and STUDIO_TAG not in t["tags"]]
     return sorted(rows, key=lambda t: t["id"], reverse=True)
 
 
@@ -270,7 +316,7 @@ def build(repo: Path, deploys: list[dict[str, str]], rmap: dict[str, str | None]
     """Releases and planned tasks of the checkout `repo`; `unavailable` when its git history cannot be read."""
     tasks = read_tasks(repo / "docs" / "tasks")
     try:
-        releases = _releases(repo, clean_deploys(deploys), tasks, rmap)
+        releases = with_notes(_releases(repo, clean_deploys(deploys), tasks, rmap), curated_notes(rmap))
     except (OSError, subprocess.SubprocessError):
         return {"releases": [], "planned": planned(tasks), "in_progress": in_progress(tasks), "unavailable": True}
     return {"releases": releases, "planned": planned(tasks), "in_progress": in_progress(tasks), "unavailable": False}

@@ -198,6 +198,16 @@ test('paging counts dates', async () => {
   assert.equal(root.querySelector('.ft-more').hidden, true);
 });
 
+test('a pointer item with an https url links its text; any other url is plain text', async () => {
+  const items = [{ text: 'Studio moved', task: null, url: 'https://studio.electrophone.cc/#/help/features' }, { text: 'Plain', task: null, url: 'javascript:alert(1)' }];
+  const root = await mount({ releases: [{ hash: 'note', full: '', date: '2026-10-25', items }], planned: [] });
+  const [moved, plain] = root.querySelectorAll('.ft-item');
+  assert.equal(moved.querySelector('.ft-text a').getAttribute('href'), 'https://studio.electrophone.cc/#/help/features');
+  assert.equal(moved.querySelector('.ft-text a').getAttribute('rel'), 'noopener');
+  assert.equal(moved.querySelector('.ft-text').textContent, 'Studio moved');
+  assert.equal(plain.querySelector('a'), null);
+});
+
 test('an item without a task has no link and no separator text', async () => {
   const root = await mount({ releases: day('2026-10-20', ['aaaaaaa']), planned: [] });
   assert.equal(root.querySelector('.ft-item').textContent, 'Item aaaaaaa');

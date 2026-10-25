@@ -31,10 +31,14 @@ export async function loadFeatures(fetchFn = globalThis.fetch) {
 
 const taskLink = (id) => el('a', { class: 'ft-task', href: `${TASK_URL}${id}.md`, target: '_blank', rel: 'noopener' }, id);
 
+const textOf = (i) => (typeof i.url === 'string' && i.url.startsWith('https://')
+  ? el('a', { href: i.url, target: '_blank', rel: 'noopener' }, i.text)
+  : i.text);
+
 export function releaseBlock(r) {
   return el('li', { class: 'ft-rel' },
     el('ul', { class: 'ft-items' }, ...r.items.map((i) =>
-      el('li', { class: 'ft-item t-body' }, i.task ? taskLink(i.task) : el('span', { class: 'ft-task', 'aria-hidden': 'true' }), el('span', { class: 'ft-text' }, i.text)))));
+      el('li', { class: 'ft-item t-body' }, i.task ? taskLink(i.task) : el('span', { class: 'ft-task', 'aria-hidden': 'true' }), el('span', { class: 'ft-text' }, textOf(i))))));
 }
 
 export function groupDays(releases) {

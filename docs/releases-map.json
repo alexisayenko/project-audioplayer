@@ -17,6 +17,9 @@
     "vocabulary rows",
     "^jazz colou?r"
   ],
+  "notes": [
+    { "date": "2026-10-25", "text": "Studio moved to studio.electrophone.cc: its features, plans and release notes are listed there under Help > Features", "url": "https://studio.electrophone.cc/#/help/features" }
+  ],
   "items": {
     "0093b93": [
       { "text": "Time readout: the elapsed part toggles to time left", "task": null }
