@@ -7,6 +7,7 @@ export const DOMAINS = [
   { id: 'theory', label: 'Music theory', token: '--chart-2' },
   { id: 'instruments', label: 'Instruments', token: '--chart-5' },
   { id: 'analysis', label: 'Analysis tools', token: '--chart-0' },
+  { id: 'digitizing', label: 'Digitizing sound', token: '--chart-4' },
 ];
 
 const MEMBERS = {
@@ -16,6 +17,7 @@ const MEMBERS = {
   theory: ['scale', 'major-scale', 'minor-scale', 'chromatic-scale', 'pentatonic-scale', 'mode', 'key', 'tonic', 'semitone', 'whole-tone', 'octave', 'interval', 'third', 'fourth', 'fifth', 'consonance', 'dissonance', 'tuning', 'equal-temperament', 'just-intonation', 'pythagorean-tuning', 'reference-pitch', 'circle-of-fifths', 'chord', 'triad', 'seventh-chord', 'root', 'inversion', 'chord-progression', 'cadence', 'harmony', 'melody'],
   instruments: ['chordophones', 'aerophones', 'membranophones', 'idiophones', 'electrophones', 'primitive', 'additive-synthesis'],
   analysis: ['waveform', 'oscilloscope', 'spectrum', 'spectrogram', 'beat-bands', 'tempo-grid', 'bpm', 'analysis-window', 'trails', 'harmonic-markers', 'pitch-detection', 'octave-error', 'dbfs', 'db-spl', 'time-window', 'spectrum-analyzer', 'fourier-transform'],
+  digitizing: ['sample', 'sample-rate', 'nyquist-limit', 'fft-size', 'bin', 'band', 'time-frequency-tradeoff', 'gibbs-ringing', 'phase'],
 };
 
 export const DOMAIN_OF = Object.fromEntries(Object.entries(MEMBERS).flatMap(([domain, ids]) => ids.map((id) => [id, domain])));
@@ -195,6 +197,20 @@ export const RELATIONS = [
   rel('sound', 'travels as a', 'sound-wave'),
   rel('wavelength', 'is the length of one', 'sound-wave'),
   rel('speed-of-sound', 'is the speed of a', 'sound-wave'),
+  rel('sample-rate', 'is the number per second of', 'sample'),
+  rel('nyquist-limit', 'is half the', 'sample-rate'),
+  rel('nyquist-limit', 'caps the highest', 'frequency'),
+  rel('fft-size', 'is the number of samples in one', 'fourier-transform'),
+  rel('bin', 'has a width set by the', 'fft-size'),
+  rel('bin', 'is one slice of the', 'spectrum'),
+  rel('band', 'is a group of', 'bin'),
+  rel('band', 'is a strip of the', 'spectrum'),
+  rel('time-frequency-tradeoff', 'is set by the', 'fft-size'),
+  rel('time-frequency-tradeoff', 'limits narrow', 'beat-bands'),
+  rel('gibbs-ringing', 'overshoots the corners of the', 'square-wave'),
+  rel('gibbs-ringing', 'comes from a limited number of', 'harmonics'),
+  rel('phase', 'changes the shape of the', 'waveform'),
+  rel('phase', 'is set for each of the', 'harmonics'),
 ];
 
 const LABELS = {
@@ -248,12 +264,13 @@ const WIDE_START = {
   instruments: { x: -440, y: -130 },
   physics: { x: -60, y: -150 },
   analysis: { x: 380, y: -130 },
+  digitizing: { x: 380, y: -360 },
   perception: { x: -300, y: 160 },
   music: { x: 120, y: 170 },
   theory: { x: 520, y: 200 },
 };
 
-const TALL_ORDER = ['analysis', 'physics', 'instruments', 'music', 'theory', 'perception'];
+const TALL_ORDER = ['analysis', 'digitizing', 'physics', 'instruments', 'music', 'theory', 'perception'];
 
 export const BOX = {
   pad: 14,

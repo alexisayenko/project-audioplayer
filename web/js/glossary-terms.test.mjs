@@ -17,7 +17,7 @@ test('STU-025: terms are alphabetical, have unique ids and every see-also id exi
     if (t.demo?.page) assert.ok(PAGES.some((p) => p.id === t.demo.page), `${t.id} demo ${t.demo.page}`);
     if (t.demo && !t.demo.page) {
       assert.equal(t.demo.type, 'link', t.id);
-      assert.match(t.demo.href, /^#\/learn\/sound-wave(\?wave=(sine|triangle|square|sawtooth))?$/, t.id);
+      assert.match(t.demo.href, /^#\/(learn\/sound-wave(\?wave=(sine|triangle|square|sawtooth))?|synthesize\/simple\?wave=(square|custom))$/, t.id);
     }
   }
 });
@@ -136,13 +136,13 @@ test('STU-044: Sound wave is a term with aliases, see-also links and the cone an
   assert.deepEqual(t.aliases, ['compression wave', 'longitudinal wave']);
   assert.deepEqual(t.see, ['compression-and-rarefaction', 'wavelength', 'speed-of-sound', 'frequency', 'amplitude']);
   assert.match(t.text, /^A travelling pattern of compressions \(air squeezed closer: high pressure\) and rarefactions \(air spread thinner: low pressure\)\./);
-  assert.match(t.text, /about 343 m\/s in air\)\.$/);
+  assert.match(t.text, /about 343 m\/s in air\)\./);
   assert.deepEqual(t.demo, { type: 'link', href: '#/learn/sound-wave', label: 'Open the demo' });
   assert.deepEqual(termById('compression-and-rarefaction').demo, { type: 'link', href: '#/learn/sound-wave', label: 'Open the demo' });
   assert.ok(termById('compression-and-rarefaction').see.includes('sound-wave'));
   assert.equal(termByAnchor('longitudinal-wave').id, 'sound-wave');
   assert.equal(termByAnchor('compression-wave').id, 'sound-wave');
-  assert.equal(TERMS.length, 111);
+  assert.equal(TERMS.length, 120);
 });
 
 test('WEB-212: Harmonic decomposition is a glossary entry with its aliases, see-also terms and a demo link to Primitive', () => {
@@ -163,6 +163,27 @@ test('WEB-211: Fourier series and Additive synthesis are glossary entries; the s
   assert.equal(termById('additive-synthesis').demo.type, 'link');
   assert.equal(termById('additive-synthesis').demo.href, '#/synthesize/simple?wave=custom');
   assert.ok(termById('primitive').see.includes('additive-synthesis'));
+});
+
+test('STU-060: Digitizing sound is a category of 9 new terms with their numbers, aliases and see-also links', () => {
+  const ids = ['sample', 'sample-rate', 'nyquist-limit', 'fft-size', 'bin', 'band', 'time-frequency-tradeoff', 'gibbs-ringing', 'phase'];
+  for (const id of ids) assert.ok(termById(id), id);
+  assert.match(termById('sample-rate').text, /44\.1 kHz = 44,100 Hz = 44,100 samples a second/);
+  assert.match(termById('nyquist-limit').text, /22\.05 kHz at 44\.1 kHz, 24 kHz at 48 kHz/);
+  assert.match(termById('fft-size').text, /16384 = 2\^14/);
+  assert.match(termById('bin').text, /2\.69 Hz \(48000 \/ 16384 = 2\.93 Hz\)/);
+  assert.match(termById('time-frequency-tradeoff').text, /about 7 bins wide at 16384/);
+  assert.match(termById('gibbs-ringing').text, /about 9% of the jump/);
+  assert.match(termById('band').text, /such as 80-150 Hz/);
+  assert.match(termById('spectrum').text, /20 Hz to 20 kHz\) is its axis, not the spectrum itself/);
+  assert.ok(termById('band').see.includes('bin') && termById('bin').see.includes('band'));
+  assert.match(termById('phase').text, /-100%/);
+  assert.equal(termByAnchor('sampling-rate').id, 'sample-rate');
+  assert.equal(termByAnchor('nyquist-frequency').id, 'nyquist-limit');
+  assert.equal(termByAnchor('fft-window').id, 'fft-size');
+  assert.equal(termByAnchor('fft-bin').id, 'bin');
+  assert.ok(termById('fourier-transform').see.includes('fft-size'));
+  assert.ok(termById('square-wave').see.includes('gibbs-ringing') && termById('sawtooth-wave').see.includes('gibbs-ringing'));
 });
 
 test('STU-056: a term with the demo has an Open the demo link to the Sound wave page and no animation', () => {
@@ -199,9 +220,9 @@ test('STU-045: the list is grouped by category with counted headings, an Order s
   const win = { location: { hash: '' }, addEventListener() {}, removeEventListener() {} };
   const stop = mountGlossary(pane, win);
   const heads = () => pane.querySelectorAll('.gl-sec-h').map((h) => h.textContent);
-  assert.deepEqual(heads(), ['Physics of sound (25)', 'Perception (6)', 'Music (22)', 'Music theory (32)', 'Instruments (6)', 'Analysis tools (17)']);
-  assert.equal(pane.querySelectorAll('.gl-sec').length, 6);
-  assert.equal(pane.querySelectorAll('.gl-chip').length, 6);
+  assert.deepEqual(heads(), ['Physics of sound (27)', 'Perception (6)', 'Music (22)', 'Music theory (32)', 'Instruments (7)', 'Analysis tools (17)', 'Digitizing sound (9)']);
+  assert.equal(pane.querySelectorAll('.gl-sec').length, 7);
+  assert.equal(pane.querySelectorAll('.gl-chip').length, 7);
   const order = pane.querySelectorAll('.hm-seg').find((g) => g.getAttribute('aria-labelledby') === 'gl-order-label');
   assert.deepEqual(order.querySelectorAll('button').map((b) => b.textContent), ['By category', 'A-Z']);
   assert.equal(order.querySelectorAll('button')[0].getAttribute('aria-checked'), 'true');

@@ -258,5 +258,5 @@ test('STU-048: the page is in the menu right after Primitive, with an alias, and
   assert.match(termById('click-train').text, /^A series of identical short clicks at a steady rate\./);
   const has = (from, to) => RELATIONS.some((r) => r.from === from && r.to === to);
   assert.ok(has('rhythm', 'pitch') && has('beat', 'click-train') && has('click-train', 'harmonics') && has('tempo', 'frequency'));
-  assert.equal(TERMS.length, 110);
+  assert.equal(TERMS.length, 120);
 });

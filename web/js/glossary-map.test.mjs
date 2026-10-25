@@ -18,13 +18,13 @@ test('STU-037: every relation ends at an existing term, with a label, no self lo
     assert.ok(!seen.has(key), `duplicate ${key}`);
     seen.add(key);
   }
-  assert.equal(RELATIONS.length, 168);
-  assert.equal(TERMS.length, 111);
+  assert.equal(RELATIONS.length, 182);
+  assert.equal(TERMS.length, 120);
 });
 
 test('STU-037: every term is in exactly one domain, every domain is non-empty and every term has a relation', () => {
   const ids = new Set(DOMAINS.map((d) => d.id));
-  assert.equal(DOMAINS.length, 6);
+  assert.equal(DOMAINS.length, 7);
   for (const t of TERMS) assert.ok(ids.has(DOMAIN_OF[t.id]), `no domain for ${t.id}`);
   for (const id of Object.keys(DOMAIN_OF)) assert.ok(termById(id), `domain entry for unknown term ${id}`);
   for (const d of DOMAINS) {
@@ -113,7 +113,7 @@ test('STU-037: the music theory domain holds 32 terms with its links, and Temper
   assert.ok(matchSet(TERMS, 'квинта').has('fifth'));
 });
 
-test('STU-044: Sound wave is a Physics of sound term with its four links, and the six categories list 25, 6, 22, 32, 6 and 17 terms', () => {
+test('STU-044: Sound wave is a Physics of sound term with its four links, and the seven categories list 27, 6, 22, 32, 7, 17 and 9 terms', () => {
   const has = (from, to, label) => RELATIONS.some((r) => r.from === from && r.to === to && r.label === label);
   assert.equal(DOMAIN_OF['sound-wave'], 'physics');
   assert.ok(has('sound-wave', 'compression-and-rarefaction', 'is made of'));
@@ -121,8 +121,8 @@ test('STU-044: Sound wave is a Physics of sound term with its four links, and th
   assert.ok(has('wavelength', 'sound-wave', 'is the length of one'));
   assert.ok(has('speed-of-sound', 'sound-wave', 'is the speed of a'));
   const groups = termsByDomain();
-  assert.deepEqual(groups.map((g) => g.label), ['Physics of sound', 'Perception', 'Music', 'Music theory', 'Instruments', 'Analysis tools']);
-  assert.deepEqual(groups.map((g) => g.terms.length), [27, 6, 22, 32, 7, 17]);
+  assert.deepEqual(groups.map((g) => g.label), ['Physics of sound', 'Perception', 'Music', 'Music theory', 'Instruments', 'Analysis tools', 'Digitizing sound']);
+  assert.deepEqual(groups.map((g) => g.terms.length), [27, 6, 22, 32, 7, 17, 9]);
   for (const g of groups) assert.deepEqual(g.terms.map((t) => t.term), [...g.terms.map((t) => t.term)].sort((a, b) => a.localeCompare(b, 'en', { sensitivity: 'base' })));
   assert.equal(groups.reduce((n, g) => n + g.terms.length, 0), TERMS.length);
 });
@@ -136,8 +136,8 @@ test('STU-037: buildGraph gives one node per mapped term and keeps only edges be
   assert.ok(sub.edges.every((e) => e.from !== 'frequency' && e.to !== 'frequency'));
   assert.equal(mapLabel(termById('spectrum')), 'Spectrum');
   assert.equal(mapLabel(termById('frequency')), 'Frequency');
-  assert.equal(nodes.length, 111);
-  assert.equal(edges.length, 168);
+  assert.equal(nodes.length, 120);
+  assert.equal(edges.length, 182);
   assert.equal(DOMAIN_OF['harmonic-decomposition'], 'physics');
   assert.ok(RELATIONS.some((r) => r.from === 'fourier-series' && r.label === 'splits a wave into' && r.to === 'harmonic-decomposition'));
   assert.ok(RELATIONS.some((r) => r.from === 'harmonic-decomposition' && r.label === 'shows' && r.to === 'harmonics'));
