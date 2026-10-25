@@ -2,7 +2,7 @@
 
 What shipped, newest first. One line each; the web UI and server are live at https://electrophone.cc. Everything listed here is deployed except the sections marked "built, not deployed" (the 2026-10-14 release went out once the SSH access in [task-0027](tasks/task-0027.md) was restored; the live visualizer files match `origin/main` as of 2026-10-15). Why: [tech/decisions.md](tech/decisions.md); runbook: [tech/deploy.md](tech/deploy.md).
 
-## 2026-10-25 (Studio Primitive: waveform choice, built, not deployed yet; the main app is unchanged)
+## 2026-10-25 (Studio Primitive: waveform choice, deployed to studio.electrophone.cc as `c561d84`; the main app is unchanged)
 
 - Web (WEB-210, STU-046; owner request "Primitive should be able to specify waveform also"; no tests run, `node --check`, the studio build, node numeric checks, an offline render of each shape and the Browser pane at 375 px and 1200 px): Primitive has a Waveform switch (Sine default, Triangle, Square, Sawtooth; glyph buttons, text labels from 560 px); the sound uses the chosen oscillator type, switching while playing crossfades to a second oscillator over 30 ms without a click; the gain is compensated so every shape has the loudness of a sine at the same Amplitude (factors 1, 1.2247, 0.7071, 1.2247, divided by the browser's own normalisation of square and sawtooth, gain capped at 80 %; RMS 0.2121 / 0.2122 / 0.2111 / 0.2107 at 30 %); both scopes and the readout draw the shape, a Harmonics chart (16 bars, shared with the cone animation through the new `wave-shapes.js`) sits under them; intro line, Amplitude and Power hints and the Glossary entry "Primitive" updated; the studio stylesheet now styles `.seg` (the "Time window" switch was unstyled there).
 
