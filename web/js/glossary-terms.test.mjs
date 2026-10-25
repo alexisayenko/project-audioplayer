@@ -142,7 +142,18 @@ test('STU-044: Sound wave is a term with aliases, see-also links and the cone an
   assert.ok(termById('compression-and-rarefaction').see.includes('sound-wave'));
   assert.equal(termByAnchor('longitudinal-wave').id, 'sound-wave');
   assert.equal(termByAnchor('compression-wave').id, 'sound-wave');
-  assert.equal(TERMS.length, 110);
+  assert.equal(TERMS.length, 111);
+});
+
+test('WEB-212: Harmonic decomposition is a glossary entry with its aliases, see-also terms and a demo link to Primitive', () => {
+  const t = termById('harmonic-decomposition');
+  assert.equal(t.term, 'Harmonic decomposition');
+  assert.equal(t.text, 'Splitting a sound into its harmonics: each one a sine wave at a whole-number multiple of the fundamental. Their sum is the sound.');
+  assert.deepEqual(t.aliases, ['harmonic stack', 'Fourier decomposition']);
+  assert.deepEqual(t.see, ['fourier-series', 'harmonics', 'additive-synthesis']);
+  assert.deepEqual(t.demo, { type: 'link', href: '#/synthesize/simple?wave=square', label: 'Open the demo' });
+  assert.equal(termByAnchor(aliasSlug('harmonic stack')).id, 'harmonic-decomposition');
+  assert.equal(termByAnchor(aliasSlug('Fourier decomposition')).id, 'harmonic-decomposition');
 });
 
 test('WEB-211: Fourier series and Additive synthesis are glossary entries; the second links to Primitive > Custom', () => {
@@ -161,7 +172,7 @@ test('STU-056: a term with the demo has an Open the demo link to the Sound wave 
   const link = pane.querySelector('#gl-sound-wave .gl-demo-link');
   assert.equal(link.textContent, 'Open the demo →');
   assert.equal(link.getAttribute('href'), '#/learn/sound-wave');
-  assert.equal(pane.querySelectorAll('.gl-demo-link').length, 7);
+  assert.equal(pane.querySelectorAll('.gl-demo-link').length, 8);
   assert.equal(pane.querySelectorAll('canvas').length, 0);
   assert.equal(pane.querySelectorAll('button').filter((b) => /animation/i.test(b.textContent)).length, 0);
   stop();

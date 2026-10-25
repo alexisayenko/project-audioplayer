@@ -18,8 +18,8 @@ test('STU-037: every relation ends at an existing term, with a label, no self lo
     assert.ok(!seen.has(key), `duplicate ${key}`);
     seen.add(key);
   }
-  assert.equal(RELATIONS.length, 166);
-  assert.equal(TERMS.length, 110);
+  assert.equal(RELATIONS.length, 168);
+  assert.equal(TERMS.length, 111);
 });
 
 test('STU-037: every term is in exactly one domain, every domain is non-empty and every term has a relation', () => {
@@ -122,7 +122,7 @@ test('STU-044: Sound wave is a Physics of sound term with its four links, and th
   assert.ok(has('speed-of-sound', 'sound-wave', 'is the speed of a'));
   const groups = termsByDomain();
   assert.deepEqual(groups.map((g) => g.label), ['Physics of sound', 'Perception', 'Music', 'Music theory', 'Instruments', 'Analysis tools']);
-  assert.deepEqual(groups.map((g) => g.terms.length), [26, 6, 22, 32, 7, 17]);
+  assert.deepEqual(groups.map((g) => g.terms.length), [27, 6, 22, 32, 7, 17]);
   for (const g of groups) assert.deepEqual(g.terms.map((t) => t.term), [...g.terms.map((t) => t.term)].sort((a, b) => a.localeCompare(b, 'en', { sensitivity: 'base' })));
   assert.equal(groups.reduce((n, g) => n + g.terms.length, 0), TERMS.length);
 });
@@ -136,8 +136,11 @@ test('STU-037: buildGraph gives one node per mapped term and keeps only edges be
   assert.ok(sub.edges.every((e) => e.from !== 'frequency' && e.to !== 'frequency'));
   assert.equal(mapLabel(termById('spectrum')), 'Spectrum');
   assert.equal(mapLabel(termById('frequency')), 'Frequency');
-  assert.equal(nodes.length, 110);
-  assert.equal(edges.length, 166);
+  assert.equal(nodes.length, 111);
+  assert.equal(edges.length, 168);
+  assert.equal(DOMAIN_OF['harmonic-decomposition'], 'physics');
+  assert.ok(RELATIONS.some((r) => r.from === 'fourier-series' && r.label === 'splits a wave into' && r.to === 'harmonic-decomposition'));
+  assert.ok(RELATIONS.some((r) => r.from === 'harmonic-decomposition' && r.label === 'shows' && r.to === 'harmonics'));
   assert.ok(RELATIONS.some((r) => r.from === 'fourier-series' && r.label === 'builds' && r.to === 'waveform'));
   assert.ok(RELATIONS.some((r) => r.from === 'additive-synthesis' && r.label === 'uses' && r.to === 'harmonics'));
   assert.ok(RELATIONS.some((r) => r.from === 'square-wave' && r.label === 'is the recipe' && r.to === 'fourier-series'));

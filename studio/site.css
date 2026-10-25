@@ -73,6 +73,12 @@
 .sm-scopes { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-4) var(--space-5); align-items: start; min-width: 0; }
 @container stu (min-width: 900px) { .sm-scopes { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 .sm-scopes .hm-head { min-height: var(--control); align-items: center; }
+.sm-scopes > .sm-stack { order: 1; }
+.sm-scopes > .sm-win { order: 2; }
+@container stu (min-width: 900px) {
+  .sm-scopes > .sm-stack { order: 0; grid-column: 1 / -1; grid-row: 2; }
+  .sm-scopes > .sm-win { order: 0; }
+}
 .sm-links { display: flex; flex-wrap: wrap; gap: 0 var(--space-5); margin: 0; }
 .cl-rate { display: grid; gap: var(--space-3); min-width: 0; }
 .cl-regime { margin: 0; color: var(--ink); font-weight: 500; overflow-wrap: anywhere; }

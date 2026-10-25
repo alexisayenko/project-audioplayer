@@ -186,7 +186,8 @@ test('WEB-207: Primitive has the second oscilloscope beside the first with a Tim
   assert.ok(card.node.textContent.includes('Waveform of the tone you will hear over one cycle: time across, amplitude up.'));
   assert.ok(card.node.textContent.includes('Waveform of the tone you will hear over a period of time: time across, amplitude up.'));
   assert.ok(!/oscilloscope/i.test(card.node.textContent));
-  assert.equal(card.node.querySelectorAll('.sm-scopes .hm-block').length, 2);
+  assert.equal(card.node.querySelectorAll('.sm-scopes .hm-block').length, 3);
+  assert.equal(card.node.querySelectorAll('.sm-scopes .sm-stack').length, 1);
   assert.equal(card.window, 20);
   assert.ok(card.node.textContent.includes('about 8.8 cycles in 20 ms'));
   const many = card.node.querySelectorAll('p').find((p) => p.textContent === 'Too many cycles to see the shape: shorten the window');
@@ -207,7 +208,7 @@ test('STU-043: Primitive has no cone animation, no dot, no Slow motion factor an
   const card = s.createSimpleCard(fakeCtx().env);
   const text = card.node.textContent;
   for (const gone of ['Slow motion', 'Slowed', 'Pause animation', 'Play animation', 'dense (compression)', 'the dot is the pressure now', 'Cycles shown']) assert.ok(!text.includes(gone), gone);
-  assert.equal(card.node.querySelectorAll('canvas').length, 2);
+  assert.equal(card.node.querySelectorAll('canvas').length, 3);
   const link = card.node.querySelectorAll('a').find((a) => a.textContent === 'See how a speaker makes a sound wave on the Sound wave page →');
   assert.equal(link.getAttribute('href'), '#/learn/sound-wave');
   assert.equal(card.paused, undefined);

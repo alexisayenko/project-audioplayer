@@ -13,6 +13,13 @@ test('STU-051: the features data is valid: required fields, known status and are
   for (const f of FEATURES) if (f.task) assert.ok(read(`../../docs/tasks/${f.task}.md`).includes(`task_id: ${f.task}`), f.task);
 });
 
+test('STU-058: the harmonics stack is a released Primitive entry', () => {
+  const f = FEATURES.find((x) => x.title === 'Harmonics stack on Primitive and Chordophones');
+  assert.equal(f.status, 'released');
+  assert.equal(f.area, 'Primitive');
+  assert.equal(f.date, '2026-10-25');
+});
+
 test('STU-051: released entries are dated and newest first; planned and in-progress entries have no date', () => {
   const released = FEATURES.filter((f) => f.status === 'released');
   assert.ok(released.length > 0 && released.every((f) => isDay(f.date)));

@@ -3,6 +3,7 @@ import { icon } from './icons.js';
 import { segmented } from './segmented.js';
 import { stepper } from './stepper.js';
 import { mixColor } from './viz-color.js';
+import { createStackCard, synthHarmonics, DETUNE_NOTE } from './harmonics-stack.js';
 import {
   MAX_RUN_MS, AUDIBLE_MAX_HZ, ANALYSER_DB_OFFSET, SPECTRUM_MIN_HZ, SPECTRUM_MAX_HZ, DB_MIN,
   LIVE_VIEW_NAMES, clamp, noteInfo, fmtHz, axisText, axisCaption, linearTicks, pickLabels, gramTicks, fit, css, drawSpecGrid,
@@ -93,7 +94,8 @@ export function strikeMore(p) {
   return `The hammer hits the string at 1/${d} of its length, so the ${ordinal(d)} harmonic has a node right there and almost disappears (H${2 * d} too). Piano makers put the hammer at about 1/7 to 1/9 of the string, so a weak 7th, 8th or 9th harmonic is typical, because those harmonics clash with the musical scale. The exact fraction varies by maker and register (smaller toward the treble). Try 1/${alt}: the weak harmonic becomes H${alt}.`;
 }
 
-export const STRINGS_NOTE = 'A real piano note has up to 3 strings; here you can try up to 8.';
+export const STACK_NOTE = 'The rows follow the settings above: number of harmonics, decay per octave, Mute H1, and with piano-like decay the inharmonicity and the hammer position.';
+export const STRINGS_NOTE ='A real piano note has up to 3 strings; here you can try up to 8.';
 export const BEAT_HINT = 'With detuned strings the loudness swells slowly: beats';
 export const STRINGS_HINT = 'Strings are only slightly apart, so you need the Beating view below to see the difference.';
 export const VIEW_NAMES = {
@@ -1168,8 +1170,9 @@ export function createHarmonicsCard(env = {}) {
   const colors = createColors(() => node, now);
   const gram = createGramView({ colors, feed, range: () => rangeNow(), ticks: (r, h) => gramTicks(rowsNow(), r, h) });
   const bands = createBandsView({ uid, colors, feed });
+  const stack = createStackCard(env);
 
-  const node = el('section', { class: 'card hm-card', 'aria-label': TITLE },
+  const node =el('section', { class: 'card hm-card', 'aria-label': TITLE },
     el('h2', { class: 't-headline' }, TITLE),
     ctlBox,
     stringsNote,
@@ -1182,6 +1185,7 @@ export function createHarmonicsCard(env = {}) {
       waveCap,
       stringsHint,
       beatHint),
+    stack.node,
     el('div', { class: 'hm-block' },
       el('div', { class: 'hm-head' }, el('h3', { class: 't-subhead' }, 'Spectrum'), el('div', { class: 'hm-checks' }, trailControl.node, axisControl.node)),
       view(specCanvas, 'hm-spec'),
@@ -1298,6 +1302,7 @@ export function createHarmonicsCard(env = {}) {
     beatingOut.textContent = beat > 0 ? swellText(beat, lead) : '';
     describe();
     paintList();
+    stack.update({ harmonics: synthHarmonics(rowsNow(), params.freq), freq: params.freq, extra: `${STACK_NOTE} ${DETUNE_NOTE}` });
   }
 
   function paintWave() {
@@ -1520,6 +1525,7 @@ export function createHarmonicsCard(env = {}) {
     dispose() {
       gone = true;
       ro?.disconnect();
+      stack.dispose();
       if (running) { running = false; release(); }
       synth.stop();
     },

@@ -8,6 +8,7 @@ import {
   tableSeries, componentSeries, strongest, maxJump, aboveLimit, snapBar,
 } from './custom-wave.js';
 import { createHarmonicEditor, TITLE as EDITOR_TITLE, TIP as EDITOR_TIP } from './harmonic-editor.js';
+import { createStackCard, shapeHarmonics, barHarmonics } from './harmonics-stack.js';
 
 export const TITLE = 'Primitive';
 export const INTRO = 'A primitive sound: a single repeating shape (sine, triangle, square or sawtooth) at one frequency. Sine is one pure frequency (H1 only); the other shapes add harmonics. It models a speaker cone driven by an electrical signal. Pick a standard shape or build your own from harmonics. Set the four numbers, press Play.';
@@ -454,7 +455,10 @@ export function createSimpleCard(env = {}) {
   });
   editor.node.hidden = true;
 
-  const node = el('section', { class: 'card hm-card sm-card', 'aria-label': TITLE },
+  const stack = createStackCard(env);
+  stack.node.classList.add('sm-stack');
+
+  const node =el('section', { class: 'card hm-card sm-card', 'aria-label': TITLE },
     el('h2', { class: 't-headline' }, TITLE),
     el('p', { class: 'hm-cap muted t-caption' }, INTRO),
     el('div', { class: 'sm-ctl' },
@@ -472,12 +476,13 @@ export function createSimpleCard(env = {}) {
         readoutOut,
         el('p', { class: 'hm-cap muted t-caption' }, SCOPE_NOTE),
         shapeNoteOut),
-      el('div', { class: 'hm-block' },
+      el('div', { class: 'hm-block sm-win' },
         el('div', { class: 'hm-head' }, el('h3', { class: 't-subhead' }, WINDOW_TITLE), winField),
         el('p', { class: 'hm-cap muted t-caption' }, WINDOW_SUB),
         el('div', { class: 'hm-view hm-wave' }, windowCanvas),
         windowCapOut,
-        manyOut)),
+        manyOut),
+      stack.node),
     el('div', { class: 'hm-block sm-harm' },
       el('div', { class: 'sm-lab sm-harm-head' }, harmTitle, editorTip),
       harm.svg,
@@ -497,6 +502,17 @@ export function createSimpleCard(env = {}) {
     const key = soundBars().join(',');
     if (key !== soundKey) { soundKey = key; sound = analyzeBars(soundBars()); }
     view = custom.playBuild || custom.buildN >= MAX_HARMONICS ? sound : analyzeBars(viewBars());
+  }
+
+  function stackState() {
+    const onCustom = isCustom();
+    const cut = onCustom && custom.buildN < MAX_HARMONICS;
+    return {
+      harmonics: onCustom ? barHarmonics(custom.bars, params.freq) : shapeHarmonics(params.wave, params.freq),
+      freq: params.freq,
+      partialSumN: cut ? custom.buildN : undefined,
+      highlightN: cut ? custom.buildN : undefined,
+    };
   }
 
   function customNotes() {
@@ -542,6 +558,7 @@ export function createSimpleCard(env = {}) {
     editorTip.hidden = !onCustom;
     if (onCustom) editor.paint({ bars: custom.bars, count: custom.count, freq: p.freq, buildN: custom.buildN, playBuild: custom.playBuild, showEach: custom.showEach, notes: customNotes() });
     else harm.paint(p.wave);
+    stack.update(stackState());
     waveSeg.paint();
     winSeg.paint();
     canvas.setAttribute('title', `${cycleLabels(p.freq)[0]} (speed of sound 343 m/s at 20 °C)`);
@@ -880,6 +897,7 @@ export function createSimpleCard(env = {}) {
       globalThis.removeEventListener?.('hashchange', applyHash);
       for (const d of detach) d();
       ro?.disconnect();
+      stack.dispose();
       syncLoop();
       if (live) teardown(live);
     },

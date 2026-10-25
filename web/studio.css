@@ -70,6 +70,10 @@ input.hm-step-num:disabled { opacity: var(--disabled-opacity); }
 .hm-check input[type="checkbox"] { width: var(--icon-nav); height: var(--icon-nav); accent-color: var(--fill); flex: none; margin: 0; }
 .hm-view { position: relative; width: 100%; border-radius: var(--radius-key); background: var(--surface-sunken); overflow: hidden; }
 .hm-wave { height: 160px; }
+.hs-block { position: relative; }
+.hs-ctl { gap: var(--space-1) var(--space-4); }
+.hs-canvas { touch-action: pan-y; }
+.hs-sr { position: absolute; left: 0; top: 0; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap; border: 0; }
 .hm-axis .hm-seg { flex-wrap: wrap; }
 @media (max-width: 480px) { .hm-axis .hm-seg .seg-btn { padding: 0 var(--space-3); } }
 .hm-spec { height: clamp(210px, 60vh, 420px); }
