@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { createLiveBpm, estimateFromEnvelope, estimateWindowFromEnvelope, gateWindows, MAX_BPM, MIN_BPM, WINDOWS_S, MIN_PERIODS, HISTORY_S } from './live-bpm.js';
+import { createLiveBpm, estimateFromEnvelope, estimateWindowFromEnvelope, gateWindows, gateLong, windowFrames, historyFrames, MAX_BPM, MIN_BPM, WINDOWS_S, MIN_PERIODS, HISTORY_S } from './live-bpm.js';
 import { segment, concat, feed } from './live-bpm-synth.mjs';
 
 const detect = (audio, hint = null) => {
@@ -172,7 +172,32 @@ test('WEB-208: a window that disagrees with the shorter ones is dropped (two tem
   const bpms = (list) => list.map((r) => r && r.bpm);
   assert.deepEqual(bpms(gateWindows(seconds, [null, mk(120), mk(120), mk(120), mk(120), mk(120)])), [null, 120, 120, 120, 120, 120]);
   assert.deepEqual(bpms(gateWindows(seconds, [null, mk(150), mk(150), mk(150), mk(30), mk(30)])), [null, 150, 150, 150, null, null]);
-  assert.deepEqual(bpms(gateWindows(seconds, [null, mk(120), mk(120), mk(60), mk(120), mk(120)])), [null, 120, 120, null, 120, 120]);
+  assert.deepEqual(bpms(gateWindows(seconds, [null, mk(120), mk(120), mk(120), mk(30), mk(120)])), [null, 120, 120, 120, null, 120]);
   assert.deepEqual(bpms(gateWindows(seconds, [mk(300), mk(150), mk(150), mk(150), mk(150), mk(150)])), [null, 150, 150, 150, 150, 150]);
   assert.deepEqual(bpms(gateWindows(seconds, [mk(900), mk(1000), mk(1000), mk(1000), mk(1000), mk(1000)])), [900, 1000, 1000, 1000, 1000, 1000]);
+});
+
+test('WEB-208: a long window that reads exactly half of the shorter ones (the two-beat period) is shown in their octave, not dropped', () => {
+  const mk = (bpm) => ({ bpm, confidence: 0.9, beatsInWindow: 10 });
+  const seconds = [1, 4, 8, 15, 30, 60];
+  const bpms = (list) => list.map((r) => r && r.bpm);
+  assert.deepEqual(bpms(gateWindows(seconds, [null, mk(128), mk(128), mk(64), mk(64), mk(64)])), [null, 128, 128, 128, 128, 128]);
+  assert.deepEqual(bpms(gateWindows(seconds, [null, mk(128), mk(64.6), mk(63.9), mk(64.2), mk(64.1)])), [null, 128, 129.2, 127.8, 128.4, 128.2]);
+  assert.deepEqual(gateLong(mk(128), mk(64)), { bpm: 128, confidence: 0.9, beatsInWindow: 20 });
+  assert.equal(gateLong(mk(120), mk(30)), null);
+  assert.equal(gateLong(mk(150), mk(30)), null);
+  assert.equal(gateLong(mk(128), mk(72)), null);
+  assert.equal(gateLong(mk(128), mk(100)), null);
+  assert.deepEqual(gateLong(mk(128), mk(126)), mk(126));
+});
+
+test('WEB-208: a window is as long as the history can hold at every sample rate, so a full 60 s window is never refused for its length', () => {
+  for (const sampleRate of [8000, 11025, 16000, 22050, 24000, 32000, 44100, 48000, 88200, 96000, 192000]) {
+    const hop = Math.max(1, Math.round(sampleRate / 400));
+    const rate = sampleRate / hop;
+    for (const seconds of WINDOWS_S) assert.ok(windowFrames(seconds, rate) <= historyFrames(HISTORY_S, rate), `${sampleRate} Hz, ${seconds} s`);
+  }
+  assert.equal(historyFrames(0, 400), 0);
+  assert.equal(historyFrames(60, 400), 24000);
+  assert.equal(windowFrames(60, 400), 24000);
 });

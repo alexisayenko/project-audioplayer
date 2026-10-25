@@ -409,8 +409,12 @@ function sameTempo(a, b) {
   return Math.abs(2 ** (octaves - Math.round(octaves)) - 1) <= AGREE_TOLERANCE;
 }
 
+export const windowFrames = (seconds, rate) => Math.round(seconds * rate);
+
+export const historyFrames = (historyS, rate) => (historyS > 0 ? Math.ceil(historyS * rate) : 0);
+
 export function estimateWindowFromEnvelope(env, rate, seconds, hint = null) {
-  if (!(seconds > 0) || env.length < Math.round(seconds * rate) * 0.98) return null;
+  if (!(seconds > 0) || env.length < windowFrames(seconds, rate) * 0.98) return null;
   const trace = {};
   const bpm = estimateFromEnvelope(env, rate, hint, seconds * 0.98, trace, { fast: true });
   if (bpm === null) return null;
@@ -419,12 +423,19 @@ export function estimateWindowFromEnvelope(env, rate, seconds, hint = null) {
   return { bpm, confidence: Math.min(1, Math.max(0, trace.top ?? 0)), beatsInWindow };
 }
 
+export function gateLong(ref, res) {
+  if (!sameTempo(ref.bpm, res.bpm)) return null;
+  if (res.bpm >= ref.bpm * SLOWER_LIMIT) return res;
+  if (Math.abs((2 * res.bpm) / ref.bpm - 1) > AGREE_TOLERANCE) return null;
+  return { ...res, bpm: res.bpm * 2, beatsInWindow: res.beatsInWindow * 2 };
+}
+
 export function gateWindows(seconds, raw) {
   const out = [];
   raw.forEach((res, i) => {
     let ref = null;
     for (let j = i - 1; j >= 0 && ref === null; j -= 1) ref = out[j];
-    out.push(res !== null && seconds[i] >= GATE_MIN_S && ref !== null && (!sameTempo(ref.bpm, res.bpm) || res.bpm < ref.bpm * SLOWER_LIMIT) ? null : res);
+    out.push(res !== null && seconds[i] >= GATE_MIN_S && ref !== null ? gateLong(ref, res) : res);
   });
   for (let i = 0; i < out.length; i += 1) {
     if (out[i] === null || seconds[i] >= GATE_MIN_S) continue;
@@ -483,7 +494,7 @@ export function createLiveBpm({ windowS = WINDOW_S, shortS = SHORT_S, historyS =
         extractor = createOnsetExtractor(sampleRate);
         extractorRate = sampleRate;
         tail.resize(Math.ceil(windowS * extractor.rate));
-        history.resize(historyS > 0 ? Math.ceil(historyS * extractor.rate) : 0);
+        history.resize(historyFrames(historyS, extractor.rate));
       }
       scratch.length = 0;
       extractor.push(samples, scratch);
@@ -498,7 +509,7 @@ export function createLiveBpm({ windowS = WINDOW_S, shortS = SHORT_S, historyS =
     },
     estimateWindow(seconds) {
       if (!extractor || !history.capacity) return null;
-      const n = Math.round(seconds * extractor.rate);
+      const n = windowFrames(seconds, extractor.rate);
       if (n > history.capacity || history.length < n) return null;
       const all = history.view();
       return estimateWindowFromEnvelope(all.subarray(all.length - n), extractor.rate, seconds, hint);
