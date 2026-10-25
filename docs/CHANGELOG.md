@@ -2,7 +2,7 @@
 
 What shipped, newest first. One line each; the web UI and server are live at https://electrophone.cc. Everything listed here is deployed except the sections marked "built, not deployed" (the 2026-10-14 release went out once the SSH access in [task-0027](tasks/task-0027.md) was restored; the live visualizer files match `origin/main` as of 2026-10-15). Why: [tech/decisions.md](tech/decisions.md); runbook: [tech/deploy.md](tech/deploy.md).
 
-## 2026-10-25 (Studio menu: no vertical jump on collapse, built, not deployed)
+## 2026-10-25 (Studio menu: no vertical jump on collapse, deployed to studio.electrophone.cc as `c2593ee`; the main app is unchanged)
 
 - Web (STU-030; owner: "layout jerk: don't move down"; no tests run, the build and the Browser pane only): the "Expand menu" button overlays the page margin and the content never moves vertically on desktop (card top 16 px expanded and collapsed; only the left edge moves, with a padding strip so the button never covers it); on the phone the content still moves up by the top bar's height.
 
