@@ -79,7 +79,7 @@ input.hm-step-num:disabled { opacity: var(--disabled-opacity); }
 .hm-spec { height: clamp(210px, 60vh, 420px); }
 .hm-gram { height: 180px; }
 .hm-bands { height: var(--bands-h, 612px); }
-@media (max-width: 600px) { .hm-bands { height: min(var(--bands-h, 612px), max(70vh, 640px)); } }
+@media (max-width: 600px) { .hm-bands { height: min(var(--bands-h, 612px), var(--bands-cap, max(70vh, 640px))); } }
 .hm-beating { height: 220px; }
 .hm-canvas { display: block; width: 100%; height: 100%; }
 .hm-lanes { position: absolute; top: 0; left: 0; bottom: var(--lane-foot, 0); width: var(--lane-left, 0); display: grid; grid-template-rows: repeat(var(--lanes, 6), minmax(0, 1fr)); margin: 0; padding: 0; list-style: none; }

@@ -4,7 +4,7 @@ import { stepper } from './stepper.js';
 import { parseColor, mixColor } from './viz-color.js';
 import { detectPitch, correctOctave, harmonicMarks, foundList, createPitchTracker, PITCH_EVERY_MS, HARMONIC_LABEL_GAP_PX } from './pitch-detect.js';
 import {
-  BAND_COUNTS, DEFAULT_BAND_COUNT, BAND_TABLES, bandsFor, lowLaneCount, bandsHeight, laneHeight, bandsLabel, bandRangeText,
+  BAND_COUNTS, DEFAULT_BAND_COUNT, BAND_TABLES, bandsFor, lowLaneCount, bandsHeight, bandsPhoneCapped, laneHeight, bandsLabel, bandRangeText,
   LANE_UPDATE_MS, LANE_WINDOWS_S, LANE_WINDOW_LABELS, LANE_HISTORY_S, laneWindowFor, laneCaption as laneCaptionText, laneRelation, estimateLane, laneBpmText, laneConfidence, laneTitle,
 } from './beat-bands.js';
 
@@ -557,11 +557,19 @@ export function readColors(node) {
 
 export const css = (c, a = 1) => (a >= 1 ? `rgb(${c[0]},${c[1]},${c[2]})` : `rgba(${c[0]},${c[1]},${c[2]},${a})`);
 
+export const CANVAS_MAX_PX = 16000000;
+
+export function setBandsHeight(stage, count) {
+  stage.style.setProperty('--bands-h', `${bandsHeight(count)}px`);
+  if (bandsPhoneCapped(count)) stage.style.removeProperty('--bands-cap');
+  else stage.style.setProperty('--bands-cap', `${bandsHeight(count)}px`);
+}
+
 export function fit(canvas) {
   const box = canvas.parentElement;
   const w = Math.max(1, Math.round(box?.clientWidth || canvas.clientWidth || 320));
   const h = Math.max(1, Math.round(box?.clientHeight || canvas.clientHeight || 160));
-  const dpr = globalThis.devicePixelRatio || 1;
+  const dpr = Math.min(globalThis.devicePixelRatio || 1, Math.sqrt(CANVAS_MAX_PX / (w * h)));
   const pw = Math.max(1, Math.round(w * dpr));
   const ph = Math.max(1, Math.round(h * dpr));
   const resized = canvas.width !== pw || canvas.height !== ph;
@@ -1475,7 +1483,7 @@ export function createBandsView({ uid, colors, feed, note = BEAT_NOTE, count = D
     stage,
     caption,
     laneCaption);
-  stage.style.setProperty('--bands-h', `${bandsHeight(bandCount)}px`);
+  setBandsHeight(stage, bandCount);
   countSeg.paint();
   if (windowSeg) windowSeg.paint();
   buildCells();
@@ -1556,7 +1564,7 @@ export function createBandsView({ uid, colors, feed, note = BEAT_NOTE, count = D
     grid = null;
     laneAt = -Infinity;
     buildCells();
-    stage.style.setProperty('--bands-h', `${bandsHeight(next)}px`);
+    setBandsHeight(stage, next);
     countSeg.paint();
     describe(what);
     paint();

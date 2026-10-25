@@ -1,13 +1,13 @@
 import { estimateIntervals, IOI_MIN_CONFIDENCE, MIN_PERIODS } from './live-bpm.js';
 import { liveBpmLabel } from './bpm-label.js';
 
-export const BAND_COUNTS = [4, 6, 8, 12];
+export const BAND_COUNTS = [4, 6, 8, 12, 16, 24];
 export const DEFAULT_BAND_COUNT = 6;
 export const LOW_LANE_MAX_HZ = 250;
 export const LANE_MIN_PX = 18;
-export const LANE_PX = 102;
+export const LANE_PX = 108;
 export const BANDS_H_MIN = 480;
-export const BANDS_H_MAX = 1320;
+export const PHONE_CAP_MAX_COUNT = 12;
 export const BANDS_FOOT = 16;
 
 export function bandRangeText(band) {
@@ -38,6 +38,23 @@ export const BAND_TABLES = Object.freeze({
     ['Voice', 630, 1000, 'vocal body'], ['Mids', 1000, 1600], ['Presence', 1600, 2500, 'vocal presence'],
     ['Attack', 2500, 4000, 'snare crack'], ['Hats', 4000, 8000, 'hi-hats, sibilance'], ['Air', 8000, 16000, 'cymbals, air'],
   ]),
+  // 16 and 24: roughly log-spaced (ratio 1.52 and 1.32) 20 Hz to 16 kHz, edges hand-rounded. The mic FFT is 16384
+  // (bin 2.7 to 2.9 Hz at 44.1 and 48 kHz), so the lowest 24-band lane 20-26 Hz is the narrowest at 2 bins and no two
+  // lanes share a bin (checked for both rates in the tests).
+  16: table([
+    ['Sub', 20, 30], ['Sub-bass', 30, 45], ['Kick', 45, 70, 'kick fundamental'], ['Bass', 70, 105, 'bass guitar'],
+    ['Upper bass', 105, 160, 'kick punch'], ['Warmth', 160, 240, 'snare body'], ['Low mids', 240, 370], ['Boxy', 370, 560, 'boxy mids'],
+    ['Body', 560, 850], ['Voice', 850, 1300, 'vocal body'], ['Upper mids', 1300, 2000], ['Presence', 2000, 2900, 'vocal presence'],
+    ['Attack', 2900, 4400, 'snare crack'], ['Bite', 4400, 7000], ['Hats', 7000, 10400, 'hi-hats, sibilance'], ['Air', 10400, 16000, 'cymbals, air'],
+  ]),
+  24: table([
+    ['Sub', 20, 26], ['Sub-bass', 26, 34], ['Deep kick', 34, 45], ['Kick', 45, 60, 'kick fundamental'], ['Kick/bass', 60, 80],
+    ['Bass', 80, 105, 'bass guitar'], ['Upper bass', 105, 140, 'kick punch'], ['Low warmth', 140, 185], ['Warmth', 185, 245, 'snare body'],
+    ['Low mids', 245, 320], ['Mud', 320, 425], ['Boxy', 425, 560, 'boxy mids'], ['Body', 560, 740], ['Honk', 740, 980],
+    ['Voice', 980, 1300, 'vocal body'], ['Upper mids', 1300, 1700], ['Clarity', 1700, 2200], ['Presence', 2200, 2900, 'vocal presence'],
+    ['Attack', 2900, 3900, 'snare crack'], ['Bite', 3900, 5200], ['Sibilance', 5200, 6900], ['Hats', 6900, 8800, 'hi-hats'],
+    ['Sheen', 8800, 11800], ['Air', 11800, 16000, 'cymbals, air'],
+  ]),
 });
 
 export const bandsFor = (count) => BAND_TABLES[count] ?? BAND_TABLES[DEFAULT_BAND_COUNT];
@@ -48,7 +65,9 @@ export const lowLaneCount = (bands) => {
   return n;
 };
 
-export const bandsHeight = (count) => Math.min(BANDS_H_MAX, Math.max(BANDS_H_MIN, count * LANE_PX));
+export const bandsHeight = (count) => Math.max(BANDS_H_MIN, count * LANE_PX);
+
+export const bandsPhoneCapped = (count) => count <= PHONE_CAP_MAX_COUNT;
 
 export const laneHeight = (h, count) => (h - BANDS_FOOT) / count;
 

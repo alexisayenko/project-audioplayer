@@ -1,13 +1,13 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  BAND_COUNTS, DEFAULT_BAND_COUNT, BAND_TABLES, bandsFor, lowLaneCount, bandsHeight, laneHeight, bandRangeText, LANE_MIN_PX, LOW_LANE_MAX_HZ,
+  BAND_COUNTS, DEFAULT_BAND_COUNT, BAND_TABLES, bandsFor, lowLaneCount, bandsHeight, laneHeight, bandRangeText, LANE_MIN_PX, LANE_PX, LOW_LANE_MAX_HZ, bandsPhoneCapped,
   LANE_RATIOS, LANE_WINDOWS_S, LANE_WINDOW_DEFAULT_S, LANE_HISTORY_S, laneWindowFor, laneCaption, laneNoDataTip,
   laneRelation, estimateLane, laneBpmText, laneConfidence, laneTitle,
 } from './beat-bands.js';
 
-test('WEB-191: the band counts are 4, 6, 8 and 12 and the default is 6', () => {
-  assert.deepEqual(BAND_COUNTS, [4, 6, 8, 12]);
+test('WEB-191: the band counts are 4, 6, 8, 12, 16 and 24 and the default is 6', () => {
+  assert.deepEqual(BAND_COUNTS, [4, 6, 8, 12, 16, 24]);
   assert.equal(DEFAULT_BAND_COUNT, 6);
   assert.equal(bandsFor(99), BAND_TABLES[6]);
 });
@@ -32,11 +32,13 @@ test('WEB-191: the band tables match the owner decision', () => {
   assert.deepEqual(edges(6), [20, 60, 150, 400, 2000, 6000, 16000]);
   assert.deepEqual(edges(8), [20, 50, 100, 200, 400, 800, 1600, 4000, 16000]);
   assert.deepEqual(edges(12), [20, 40, 80, 150, 250, 400, 630, 1000, 1600, 2500, 4000, 8000, 16000]);
+  assert.deepEqual(edges(16), [20, 30, 45, 70, 105, 160, 240, 370, 560, 850, 1300, 2000, 2900, 4400, 7000, 10400, 16000]);
+  assert.deepEqual(edges(24), [20, 26, 34, 45, 60, 80, 105, 140, 185, 245, 320, 425, 560, 740, 980, 1300, 1700, 2200, 2900, 3900, 5200, 6900, 8800, 11800, 16000]);
   assert.deepEqual(BAND_TABLES[6].map((b) => b.name), ['Sub', 'Bass', 'Low-mid', 'Mids', 'Presence', 'Air']);
 });
 
 test('WEB-191: the low lanes are the leading lanes whose upper edge is at most 250 Hz', () => {
-  assert.deepEqual(BAND_COUNTS.map((n) => lowLaneCount(BAND_TABLES[n])), [2, 2, 3, 4]);
+  assert.deepEqual(BAND_COUNTS.map((n) => lowLaneCount(BAND_TABLES[n])), [2, 2, 3, 4, 6, 9]);
   for (const n of BAND_COUNTS) {
     const low = lowLaneCount(BAND_TABLES[n]);
     assert.ok(BAND_TABLES[n].slice(0, low).every((b) => b.hi <= LOW_LANE_MAX_HZ));
@@ -44,11 +46,29 @@ test('WEB-191: the low lanes are the leading lanes whose upper edge is at most 2
   }
 });
 
-test('WEB-191: the canvas height follows the band count within 480 to 1320 px and each lane stays at least 18 px', () => {
-  assert.deepEqual(BAND_COUNTS.map(bandsHeight), [480, 612, 816, 1224]);
-  assert.equal(bandsHeight(20), 1320);
+test('WEB-191: the canvas is at least 480 px and 108 px per lane with no upper cap, and each lane stays at least 18 px', () => {
+  assert.equal(LANE_PX, 108);
+  assert.deepEqual(BAND_COUNTS.map(bandsHeight), [480, 648, 864, 1296, 1728, 2592]);
+  assert.equal(bandsHeight(20), 2160);
+  assert.deepEqual(BAND_COUNTS.map(bandsPhoneCapped), [true, true, true, true, false, false]);
   assert.equal(bandsHeight(1), 480);
   for (const n of BAND_COUNTS) assert.ok(laneHeight(bandsHeight(n), n) >= LANE_MIN_PX, String(n));
+});
+
+test('WEB-191: at 44.1 and 48 kHz with 8192 bins the 16 and 24 band tables give every band at least 2 bins and no two lanes share a bin', () => {
+  for (const sr of [44100, 48000]) {
+    const bw = sr / (2 * 8192);
+    for (const n of [16, 24]) {
+      let prevEnd = 0;
+      for (const b of BAND_TABLES[n]) {
+        const a = Math.ceil(b.lo / bw);
+        const z = Math.floor(b.hi / bw);
+        assert.ok(z - a + 1 >= 2, `${sr}:${n}:${b.name}`);
+        assert.ok(a > prevEnd, `${sr}:${n}:${b.name}`);
+        prevEnd = z;
+      }
+    }
+  }
 });
 
 test('WEB-191: range text uses Hz below 1 kHz and kHz above', () => {
