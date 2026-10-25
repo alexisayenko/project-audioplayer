@@ -144,8 +144,17 @@ test('WEB-211: presets fill the bars with the recipes (square H3 is 33.3), Reset
   assert.ok(near(card.custom.bars[2], 100 / 3));
   assert.equal(chip('Square').getAttribute('aria-pressed'), 'true');
   assert.equal(chip('Sawtooth').getAttribute('aria-pressed'), 'false');
-  chip('Organ').click();
+  chip('Organ-like').click();
   assert.deepEqual(card.custom.bars.slice(0, 6), [100, 80, 60, 40, 30, 0]);
+  assert.equal(chip('Organ-like').getAttribute('aria-pressed'), 'true');
+  chip('Piano-like').click();
+  assert.deepEqual(card.custom.bars.slice(0, 13), [100, 65, 45, 30, 20, 14, 9, 6, 4, 3, 2, 1, 0]);
+  assert.equal(chip('Piano-like').getAttribute('aria-pressed'), 'true');
+  assert.equal(chip('Organ-like').getAttribute('aria-pressed'), 'false');
+  chip('Guitar-like').click();
+  assert.deepEqual(card.custom.bars.slice(0, 13), [100, 75, 50, 20, 3, 14, 10, 5, 3, 1, 2, 2, 0]);
+  assert.equal(chip('Guitar-like').getAttribute('aria-pressed'), 'true');
+  assert.equal(chip('Piano-like').getAttribute('aria-pressed'), 'false');
   chip('Only overtones').click();
   assert.equal(card.custom.bars[0], 0);
   assert.match(chip('Only overtones').getAttribute('title'), /Missing fundamental/);

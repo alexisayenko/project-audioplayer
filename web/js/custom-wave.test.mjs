@@ -19,6 +19,12 @@ test('WEB-211: the preset recipes are exact (square H3 is 33.3 percent, sawtooth
   assert.equal(tri[1], 0);
   assert.deepEqual(c.presetBars('sine').slice(0, 3), [100, 0, 0]);
   assert.deepEqual(c.presetBars('organ').slice(0, 7), [100, 80, 60, 40, 30, 0, 0]);
+  assert.deepEqual(c.presetBars('piano').slice(0, 14), [100, 65, 45, 30, 20, 14, 9, 6, 4, 3, 2, 1, 0, 0]);
+  assert.deepEqual(c.presetBars('guitar').slice(0, 14), [100, 75, 50, 20, 3, 14, 10, 5, 3, 1, 2, 2, 0, 0]);
+  assert.deepEqual(c.PRESETS.map((x) => x.id), ['sine', 'triangle', 'square', 'sawtooth', 'organ', 'piano', 'guitar', 'hollow', 'overtones', 'clear']);
+  assert.deepEqual(c.PRESETS.slice(4, 7).map((x) => x.label), ['Organ-like', 'Piano-like', 'Guitar-like']);
+  assert.ok(c.PRESETS.slice(4, 7).every((x) => /simple (hand-picked )?approximation/.test(x.title)));
+  assert.ok(c.matchesPreset(c.presetBars('guitar'), 'guitar') && !c.matchesPreset(c.presetBars('guitar'), 'piano'));
   assert.deepEqual(c.presetBars('hollow').slice(0, 8), [100, 0, 60, 0, 40, 0, 25, 0]);
   const over = c.presetBars('overtones');
   assert.equal(over[0], 0);
@@ -74,7 +80,7 @@ test('WEB-211: the RMS compensation gives every custom shape the sine loudness, 
   const sine = c.analyzeBars(c.presetBars('sine'));
   assert.ok(near(sine.rms, Math.SQRT1_2, 1e-4));
   assert.ok(near(c.customGain(0.3, sine.rms), 0.3, 1e-4));
-  for (const id of ['triangle', 'square', 'sawtooth', 'organ', 'hollow', 'overtones']) {
+  for (const id of ['triangle', 'square', 'sawtooth', 'organ', 'piano', 'guitar', 'hollow', 'overtones']) {
     const a = c.analyzeBars(c.presetBars(id));
     const g = c.customGain(0.3, a.rms);
     assert.ok(near(g * a.rms, 0.3 * Math.SQRT1_2, 1e-9), id);
