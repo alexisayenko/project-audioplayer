@@ -3,8 +3,7 @@ import { icon } from './icons.js';
 import { segmented } from './segmented.js';
 
 export const TITLE = 'Primitive';
-export const PRIMITIVE_NOTE = 'A primitive sound: one sine wave, one frequency, H1 only. It models a speaker cone driven by an electrical signal.';
-export const INTRO = 'The four numbers that describe a sound from a speaker. Set them, press Play and hear a pure sine tone.';
+export const INTRO = 'A primitive sound: one sine wave, one frequency, H1 only. It models a speaker cone driven by an electrical signal. Set the four numbers, press Play.';
 export const MIN_HZ = 20;
 export const MAX_HZ = 20000;
 export const MAX_AMP = 0.8;
@@ -21,10 +20,10 @@ export const SCOPE_TICKS = 4;
 export const SOUND_SPEED = 343;
 export const NARROW_PX = 480;
 export const SCOPE_TITLE = 'Oscilloscope: one cycle';
-export const SCOPE_SUB = 'Oscilloscope: one cycle. Waveform of the tone over one cycle: time across, amplitude up.';
+export const SCOPE_SUB = 'Waveform over one cycle: time across, amplitude up.';
 export const SCOPE_NOTE = 'The bracket: one cycle in time is one wavelength in space (speed of sound 343 m/s divided by the frequency, in air at 20 °C).';
 export const WINDOW_TITLE = 'Oscilloscope: time window';
-export const WINDOW_SUB = 'Oscilloscope: time window. Waveform over a period of time: time across, amplitude up.';
+export const WINDOW_SUB = 'Waveform over a period of time: time across, amplitude up.';
 export const WINDOW_LABEL = 'Time window';
 export const WINDOW_CHOICES = [10, 20, 50, 200];
 export const WINDOW_DEFAULT = 20;
@@ -345,35 +344,54 @@ export function createSimpleCard(env = {}) {
     el('span', { id: `${uid}-wl`, class: 'hm-lbl' }, WINDOW_LABEL),
     winSeg.group);
 
-  const field = (id, title, ...rest) => el('div', { class: 'hm-field' }, el('label', { htmlFor: id }, title), ...rest);
-  const cap = (id, text) => el('p', { id, class: 'hm-cap muted t-caption' }, text);
+  const info = (id, about, text) => {
+    const note = el('p', { id, class: 'hm-cap muted t-caption', hidden: true }, text);
+    const btn = el('button', {
+      class: 'sm-info',
+      type: 'button',
+      'aria-expanded': 'false',
+      'aria-controls': id,
+      'aria-label': `About ${about}`,
+      onclick: () => {
+        note.hidden = !note.hidden;
+        btn.setAttribute('aria-expanded', String(!note.hidden));
+      },
+    }, 'i');
+    return { btn, note };
+  };
+  const field = (id, title, tip, ...rest) => el('div', { class: 'hm-field' },
+    el('div', { class: 'sm-lab' }, el('label', { htmlFor: id }, title), tip?.btn ?? null),
+    ...rest,
+    tip?.note ?? null);
+  const ampTip = info(`${uid}-ad`, 'amplitude', `${AMP_NOTE} ${LIMIT_NOTE}`);
+  const powTip = info(`${uid}-pd`, 'power', `${POWER_NOTE} ${DB_NOTE}`);
+  const lenTip = info(`${uid}-ld`, 'length', LENGTH_NOTE);
 
   const node = el('section', { class: 'card hm-card sm-card', 'aria-label': TITLE },
     el('h2', { class: 't-headline' }, TITLE),
-    el('p', { class: 'hm-cap muted t-caption' }, PRIMITIVE_NOTE),
     el('p', { class: 'hm-cap muted t-caption' }, INTRO),
     el('div', { class: 'sm-ctl' },
-      field(`${uid}-fn`, 'Frequency (Hz)', el('div', { class: 'hm-freq' }, freqNum, noteOut), freqRange),
-      field(`${uid}-an`, 'Amplitude (strength, % of full scale)', el('div', { class: 'hm-freq' }, ampNum, ampOut), ampRange, cap(`${uid}-ad`, `${AMP_NOTE} ${LIMIT_NOTE}`)),
-      field(`${uid}-pn`, 'Power (% of the full-scale tone)', el('div', { class: 'hm-freq' }, powNum, dbOut), powRange, cap(`${uid}-pd`, `${POWER_NOTE} ${DB_NOTE}`)),
-      field(`${uid}-ln`, 'Length (seconds)', el('div', { class: 'hm-freq' }, lenNum, el('span', { class: 'hm-check' }, contBox, el('label', { htmlFor: `${uid}-cb` }, 'Continuous (until Stop)'))), cap(`${uid}-ld`, LENGTH_NOTE))),
-    el('div', { class: 'hm-play' }, button, stateOut),
-    el('div', { class: 'hm-block' },
-      el('h3', { class: 't-subhead' }, SCOPE_TITLE),
-      el('p', { class: 'hm-cap muted t-caption' }, SCOPE_SUB),
-      el('div', { class: 'hm-view hm-wave sm-wave' }, canvas),
-      readoutOut,
-      el('p', { class: 'hm-cap muted t-caption' }, SCOPE_NOTE),
-      el('p', { class: 'hm-cap muted t-caption' }, SINE_NOTE)),
-    el('div', { class: 'hm-block' },
-      el('h3', { class: 't-subhead' }, WINDOW_TITLE),
-      el('p', { class: 'hm-cap muted t-caption' }, WINDOW_SUB),
-      winField,
-      el('div', { class: 'hm-view hm-wave' }, windowCanvas),
-      windowCapOut,
-      manyOut),
-    el('a', { class: 'gl-link t-subhead', href: WAVE_HREF }, WAVE_LINK),
-    el('a', { class: 'gl-link t-subhead', href: GLOSSARY_HREF }, GLOSSARY_LINK));
+      field(`${uid}-fn`, 'Frequency (Hz)', null, el('div', { class: 'hm-freq' }, freqNum, noteOut), freqRange),
+      field(`${uid}-an`, 'Amplitude (% of full scale)', ampTip, el('div', { class: 'hm-freq' }, ampNum, ampOut), ampRange),
+      field(`${uid}-pn`, 'Power (% of full-scale tone)', powTip, el('div', { class: 'hm-freq' }, powNum, dbOut), powRange),
+      field(`${uid}-ln`, 'Length (seconds)', lenTip, el('div', { class: 'hm-freq' }, lenNum, el('span', { class: 'hm-check' }, contBox, el('label', { htmlFor: `${uid}-cb` }, 'Continuous (until Stop)')))),
+      el('div', { class: 'hm-play' }, button, stateOut)),
+    el('div', { class: 'sm-scopes' },
+      el('div', { class: 'hm-block' },
+        el('div', { class: 'hm-head' }, el('h3', { class: 't-subhead' }, SCOPE_TITLE)),
+        el('p', { class: 'hm-cap muted t-caption' }, SCOPE_SUB),
+        el('div', { class: 'hm-view hm-wave' }, canvas),
+        readoutOut,
+        el('p', { class: 'hm-cap muted t-caption' }, `${SCOPE_NOTE} ${SINE_NOTE}`)),
+      el('div', { class: 'hm-block' },
+        el('div', { class: 'hm-head' }, el('h3', { class: 't-subhead' }, WINDOW_TITLE), winField),
+        el('p', { class: 'hm-cap muted t-caption' }, WINDOW_SUB),
+        el('div', { class: 'hm-view hm-wave' }, windowCanvas),
+        windowCapOut,
+        manyOut)),
+    el('p', { class: 'sm-links' },
+      el('a', { class: 'gl-link t-subhead', href: WAVE_HREF }, WAVE_LINK),
+      el('a', { class: 'gl-link t-subhead', href: GLOSSARY_HREF }, GLOSSARY_LINK)));
 
   const active = () => doc?.activeElement;
 

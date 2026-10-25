@@ -125,13 +125,14 @@ test('WEB-207: the time window covers frequency x window cycles, with a caption,
   assert.equal(s.scopeGeometry(400, 160).row, 26);
 });
 
-test('WEB-207: Primitive has a second oscilloscope below the first with a Time window switch that follows the settings', () => {
+test('WEB-207: Primitive has the second oscilloscope beside the first with a Time window switch that follows the settings', () => {
   const card = s.createSimpleCard(fakeCtx().env);
   const heads = card.node.querySelectorAll('h3').map((h) => h.textContent);
   assert.ok(heads.indexOf('Oscilloscope: one cycle') >= 0);
   assert.equal(heads.indexOf('Oscilloscope: time window'), heads.indexOf('Oscilloscope: one cycle') + 1);
-  assert.ok(card.node.textContent.includes('Oscilloscope: one cycle. Waveform of the tone over one cycle: time across, amplitude up.'));
-  assert.ok(card.node.textContent.includes('Oscilloscope: time window. Waveform over a period of time: time across, amplitude up.'));
+  assert.ok(card.node.textContent.includes('Waveform over one cycle: time across, amplitude up.'));
+  assert.ok(card.node.textContent.includes('Waveform over a period of time: time across, amplitude up.'));
+  assert.equal(card.node.querySelectorAll('.sm-scopes .hm-block').length, 2);
   assert.equal(card.window, 20);
   assert.ok(card.node.textContent.includes('about 8.8 cycles in 20 ms'));
   const many = card.node.querySelectorAll('p').find((p) => p.textContent === 'Too many cycles to see the shape: shorten the window');
@@ -157,6 +158,36 @@ test('STU-043: Primitive has no cone animation, no dot, no Slow motion factor an
   assert.equal(link.getAttribute('href'), '#/glossary/sound-wave');
   assert.equal(card.paused, undefined);
   assert.equal(card.phase, undefined);
+  card.dispose();
+});
+
+test('STU-046: Primitive is compact: one intro line, the helper texts behind info buttons, the same ids and controls', () => {
+  const card = s.createSimpleCard(fakeCtx().env);
+  const text = card.node.textContent;
+  assert.ok(text.includes('A primitive sound: one sine wave, one frequency, H1 only. It models a speaker cone driven by an electrical signal. Set the four numbers, press Play.'));
+  assert.ok(!text.includes('The four numbers that describe a sound from a speaker.'));
+  const buttons = card.node.querySelectorAll('.sm-info');
+  assert.equal(buttons.length, 3);
+  const notes = buttons.map((b) => card.node.querySelector(`#${b.getAttribute('aria-controls')}`));
+  assert.deepEqual(notes.map((n) => n.textContent), [
+    'How far the speaker cone moves. Limited to 80 % of full scale to protect your hearing and the speaker.',
+    `${s.POWER_NOTE} ${s.DB_NOTE}`,
+    'A new length applies the next time you press Play. Continuous stops after 10 minutes.',
+  ]);
+  for (const [i, b] of buttons.entries()) {
+    assert.equal(b.getAttribute('aria-expanded'), 'false');
+    assert.equal(notes[i].hidden, true);
+    b.click();
+    assert.equal(b.getAttribute('aria-expanded'), 'true');
+    assert.equal(notes[i].hidden, false);
+    b.click();
+    assert.equal(notes[i].hidden, true);
+  }
+  assert.equal(card.node.querySelectorAll('.sm-ctl input[type="number"]').length, 4);
+  assert.equal(card.node.querySelectorAll('.sm-ctl input[type="range"]').length, 3);
+  assert.equal(card.node.querySelectorAll('.sm-ctl .hm-toggle').length, 1);
+  assert.ok(text.includes('The bracket: one cycle in time is one wavelength in space'));
+  assert.ok(text.includes('One sine wave = one frequency = H1 only.'));
   card.dispose();
 });
 
