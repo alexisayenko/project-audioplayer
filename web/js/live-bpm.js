@@ -16,6 +16,7 @@ export const FAST_LOCK = 0.5;
 export const SHORT_LOCK = 0.45;
 export const HISTORY_S = 60;
 export const WINDOWS_S = [1, 4, 8, 15, 30, 60];
+export const LANE_WINDOW_S = 8;
 export const MIN_PERIODS = 4;
 export const PERIODS_MARGIN = 1.02;
 export const GATE_MIN_S = 8;
@@ -421,6 +422,13 @@ export function estimateWindowFromEnvelope(env, rate, seconds, hint = null) {
   const beatsInWindow = (bpm * seconds) / 60;
   if (!(beatsInWindow > MIN_PERIODS * PERIODS_MARGIN)) return null;
   return { bpm, confidence: Math.min(1, Math.max(0, trace.top ?? 0)), beatsInWindow };
+}
+
+export function estimateEnvelope(env, rate, windowSeconds = LANE_WINDOW_S) {
+  if (!(rate > 0) || !(windowSeconds > 0)) return null;
+  const n = windowFrames(windowSeconds, rate);
+  if (env.length < n) return null;
+  return estimateWindowFromEnvelope(env.length === n ? env : env.subarray(env.length - n), rate, windowSeconds, null);
 }
 
 export function gateLong(ref, res) {

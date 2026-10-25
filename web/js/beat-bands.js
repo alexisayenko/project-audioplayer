@@ -1,3 +1,6 @@
+import { estimateEnvelope, LANE_WINDOW_S, MIN_PERIODS } from './live-bpm.js';
+import { liveBpmLabel } from './bpm-label.js';
+
 export const BAND_COUNTS = [4, 6, 8, 12];
 export const DEFAULT_BAND_COUNT = 6;
 export const LOW_LANE_MAX_HZ = 250;
@@ -50,3 +53,62 @@ export const bandsHeight = (count) => Math.min(BANDS_H_MAX, Math.max(BANDS_H_MIN
 export const laneHeight = (h, count) => (h - BANDS_FOOT) / count;
 
 export const bandsLabel = (bands) => bands.map((b) => `${b.name} ${b.range}`).join(', ');
+
+export const LANE_ENV_RATE = 200;
+export const LANE_UPDATE_MS = 1000;
+export const LANE_START_SLACK_S = 0.05;
+export const LANE_MIN_CONFIDENCE = 0.5;
+export const LANE_RATIO_TOLERANCE = 0.03;
+export const LANE_BPM_W = 40;
+export const LANE_NO_DATA_TIP = `No regular pattern in the last ${LANE_WINDOW_S} s (needs more than ${MIN_PERIODS} beats)`;
+export const LANE_CAPTION = `Each lane shows the repeat rate of its own hits over the last ${LANE_WINDOW_S} s. The kick lane usually matches the main beat; hi-hats often run at 2x or 4x, a snare at 1/2.`;
+
+export const LANE_RATIOS = Object.freeze([
+  Object.freeze({ ratio: 2, chip: 'x2', tip: 'twice the main beat' }),
+  Object.freeze({ ratio: 4, chip: 'x4', tip: 'four times the main beat' }),
+  Object.freeze({ ratio: 0.5, chip: 'x1/2', tip: 'half the main beat' }),
+  Object.freeze({ ratio: 0.25, chip: 'x1/4', tip: 'a quarter of the main beat' }),
+  Object.freeze({ ratio: 1.5, chip: 'x3/2', tip: 'one and a half times the main beat' }),
+]);
+
+const near = (bpm, target) => Math.abs(bpm / target - 1) <= LANE_RATIO_TOLERANCE;
+
+export function laneRelation(main, bpm) {
+  if (!(main > 0) || !(bpm > 0)) return { kind: 'none', chip: '', tip: '' };
+  if (near(bpm, main)) return { kind: 'same', chip: '', tip: 'the main beat' };
+  for (const r of LANE_RATIOS) if (near(bpm, main * r.ratio)) return { kind: 'multiple', chip: r.chip, tip: r.tip };
+  return { kind: 'other', chip: '', tip: 'not a simple multiple of the main beat' };
+}
+
+export function laneEnvelope(points, rate, windowS, out) {
+  const n = Math.round(windowS * rate);
+  if (points.length < 2 || out.length < n) return false;
+  const end = points[points.length - 1].t;
+  const first = end - (n - 1) / rate;
+  if (points[0].t > first + LANE_START_SLACK_S) return false;
+  out.fill(0, 0, n);
+  for (let k = points.length - 1; k >= 0 && points[k].t >= first; k -= 1) {
+    if (!points[k].onset) continue;
+    const bin = Math.round((points[k].t - first) * rate);
+    if (bin < n) out[bin] += points[k].strength;
+  }
+  return true;
+}
+
+export function estimateLane(points, scratch, rate = LANE_ENV_RATE, windowS = LANE_WINDOW_S) {
+  if (!laneEnvelope(points, rate, windowS, scratch)) return null;
+  const res = estimateEnvelope(scratch.subarray(0, Math.round(windowS * rate)), rate, windowS);
+  return res && res.confidence >= LANE_MIN_CONFIDENCE ? res : null;
+}
+
+export const laneScratch = (rate = LANE_ENV_RATE, windowS = LANE_WINDOW_S) => new Float32Array(Math.round(windowS * rate));
+
+export const laneBpmText = (res) => (res ? liveBpmLabel(res.bpm) : '-');
+
+export const laneConfidence = (res) => (res ? Math.round(100 * Math.min(1, Math.max(0, res.confidence))) : 0);
+
+export function laneTitle(band, res, rel) {
+  if (!res) return `${band.name} ${band.range}: ${LANE_NO_DATA_TIP}`;
+  const base = `${band.name} ${band.range}: ${liveBpmLabel(res.bpm)} BPM, confidence ${laneConfidence(res)} percent`;
+  return rel.kind === 'none' ? base : `${base}, ${rel.chip ? `${rel.chip}: ${rel.tip}` : rel.tip}`;
+}

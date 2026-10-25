@@ -5,6 +5,7 @@ import { parseColor, mixColor } from './viz-color.js';
 import { detectPitch, correctOctave, harmonicMarks, foundList, createPitchTracker, PITCH_EVERY_MS, HARMONIC_LABEL_GAP_PX } from './pitch-detect.js';
 import {
   BAND_COUNTS, DEFAULT_BAND_COUNT, BAND_TABLES, bandsFor, lowLaneCount, bandsHeight, laneHeight, bandsLabel, bandRangeText,
+  LANE_BPM_W, LANE_UPDATE_MS, LANE_CAPTION, laneRelation, estimateLane, laneScratch, laneBpmText, laneConfidence, laneTitle,
 } from './beat-bands.js';
 
 export { BAND_COUNTS, DEFAULT_BAND_COUNT, BAND_TABLES, bandsFor, lowLaneCount, bandsHeight, bandRangeText };
@@ -403,7 +404,7 @@ export const BANDS_BOTTOM = 16;
 export const LANE_TEXT_MIN_PX = 26;
 
 export const bandsLeft = (w) => (w >= BANDS_WIDE_MIN ? BANDS_LEFT_WIDE : BANDS_LEFT);
-export const bandsPlotW = (w) => Math.max(1, w - bandsLeft(w) - BANDS_RIGHT);
+export const bandsPlotW = (w, extraRight = 0) => Math.max(1, w - bandsLeft(w) - BANDS_RIGHT - extraRight);
 
 export function gridEvery(period, plotW) {
   if (!(period > 0) || !(plotW > 0)) return 1;
@@ -926,12 +927,12 @@ function drawLaneLabel(ctx, colors, band, y0, laneH, left, wide) {
   ctx.fillText(band.range, 6, y0 + laneH / 2 + 11);
 }
 
-export function drawBandsView(g, colors, lanes, nowT, normalize, grid = null, bands = BANDS) {
+export function drawBandsView(g, colors, lanes, nowT, normalize, grid = null, bands = BANDS, extraRight = 0) {
   const { ctx, w, h } = g;
   const left = bandsLeft(w);
   const right = BANDS_RIGHT;
   const bottom = BANDS_BOTTOM;
-  const plotW = bandsPlotW(w);
+  const plotW = bandsPlotW(w, extraRight);
   const laneH = laneHeight(h, bands.length);
   const wide = w >= BANDS_WIDE_MIN;
   const pad = 4;
@@ -1398,7 +1399,7 @@ export function createGramView({ colors, feed, range, ticks }) {
   };
 }
 
-export function createBandsView({ uid, colors, feed, note = BEAT_NOTE, count = DEFAULT_BAND_COUNT }) {
+export function createBandsView({ uid, colors, feed, note = BEAT_NOTE, count = DEFAULT_BAND_COUNT, laneBpm = true }) {
   let normalize = true;
   let beatSr = 0;
   let beatBins = 0;
@@ -1413,10 +1414,18 @@ export function createBandsView({ uid, colors, feed, note = BEAT_NOTE, count = D
   let lowLanes = lowLaneCount(bands);
   let tracker = createBeatTracker(bands.length);
   let levels = new Array(bands.length);
+  let main = 0;
+  let laneAt = -Infinity;
+  let laneRes = [];
+  let cells = [];
+  let scratch = null;
+  const extraRight = laneBpm ? LANE_BPM_W : 0;
   const canvas = el('canvas', { class: 'hm-canvas', role: 'img' });
   const normBox = el('input', { id: `${uid}-nb`, type: 'checkbox', checked: true, onchange: () => { normalize = normBox.checked; paint(); } });
   const caption = el('p', { class: 'hm-cap muted t-caption' }, note);
-  const stage = view(canvas, 'hm-bands');
+  const laneCaption = laneBpm ? el('p', { class: 'hm-cap muted t-caption' }, LANE_CAPTION) : null;
+  const laneList = laneBpm ? el('ol', { class: 'hm-lanes', 'aria-label': 'Repeat rate of each band' }) : null;
+  const stage = laneBpm ? view(canvas, 'hm-bands', laneList) : view(canvas, 'hm-bands');
   const countSeg = segmented(BAND_COUNTS.map((n) => [n, String(n)]), () => bandCount, (n) => setCount(n), { 'aria-labelledby': `${uid}-bl` });
   const node = el('div', { class: 'hm-block' },
     el('div', { class: 'hm-head' },
@@ -1425,9 +1434,51 @@ export function createBandsView({ uid, colors, feed, note = BEAT_NOTE, count = D
         el('div', { class: 'hm-axis' }, el('span', { id: `${uid}-bl`, class: 'hm-lbl' }, 'Bands'), countSeg.group),
         el('span', { class: 'hm-check' }, normBox, el('label', { htmlFor: `${uid}-nb` }, 'Normalize per band')))),
     stage,
-    caption);
+    caption,
+    laneCaption);
   stage.style.setProperty('--bands-h', `${bandsHeight(bandCount)}px`);
   countSeg.paint();
+  buildCells();
+
+  function buildCells() {
+    if (!laneList) return;
+    laneRes = new Array(bands.length).fill(null);
+    scratch = laneScratch();
+    cells = bands.map(() => {
+      const val = el('span', { class: 'hm-lane-val' }, '-');
+      const fill = el('i');
+      const bar = el('span', { class: 'rh-bar', 'aria-hidden': 'true' }, fill);
+      const chip = el('span', { class: 'hm-lane-chip', hidden: true });
+      return { item: el('li', { class: 'hm-lane' }, val, bar, chip), val, fill, chip, text: '', title: '', drift: false };
+    });
+    laneList.style.setProperty('--lanes', String(bands.length));
+    laneList.replaceChildren(...cells.map((c) => c.item));
+    paintCells();
+  }
+
+  function paintCells() {
+    for (let i = 0; i < cells.length; i += 1) {
+      const c = cells[i];
+      const res = laneRes[i] ?? null;
+      const rel = laneRelation(main, res?.bpm);
+      const text = laneBpmText(res);
+      if (text !== c.text) { c.text = text; c.val.textContent = text; }
+      c.fill.style.width = `${laneConfidence(res)}%`;
+      const title = laneTitle(bands[i], res, rel);
+      if (title !== c.title) { c.title = title; c.item.setAttribute('title', title); c.item.setAttribute('aria-label', title); }
+      const chip = res ? rel.chip : '';
+      if (chip !== c.chip.textContent) { c.chip.textContent = chip; c.chip.hidden = !chip; }
+      const drift = !!res && rel.kind === 'other';
+      if (drift !== c.drift) { c.drift = drift; c.item.classList.toggle('is-drift', drift); }
+    }
+  }
+
+  function updateLanes(t) {
+    if (!laneList || t - laneAt < LANE_UPDATE_MS) return;
+    laneAt = t;
+    for (let i = 0; i < bands.length; i += 1) laneRes[i] = estimateLane(tracker.lanes[i].points, scratch);
+    paintCells();
+  }
 
   function setCount(next) {
     if (!BAND_COUNTS.includes(next) || next === bandCount) return;
@@ -1441,6 +1492,8 @@ export function createBandsView({ uid, colors, feed, note = BEAT_NOTE, count = D
     beatBins = 0;
     beatAt = 0;
     grid = null;
+    laneAt = -Infinity;
+    buildCells();
     stage.style.setProperty('--bands-h', `${bandsHeight(next)}px`);
     countSeg.paint();
     describe(what);
@@ -1461,9 +1514,9 @@ export function createBandsView({ uid, colors, feed, note = BEAT_NOTE, count = D
   function paint() {
     const g = fit(canvas);
     if (!g) return;
-    grid = bpm > 0 ? tempoGrid(tracker.lanes, bpm, beatAt, bandsPlotW(g.w), lowLanes) : null;
+    grid = bpm > 0 ? tempoGrid(tracker.lanes, bpm, beatAt, bandsPlotW(g.w, extraRight), lowLanes) : null;
     if (grid) showEvery(grid.every);
-    drawBandsView(g, colors(), tracker.lanes, beatAt, normalize, grid, bands);
+    drawBandsView(g, colors(), tracker.lanes, beatAt, normalize, grid, bands, extraRight);
   }
 
   return {
@@ -1478,12 +1531,16 @@ export function createBandsView({ uid, colors, feed, note = BEAT_NOTE, count = D
     setTempo(next) {
       bpm = next > 0 ? Number(next) : 0;
       if (!bpm) { grid = null; showEvery(1); }
+      if (laneList && bpm !== main) { main = bpm; paintCells(); }
     },
+    get laneResults() { return laneRes; },
     paint,
     describe,
     reset() {
       tracker.reset();
       beatAt = 0;
+      laneAt = -Infinity;
+      if (laneList) { laneRes.fill(null); paintCells(); }
     },
     step(t) {
       const f = feed();
@@ -1496,6 +1553,7 @@ export function createBandsView({ uid, colors, feed, note = BEAT_NOTE, count = D
         }
         beatAt = t / 1000;
         tracker.push(beatAt, bandLevels(f.b.freq, beatMap, levels));
+        updateLanes(t);
       }
       paint();
     },
