@@ -192,14 +192,17 @@ body[data-route="studio"] main { max-width: none; margin: 0; padding: var(--spac
   .site-shell { --site-btn: var(--hit); }
 }
 @media (prefers-reduced-motion: reduce) {
-  .site-shell, .site-side, .site-side-in, .site-shell main { transition: none !important; }
+  .site-shell, .site-side, .site-side-in, .site-shell main, .stu > :first-child > :first-child { transition: none !important; }
 }
 @media (min-width: 721px) {
   .site-shell { display: grid; grid-template-columns: var(--side-open) minmax(0, 1fr); align-items: start; }
   .site-shell.menu-collapsed { grid-template-columns: 0px minmax(0, 1fr); }
   .site-shell.menu-anim { transition: grid-template-columns var(--dur-base) var(--ease-io); }
   body[data-route="studio"] main { padding-inline: var(--space-6); }
-  body[data-route="studio"] .site-shell.menu-collapsed main { padding-left: calc(var(--space-2) * 2 + var(--site-btn) + env(safe-area-inset-left, 0px)); }
+  body[data-route="studio"] .site-shell.menu-collapsed main { padding-inline: var(--space-4); }
+  .site-open { position: absolute; top: calc(var(--space-6) + env(safe-area-inset-top, 0px)); left: calc(var(--space-6) + env(safe-area-inset-left, 0px)); box-shadow: var(--shadow-card); }
+  .menu-collapsed .stu > :first-child > :first-child { padding-left: calc(var(--site-btn) + var(--space-5)); }
+  .menu-anim .stu > :first-child > :first-child { transition: padding-left var(--dur-base) var(--ease-io); }
   .site-side { position: sticky; top: 0; display: block; min-width: 0; height: 100dvh; border-bottom: 0; overflow: hidden; }
   .site-side-in { flex-direction: column; flex-wrap: nowrap; align-items: stretch; gap: var(--space-4); width: var(--side-open); height: 100%; padding: calc(var(--space-4) + env(safe-area-inset-top, 0px)) var(--space-4) calc(var(--space-4) + env(safe-area-inset-bottom, 0px)); border-right: var(--stroke-hairline) solid var(--line); overflow-x: hidden; overflow-y: auto; }
   .menu-collapsed .site-side-in { padding-block: calc(var(--space-4) + env(safe-area-inset-top, 0px)) calc(var(--space-4) + env(safe-area-inset-bottom, 0px)); }
