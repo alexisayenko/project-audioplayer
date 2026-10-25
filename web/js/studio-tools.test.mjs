@@ -61,7 +61,7 @@ const runFrame = (f) => f.queue.splice(0).forEach((fn) => fn());
 const text = (card, sel) => card.node.querySelector(sel).textContent;
 const click = (card) => fire(card.node.querySelector('.mt-toggle'), 'click');
 
-test('STU-032: the Rhythm card starts idle with the idle badge, the title, one Beat bands block and the privacy caption', () => {
+test('STU-032: the Rhythm card starts idle with the idle badge, the title, the window readouts, the Beat bands block and the privacy caption', () => {
   const { env } = fakeEnv();
   const card = createRhythmCard(env);
   assert.equal(text(card, 'h2'), TITLE);
@@ -70,8 +70,9 @@ test('STU-032: the Rhythm card starts idle with the idle badge, the title, one B
   assert.match(text(card, '.mt-bpm'), /- - -\s*BPM/);
   assert.match(CAPTION, /Nothing is recorded or uploaded/);
   assert.doesNotMatch(CAPTION, /player/i);
-  assert.deepEqual(card.node.querySelectorAll('h3').map((h) => h.textContent), ['Beat bands']);
-  assert.equal(card.node.querySelectorAll('canvas').length, 1);
+  assert.deepEqual(card.node.querySelectorAll('h3').map((h) => h.textContent), ['Tempo by analysis window', 'BPM over time', 'Beat bands']);
+  assert.equal(card.node.querySelectorAll('canvas').length, 2);
+  assert.equal(card.node.querySelectorAll('.rh-win').length, 6);
   assert.equal(card.node.querySelector('.hm-cap').textContent, GRID_NOTE);
   assert.equal(GRID_NOTE, 'Faint vertical lines are the detected beat. If the ticks line up with them the BPM matches the music.');
   assert.equal(card.node.className.includes('card'), true);
@@ -235,4 +236,43 @@ test('STU-032: mountRhythm shows the one card and returns a dispose that stops t
   await flush();
   dispose();
   assert.equal(track.stopped, 1);
+});
+
+test('STU-041: the six window readouts and the graph history follow the engine once a second and clear on Start', async () => {
+  const f = fakeEnv({ exact: 120 });
+  const results = [null, { bpm: 120, confidence: 0.9, beatsInWindow: 8 }, { bpm: 120, confidence: 0.95, beatsInWindow: 16 }, { bpm: 150, confidence: 0.6, beatsInWindow: 37 }, null, null];
+  const base = f.env.createBpm;
+  f.env.createBpm = () => ({ ...base(), windows: () => results });
+  const card = createRhythmCard(f.env);
+  click(card);
+  await flush();
+  f.clock.t = 600;
+  runFrame(f);
+  assert.equal(card.windows.history.list.length, 0);
+  f.clock.t = 1100;
+  runFrame(f);
+  assert.equal(card.windows.history.list.length, 1);
+  assert.deepEqual(card.node.querySelectorAll('.rh-win-val').map((n) => n.textContent), ['-', '120.0', '120.0', '150.0', '-', '-']);
+  assert.deepEqual(card.node.querySelectorAll('.rh-win').map((n) => n.classList.contains('is-drift')), [false, false, false, true, false, false]);
+  click(card);
+  assert.deepEqual(card.node.querySelectorAll('.rh-win-val').map((n) => n.textContent), ['-', '-', '-', '-', '-', '-']);
+  assert.equal(card.windows.history.list.length, 1);
+  click(card);
+  await flush();
+  assert.equal(card.windows.history.list.length, 0);
+  card.dispose();
+});
+
+test('STU-041: the engine adapter asks for the history only when it shows windows and gives no windows while silent', () => {
+  const asked = [];
+  const mic = createMicBpm({ windows: true, create: (opts) => { asked.push(opts); return { pushSamples() {}, estimateExact: () => 120, estimateWindows: (list) => list.map((s) => ({ bpm: 120, confidence: 1, beatsInWindow: s })), reset() {} }; } });
+  assert.deepEqual(asked, [{ historyS: 60 }]);
+  assert.deepEqual(mic.windows(), [null, null, null, null, null, null]);
+  mic.push(new Float32Array(4800).fill(0.2), 48000);
+  mic.value();
+  assert.equal(mic.windows().length, 6);
+  assert.equal(mic.windows([4, 8])[1].beatsInWindow, 8);
+  const plain = [];
+  createMicBpm({ create: (opts) => { plain.push(opts); return { pushSamples() {}, reset() {} }; } });
+  assert.deepEqual(plain, [undefined]);
 });

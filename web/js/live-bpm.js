@@ -14,6 +14,13 @@ export const CREST_FAST_MIN = 4;
 export const FAST_BPM = 250;
 export const FAST_LOCK = 0.5;
 export const SHORT_LOCK = 0.45;
+export const HISTORY_S = 60;
+export const WINDOWS_S = [1, 4, 8, 15, 30, 60];
+export const MIN_PERIODS = 4;
+export const PERIODS_MARGIN = 1.02;
+export const GATE_MIN_S = 8;
+export const SLOWER_LIMIT = 0.7;
+const FFT_MIN_WORK = 2e5;
 
 const LOW_HZ = 150;
 const MID_HZ = 1500;
@@ -130,6 +137,93 @@ function autocorrelation(x, minLag, maxLag, extra) {
   return { r, power };
 }
 
+const fftCache = new Map();
+
+function fftTables(size) {
+  let t = fftCache.get(size);
+  if (t) return t;
+  const bits = Math.log2(size);
+  const cos = new Float64Array(size / 2);
+  const sin = new Float64Array(size / 2);
+  for (let i = 0; i < size / 2; i += 1) {
+    cos[i] = Math.cos((2 * Math.PI * i) / size);
+    sin[i] = Math.sin((2 * Math.PI * i) / size);
+  }
+  const rev = new Uint32Array(size);
+  for (let i = 0; i < size; i += 1) {
+    let r = 0;
+    for (let b = 0; b < bits; b += 1) r |= ((i >> b) & 1) << (bits - 1 - b);
+    rev[i] = r;
+  }
+  t = { cos, sin, rev, re: new Float64Array(size), im: new Float64Array(size), pr: new Float64Array(size), pi: new Float64Array(size) };
+  fftCache.set(size, t);
+  return t;
+}
+
+function fft(re, im, t, inverse) {
+  const n = re.length;
+  const { cos, sin, rev } = t;
+  for (let i = 0; i < n; i += 1) {
+    const j = rev[i];
+    if (j > i) {
+      const a = re[i]; re[i] = re[j]; re[j] = a;
+      const b = im[i]; im[i] = im[j]; im[j] = b;
+    }
+  }
+  for (let half = 1; half < n; half <<= 1) {
+    const step = n / (half * 2);
+    for (let start = 0; start < n; start += half * 2) {
+      for (let k = 0; k < half; k += 1) {
+        const wr = cos[k * step];
+        const wi = inverse ? sin[k * step] : -sin[k * step];
+        const a = start + k;
+        const b = a + half;
+        const tr = re[b] * wr - im[b] * wi;
+        const ti = re[b] * wi + im[b] * wr;
+        re[b] = re[a] - tr;
+        im[b] = im[a] - ti;
+        re[a] += tr;
+        im[a] += ti;
+      }
+    }
+  }
+}
+
+function autocorrelationFft(x, w, maxLag) {
+  const n = x.length;
+  let size = 2;
+  while (size < n + maxLag + 1) size *= 2;
+  const t = fftTables(size);
+  const { re, im, pr, pi } = t;
+  re.fill(0);
+  im.fill(0);
+  re.set(x);
+  im.set(w);
+  fft(re, im, t, false);
+  for (let k = 0; k < size; k += 1) {
+    const m = (size - k) % size;
+    const a = re[k];
+    const b = im[k];
+    const c = re[m];
+    const d = im[m];
+    pr[k] = ((a + c) * (a + c) + (b - d) * (b - d)) / 4;
+    pi[k] = ((b + d) * (b + d) + (a - c) * (a - c)) / 4;
+  }
+  fft(pr, pi, t, true);
+  const power = pr[0] / size;
+  const r = new Float64Array(maxLag + 2);
+  const wc = new Float64Array(maxLag + 2);
+  if (power <= 1e-12) return { r, power: 0, wc };
+  const wPower = pi[0];
+  r[0] = 1;
+  for (let lag = 1; lag <= Math.min(maxLag, n - 1); lag += 1) {
+    r[lag] = pr[lag] / pr[0];
+    wc[lag] = pi[lag] / wPower;
+  }
+  wc[0] = 1;
+  return { r, power, wc };
+}
+
 function kernelHalf(rate) {
   return Math.ceil(2.5 * WIDE_SIGMA_S * rate);
 }
@@ -149,7 +243,7 @@ function smoothed(r, minLag, maxLag, sigma) {
   return out;
 }
 
-function findPeaks(r, minLag, maxLag, w) {
+function findPeaks(r, minLag, maxLag, wc) {
   const peaks = [];
   for (let i = minLag + 1; i < maxLag; i += 1) {
     const b = r[i];
@@ -159,7 +253,7 @@ function findPeaks(r, minLag, maxLag, w) {
     const denom = a - 2 * b + c;
     const off = denom < 0 ? (0.5 * (a - c)) / denom : 0;
     const h = b - 0.25 * (a - c) * off;
-    peaks.push({ lag: i + off, h, hc: h / Math.max(0.05, windowedCorrelation(w, i)) });
+    peaks.push({ lag: i + off, h, hc: h / Math.max(0.05, wc(i)) });
   }
   return peaks;
 }
@@ -206,8 +300,8 @@ function listCandidates(peaks, bpmOf) {
   return out;
 }
 
-function pick(r, w, minLag, maxLag, rate, hint, sigmaS, trace) {
-  const peaks = findPeaks(smoothed(r, minLag, maxLag, sigmaS * rate), minLag, maxLag, w);
+function pick(r, wc, minLag, maxLag, rate, hint, sigmaS, trace) {
+  const peaks = findPeaks(smoothed(r, minLag, maxLag, sigmaS * rate), minLag, maxLag, wc);
   if (trace) trace.candidates = listCandidates(peaks, (lag) => (60 * rate) / lag);
   if (!peaks.length) return null;
   let top = 0;
@@ -246,10 +340,41 @@ function crest(env) {
   return total > 0 ? top / count / (total / sorted.length) : 0;
 }
 
-export function estimateFromEnvelope(env, rate, hint = null, minSpanS = MIN_SPAN_S, trace = null) {
+function crestSelect(env) {
+  const n = env.length;
+  let total = 0;
+  for (let i = 0; i < n; i += 1) total += env[i];
+  const count = Math.max(1, Math.ceil(n * CREST_TOP));
+  const a = Float32Array.from(env);
+  const k = n - count;
+  let lo = 0;
+  let hi = n - 1;
+  while (lo < hi) {
+    const pivot = a[(lo + hi) >> 1];
+    let i = lo;
+    let j = hi;
+    while (i <= j) {
+      while (a[i] < pivot) i += 1;
+      while (a[j] > pivot) j -= 1;
+      if (i <= j) {
+        const t = a[i]; a[i] = a[j]; a[j] = t;
+        i += 1;
+        j -= 1;
+      }
+    }
+    if (k <= j) hi = j;
+    else if (k >= i) lo = i;
+    else break;
+  }
+  let top = 0;
+  for (let i = k; i < n; i += 1) top += a[i];
+  return total > 0 ? top / count / (total / n) : 0;
+}
+
+export function estimateFromEnvelope(env, rate, hint = null, minSpanS = MIN_SPAN_S, trace = null, opts = null) {
   const n = env.length;
   if (n < minSpanS * rate) return null;
-  const peakiness = crest(env);
+  const peakiness = opts?.fast === true ? crestSelect(env) : crest(env);
   if (peakiness < CREST_FAST_MIN) return null;
   const accept = (res) => res !== null && (peakiness >= CREST_MIN || (res.bpm > FAST_BPM && res.top >= FAST_LOCK)) ? res.bpm : null;
   const w = taperWindow(n, rate);
@@ -262,12 +387,15 @@ export function estimateFromEnvelope(env, rate, hint = null, minSpanS = MIN_SPAN
   const half = kernelHalf(rate);
   const minLag = Math.max(2, Math.floor((60 * rate) / MAX_BPM) - 2);
   const maxLag = Math.min(Math.ceil((60 * rate) / MIN_BPM) + 2, Math.floor(n * 0.6));
-  const { r, power } = autocorrelation(x, minLag - half, maxLag + half, half);
+  const viaFft = opts?.fast === true && n * (maxLag + half) > FFT_MIN_WORK;
+  const ac = viaFft ? autocorrelationFft(x, w, maxLag + half) : autocorrelation(x, minLag - half, maxLag + half, half);
+  const { r, power } = ac;
   if (power === 0) return null;
+  const wc = viaFft ? (lag) => ac.wc[lag] : (lag) => windowedCorrelation(w, lag);
   let found = null;
   let foundTop = 0;
   for (const [sigma, limit] of SMOOTHING_LADDER) {
-    const res = pick(r, w, minLag, maxLag, rate, hint, sigma, trace);
+    const res = pick(r, wc, minLag, maxLag, rate, hint, sigma, trace);
     const bpm = accept(res);
     if (bpm !== null) { found = bpm; foundTop = res.top; }
     if (bpm !== null && bpm <= limit) break;
@@ -281,15 +409,68 @@ function sameTempo(a, b) {
   return Math.abs(2 ** (octaves - Math.round(octaves)) - 1) <= AGREE_TOLERANCE;
 }
 
-export function createLiveBpm({ windowS = WINDOW_S, shortS = SHORT_S } = {}) {
+export function estimateWindowFromEnvelope(env, rate, seconds, hint = null) {
+  if (!(seconds > 0) || env.length < Math.round(seconds * rate) * 0.98) return null;
+  const trace = {};
+  const bpm = estimateFromEnvelope(env, rate, hint, seconds * 0.98, trace, { fast: true });
+  if (bpm === null) return null;
+  const beatsInWindow = (bpm * seconds) / 60;
+  if (!(beatsInWindow > MIN_PERIODS * PERIODS_MARGIN)) return null;
+  return { bpm, confidence: Math.min(1, Math.max(0, trace.top ?? 0)), beatsInWindow };
+}
+
+export function gateWindows(seconds, raw) {
+  const out = [];
+  raw.forEach((res, i) => {
+    let ref = null;
+    for (let j = i - 1; j >= 0 && ref === null; j -= 1) ref = out[j];
+    out.push(res !== null && seconds[i] >= GATE_MIN_S && ref !== null && (!sameTempo(ref.bpm, res.bpm) || res.bpm < ref.bpm * SLOWER_LIMIT) ? null : res);
+  });
+  for (let i = 0; i < out.length; i += 1) {
+    if (out[i] === null || seconds[i] >= GATE_MIN_S) continue;
+    const longer = out.find((res, j) => j > i && res !== null);
+    if (longer && sameTempo(longer.bpm, out[i].bpm) && Math.abs(longer.bpm / out[i].bpm - 1) > AGREE_TOLERANCE) out[i] = null;
+  }
+  return out;
+}
+
+function createTail() {
+  let data = new Float32Array(0);
+  let size = 0;
+  return {
+    resize(cap) { data = new Float32Array(cap); size = 0; },
+    clear() { size = 0; },
+    get length() { return size; },
+    get capacity() { return data.length; },
+    view() { return data.subarray(0, size); },
+    append(src, add) {
+      const cap = data.length;
+      if (!cap) return;
+      if (add >= cap) {
+        for (let i = 0; i < cap; i += 1) data[i] = src[add - cap + i];
+        size = cap;
+        return;
+      }
+      if (size + add > cap) {
+        const drop = size + add - cap;
+        data.copyWithin(0, drop, size);
+        size -= drop;
+      }
+      for (let i = 0; i < add; i += 1) data[size + i] = src[i];
+      size += add;
+    },
+  };
+}
+
+export function createLiveBpm({ windowS = WINDOW_S, shortS = SHORT_S, historyS = 0 } = {}) {
   let hint = null;
   let extractor = null;
   let extractorRate = 0;
-  let env = new Float32Array(0);
-  let filled = 0;
+  const tail = createTail();
+  const history = createTail();
   const scratch = [];
 
-  const clear = () => { filled = 0; };
+  const clear = () => { tail.clear(); history.clear(); };
 
   return {
     setHint(bpm) { hint = bpm > 0 ? Number(bpm) : null; },
@@ -301,33 +482,33 @@ export function createLiveBpm({ windowS = WINDOW_S, shortS = SHORT_S } = {}) {
       if (!extractor || extractorRate !== sampleRate) {
         extractor = createOnsetExtractor(sampleRate);
         extractorRate = sampleRate;
-        env = new Float32Array(Math.ceil(windowS * extractor.rate));
-        clear();
+        tail.resize(Math.ceil(windowS * extractor.rate));
+        history.resize(historyS > 0 ? Math.ceil(historyS * extractor.rate) : 0);
       }
       scratch.length = 0;
       extractor.push(samples, scratch);
       const add = scratch.length;
       if (!add) return;
-      const cap = env.length;
-      if (add >= cap) {
-        for (let i = 0; i < cap; i += 1) env[i] = scratch[add - cap + i];
-        filled = cap;
-        return;
-      }
-      if (filled + add > cap) {
-        const drop = filled + add - cap;
-        env.copyWithin(0, drop, filled);
-        filled -= drop;
-      }
-      for (let i = 0; i < add; i += 1) env[filled + i] = scratch[i];
-      filled += add;
+      tail.append(scratch, add);
+      history.append(scratch, add);
     },
-    envelopeLength() { return filled; },
+    envelopeLength() { return tail.length; },
+    estimateWindows(seconds = WINDOWS_S) {
+      return gateWindows(seconds, seconds.map((s) => this.estimateWindow(s)));
+    },
+    estimateWindow(seconds) {
+      if (!extractor || !history.capacity) return null;
+      const n = Math.round(seconds * extractor.rate);
+      if (n > history.capacity || history.length < n) return null;
+      const all = history.view();
+      return estimateWindowFromEnvelope(all.subarray(all.length - n), extractor.rate, seconds, hint);
+    },
     estimateExact() { return this.analyse(null); },
     analyse(trace) {
       if (!extractor) return null;
       const rate = extractor.rate;
-      const all = env.subarray(0, filled);
+      const all = tail.view();
+      const filled = tail.length;
       const t = trace ?? { long: {}, short: {} };
       const long = estimateFromEnvelope(all, rate, hint, MIN_SPAN_S, t.long);
       const recentN = Math.round(shortS * rate);

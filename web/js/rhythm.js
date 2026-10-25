@@ -4,6 +4,7 @@ import { createMicInput, errorKey } from './harmonics-input.js';
 import { createMicBpm, PUBLISH_MS } from './mic-bpm.js';
 import { liveBpmLabel, LIVE_IDLE } from './bpm-label.js';
 import { MAX_RUN_MS, GRID_NOTE, createFeeder, createColors, createBandsView } from './listen-views.js';
+import { createBpmWindowsView } from './bpm-windows.js';
 
 export const TITLE = 'Rhythm';
 export const IDLE_VALUE = LIVE_IDLE;
@@ -23,13 +24,14 @@ export const TEXT = {
   devices: 'Stopped: the audio devices changed',
 };
 const CALM = new Set(['idle', 'asking', 'listening']);
+export const WINDOWS_MS = 1000;
 
 export function createRhythmCard(env = {}) {
   const doc = env.document ?? globalThis.document;
   const raf = env.raf ?? ((fn) => globalThis.requestAnimationFrame?.(fn) ?? 0);
   const caf = env.caf ?? ((id) => globalThis.cancelAnimationFrame?.(id));
   const now = env.now ?? (() => globalThis.performance?.now?.() ?? Date.now());
-  const bpm = (env.createBpm ?? createMicBpm)();
+  const bpm = (env.createBpm ?? (() => createMicBpm({ windows: true })))();
   const micIn = env.mic ?? createMicInput({ ...env, onSamples: (samples, sampleRate) => bpm.push(samples, sampleRate) });
   let running = false;
   let starting = false;
@@ -37,6 +39,7 @@ export function createRhythmCard(env = {}) {
   let frame = 0;
   let safety = 0;
   let publishAt = 0;
+  let windowsAt = 0;
   let attempt = 0;
   const off = [];
 
@@ -44,6 +47,7 @@ export function createRhythmCard(env = {}) {
   const feed = createFeeder(() => (running ? { an: micIn.analyser, sr: micIn.sampleRate } : null));
   const colors = createColors(() => node, now);
   const bands = createBandsView({ uid, colors, feed, note: GRID_NOTE });
+  const windows = createBpmWindowsView({ uid, colors, now });
 
   const value = el('span', { class: 'mt-value' }, IDLE_VALUE);
   const badge = el('span', { class: 'bpm-badge mt-bpm', role: 'img', title: 'Beats per minute (estimated)', 'aria-label': 'BPM not detected' }, value, ' ', el('small', { 'aria-hidden': 'true' }, 'BPM'));
@@ -65,6 +69,7 @@ export function createRhythmCard(env = {}) {
     el('div', { class: 'mt-row' }, badge, button),
     details,
     state,
+    windows.node,
     bands.node);
 
   function paintBpm(exact) {
@@ -110,12 +115,16 @@ export function createRhythmCard(env = {}) {
     while (off.length) off.pop()();
   }
 
-  function publish() {
+  function publish(t) {
     bpm.value();
     const exact = bpm.exact;
     paintBpm(exact);
     bands.setTempo(exact);
     refreshDetails();
+    if (t - windowsAt >= WINDOWS_MS) {
+      windowsAt = t;
+      windows.update(t, exact, bpm.windows?.() ?? []);
+    }
   }
 
   function clearViews() {
@@ -123,13 +132,14 @@ export function createRhythmCard(env = {}) {
     paintBpm(null);
     bands.reset();
     bands.setTempo(null);
+    windows.clearReadouts();
   }
 
   function tick() {
     if (!running || gone) return;
     frame = raf(tick);
     const t = now();
-    if (t - publishAt >= PUBLISH_MS) { publishAt = t; publish(); }
+    if (t - publishAt >= PUBLISH_MS) { publishAt = t; publish(t); }
     bands.step(t);
   }
 
@@ -149,7 +159,9 @@ export function createRhythmCard(env = {}) {
   function engage() {
     running = true;
     publishAt = now();
+    windowsAt = publishAt;
     clearViews();
+    windows.reset();
     safety = setTimeout(() => stop('timeout'), MAX_RUN_MS);
     listen(doc, 'visibilitychange', () => { if (doc.hidden) stop('hidden'); });
     paintButton();
@@ -189,14 +201,15 @@ export function createRhythmCard(env = {}) {
 
   let ro = null;
   if (typeof ResizeObserver !== 'undefined') {
-    ro = new ResizeObserver(() => { if (!gone && !running) bands.paint(); });
+    ro = new ResizeObserver(() => { if (gone) return; windows.paint(); if (!running) bands.paint(); });
     ro.observe(node);
   }
-  if (typeof requestAnimationFrame === 'function') raf(() => { if (!gone && !running) bands.paint(); });
+  if (typeof requestAnimationFrame === 'function') raf(() => { if (!gone && !running) bands.paint(); if (!gone) windows.paint(); });
 
   return {
     node,
     bands,
+    windows,
     bpm,
     get running() { return running; },
     start,

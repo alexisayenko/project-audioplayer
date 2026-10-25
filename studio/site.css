@@ -30,7 +30,8 @@
   .hm-defs > dt, .hm-defs > dd { margin: 0 0 var(--space-2); }
 }
 .stu-soon p { margin: 0; }
-.hm-spec .hm-canvas { touch-action: pan-y; }
+.hm-spec .hm-canvas, .rh-graph .hm-canvas { touch-action: pan-y; }
+@container stu (max-width: 559px) { .rh-wins { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
 .gl-link, .gl-more a { display: inline-flex; align-items: center; min-height: var(--hit); color: var(--accent-ink); }
 .gl-card [hidden] { display: none; }
 .gl-q::-webkit-search-cancel-button { -webkit-appearance: none; appearance: none; display: none; }

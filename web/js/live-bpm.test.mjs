@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { createLiveBpm, estimateFromEnvelope, MAX_BPM, MIN_BPM } from './live-bpm.js';
+import { createLiveBpm, estimateFromEnvelope, estimateWindowFromEnvelope, gateWindows, MAX_BPM, MIN_BPM, WINDOWS_S, MIN_PERIODS, HISTORY_S } from './live-bpm.js';
 import { segment, concat, feed } from './live-bpm-synth.mjs';
 
 const detect = (audio, hint = null) => {
@@ -109,4 +109,70 @@ test('the sample rate may change between pushes', () => {
   assert.ok(near(det.estimateExact(), 100, 0.02));
   feed(det, segment({ bpm: 100, seconds: 8, kind: 'kick', sampleRate: 44100 }), 44100);
   assert.ok(near(det.estimateExact(), 100, 0.02));
+});
+
+test('WEB-208: the six analysis windows are 1, 4, 8, 15, 30 and 60 s and the history keeps 60 s', () => {
+  assert.deepEqual(WINDOWS_S, [1, 4, 8, 15, 30, 60]);
+  assert.equal(HISTORY_S, 60);
+  assert.equal(MIN_PERIODS, 4);
+});
+
+test('WEB-208: a window holds more than 4 beat periods or it shows nothing (120 BPM: 1 s no, 4 s yes; 60 BPM: 4 s no, 8 s yes)', () => {
+  assert.equal(estimateWindowFromEnvelope(alternating(120, 1, 400, 1), 400, 1), null);
+  const four = estimateWindowFromEnvelope(alternating(120, 1, 400, 4), 400, 4);
+  assert.ok(near(four.bpm, 120, 0.01), String(four?.bpm));
+  assert.ok(four.beatsInWindow > 7.5 && four.beatsInWindow < 8.5);
+  assert.ok(four.confidence > 0.3 && four.confidence <= 1);
+  assert.equal(estimateWindowFromEnvelope(alternating(60, 1, 400, 4), 400, 4), null);
+  assert.ok(near(estimateWindowFromEnvelope(alternating(60, 1, 400, 8), 400, 8)?.bpm ?? null, 60, 0.01));
+});
+
+test('WEB-208: at 1000 BPM every window has enough beats, down to 1 s', () => {
+  for (const seconds of [1, 4, 8]) {
+    const res = estimateWindowFromEnvelope(alternating(1000, 1, 400, seconds), 400, seconds);
+    assert.ok(near(res?.bpm ?? null, 1000, 0.02), `${seconds} s: ${res?.bpm}`);
+  }
+});
+
+test('WEB-208: a window that is not full yet, or a flat envelope, shows nothing', () => {
+  assert.equal(estimateWindowFromEnvelope(alternating(120, 1, 400, 3), 400, 4), null);
+  assert.equal(estimateWindowFromEnvelope(new Float32Array(1600).fill(0.5), 400, 4), null);
+  assert.equal(estimateWindowFromEnvelope([], 400, 4), null);
+  assert.equal(estimateWindowFromEnvelope(alternating(120, 1, 400, 4), 400, 0), null);
+});
+
+test('WEB-208: the engine keeps a 60 s history only when asked and clears it on reset', () => {
+  const audio = segment({ bpm: 120, seconds: 20, kind: 'kick', phase: 0.21, seed: 3 });
+  const det = createLiveBpm({ historyS: HISTORY_S });
+  feed(det, audio);
+  assert.equal(det.estimateWindow(1), null);
+  for (const s of [4, 8, 15]) assert.ok(near(det.estimateWindow(s)?.bpm ?? null, 120, 0.01), String(s));
+  assert.equal(det.estimateWindow(30), null);
+  assert.equal(det.estimateWindows().length, WINDOWS_S.length);
+  const plain = createLiveBpm();
+  feed(plain, audio);
+  assert.equal(plain.estimateWindow(4), null);
+  assert.ok(near(plain.estimateExact(), 120, 0.01));
+  det.reset();
+  assert.equal(det.estimateWindow(4), null);
+});
+
+test('WEB-208: the main estimate is the same with and without the history', () => {
+  const audio = segment({ bpm: 139, seconds: 12, kind: 'kick', phase: 0.21, seed: 5 });
+  const withHistory = createLiveBpm({ historyS: HISTORY_S });
+  const without = createLiveBpm();
+  feed(withHistory, audio);
+  feed(without, audio);
+  assert.equal(withHistory.estimateExact(), without.estimateExact());
+});
+
+test('WEB-208: a window that disagrees with the shorter ones is dropped (two tempos in one window), a short octave is dropped, a real change is kept', () => {
+  const mk = (bpm) => ({ bpm, confidence: 0.9, beatsInWindow: 10 });
+  const seconds = [1, 4, 8, 15, 30, 60];
+  const bpms = (list) => list.map((r) => r && r.bpm);
+  assert.deepEqual(bpms(gateWindows(seconds, [null, mk(120), mk(120), mk(120), mk(120), mk(120)])), [null, 120, 120, 120, 120, 120]);
+  assert.deepEqual(bpms(gateWindows(seconds, [null, mk(150), mk(150), mk(150), mk(30), mk(30)])), [null, 150, 150, 150, null, null]);
+  assert.deepEqual(bpms(gateWindows(seconds, [null, mk(120), mk(120), mk(60), mk(120), mk(120)])), [null, 120, 120, null, 120, 120]);
+  assert.deepEqual(bpms(gateWindows(seconds, [mk(300), mk(150), mk(150), mk(150), mk(150), mk(150)])), [null, 150, 150, 150, 150, 150]);
+  assert.deepEqual(bpms(gateWindows(seconds, [mk(900), mk(1000), mk(1000), mk(1000), mk(1000), mk(1000)])), [900, 1000, 1000, 1000, 1000, 1000]);
 });

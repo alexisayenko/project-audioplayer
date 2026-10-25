@@ -1,4 +1,4 @@
-import { createLiveBpm } from './live-bpm.js';
+import { createLiveBpm, WINDOWS_S, HISTORY_S } from './live-bpm.js';
 
 export const MAX_RUN_MS = 10 * 60 * 1000;
 export const PUBLISH_MS = 500;
@@ -23,8 +23,8 @@ export function levelFraction(rms) {
   return Math.min(1, Math.max(0, (db - METER_FLOOR_DB) / (METER_CEIL_DB - METER_FLOOR_DB)));
 }
 
-export function createMicBpm({ create = createLiveBpm } = {}) {
-  const det = create();
+export function createMicBpm({ create = createLiveBpm, windows = false } = {}) {
+  const det = windows ? create({ historyS: HISTORY_S }) : create();
   let quietS = 0;
   let silent = true;
   let recent = [];
@@ -54,6 +54,9 @@ export function createMicBpm({ create = createLiveBpm } = {}) {
       if (!recent.length) return null;
       exact = recent.slice().sort((a, b) => a - b)[recent.length >> 1];
       return Math.round(exact);
+    },
+    windows(seconds = WINDOWS_S) {
+      return silent ? seconds.map(() => null) : det.estimateWindows?.(seconds) ?? seconds.map(() => null);
     },
     details() {
       const d = silent ? null : det.details?.();
