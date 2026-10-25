@@ -2,6 +2,10 @@
 
 What shipped, newest first. One line each; the web UI and server are live at https://electrophone.cc. Everything listed here is deployed except the sections marked "built, not deployed" (the 2026-10-14 release went out once the SSH access in [task-0027](tasks/task-0027.md) was restored; the live visualizer files match `origin/main` as of 2026-10-15). Why: [tech/decisions.md](tech/decisions.md); runbook: [tech/deploy.md](tech/deploy.md).
 
+## 2026-10-25 (Glossary Timbre entry extended, deployed to studio.electrophone.cc as `652c35c`; the main app is unchanged)
+
+- Web (STU-061, task-0114; the glossary-terms tests pass, glossary-map has one known failure, "initial view is readable" at zoom 0.694 < 0.7, not fixed; live bundle checked for the new text, not checked in a browser): Timbre now explains that A4 = 440 Hz is only H1, that instruments add tens of harmonics in their own mix, and the parts of timbre beyond it (inharmonicity, body formants, envelope, noise); six new see-also links and two map relations (184 relations).
+
 ## 2026-10-25 (Rhythm 16 and 24 bands and the Glossary "Digitizing sound" category, deployed to studio.electrophone.cc as `ac631d4` and `982100d`; the main app is unchanged)
 
 - Web (WEB-191, STU-032, STU-060, task-0114; the beat-bands and glossary-terms tests pass, glossary-map has one known failure, "initial view is readable" at zoom 0.694 < 0.7, not fixed; not checked in a browser): Rhythm offers 16 and 24 beat bands (20 Hz to 16 kHz, no two lanes share an FFT bin), lanes are 108 px and the height cap is gone (the phone cap applies up to 12 bands). The Glossary has a seventh category, "Digitizing sound", with 9 new entries (120 terms).
