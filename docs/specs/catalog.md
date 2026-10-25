@@ -52,3 +52,14 @@ Order: YouTube/SoundCloud (done) -> Spotify -> Apple Music -> ShazamKit Listen -
 - CAT-046 MUST: the ShazamKit App Service is enabled on the App ID in the Apple Developer portal (manual step) before Listen ships. Status: proposal
 - CAT-047 COULD: Shazam history imports once as metadata-only records, duplicates skipped; the format is decided by research first. Status: proposal
 - CAT-048 MUST: the import keeps no Shazam or Apple credentials in the repos. Status: proposal
+
+## Albums (task-0120, ADR-0050)
+
+- CAT-050 MUST: an Album is a first-class concept (id, page, status, expected track list) but light: derived from songs, rebuildable, with no fact that lives only in the album. The stored part is the sparse per-user file `albums.json` (DATA-203). Status: planned
+- CAT-051 MUST: a song belongs to the album whose key equals its `albums[0]` plus its album artist (`albumArtist`, else its main artists), both normalised (case, whitespace, punctuation, diacritics); exact match only, nothing fuzzy is merged automatically (ADR-0039 curated matching); the id is `alb_` + the first 8 hex of the sha1 of `title|artist key`. Status: planned
+- CAT-052 MUST: the expected track list comes from a MusicBrainz release (keyless), a Discogs release (`DISCOGS_TOKEN`) or a pasted YouTube playlist; the user picks the release from candidates, nothing is linked silently; the list is cached with the album and refetchable from its external ids. Status: planned
+- CAT-053 MUST: a track of the release matches a song by the same normalised base title and main artists (album artist for a compilation); a remaster bracket matches the song with the version `remaster` (DATA-191), any other version is a different track; a manual link or unlink wins; the match is computed, not stored. Status: planned
+- CAT-054 MUST: the album is "Complete" when every counted track of the linked release is in the library, "Partial N of M" otherwise; bonus tracks are not counted; no linked release means no status. Status: planned
+- CAT-055 MUST: missing tracks are added only after the user confirms: from a pasted playlist (the import table, ADD-150 to ADD-159, marked "This is an album"), from the release track list as metadata-only entries or drafts, and with a per-track YouTube search whose candidate the user picks (CAT-021 to CAT-025). Status: planned
+- CAT-056 MUST: "Download album" (iOS) runs per track in track order on the Download all machinery: server fetch for state `none`, then the phone copy; it shows the cost first (tracks, bytes, fetches left this hour), obeys ADR-0012 quotas, pauses on `hourly_limit` and resumes, and skips tracks already on the phone. Status: planned
+- CAT-057 MUST: compilations use the album artist "Various Artists" and keep each track's own artist; multi-disc albums order by disc then track; singles and EPs are albums with a `type`. Status: planned
