@@ -21,6 +21,20 @@ export const MIN_PERIODS = 4;
 export const PERIODS_MARGIN = 1.02;
 export const GATE_MIN_S = 8;
 export const SLOWER_LIMIT = 0.7;
+export const IOI_MIN_S = 0.2;
+export const IOI_MAX_S = 2;
+export const IOI_BIN_S = 0.01;
+export const IOI_TOLERANCE = 0.08;
+export const IOI_TOL_MIN_S = 0.04;
+export const IOI_MIN_EXPLAINED = 0.6;
+export const IOI_MIN_CONFIDENCE = 0.4;
+export const IOI_MIN_Z = 3;
+const IOI_SMOOTH = [1, 2, 3, 4, 3, 2, 1];
+const IOI_PEAKS = 6;
+const IOI_PEAK_MIN = 0.2;
+const IOI_TIE = 0.2;
+const IOI_WEIGHT_MAX = 2;
+const IOI_GAP_CLASSES = [0.5, 1, 1.5, 2, 3];
 const FFT_MIN_WORK = 2e5;
 
 const LOW_HZ = 150;
@@ -429,6 +443,134 @@ export function estimateEnvelope(env, rate, windowSeconds = LANE_WINDOW_S) {
   const n = windowFrames(windowSeconds, rate);
   if (env.length < n) return null;
   return estimateWindowFromEnvelope(env.length === n ? env : env.subarray(env.length - n), rate, windowSeconds, null);
+}
+
+const ioiTol = (x) => Math.max(IOI_TOLERANCE * x, IOI_TOL_MIN_S);
+
+function ioiHistogram(t, w) {
+  const hist = new Float64Array(Math.round(IOI_MAX_S / IOI_BIN_S) + IOI_SMOOTH.length);
+  const last = Math.round(IOI_MAX_S / IOI_BIN_S);
+  for (let i = 0; i < t.length; i += 1) {
+    for (let j = i + 1; j < t.length; j += 1) {
+      const d = t[j] - t[i];
+      if (d > IOI_MAX_S) break;
+      if (d >= IOI_MIN_S - IOI_BIN_S / 2) hist[Math.min(last, Math.round(d / IOI_BIN_S))] += Math.sqrt(w[i] * w[j]);
+    }
+  }
+  const reach = (IOI_SMOOTH.length - 1) / 2;
+  let norm = 0;
+  for (const k of IOI_SMOOTH) norm += k;
+  const out = new Float64Array(last + 1);
+  for (let b = 0; b <= last; b += 1) {
+    let sum = 0;
+    for (let k = -reach; k <= reach; k += 1) sum += IOI_SMOOTH[k + reach] * (hist[b + k] ?? 0);
+    out[b] = sum / norm;
+  }
+  return out;
+}
+
+function ioiPeaks(s) {
+  const first = Math.round(IOI_MIN_S / IOI_BIN_S);
+  let top = 0;
+  for (let b = first; b < s.length; b += 1) if (s[b] > top) top = s[b];
+  const peaks = [];
+  for (let b = first; b < s.length - 1; b += 1) {
+    if (s[b] >= IOI_PEAK_MIN * top && s[b] > 0 && s[b] >= s[b - 1] && s[b] > s[b + 1]) peaks.push({ lag: b * IOI_BIN_S, h: s[b] });
+  }
+  return peaks.sort((a, b) => b.h - a.h).slice(0, IOI_PEAKS);
+}
+
+function ioiRefine(t, first) {
+  let p = first;
+  for (let pass = 0; pass < 3; pass += 1) {
+    let num = 0;
+    let den = 0;
+    for (let i = 0; i < t.length; i += 1) {
+      for (let j = i + 1; j < t.length; j += 1) {
+        const d = t[j] - t[i];
+        if (d > IOI_MAX_S || d > 3.5 * p) break;
+        const k = Math.round(d / p);
+        if (k < 1 || Math.abs(d - k * p) > ioiTol(p)) continue;
+        num += k * d;
+        den += k * k;
+      }
+    }
+    if (den === 0) break;
+    p = num / den;
+  }
+  return p;
+}
+
+function ioiExplained(t, p) {
+  const tol = ioiTol(p);
+  const hit = new Uint8Array(t.length);
+  let count = 0;
+  let pairs = 0;
+  for (let i = 0; i < t.length; i += 1) {
+    for (let j = i + 1; j < t.length; j += 1) {
+      const d = t[j] - t[i];
+      if (d > p + tol) break;
+      if (d < p - tol) continue;
+      pairs += 1;
+      if (!hit[i]) { hit[i] = 1; count += 1; }
+      if (!hit[j]) { hit[j] = 1; count += 1; }
+    }
+  }
+  return { share: count / t.length, pairs };
+}
+
+function ioiSignificance(t, p, windowS) {
+  const rate = t.length / windowS;
+  const tol = ioiTol(p);
+  let observed = 0;
+  let expected = 0;
+  for (let k = 1; k * p <= Math.min(IOI_MAX_S, windowS); k += 1) {
+    expected += rate * rate * 2 * tol * (windowS - k * p);
+    for (let i = 0; i < t.length; i += 1) {
+      for (let j = i + 1; j < t.length; j += 1) {
+        const d = t[j] - t[i];
+        if (d > k * p + tol) break;
+        if (d >= k * p - tol) observed += 1;
+      }
+    }
+  }
+  return (observed - expected) / Math.sqrt(expected + 1);
+}
+
+function ioiConfidence(t, p) {
+  let fit = 0;
+  for (let i = 1; i < t.length; i += 1) {
+    const g = t[i] - t[i - 1];
+    if (IOI_GAP_CLASSES.some((c) => Math.abs(g - c * p) <= ioiTol(c * p))) fit += 1;
+  }
+  return fit / (t.length - 1);
+}
+
+export function estimateIntervals(times, strengths, windowSeconds) {
+  const n = times.length;
+  if (!(windowSeconds > 0) || n <= MIN_PERIODS) return null;
+  let mean = 0;
+  for (let i = 0; i < n; i += 1) mean += strengths[i];
+  mean /= n;
+  const w = new Float64Array(n);
+  for (let i = 0; i < n; i += 1) w[i] = mean > 0 ? Math.min(IOI_WEIGHT_MAX, Math.max(1 / IOI_WEIGHT_MAX, strengths[i] / mean)) : 1;
+  const fits = [];
+  for (const peak of ioiPeaks(ioiHistogram(times, w))) {
+    const period = ioiRefine(times, peak.lag);
+    if (!(period > 0) || windowSeconds / period <= MIN_PERIODS * PERIODS_MARGIN) continue;
+    if (fits.some((f) => Math.abs(f.period / period - 1) < IOI_TOLERANCE / 2)) continue;
+    const { share, pairs } = ioiExplained(times, period);
+    if (share < IOI_MIN_EXPLAINED || pairs < MIN_PERIODS) continue;
+    const confidence = ioiConfidence(times, period);
+    if (confidence < IOI_MIN_CONFIDENCE || ioiSignificance(times, period, windowSeconds) < IOI_MIN_Z) continue;
+    fits.push({ period, explained: share, confidence });
+  }
+  let best = 0;
+  for (const f of fits) if (f.explained > best) best = f.explained;
+  let chosen = null;
+  for (const f of fits) if (f.explained >= best - IOI_TIE && (chosen === null || f.period < chosen.period)) chosen = f;
+  if (chosen === null) return null;
+  return { bpm: 60 / chosen.period, confidence: chosen.confidence, explained: chosen.explained, period: chosen.period, beatsInWindow: windowSeconds / chosen.period };
 }
 
 export function gateLong(ref, res) {

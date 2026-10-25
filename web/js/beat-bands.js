@@ -1,4 +1,4 @@
-import { estimateEnvelope, LANE_WINDOW_S, MIN_PERIODS } from './live-bpm.js';
+import { estimateIntervals, IOI_MIN_CONFIDENCE, MIN_PERIODS } from './live-bpm.js';
 import { liveBpmLabel } from './bpm-label.js';
 
 export const BAND_COUNTS = [4, 6, 8, 12];
@@ -54,13 +54,17 @@ export const laneHeight = (h, count) => (h - BANDS_FOOT) / count;
 
 export const bandsLabel = (bands) => bands.map((b) => `${b.name} ${b.range}`).join(', ');
 
-export const LANE_ENV_RATE = 200;
 export const LANE_UPDATE_MS = 1000;
 export const LANE_START_SLACK_S = 0.05;
-export const LANE_MIN_CONFIDENCE = 0.5;
+export const LANE_MIN_CONFIDENCE = IOI_MIN_CONFIDENCE;
 export const LANE_RATIO_TOLERANCE = 0.03;
-export const LANE_NO_DATA_TIP = `No regular pattern in the last ${LANE_WINDOW_S} s (needs more than ${MIN_PERIODS} beats)`;
-export const LANE_CAPTION = `Each lane shows the repeat rate of its own hits over the last ${LANE_WINDOW_S} s. The kick lane usually matches the main beat; hi-hats often run at 2x or 4x, a snare at 1/2.`;
+export const LANE_WINDOWS_S = Object.freeze([1, 4, 8, 15, 30]);
+export const LANE_WINDOW_DEFAULT_S = 4;
+export const LANE_HISTORY_S = 30;
+export const LANE_WINDOW_LABELS = Object.freeze({ 1: '1 s', 4: '4 s', 8: '8 s', 15: '15 s', 30: '30 s' });
+export const laneWindowFor = (s) => (LANE_WINDOWS_S.includes(s) ? s : LANE_WINDOW_DEFAULT_S);
+export const laneNoDataTip = (windowS) => `No regular pattern in the last ${windowS} s (needs more than ${MIN_PERIODS} repeats)`;
+export const laneCaption = (windowS) => `Each lane shows the repeat rate of its own hits over the last ${windowS} s, read from the gaps between hits. The kick lane usually matches the main beat; hi-hats often run at 2x or 4x, a snare at 1/2.`;
 
 export const LANE_RATIOS = Object.freeze([
   Object.freeze({ ratio: 2, chip: 'x2', tip: 'twice the main beat' }),
@@ -79,35 +83,27 @@ export function laneRelation(main, bpm) {
   return { kind: 'other', chip: '', tip: 'not a simple multiple of the main beat' };
 }
 
-export function laneEnvelope(points, rate, windowS, out) {
-  const n = Math.round(windowS * rate);
-  if (points.length < 2 || out.length < n) return false;
-  const end = points[points.length - 1].t;
-  const first = end - (n - 1) / rate;
-  if (points[0].t > first + LANE_START_SLACK_S) return false;
-  out.fill(0, 0, n);
-  for (let k = points.length - 1; k >= 0 && points[k].t >= first; k -= 1) {
-    if (!points[k].onset) continue;
-    const bin = Math.round((points[k].t - first) * rate);
-    if (bin < n) out[bin] += points[k].strength;
+export function estimateLane(onsets, now, start, windowS = LANE_WINDOW_DEFAULT_S) {
+  if (!(now - start >= windowS - LANE_START_SLACK_S)) return null;
+  const from = now - windowS;
+  let first = onsets.length;
+  while (first > 0 && onsets[first - 1].t >= from) first -= 1;
+  const count = onsets.length - first;
+  const times = new Array(count);
+  const strengths = new Array(count);
+  for (let i = 0; i < count; i += 1) {
+    times[i] = onsets[first + i].t - from;
+    strengths[i] = onsets[first + i].strength;
   }
-  return true;
+  return estimateIntervals(times, strengths, windowS);
 }
-
-export function estimateLane(points, scratch, rate = LANE_ENV_RATE, windowS = LANE_WINDOW_S) {
-  if (!laneEnvelope(points, rate, windowS, scratch)) return null;
-  const res = estimateEnvelope(scratch.subarray(0, Math.round(windowS * rate)), rate, windowS);
-  return res && res.confidence >= LANE_MIN_CONFIDENCE ? res : null;
-}
-
-export const laneScratch = (rate = LANE_ENV_RATE, windowS = LANE_WINDOW_S) => new Float32Array(Math.round(windowS * rate));
 
 export const laneBpmText = (res) => (res ? liveBpmLabel(res.bpm) : '-');
 
 export const laneConfidence = (res) => (res ? Math.round(100 * Math.min(1, Math.max(0, res.confidence))) : 0);
 
-export function laneTitle(band, res, rel) {
-  if (!res) return `${band.name} ${band.range}: ${LANE_NO_DATA_TIP}`;
+export function laneTitle(band, res, rel, windowS = LANE_WINDOW_DEFAULT_S) {
+  if (!res) return `${band.name} ${band.range}: ${laneNoDataTip(windowS)}`;
   const base = `${band.name} ${band.range}: ${liveBpmLabel(res.bpm)} BPM, confidence ${laneConfidence(res)} percent`;
   return rel.kind === 'none' ? base : `${base}, ${rel.chip ? `${rel.chip}: ${rel.tip}` : rel.tip}`;
 }

@@ -2,7 +2,8 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   BAND_COUNTS, DEFAULT_BAND_COUNT, BAND_TABLES, bandsFor, lowLaneCount, bandsHeight, laneHeight, bandRangeText, LANE_MIN_PX, LOW_LANE_MAX_HZ,
-  LANE_ENV_RATE, LANE_RATIOS, laneRelation, laneEnvelope, laneScratch, estimateLane, laneBpmText, laneConfidence, laneTitle,
+  LANE_RATIOS, LANE_WINDOWS_S, LANE_WINDOW_DEFAULT_S, LANE_HISTORY_S, laneWindowFor, laneCaption, laneNoDataTip,
+  laneRelation, estimateLane, laneBpmText, laneConfidence, laneTitle,
 } from './beat-bands.js';
 
 test('WEB-191: the band counts are 4, 6, 8 and 12 and the default is 6', () => {
@@ -58,15 +59,23 @@ test('WEB-191: range text uses Hz below 1 kHz and kHz above', () => {
   assert.equal(bandRangeText({ lo: 20, hi: 60 }), '20-60 Hz');
 });
 
-const hits = (period, seconds = 10, step = 1 / 60) => {
-  const points = [];
-  let next = period;
-  for (let t = 0; t <= seconds; t += step) {
-    const onset = t >= next;
-    if (onset) next += period;
-    points.push({ t, db: -40, onset, strength: onset ? 12 : 0 });
+const hits = (period, seconds = 30, start = period) => {
+  const onsets = [];
+  for (let t = start; t <= seconds; t += period) onsets.push({ t, strength: 12 });
+  return onsets;
+};
+
+const lcg = (seed) => () => { seed = (seed * 1664525 + 1013904223) >>> 0; return seed / 4294967296; };
+
+const poissonHits = (rate, seconds, seed) => {
+  const rnd = lcg(seed);
+  const onsets = [];
+  let t = 0;
+  for (;;) {
+    t += -Math.log(1 - rnd()) / rate;
+    if (t > seconds) return onsets;
+    if (!onsets.length || t - onsets.at(-1).t >= 0.12) onsets.push({ t, strength: 6 + rnd() * 8 });
   }
-  return points;
 };
 
 test('WEB-191: the ratio chip rule names x2, x4, x1/2, x1/4 and x3/2 within 3 percent and shows none for the main beat itself', () => {
@@ -88,31 +97,59 @@ test('WEB-191: without a main BPM or a lane BPM there is no chip and no highligh
   assert.equal(laneRelation(120, 0).kind, 'none');
 });
 
-test('WEB-191: the lane envelope puts each onset of the last 8 s on a 200 Hz grid and needs 8 s of history', () => {
-  const out = laneScratch();
-  assert.equal(out.length, 8 * LANE_ENV_RATE);
-  assert.equal(laneEnvelope(hits(0.5, 5), LANE_ENV_RATE, 8, out), false);
-  assert.equal(laneEnvelope(hits(0.5, 10), LANE_ENV_RATE, 8, out), true);
-  const marked = out.filter((v) => v > 0).length;
-  assert.ok(marked >= 15 && marked <= 16);
+test('WEB-191: the lane BPM window offers 1, 4, 8, 15 and 30 s, defaults to 4 s and keeps 30 s of onsets', () => {
+  assert.deepEqual([...LANE_WINDOWS_S], [1, 4, 8, 15, 30]);
+  assert.equal(LANE_WINDOW_DEFAULT_S, 4);
+  assert.equal(LANE_HISTORY_S, Math.max(...LANE_WINDOWS_S));
+  assert.equal(laneWindowFor(15), 15);
+  assert.equal(laneWindowFor(7), 4);
+  assert.equal(laneWindowFor(), 4);
+  assert.match(laneCaption(15), /over the last 15 s/);
+  assert.match(laneNoDataTip(30), /in the last 30 s/);
 });
 
-test('WEB-191: a lane of regular hits reads their rate, a lane of irregular hits reads nothing', () => {
-  const out = laneScratch();
-  assert.ok(Math.abs(estimateLane(hits(0.5), out).bpm - 120) < 0.5);
-  assert.ok(Math.abs(estimateLane(hits(0.25), out).bpm - 240) < 1);
-  assert.ok(Math.abs(estimateLane(hits(1), out).bpm - 60) < 0.5);
-  let seed = 7;
-  const rnd = () => { seed = (seed * 1664525 + 1013904223) >>> 0; return seed / 4294967296; };
-  const points = [];
-  let next = 0.3;
-  for (let t = 0; t <= 10; t += 1 / 60) {
-    const onset = t >= next;
-    if (onset) next += 0.15 + rnd() * 0.9;
-    points.push({ t, db: -40, onset, strength: onset ? 12 : 0 });
+test('WEB-191: a lane waits for a full window of history before it reads anything', () => {
+  const onsets = hits(0.5, 3.5);
+  assert.equal(estimateLane(onsets, 3.5, 0, 4), null);
+  assert.ok(Math.abs(estimateLane(hits(0.5, 4.2), 4.2, 0, 4).bpm - 120) < 0.5);
+  assert.equal(estimateLane(hits(0.5, 30), 30, 28, 4), null);
+  assert.equal(estimateLane([], 30, 0, 4), null);
+});
+
+test('WEB-191: a lane of regular hits reads their rate for every window that holds four periods', () => {
+  for (const w of [4, 8, 15, 30]) {
+    assert.ok(Math.abs(estimateLane(hits(0.5), 30, 0, w).bpm - 120) < 0.5, `120 in ${w}`);
+    assert.ok(Math.abs(estimateLane(hits(0.25), 30, 0, w).bpm - 240) < 1, `240 in ${w}`);
   }
-  assert.equal(estimateLane(points, out), null);
-  assert.equal(estimateLane([], out), null);
+  assert.equal(estimateLane(hits(1), 30, 0, 4), null);
+  for (const w of [8, 15, 30]) assert.ok(Math.abs(estimateLane(hits(1), 30, 0, w).bpm - 60) < 0.5, `60 in ${w}`);
+  assert.equal(estimateLane(hits(0.5), 30, 0, 1), null);
+  assert.equal(estimateLane(hits(0.3), 30, 0, 1), null);
+  assert.ok(Math.abs(estimateLane(hits(0.24), 30, 0, 1).bpm - 250) < 1);
+});
+
+test('WEB-191: a lane of hits with dropouts, extras and timing jitter still reads the period', () => {
+  const rnd = lcg(5);
+  const onsets = [];
+  for (let t = 0.2; t < 30; t += 0.42) {
+    if (rnd() < 0.85) onsets.push({ t: t + (rnd() * 2 - 1) * 0.02, strength: 6 + rnd() * 8 });
+    if (rnd() < 0.15) onsets.push({ t: t + 0.42 * (0.25 + 0.5 * rnd()), strength: 6 + rnd() * 8 });
+  }
+  onsets.sort((a, b) => a.t - b.t);
+  const spaced = onsets.filter((o, i) => i === 0 || o.t - onsets[i - 1].t >= 0.12);
+  for (const w of [8, 15, 30]) {
+    const res = estimateLane(spaced, 30, 0, w);
+    assert.ok(res && Math.abs(res.bpm / (60 / 0.42) - 1) < 0.03, `143 in ${w}`);
+    assert.ok(res.confidence >= 0.4);
+  }
+});
+
+test('WEB-191: random hits read nothing in at least 95 percent of 200 trials for every window', () => {
+  for (const w of LANE_WINDOWS_S) {
+    let reads = 0;
+    for (let seed = 1; seed <= 200; seed += 1) if (estimateLane(poissonHits(2.4, 45, seed * 7919), 45, 0, w)) reads += 1;
+    assert.ok(reads <= 10, `${w} s: ${reads} false readings`);
+  }
 });
 
 test('WEB-191: the lane readout uses the badge decimals, a confidence percent and a title with the chip meaning', () => {
@@ -125,5 +162,6 @@ test('WEB-191: the lane readout uses the badge decimals, a confidence percent an
   const res = { bpm: 240, confidence: 0.9 };
   assert.equal(laneTitle(band, res, laneRelation(120, 240)), 'Air 6-16 kHz: 240 BPM, confidence 90 percent, x2: twice the main beat');
   assert.equal(laneTitle(band, res, laneRelation(0, 240)), 'Air 6-16 kHz: 240 BPM, confidence 90 percent');
-  assert.match(laneTitle(band, null, laneRelation(120, 0)), /No regular pattern in the last 8 s/);
+  assert.match(laneTitle(band, null, laneRelation(120, 0)), /No regular pattern in the last 4 s/);
+  assert.match(laneTitle(band, null, laneRelation(120, 0), 15), /No regular pattern in the last 15 s/);
 });

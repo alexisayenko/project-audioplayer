@@ -5,7 +5,7 @@ import { parseColor, mixColor } from './viz-color.js';
 import { detectPitch, correctOctave, harmonicMarks, foundList, createPitchTracker, PITCH_EVERY_MS, HARMONIC_LABEL_GAP_PX } from './pitch-detect.js';
 import {
   BAND_COUNTS, DEFAULT_BAND_COUNT, BAND_TABLES, bandsFor, lowLaneCount, bandsHeight, laneHeight, bandsLabel, bandRangeText,
-  LANE_UPDATE_MS, LANE_CAPTION, laneRelation, estimateLane, laneScratch, laneBpmText, laneConfidence, laneTitle,
+  LANE_UPDATE_MS, LANE_WINDOWS_S, LANE_WINDOW_LABELS, LANE_HISTORY_S, laneWindowFor, laneCaption as laneCaptionText, laneRelation, estimateLane, laneBpmText, laneConfidence, laneTitle,
 } from './beat-bands.js';
 
 export { BAND_COUNTS, DEFAULT_BAND_COUNT, BAND_TABLES, bandsFor, lowLaneCount, bandsHeight, bandRangeText };
@@ -495,7 +495,7 @@ export function laneRange(levels, normalize) {
 }
 
 export function createBeatTracker(count = BANDS.length) {
-  const blank = () => ({ points: [], recent: [], mean: 0, last: -Infinity, above: false, level: DB_MIN, t: -1 });
+  const blank = () => ({ points: [], onsets: [], recent: [], mean: 0, last: -Infinity, above: false, level: DB_MIN, t: -1, first: -1 });
   const lanes = Array.from({ length: count }, blank);
   const onsets = new Array(count);
   return {
@@ -524,7 +524,10 @@ export function createBeatTracker(count = BANDS.length) {
         lane.t = t;
         lane.level = db;
         lane.recent.push({ t, db });
+        if (lane.first < 0) lane.first = t;
         lane.points.push({ t, db, onset, strength: onset ? strength : 0 });
+        if (onset) lane.onsets.push({ t, strength });
+        while (lane.onsets.length && t - lane.onsets[0].t > LANE_HISTORY_S) lane.onsets.shift();
         while (lane.points.length && t - lane.points[0].t > BEAT_SECONDS) lane.points.shift();
         onsets[i] = onset;
       }
@@ -1446,13 +1449,13 @@ export function createBandsView({ uid, colors, feed, note = BEAT_NOTE, count = D
   let laneAt = -Infinity;
   let laneRes = [];
   let cells = [];
-  let scratch = null;
+  let laneWindow = laneWindowFor();
   let railW = 0;
   let railNarrow = null;
   const canvas = el('canvas', { class: 'hm-canvas', role: 'img' });
   const normBox = el('input', { id: `${uid}-nb`, type: 'checkbox', checked: true, onchange: () => { normalize = normBox.checked; paint(); } });
   const caption = el('p', { class: 'hm-cap muted t-caption' }, note);
-  const laneCaption = laneBpm ? el('p', { class: 'hm-cap muted t-caption' }, LANE_CAPTION) : null;
+  const laneCaption = laneBpm ? el('p', { class: 'hm-cap muted t-caption' }, laneCaptionText(laneWindow)) : null;
   const laneList = laneBpm ? el('ol', { class: 'hm-lanes', 'aria-label': 'Repeat rate of each band' }) : null;
   if (laneList) {
     laneList.style.setProperty('--lane-foot', `${BANDS_BOTTOM}px`);
@@ -1461,23 +1464,25 @@ export function createBandsView({ uid, colors, feed, note = BEAT_NOTE, count = D
   }
   const stage = laneBpm ? view(canvas, 'hm-bands', laneList) : view(canvas, 'hm-bands');
   const countSeg = segmented(BAND_COUNTS.map((n) => [n, String(n)]), () => bandCount, (n) => setCount(n), { 'aria-labelledby': `${uid}-bl` });
+  const windowSeg = laneBpm ? segmented(LANE_WINDOWS_S.map((n) => [n, LANE_WINDOW_LABELS[n]]), () => laneWindow, (n) => setLaneWindow(n), { 'aria-labelledby': `${uid}-lw` }) : null;
   const node = el('div', { class: 'hm-block' },
     el('div', { class: 'hm-head' },
       el('h3', { class: 't-subhead' }, 'Beat bands'),
       el('div', { class: 'hm-checks' },
         el('div', { class: 'hm-axis' }, el('span', { id: `${uid}-bl`, class: 'hm-lbl' }, 'Bands'), countSeg.group),
+        windowSeg && el('div', { class: 'hm-axis' }, el('span', { id: `${uid}-lw`, class: 'hm-lbl' }, 'Lane BPM window'), windowSeg.group),
         el('span', { class: 'hm-check' }, normBox, el('label', { htmlFor: `${uid}-nb` }, 'Normalize per band')))),
     stage,
     caption,
     laneCaption);
   stage.style.setProperty('--bands-h', `${bandsHeight(bandCount)}px`);
   countSeg.paint();
+  if (windowSeg) windowSeg.paint();
   buildCells();
 
   function buildCells() {
     if (!laneList) return;
     laneRes = new Array(bands.length).fill(null);
-    scratch = laneScratch();
     cells = bands.map(() => {
       const val = el('span', { class: 'hm-lane-val' }, '-');
       const fill = el('i');
@@ -1499,7 +1504,7 @@ export function createBandsView({ uid, colors, feed, note = BEAT_NOTE, count = D
       const text = laneBpmText(res);
       if (text !== c.text) { c.text = text; c.val.textContent = text; }
       c.fill.style.width = `${laneConfidence(res)}%`;
-      const title = laneTitle(bands[i], res, rel);
+      const title = laneTitle(bands[i], res, rel, laneWindow);
       if (title !== c.title) { c.title = title; c.item.setAttribute('title', title); c.item.setAttribute('aria-label', title); }
       const chip = res ? rel.chip : '';
       if (chip !== c.chip.textContent) { c.chip.textContent = chip; c.chip.hidden = !chip; }
@@ -1518,8 +1523,23 @@ export function createBandsView({ uid, colors, feed, note = BEAT_NOTE, count = D
   function updateLanes(t) {
     if (!laneList || t - laneAt < LANE_UPDATE_MS) return;
     laneAt = t;
-    for (let i = 0; i < bands.length; i += 1) laneRes[i] = estimateLane(tracker.lanes[i].points, scratch);
+    computeLanes();
+  }
+
+  function computeLanes() {
+    for (let i = 0; i < bands.length; i += 1) {
+      const lane = tracker.lanes[i];
+      laneRes[i] = estimateLane(lane.onsets, lane.t, lane.first, laneWindow);
+    }
     paintCells();
+  }
+
+  function setLaneWindow(next) {
+    if (!LANE_WINDOWS_S.includes(next) || next === laneWindow) return;
+    laneWindow = next;
+    laneCaption.textContent = laneCaptionText(next);
+    windowSeg.paint();
+    computeLanes();
   }
 
   function setCount(next) {
