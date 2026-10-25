@@ -2,7 +2,7 @@
 
 What shipped, newest first. One line each; the web UI and server are live at https://electrophone.cc. Everything listed here is deployed except the sections marked "built, not deployed" (the 2026-10-14 release went out once the SSH access in [task-0027](tasks/task-0027.md) was restored; the live visualizer files match `origin/main` as of 2026-10-15). Why: [tech/decisions.md](tech/decisions.md); runbook: [tech/deploy.md](tech/deploy.md).
 
-## 2026-10-25 (Studio Rhythm: lane BPM moved to the left, built, not deployed)
+## 2026-10-25 (Studio Rhythm: lane BPM moved to the left, deployed to studio.electrophone.cc as `e1ea273`; the main app does not use the Beat bands, so it was not redeployed)
 
 - Web (STU-042, WEB-191; owner request; no tests run, `node --check`, the build and a Browser pane check with a fake 120 BPM microphone only): the per-lane BPM, its confidence bar and the ratio chip sit under the lane name and range on the left, and the right end keeps only the level bar, so the plot is 40 px wider; the label gutter is 152 px (74 px under 520 px, where the row wraps under the range).
 
