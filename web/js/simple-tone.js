@@ -1,6 +1,7 @@
 import { el } from './dom.js';
 import { icon } from './icons.js';
 import { segmented } from './segmented.js';
+import { attachInfo } from './info-popover.js';
 
 export const TITLE = 'Primitive';
 export const INTRO = 'A primitive sound: one sine wave, one frequency, H1 only. It models a speaker cone driven by an electrical signal. Set the four numbers, press Play.';
@@ -10,7 +11,7 @@ export const MAX_AMP = 0.8;
 export const MAX_POWER_PCT = 64;
 export const MIN_LEN = 0.1;
 export const MAX_LEN = 30;
-export const DEFAULTS = { freq: 440, amp: 0.3, length: 2, continuous: false };
+export const DEFAULTS = { freq: 440, amp: 0.3, length: 2, continuous: true };
 export const FADE_S = 0.03;
 export const SMOOTH_S = 0.015;
 export const MAX_RUN_MS = 10 * 60 * 1000;
@@ -56,12 +57,14 @@ const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
 const num = (v, fallback) => (Number.isFinite(v) ? v : fallback);
 export const trim = (v, digits) => String(+v.toFixed(digits));
 
+export const roundAmp = (amp) => Math.round(clamp(num(amp, DEFAULTS.amp), 0, MAX_AMP) * 100) / 100;
+
 export function clampParams(p = {}) {
   return {
     freq: clamp(num(p.freq, DEFAULTS.freq), MIN_HZ, MAX_HZ),
-    amp: clamp(num(p.amp, DEFAULTS.amp), 0, MAX_AMP),
+    amp: roundAmp(p.amp),
     length: clamp(num(p.length, DEFAULTS.length), MIN_LEN, MAX_LEN),
-    continuous: !!p.continuous,
+    continuous: p.continuous === undefined ? DEFAULTS.continuous : !!p.continuous,
   };
 }
 
@@ -85,7 +88,13 @@ export function noteInfo(freq) {
 
 export const powerPct = (amp) => amp * amp * 100;
 
-export const ampOfPower = (pct) => Math.sqrt(clamp(num(pct, 0), 0, MAX_POWER_PCT) / 100);
+export const ampOfPower = (pct) => roundAmp(Math.sqrt(clamp(num(pct, 0), 0, MAX_POWER_PCT) / 100));
+
+export const ampPercent = (amp) => Math.round(amp * 100);
+
+export const fmtAmp = (amp) => trim(amp, 2);
+
+export const fmtPower = (pct) => (pct < 10 ? trim(pct, 1) : String(Math.round(pct)));
 
 export const dbfs = (amp) => (amp > 0 ? 20 * Math.log10(amp) : -Infinity);
 
@@ -99,7 +108,7 @@ export const fmtMs = (ms) => String(+ms.toPrecision(3));
 
 export function readout(p) {
   const lasts = p.continuous ? 'until you press Stop' : `${trim(p.length, 2)} s`;
-  return `Period ${fmtMs(periodMs(p.freq))} ms = 1/f; pressure swings ±${fmtPct(p.amp * 100)} % of full scale; power ${fmtPct(powerPct(p.amp))} %; sound lasts ${lasts}.`;
+  return `Period ${fmtMs(periodMs(p.freq))} ms = 1/f; pressure swings ±${ampPercent(p.amp)} % of full scale; power ${fmtPower(powerPct(p.amp))} %; sound lasts ${lasts}.`;
 }
 
 export function wavelengthM(freq) {
@@ -320,13 +329,13 @@ export function createSimpleCard(env = {}) {
   const freqNum = el('input', { id: `${uid}-fn`, class: 'hm-num', type: 'number', min: MIN_HZ, max: MAX_HZ, step: 'any', inputmode: 'decimal', value: String(params.freq) });
   const freqRange = el('input', { id: `${uid}-fr`, class: 'slider hm-range', type: 'range', min: '0', max: '1000', step: '1', value: String(hzToSlider(params.freq)), 'aria-label': 'Frequency slider' });
   const noteOut = el('output', { class: 'hm-note t-subhead', htmlFor: `${uid}-fn ${uid}-fr` });
-  const ampNum = el('input', { id: `${uid}-an`, class: 'hm-num', type: 'number', min: '0', max: String(MAX_AMP * 100), step: 'any', inputmode: 'decimal', 'aria-describedby': `${uid}-ad` });
-  const ampRange = el('input', { id: `${uid}-ar`, class: 'slider hm-range', type: 'range', min: '0', max: String(MAX_AMP * 100), step: '0.1', 'aria-label': 'Amplitude slider' });
+  const ampNum = el('input', { id: `${uid}-an`, class: 'hm-num', type: 'number', min: '0', max: String(MAX_AMP * 100), step: 'any', inputmode: 'decimal' });
+  const ampRange = el('input', { id: `${uid}-ar`, class: 'slider hm-range', type: 'range', min: '0', max: String(MAX_AMP * 100), step: '1', 'aria-label': 'Amplitude slider' });
   const ampOut = el('output', { class: 'hm-note t-subhead', htmlFor: `${uid}-an ${uid}-ar` });
-  const powNum = el('input', { id: `${uid}-pn`, class: 'hm-num', type: 'number', min: '0', max: String(MAX_POWER_PCT), step: 'any', inputmode: 'decimal', 'aria-describedby': `${uid}-pd` });
+  const powNum = el('input', { id: `${uid}-pn`, class: 'hm-num', type: 'number', min: '0', max: String(MAX_POWER_PCT), step: 'any', inputmode: 'decimal' });
   const powRange = el('input', { id: `${uid}-pr`, class: 'slider hm-range', type: 'range', min: '0', max: String(MAX_POWER_PCT), step: '0.1', 'aria-label': 'Power slider' });
   const dbOut = el('output', { class: 'hm-note t-subhead', htmlFor: `${uid}-pn ${uid}-pr ${uid}-an ${uid}-ar` });
-  const lenNum = el('input', { id: `${uid}-ln`, class: 'hm-num', type: 'number', min: MIN_LEN, max: MAX_LEN, step: '0.1', inputmode: 'decimal', value: String(params.length), 'aria-describedby': `${uid}-ld` });
+  const lenNum = el('input', { id: `${uid}-ln`, class: 'hm-num', type: 'number', min: MIN_LEN, max: MAX_LEN, step: '0.1', inputmode: 'decimal', value: String(params.length) });
   const contBox = el('input', { id: `${uid}-cb`, type: 'checkbox', checked: params.continuous });
 
   const label = el('span', {}, 'Play');
@@ -344,34 +353,24 @@ export function createSimpleCard(env = {}) {
     el('span', { id: `${uid}-wl`, class: 'hm-lbl' }, WINDOW_LABEL),
     winSeg.group);
 
-  const info = (id, about, text) => {
-    const note = el('p', { id, class: 'hm-cap muted t-caption', hidden: true }, text);
-    const btn = el('button', {
-      class: 'sm-info',
-      type: 'button',
-      'aria-expanded': 'false',
-      'aria-controls': id,
-      'aria-label': `About ${about}`,
-      onclick: () => {
-        note.hidden = !note.hidden;
-        btn.setAttribute('aria-expanded', String(!note.hidden));
-      },
-    }, 'i');
-    return { btn, note };
+  const detach = [];
+  const info = (about, text) => {
+    const btn = el('button', { class: 'sm-info', type: 'button', 'aria-label': `About ${about}` }, 'i');
+    detach.push(attachInfo(btn, text));
+    return btn;
   };
   const field = (id, title, tip, ...rest) => el('div', { class: 'hm-field' },
-    el('div', { class: 'sm-lab' }, el('label', { htmlFor: id }, title), tip?.btn ?? null),
-    ...rest,
-    tip?.note ?? null);
-  const ampTip = info(`${uid}-ad`, 'amplitude', `${AMP_NOTE} ${LIMIT_NOTE}`);
-  const powTip = info(`${uid}-pd`, 'power', `${POWER_NOTE} ${DB_NOTE}`);
-  const lenTip = info(`${uid}-ld`, 'length', LENGTH_NOTE);
+    el('div', { class: 'sm-lab' }, el('label', { htmlFor: id }, title), tip),
+    ...rest);
+  const ampTip = info('amplitude', `${AMP_NOTE} ${LIMIT_NOTE}`);
+  const powTip = info('power', `${POWER_NOTE} ${DB_NOTE}`);
+  const lenTip = info('length', LENGTH_NOTE);
 
   const node = el('section', { class: 'card hm-card sm-card', 'aria-label': TITLE },
     el('h2', { class: 't-headline' }, TITLE),
     el('p', { class: 'hm-cap muted t-caption' }, INTRO),
     el('div', { class: 'sm-ctl' },
-      field(`${uid}-fn`, 'Frequency (Hz)', null, el('div', { class: 'hm-freq' }, freqNum, noteOut), freqRange),
+      field(`${uid}-fn`, 'Frequency (Hz)', null,el('div', { class: 'hm-freq' }, freqNum, noteOut), freqRange),
       field(`${uid}-an`, 'Amplitude (% of full scale)', ampTip, el('div', { class: 'hm-freq' }, ampNum, ampOut), ampRange),
       field(`${uid}-pn`, 'Power (% of full-scale tone)', powTip, el('div', { class: 'hm-freq' }, powNum, dbOut), powRange),
       field(`${uid}-ln`, 'Length (seconds)', lenTip, el('div', { class: 'hm-freq' }, lenNum, el('span', { class: 'hm-check' }, contBox, el('label', { htmlFor: `${uid}-cb` }, 'Continuous (until Stop)')))),
@@ -405,21 +404,21 @@ export function createSimpleCard(env = {}) {
     setValue(freqNum, String(p.freq), force);
     setValue(freqRange, String(hzToSlider(p.freq)), force);
     noteOut.textContent = note.text;
-    setValue(ampNum, fmtPct(p.amp * 100), force);
-    setValue(ampRange, fmtPct(p.amp * 100), force);
-    ampOut.textContent = `±${trim(p.amp, 3)} of full scale`;
-    setValue(powNum, fmtPct(powerPct(p.amp)), force);
-    setValue(powRange, fmtPct(powerPct(p.amp)), force);
+    setValue(ampNum, String(ampPercent(p.amp)), force);
+    setValue(ampRange, String(ampPercent(p.amp)), force);
+    ampOut.textContent = `±${fmtAmp(p.amp)} of full scale`;
+    setValue(powNum, fmtPower(powerPct(p.amp)), force);
+    setValue(powRange, trim(powerPct(p.amp), 1), force);
     dbOut.textContent = fmtDb(p.amp);
     setValue(lenNum, String(p.length), force);
     lenNum.disabled = p.continuous;
     contBox.checked = p.continuous;
     readoutOut.textContent = readout(p);
-    canvas.setAttribute('aria-label', `Waveform: one cycle, sine wave, ${p.freq} Hz, amplitude ${fmtPct(p.amp * 100)} % of full scale; ${cycleLabels(p.freq)[0]}, at 20 °C`);
+    canvas.setAttribute('aria-label', `Waveform: one cycle, sine wave, ${p.freq} Hz, amplitude ${ampPercent(p.amp)} % of full scale; ${cycleLabels(p.freq)[0]}, at 20 °C`);
     const cyc = windowCycles(p.freq, win);
     windowCapOut.textContent = windowCaption(p.freq, win);
     manyOut.hidden = !tooManyCycles(cyc);
-    windowCanvas.setAttribute('aria-label', `Waveform: time window, sine wave, ${p.freq} Hz, amplitude ${fmtPct(p.amp * 100)} % of full scale, ${windowCaption(p.freq, win)}`);
+    windowCanvas.setAttribute('aria-label', `Waveform: time window, sine wave, ${p.freq} Hz, amplitude ${ampPercent(p.amp)} % of full scale, ${windowCaption(p.freq, win)}`);
     winSeg.paint();
     canvas.setAttribute('title', `${cycleLabels(p.freq)[0]} (speed of sound 343 m/s at 20 °C)`);
   }
@@ -663,6 +662,7 @@ export function createSimpleCard(env = {}) {
     change,
     dispose() {
       gone = true;
+      for (const d of detach) d();
       ro?.disconnect();
       syncLoop();
       if (live) teardown(live);

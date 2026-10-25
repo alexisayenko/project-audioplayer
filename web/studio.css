@@ -173,3 +173,7 @@ input.hm-step-num:disabled { opacity: var(--disabled-opacity); }
 .conn-note:not([hidden]) ~ .loop-chip { top: calc(-1 * (var(--control) + var(--space-6) + var(--space-2))); }
 .loop-off { display: grid; place-items: center; width: var(--control); height: var(--control); padding: 0; border: 0; border-radius: var(--radius-pill); background: transparent; color: inherit; }
 @media (hover: hover) { .loop-off:hover { background-image: linear-gradient(var(--hover-wash), var(--hover-wash)); } }
+.info-pop { position: fixed; z-index: var(--z-menu); box-sizing: border-box; width: max-content; padding: var(--space-3); background: var(--surface); color: var(--ink); border-radius: var(--radius-key); box-shadow: var(--shadow-float); font: var(--font-caption); overflow-wrap: anywhere; pointer-events: none; }
+.info-pop-arrow { position: absolute; left: var(--arrow-x, 20px); width: 10px; height: 10px; margin-left: -5px; background: var(--surface); transform: rotate(45deg); box-shadow: -1px -1px 0 var(--line); }
+.info-pop[data-placement="below"] .info-pop-arrow { top: -5px; }
+.info-pop[data-placement="above"] .info-pop-arrow { bottom: -5px; box-shadow: 1px 1px 0 var(--line); }

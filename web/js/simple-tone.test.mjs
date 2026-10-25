@@ -25,7 +25,7 @@ test('WEB-199: the hard limit is 80 % amplitude, which is 64 % power', () => {
 });
 
 test('WEB-198: defaults and clamps for frequency and length', () => {
-  assert.deepEqual(s.DEFAULTS, { freq: 440, amp: 0.3, length: 2, continuous: false });
+  assert.deepEqual(s.DEFAULTS, { freq: 440, amp: 0.3, length: 2, continuous: true });
   assert.equal(s.clampParams({ freq: 5 }).freq, 20);
   assert.equal(s.clampParams({ freq: 90000 }).freq, 20000);
   assert.equal(s.clampParams({ length: 0 }).length, 0.1);
@@ -42,8 +42,9 @@ test('WEB-198: the frequency slider is logarithmic from 20 Hz to 20 kHz', () => 
 });
 
 test('WEB-201: the readout states the period, the swing, the power and the length', () => {
-  assert.equal(s.readout(s.DEFAULTS), 'Period 2.27 ms = 1/f; pressure swings ±30 % of full scale; power 9 %; sound lasts 2 s.');
-  assert.match(s.readout({ ...s.DEFAULTS, continuous: true }), /sound lasts until you press Stop\.$/);
+  assert.equal(s.readout({ ...s.DEFAULTS, continuous: false }), 'Period 2.27 ms = 1/f; pressure swings ±30 % of full scale; power 9 %; sound lasts 2 s.');
+  assert.match(s.readout(s.DEFAULTS), /sound lasts until you press Stop\.$/);
+  assert.match(s.readout({ ...s.DEFAULTS, amp: 0.79 }), /pressure swings ±79 % of full scale; power 62 %;/);
   assert.equal(s.fmtMs(s.periodMs(20)), '50');
 });
 
@@ -169,20 +170,21 @@ test('STU-046: Primitive is compact: one intro line, the helper texts behind inf
   assert.ok(!text.includes('The four numbers that describe a sound from a speaker.'));
   const buttons = card.node.querySelectorAll('.sm-info');
   assert.equal(buttons.length, 3);
-  const notes = buttons.map((b) => card.node.querySelector(`#${b.getAttribute('aria-controls')}`));
-  assert.deepEqual(notes.map((n) => n.textContent), [
+  const texts = [
     'How far the speaker cone moves. Limited to 80 % of full scale to protect your hearing and the speaker.',
     `${s.POWER_NOTE} ${s.DB_NOTE}`,
     'A new length applies the next time you press Play. Continuous stops after 10 minutes.',
-  ]);
+  ];
   for (const [i, b] of buttons.entries()) {
     assert.equal(b.getAttribute('aria-expanded'), 'false');
-    assert.equal(notes[i].hidden, true);
     b.click();
     assert.equal(b.getAttribute('aria-expanded'), 'true');
-    assert.equal(notes[i].hidden, false);
+    const pop = document.getElementById(b.getAttribute('aria-describedby'));
+    assert.equal(pop.getAttribute('role'), 'tooltip');
+    assert.ok(pop.textContent.includes(texts[i]));
     b.click();
-    assert.equal(notes[i].hidden, true);
+    assert.equal(b.getAttribute('aria-expanded'), 'false');
+    assert.equal(b.getAttribute('aria-describedby'), null);
   }
   assert.equal(card.node.querySelectorAll('.sm-ctl input[type="number"]').length, 4);
   assert.equal(card.node.querySelectorAll('.sm-ctl input[type="range"]').length, 3);
@@ -210,6 +212,7 @@ function fakeCtx() {
 test('WEB-200: Play makes a 440 Hz sine at gain 0.3, fades in and out over 30 ms and stops at the length', () => {
   const { env, made } = fakeCtx();
   const card = s.createSimpleCard(env);
+  card.change({ continuous: false });
   card.start();
   const ctx = made[0];
   assert.equal(ctx.osc.type, 'sine');
@@ -256,4 +259,53 @@ test('WEB-197: the Synthesize tool (now on the studio site) mounts its card into
   await flush();
   assert.ok(panel.querySelector('section.card.sm-card'));
   dispose();
+});
+
+test('WEB-199: the amplitude moves in whole percents: 78.9 becomes 79, 12.7 becomes 13, the cap stays at 80', () => {
+  assert.equal(s.clampParams({ amp: 0.789 }).amp, 0.79);
+  assert.equal(s.clampParams({ amp: 0.127 }).amp, 0.13);
+  assert.equal(s.clampParams({ amp: 0.9 }).amp, 0.8);
+  assert.equal(s.roundAmp(0.304), 0.3);
+  assert.equal(s.ampPercent(0.79), 79);
+  assert.equal(s.ampPercent(s.clampParams({ amp: 0.789 }).amp), 79);
+});
+
+test('WEB-199: the amplitude readout has at most two decimals and no trailing zeros', () => {
+  assert.equal(s.fmtAmp(0.3), '0.3');
+  assert.equal(s.fmtAmp(0.79), '0.79');
+  assert.equal(s.fmtAmp(0.8), '0.8');
+  assert.equal(s.fmtAmp(0), '0');
+  assert.equal(s.fmtAmp(0.789), '0.79');
+});
+
+test('WEB-199: power shows one decimal below 10 percent and a whole number from 10 percent', () => {
+  assert.equal(s.fmtPower(s.powerPct(0.3)), '9');
+  assert.equal(s.fmtPower(s.powerPct(0.79)), '62');
+  assert.equal(s.fmtPower(s.powerPct(0.05)), '0.3');
+  assert.equal(s.fmtPower(s.powerPct(0.1)), '1');
+  assert.equal(s.fmtPower(0), '0');
+  assert.equal(s.fmtPower(9.96), '10');
+  assert.equal(s.fmtPower(64), '64');
+});
+
+test('WEB-199: editing power sets the amplitude to the nearest whole percent and power follows from it', () => {
+  assert.equal(s.ampOfPower(50), 0.71);
+  assert.equal(s.fmtPower(s.powerPct(s.ampOfPower(50))), '50');
+  assert.equal(s.ampOfPower(62), 0.79);
+  assert.equal(s.fmtPower(s.powerPct(0.79)), '62');
+  assert.equal(s.ampOfPower(64), 0.8);
+  assert.equal(s.ampOfPower(90), 0.8);
+  assert.equal(s.ampOfPower(-5), 0);
+});
+
+test('WEB-198: Continuous is on by default, the Length number is disabled and keeps 2 s, unchecking enables it', () => {
+  const card = s.createSimpleCard(fakeCtx().env);
+  const len = card.node.querySelector('.sm-ctl input[type="number"][min="0.1"]');
+  assert.equal(card.params.continuous, true);
+  assert.equal(len.disabled, true);
+  assert.equal(len.value, '2');
+  card.change({ continuous: false });
+  assert.equal(len.disabled, false);
+  assert.equal(card.params.length, 2);
+  card.dispose();
 });
