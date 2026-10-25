@@ -1,6 +1,6 @@
 {
   "esbuild": "0.27.7",
-  "sources": "81dc418a81b5270bb229b18a0bfba5e3465ec23f1c5aff9c9966027b6110d4a0",
+  "sources": "21707aa251dbfaec2bf5acf29002b08a9503243213e688fc81456236e2ede571",
   "stylesheets": [
     "tokens.css",
     "style.css",
