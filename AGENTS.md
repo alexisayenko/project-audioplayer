@@ -64,6 +64,10 @@ Several sessions may work in this one checkout at once:
   owner (2026-10-13); never force-push, never push another repo without
   asking.
 
+## Studio release notes
+
+Feature notes (released, in progress, planned) for the Studio go ONLY into `web/js/studio-features.js` (studio.electrophone.cc, Help > Features), never into the main app's Features list; tag Studio tasks `studio` and commit them as `feat(studio): ...`.
+
 ## Docs change with code
 
 A change that makes a doc wrong fixes that doc in the same commit.

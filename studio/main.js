@@ -5,6 +5,7 @@ import { PAGES, pageFromHash } from './routes.js';
 import { mountPlaceholder } from './placeholders.js';
 import { mountGlossary } from './glossary.js';
 import { mountMenu } from './menu.js';
+import { mountFeatures, mountHelp, mountAbout } from './help.js';
 
 const MOUNT = {
   'synthesize/simple': (pane) => mountSimple(pane),
@@ -15,6 +16,9 @@ const MOUNT = {
   'analyze/listen': (pane) => mountListen(pane),
   'analyze/rhythm': (pane) => mountRhythm(pane),
   glossary: (pane) => mountGlossary(pane),
+  'help/features': (pane) => mountFeatures(pane),
+  'help/help': (pane) => mountHelp(pane),
+  'help/about': (pane) => mountAbout(pane),
 };
 
 const root = document.getElementById('app');

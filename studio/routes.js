@@ -23,11 +23,20 @@ export const GROUPS = [
     label: 'Reference',
     pages: [{ id: 'glossary', label: 'Glossary' }],
   },
+  {
+    id: 'help',
+    label: 'Help',
+    pages: [
+      { id: 'help/features', label: 'Features' },
+      { id: 'help/help', label: 'Help' },
+      { id: 'help/about', label: 'About' },
+    ],
+  },
 ];
 
 export const PAGES = GROUPS.flatMap((g) => g.pages.map((p) => ({ ...p, group: g.label, hash: `#/${p.id}` })));
 export const DEFAULT_PAGE = 'synthesize/simple';
-export const ALIASES = { synthesize: 'synthesize/simple', analyze: 'analyze/listen', 'analyze/bpm': 'analyze/rhythm' };
+export const ALIASES = { synthesize: 'synthesize/simple', analyze: 'analyze/listen', 'analyze/bpm': 'analyze/rhythm', help: 'help/features' };
 
 const pathOf = (hash) => String(hash || '').replace(/^#\/?/, '').replace(/\/+$/, '');
 

@@ -37,7 +37,12 @@ test('STU-006: seven routes, #/synthesize/simple is the default, the old two-pag
     ['Analyze', 'Listen', '#/analyze/listen'],
     ['Analyze', 'Rhythm', '#/analyze/rhythm'],
     ['Reference', 'Glossary', '#/glossary'],
+    ['Help', 'Features', '#/help/features'],
+    ['Help', 'Help', '#/help/help'],
+    ['Help', 'About', '#/help/about'],
   ]);
+  assert.equal(pageFromHash('#/help'), 'help/features');
+  assert.equal(pageFromHash('#/help/about'), 'help/about');
 });
 
 test('STU-017: the three placeholder pages name their physics and a new ticket', () => {
@@ -51,10 +56,10 @@ test('STU-017: the three placeholder pages name their physics and a new ticket',
   assert.match(PLACEHOLDERS['synthesize/membranophones'].lines.join(' '), /1, 1\.59, 2\.14, 2\.30, 2\.65 and 2\.92/);
 });
 
-test('STU-005: the left menu is a nav named Studio with the groups Synthesize (five items), Analyze (Listen, Rhythm) and Reference (Glossary) and a link back to the main app', () => {
+test('STU-005: the left menu is a nav named Studio with the groups Synthesize (five items), Analyze (Listen, Rhythm) and Reference (Glossary), Help (Features, Help, About) and a link back to the main app', () => {
   const html = read('../../studio/index.html');
   const nav = html.match(/<nav class="site-nav" aria-label="Studio">([\s\S]*?)<\/nav>/)[1];
-  assert.deepEqual([...nav.matchAll(/<h2 [^>]*>([^<]*)<\/h2>/g)].map((m) => m[1]), ['Synthesize', 'Analyze', 'Reference']);
+  assert.deepEqual([...nav.matchAll(/<h2 [^>]*>([^<]*)<\/h2>/g)].map((m) => m[1]), ['Synthesize', 'Analyze', 'Reference', 'Help']);
   assert.deepEqual([...nav.matchAll(/<a [^>]*href="([^"]*)"[^>]*data-page="([^"]*)"[^>]*>([^<]*)<\/a>/g)].map((m) => [m[1], m[2], m[3]]), PAGES.map((p) => [p.hash, p.id, p.label]));
   assert.ok(html.indexOf('class="site-nav"') < html.indexOf('class="site-home'));
   assert.match(html, /<a class="site-home[^"]*" href="https:\/\/electrophone\.cc\/">Back to Electrophone<\/a>/);

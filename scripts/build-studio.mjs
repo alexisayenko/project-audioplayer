@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { copyFileSync, mkdirSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
@@ -20,6 +21,14 @@ const FILES = [
 
 const short = (data) => createHash('sha256').update(data).digest('hex').slice(0, 8);
 
+function buildStamp() {
+  let hash = '';
+  try {
+    hash = execFileSync('git', ['-C', repo, 'rev-parse', '--short=7', 'HEAD'], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim();
+  } catch { /* no git: the About page shows no build line */ }
+  return { hash: /^[0-9a-f]{7}$/.test(hash) ? hash : '', date: new Date().toISOString().slice(0, 10) };
+}
+
 function list(dir, base = dir) {
   return readdirSync(dir, { withFileTypes: true }).flatMap((e) => (e.isDirectory()
     ? list(join(dir, e.name), base)
@@ -40,6 +49,7 @@ async function build() {
     entryNames: '[name]-[hash]',
     legalComments: 'none',
     metafile: true,
+    define: { __STUDIO_BUILD__: JSON.stringify(buildStamp()) },
     logLevel: 'warning',
     absWorkingDir: repo,
   });

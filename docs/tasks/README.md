@@ -167,6 +167,12 @@ replacement).
 
 ---
 
+## Release notes
+
+The main app's Features page is generated from git history and the task files; Studio features are listed only in `web/js/studio-features.js` (the Help > Features page of studio.electrophone.cc), never on the main page: tag a Studio task `studio` and commit Studio work as `feat(studio): ...` ([STU-054](../specs/studio-site.md)).
+
+---
+
 ## Rolling reports
 
 Per-concern roll-ups live as named reports in this folder,

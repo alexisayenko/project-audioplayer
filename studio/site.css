@@ -105,6 +105,27 @@
 .gl-label { color: var(--ink-muted); }
 .gl-also { color: var(--ink-muted); font-weight: 400; }
 .gm-panel p.gl-also { margin: 0; }
+.fx-card, .hp-card { display: grid; gap: var(--space-4); min-width: 0; }
+.fx-sec, .hp-sec, .fx-day { display: grid; gap: var(--space-2); min-width: 0; }
+.fx-sec-h { display: flex; align-items: baseline; margin: 0; color: var(--ink); font: var(--font-subhead-strong); }
+.fx-count { color: var(--ink-muted); font-weight: 400; white-space: pre; }
+.fx-day-h { margin: var(--space-2) 0 0; color: var(--ink-muted); }
+.fx-list { display: grid; gap: var(--space-2); margin: 0; padding: 0; list-style: none; min-width: 0; }
+.fx-item { display: grid; gap: var(--space-1); min-width: 0; padding: var(--space-3); border-radius: var(--radius-sm); background: var(--surface-sunken); }
+.fx-head { display: flex; align-items: baseline; flex-wrap: wrap; gap: var(--space-2); min-width: 0; }
+.fx-title { color: var(--ink); font: var(--font-subhead-strong); overflow-wrap: anywhere; }
+.fx-text, .fx-meta { margin: 0; overflow-wrap: anywhere; }
+.fx-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 0 var(--space-3); }
+.fx-badge { flex: none; padding: 0 var(--space-2); border-radius: var(--radius-pill); background: var(--surface); border: var(--stroke-hairline) solid var(--line); color: var(--ink-muted); font: var(--font-caption); }
+.fx-badge.fx-in-progress { background: var(--accent-tint); border-color: transparent; color: var(--on-tint); }
+.fx-task { display: inline-flex; align-items: center; min-height: var(--hit); color: var(--accent-ink); }
+.hp-pages { display: grid; gap: var(--space-2); margin: 0; }
+.hp-pages dt { color: var(--ink); font: var(--font-subhead-strong); }
+.hp-pages dd { margin: 0; }
+@container stu (min-width: 800px) {
+  .stu .fx-list, .stu .hp-pages { display: block; columns: 2; column-gap: var(--space-6); }
+  .fx-item, .hp-pages > div { break-inside: avoid; margin-bottom: var(--space-2); }
+}
 .gl-map { min-width: 0; }
 .gm { display: grid; gap: var(--space-3); min-width: 0; }
 .gm :where(ul, p) { max-width: none; }
