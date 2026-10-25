@@ -2,7 +2,7 @@
 
 What shipped, newest first. One line each; the web UI and server are live at https://electrophone.cc. Everything listed here is deployed except the sections marked "built, not deployed" (the 2026-10-14 release went out once the SSH access in [task-0027](tasks/task-0027.md) was restored; the live visualizer files match `origin/main` as of 2026-10-15). Why: [tech/decisions.md](tech/decisions.md); runbook: [tech/deploy.md](tech/deploy.md).
 
-## 2026-10-25 (Studio Primitive: whole-percent amplitude, Continuous by default, popup hints; not deployed yet)
+## 2026-10-25 (Studio Primitive: whole-percent amplitude, Continuous by default, popup hints, deployed to studio.electrophone.cc and electrophone.cc as `20e1cb8`; the main app only gets the stylesheet)
 
 - Web (WEB-197 to WEB-201, STU-046; owner report "is it needed - thousands?" and two addenda; no tests run, `node --check`, the builds and the Browser pane): Primitive amplitude moves in whole percents (slider step 1, a typed 12.7 becomes 13 on blur or Enter, 78.9 becomes 79, stored as percent / 100), the readout reads "±0.79 of full scale" (two decimals at most), Power shows "9 %" or "62 %" (one decimal below 10 %) and editing it sets the amplitude to the rounded square root, then recomputes Power; the pressure line follows. Continuous is on by default (Length shown disabled, 2 s kept). The "i" buttons show a popup hint (hover after 150 ms, click or tap, keyboard focus; Esc, outside tap, scroll or resize closes) from the new `info-popover.js` instead of expanding text in place. Tests edited and added (`simple-tone.test.mjs`, `info-popover.test.mjs`), not run.
 
