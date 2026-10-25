@@ -79,188 +79,6 @@ test('WEB-201: the live window starts on a rising zero crossing and holds exactl
   }
 });
 
-test('WEB-204: the phase of the slowed cone accumulates f/1000 cycles per second and stays continuous', () => {
-  assert.ok(near(s.advancePhase(0, 440, 1000), 0.44));
-  assert.ok(near(s.advancePhase(0.9, 440, 1000), 0.34, 1e-9));
-  const a = s.advancePhase(s.advancePhase(0.1, 440, 500), 220, 500);
-  assert.ok(near(a, 0.1 + 0.22 + 0.11, 1e-9));
-  assert.equal(s.advancePhase(0.3, 440, -5), 0.3);
-});
-
-test('WEB-204: the slow motion factor is 250, 500, 1000, 2000, 5000 or 10000, defaults to 2000 and divides the phase rate', () => {
-  assert.deepEqual(s.SLOW_CHOICES, [250, 500, 1000, 2000, 5000, 10000]);
-  assert.equal(s.SLOW_DEFAULT, 2000);
-  assert.ok(near(s.advancePhase(0, 440, 1000, 250), 0.76));
-  assert.equal(s.slowReadout(440, 250), 'Slowed 250×: real 440 Hz = 1.76 swings per second (one swing every 0.568 s); the real cone makes 440 swings each second.');
-  assert.ok(s.slowReadout(2000, 250).endsWith('Too fast to follow at this frequency.'));
-  assert.ok(near(s.advancePhase(0, 440, 1000, 2000), 0.22));
-  assert.ok(near(s.advancePhase(0, 440, 1000, 10000), 0.044));
-  assert.equal(s.slowReadout(440, 2000), 'Slowed 2000×: real 440 Hz = 0.22 swings per second (one swing every 4.55 s); the real cone makes 440 swings each second.');
-  assert.match(s.coneNote(5000), /runs 5000 times slower/);
-  const geo = s.airGeometry(124, 1124);
-  assert.ok(s.airSpeedPx(geo, 440, 1000) > 250);
-  assert.ok(s.airSpeedPx(geo, 440, s.SLOW_DEFAULT) <= 250);
-});
-
-test('WEB-204: the Slow motion factor switch changes the readout, the note and the phase rate, not the phase', () => {
-  const card = s.createSimpleCard(fakeCtx().env);
-  assert.equal(card.slow, 2000);
-  assert.ok(card.node.textContent.includes('Slowed 2000×'));
-  const before = card.phase;
-  card.setSlow(5000);
-  assert.equal(card.slow, 5000);
-  assert.equal(card.phase, before);
-  assert.ok(card.node.textContent.includes('Slowed 5000×'));
-  assert.ok(card.node.textContent.includes('runs 5000 times slower'));
-  card.setSlow(123);
-  assert.equal(card.slow, 5000);
-  card.dispose();
-});
-
-test('WEB-204: the readout states the slowed rate and warns above 5 swings per second', () => {
-  assert.equal(s.slowReadout(440), 'Slowed 1000×: real 440 Hz = 0.44 swings per second (one swing every 2.27 s); the real cone makes 440 swings each second.');
-  assert.ok(s.slowReadout(20000).endsWith('Too fast to follow at this frequency.'));
-  assert.ok(!s.slowReadout(5000).includes('Too fast'));
-  assert.ok(s.slowReadout(5001).includes('Too fast'));
-  assert.match(s.slowReadout(1000), /= 1 swing per second \(one swing every 1 s\)/);
-});
-
-test('WEB-204: the cone is a quarter cycle behind the pressure: mid-swing at the pressure peak, at an extreme at zero pressure', () => {
-  assert.ok(near(s.coneOffset(0.25, 0.8), 0, 1e-12));
-  assert.ok(near(s.coneOffset(0, 0.8), -1));
-  assert.ok(near(s.coneOffset(0.5, 0.8), 1));
-  assert.ok(near(s.coneOffset(0.5, 0.3), 0.375));
-  assert.ok(near(s.coneOffset(0.75, 0.3), 0, 1e-12));
-  const peak = s.scopeMarker(0.25, 0.3);
-  assert.ok(near(peak.level, 0.3) && peak.frac === 0.25);
-  assert.ok(near(s.scopeMarker(0.5, 0.3).level, 0, 1e-12));
-  assert.ok(near(s.pressureAt(0.25, 0, 200), 1));
-  assert.ok(near(s.pressureAt(0.25, 50, 200), 0, 1e-12));
-  const dt = 1e-6;
-  for (const phase of [0.1, 0.25, 0.4, 0.5, 0.8]) {
-    const velocity = (s.coneOffset(phase + dt, 0.8) - s.coneOffset(phase - dt, 0.8)) / (2 * dt);
-    assert.ok(near(velocity / (2 * Math.PI), Math.sin(2 * Math.PI * phase), 1e-6));
-  }
-});
-
-test('WEB-204: the air density at distance x is the oscilloscope pressure at time t - x/c, mirrored in time across the area', () => {
-  const geo = s.airGeometry(122, 367);
-  for (const phase of [0, 0.1, 0.25, 0.6, 0.75]) {
-    for (const u of [0, 0.2, 0.5, 0.85]) {
-      const scope = Math.sin(2 * Math.PI * (phase - u));
-      assert.ok(near(s.airDensity(phase, 0.8, geo, u * geo.wavelength) - 1, s.airK(0.8) * scope, 1e-12));
-      assert.ok(near(s.airCurve(phase, 0.3, u) * 0.8, 0.3 * scope, 1e-12));
-    }
-  }
-  assert.ok(near(s.airCurve(0.25, 0.8, 0), 1));
-  assert.ok(near(s.airCurve(0.75, 0.8, 0), -1));
-  assert.ok(near(s.airCurve(0.6, 0.3, 0) * 0.8, s.scopeMarker(0.6, 0.3).level, 1e-12));
-  assert.ok(s.airDensity(0.25, 0.8, geo, 0) > s.airDensity(0.25, 0.8, geo, 0.5 * geo.wavelength));
-  assert.ok(s.airSpacing(0.25, 0.8, geo, 0) < 1 && s.airSpacing(0.75, 0.8, geo, 0) > 1);
-  assert.ok(s.airSpacing(0.25, 0.8, geo, 0) < s.airSpacing(0, 0.8, geo, 0));
-});
-
-test('WEB-204: the dot displacement field gives density 1 - ds/dx and the dots never cross', () => {
-  const geo = s.airGeometry(122, 367);
-  const h = 1e-4;
-  for (const phase of [0, 0.3, 0.7]) {
-    for (const u of [0.1, 0.4, 0.9]) {
-      const x = u * geo.wavelength;
-      const dsdx = (s.airShift(phase, 0.8, geo, x + h) - s.airShift(phase, 0.8, geo, x - h)) / (2 * h);
-      assert.ok(near(1 - dsdx, s.airDensity(phase, 0.8, geo, x), 1e-6));
-    }
-  }
-  for (const phase of [0, 0.2, 0.45, 0.8]) {
-    let last = -Infinity;
-    for (let i = 0; i < 400; i += 1) {
-      const x = s.airX(phase, 0.8, geo, (i / 400) * geo.wavelength);
-      assert.ok(x > last);
-      last = x;
-    }
-  }
-  assert.ok(s.airGeometry(122, 5000).shift >= (s.airGeometry(122, 5000).wavelength / (2 * Math.PI)) * s.AIR_K);
-  assert.ok(s.airGeometry(122, 367).shift >= (s.airGeometry(122, 367).wavelength / (2 * Math.PI)) * s.AIR_K);
-});
-
-test('WEB-204: the air pattern is exactly one wavelength across the visible area, matching the one-cycle oscilloscope', () => {
-  const geo = s.airGeometry(122, 367);
-  assert.ok(near(geo.start + geo.wavelength + geo.shift, 367, 1e-9));
-  assert.ok(near(s.pressureAt(0.3, 0, geo.wavelength), s.pressureAt(0.3, geo.wavelength, geo.wavelength), 1e-12));
-  assert.ok(near(s.airX(0.3, 0.8, geo, 0) - geo.start, s.airX(0.3, 0.8, geo, geo.wavelength) - geo.start - geo.wavelength, 1e-9));
-  assert.ok(near(s.airBunchFrac(1.25), 0, 1e-12));
-  assert.ok(near(s.airBunchFrac(0.75), 0.5, 1e-12));
-  assert.ok(near(s.airBunchFrac(0.1), 0.85, 1e-12));
-  assert.ok(near(s.airBunchFrac(0.25), s.airBunchFrac(1.25), 1e-12));
-  for (const phase of [0, 0.25, 0.6, 0.9]) {
-    let best = 0;
-    let found = 0;
-    let count = 0;
-    const n = 400;
-    const sp = [];
-    for (let i = 0; i < n; i += 1) sp.push(s.airSpacing(phase, 0.8, geo, (i / n) * geo.wavelength));
-    for (let i = 0; i < n; i += 1) {
-      if (sp[i] < sp[best]) best = i;
-      if (sp[i] < sp[(i + n - 1) % n] && sp[i] <= sp[(i + 1) % n]) { count += 1; found = i; }
-    }
-    assert.equal(count, 1);
-    assert.ok(Math.abs(found / n - s.airBunchFrac(phase)) < 1.5 / n || Math.abs(found / n - s.airBunchFrac(phase)) > 1 - 1.5 / n);
-  }
-  assert.ok(s.airSpacing(0.25, 0.8, geo, 0.1 * geo.wavelength) < 1);
-  assert.ok(s.airSpacing(0.25, 0.8, geo, 0.6 * geo.wavelength) > 1);
-  assert.ok(s.airGeometry(122, 367).cols * s.AIR_ROWS < 300);
-  assert.ok(s.airGeometry(122, 5000).cols * s.AIR_ROWS < 300);
-});
-
-test('WEB-204: a dot is red in proportion to the local density at its rest position, teal at rest or thinner', () => {
-  const geo = s.airGeometry(122, 367);
-  for (const phase of [0, 0.25, 0.5, 0.75, 0.9]) {
-    const dist = s.airBunchFrac(phase) * geo.wavelength;
-    assert.ok(near(s.airHeat(phase, 0.8, geo, dist), 1, 1e-9));
-    assert.ok(near(s.airDensity(phase, 0.8, geo, dist), 1 + s.airK(0.8), 1e-9));
-    assert.ok(near(s.airHeat(phase, 0.8, geo, ((s.airBunchFrac(phase) + 0.5) % 1) * geo.wavelength), 0, 1e-9));
-    for (let c = 0; c < geo.cols; c += 1) {
-      const d = s.airRest(geo, c, 0);
-      const heat = s.airHeat(phase, 0.3, geo, d);
-      assert.ok(heat >= 0 && heat <= 1);
-      assert.ok(near(heat, Math.max(0, (s.airDensity(phase, 0.3, geo, d) - 1) / s.airK(0.3)), 1e-9));
-    }
-  }
-  assert.equal(s.airHeat(0.25, 0, geo, 0), 0);
-  assert.equal(s.airHeatStep(0), 0);
-  assert.equal(s.airHeatStep(1), s.AIR_HEAT_STEPS);
-  assert.ok(near(s.airDotRadius(1), s.AIR_DOT_R * 1.1, 1e-12));
-  assert.equal(s.airDotRadius(0), s.AIR_DOT_R);
-  assert.deepEqual(s.parseColor('#d2601a'), [210, 96, 26]);
-  assert.deepEqual(s.parseColor('rgb(1, 2, 3)'), [1, 2, 3]);
-  const ramp = s.airRamp('#2298b1', '#d2601a');
-  assert.equal(ramp.length, s.AIR_HEAT_STEPS + 1);
-  assert.equal(ramp[0], '#2298b1');
-  assert.equal(ramp[s.AIR_HEAT_STEPS], 'rgb(210,96,26)');
-});
-
-test('WEB-204: the density curve is drawn three times larger than before, kept inside the strip, and the marker follows it', () => {
-  const geo = s.airGeometry(122, 367);
-  assert.ok(near(s.airCurveSwing(0.3), 3 * s.AIR_CURVE_REF * 0.375, 1e-9));
-  assert.ok(s.airCurveSwing(0.8) <= s.airCurveHalf());
-  assert.ok(s.airCurveHalf() >= 48);
-  assert.equal(s.airCurveSwing(0), 0);
-  for (const phase of [0, 0.25, 0.5, 0.75]) {
-    assert.ok(near(s.airCurveY(phase, 0.3, 0), s.airCurve(phase, 0.3, 0) / 0.375 * s.airCurveSwing(0.3), 1e-9));
-    assert.ok(Math.abs(s.airCurveY(phase, 0.8, 0.3)) <= s.airCurveHalf() + 1e-9);
-  }
-  assert.ok(geo.cols > 0);
-});
-
-test('WEB-204: the real wavelength is 343 m/s over the live frequency', () => {
-  assert.ok(near(s.wavelengthM(440), 0.7795, 1e-3));
-  assert.equal(s.fmtWavelength(440), '78 cm');
-  assert.equal(s.fmtWavelength(100), '3.43 m');
-  assert.equal(s.fmtWavelength(20000), '1.7 cm');
-  assert.match(s.airNote(440), /one dense bunch \(high pressure\) and one thin gap \(low pressure\) are one cycle of the wave/);
-  assert.match(s.airNote(440), /Red dots are the compression: air squeezed closer than at rest \(high pressure\)\. Teal dots are at rest or spread thinner\./);
-  assert.match(s.airNote(440), /the real wavelength of 440 Hz is about 78 cm\.$/);
-});
-
 test('WEB-197: the oscilloscope bracket label states the live period, frequency and wavelength', () => {
   assert.equal(s.cycleLabels(440)[0], '1 cycle = 2.27 ms = 440 Hz = 78 cm in air');
   assert.equal(s.cycleLabels(220)[0], '1 cycle = 4.55 ms = 220 Hz = 1.56 m in air');
@@ -269,6 +87,7 @@ test('WEB-197: the oscilloscope bracket label states the live period, frequency 
   assert.equal(s.cycleLabels(440)[2], '1 cycle · 2.27 ms · 440 Hz');
   assert.equal(s.fmtWavelengthLabel(343.1), '1.00 m');
   assert.equal(s.fmtWavelengthLabel(20), '17.15 m');
+  assert.ok(near(s.wavelengthM(440), 0.7795, 1e-3));
   const width = (t) => t.length * 6;
   assert.equal(s.pickCycleLabel(440, 400, width, false), s.cycleLabels(440)[0]);
   assert.equal(s.pickCycleLabel(440, 400, width, true), s.cycleLabels(440)[1]);
@@ -276,12 +95,10 @@ test('WEB-197: the oscilloscope bracket label states the live period, frequency 
   assert.equal(s.pickCycleLabel(440, 10, width, true), s.cycleLabels(440)[2]);
 });
 
-test('WEB-197: the bracket row lies below the curve area and above the axis labels, clear of the dot', () => {
-  const geo = s.scopeGeometry(400, 190);
+test('WEB-197: the bracket row lies below the curve area and above the axis labels', () => {
+  const geo = s.scopeGeometry(400, 160);
   assert.ok(geo.mid + geo.scale <= geo.rowTop);
-  assert.ok(geo.rowTop + geo.row <= 190 - geo.bottom);
-  const dotLow = geo.mid + 0.8 * geo.scale + 5;
-  assert.ok(dotLow < geo.rowTop);
+  assert.ok(geo.rowTop + geo.row <= 160 - geo.bottom);
 });
 
 test('WEB-207: the time window covers frequency x window cycles, with a caption, a many-cycles hint and sensible ms ticks', () => {
@@ -305,7 +122,7 @@ test('WEB-207: the time window covers frequency x window cycles, with a caption,
   assert.ok(s.windowPoints(300, 5000) <= s.WINDOW_MAX_POINTS);
   assert.ok(s.windowPoints(300, 1) >= 600);
   assert.equal(s.scopeGeometry(400, 160, false).row, 0);
-  assert.equal(s.scopeGeometry(400, 190).row, 26);
+  assert.equal(s.scopeGeometry(400, 160).row, 26);
 });
 
 test('WEB-207: Primitive has a second oscilloscope below the first with a Time window switch that follows the settings', () => {
@@ -313,7 +130,7 @@ test('WEB-207: Primitive has a second oscilloscope below the first with a Time w
   const heads = card.node.querySelectorAll('h3').map((h) => h.textContent);
   assert.ok(heads.indexOf('Oscilloscope: one cycle') >= 0);
   assert.equal(heads.indexOf('Oscilloscope: time window'), heads.indexOf('Oscilloscope: one cycle') + 1);
-  assert.ok(card.node.textContent.includes('Oscilloscope: one cycle. Waveform of the tone over one cycle: time across, amplitude up; the dot is the pressure now.'));
+  assert.ok(card.node.textContent.includes('Oscilloscope: one cycle. Waveform of the tone over one cycle: time across, amplitude up.'));
   assert.ok(card.node.textContent.includes('Oscilloscope: time window. Waveform over a period of time: time across, amplitude up.'));
   assert.equal(card.window, 20);
   assert.ok(card.node.textContent.includes('about 8.8 cycles in 20 ms'));
@@ -331,26 +148,15 @@ test('WEB-207: Primitive has a second oscilloscope below the first with a Time w
   card.dispose();
 });
 
-test('WEB-197: the Primitive oscilloscope block is titled Oscilloscope: one cycle with a waveform subtitle', () => {
+test('STU-043: Primitive has no cone animation, no dot, no Slow motion factor and no Pause animation, only a link to the Glossary entry', () => {
   const card = s.createSimpleCard(fakeCtx().env);
-  assert.ok(card.node.querySelectorAll('h3').some((h) => h.textContent === 'Oscilloscope: one cycle'));
-  assert.ok(card.node.textContent.includes('Waveform of the tone over one cycle: time across, amplitude up; the dot is the pressure now.'));
-  assert.ok(card.node.textContent.includes('The cone is a quarter cycle behind the pressure: the air is squeezed hardest when the cone moves fastest, in the middle of its swing.'));
-  assert.ok(card.node.textContent.includes('the curve above them is the oscilloscope curve mirrored in time, and the dot on the oscilloscope is the pressure now'));
-  assert.ok(!card.node.textContent.includes("the cone's present position"));
-  card.dispose();
-});
-
-test('WEB-204: Primitive has no Cycles shown selector, a Pause animation control and honours reduced motion', () => {
-  const env = { ...fakeCtx().env, matchMedia: () => ({ matches: true }) };
-  const card = s.createSimpleCard(env);
-  assert.ok(!card.node.textContent.includes('Cycles shown'));
-  const btn = [...card.node.querySelectorAll('button')].find((b) => /animation/i.test(b.textContent));
-  assert.equal(btn.textContent, 'Play animation');
-  assert.equal(card.paused, true);
-  assert.equal(card.phase, 0.25);
-  card.togglePause();
-  assert.equal(btn.textContent, 'Pause animation');
+  const text = card.node.textContent;
+  for (const gone of ['Slow motion', 'Slowed', 'Pause animation', 'Play animation', 'dense (compression)', 'the dot is the pressure now', 'Cycles shown']) assert.ok(!text.includes(gone), gone);
+  assert.equal(card.node.querySelectorAll('canvas').length, 2);
+  const link = card.node.querySelectorAll('a').find((a) => a.textContent === 'See how a speaker makes a sound wave in the Glossary →');
+  assert.equal(link.getAttribute('href'), '#/glossary/sound-wave');
+  assert.equal(card.paused, undefined);
+  assert.equal(card.phase, undefined);
   card.dispose();
 });
 

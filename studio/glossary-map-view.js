@@ -1,5 +1,6 @@
 import { el } from '../web/js/dom.js';
 import { termById } from '../web/js/glossary-terms.js';
+import { createDemoToggle, hasAnimation, pageLink } from './glossary-demo.js';
 import {
   DOMAINS, buildGraph, neighbourMap, relationsOf, layoutDomains, boxBounds, contentBounds, fitView, initialView, zoomAbout, edgeEnds, neighbourInDirection, shapeFor, pillScale, placeLabels,
 } from '../web/js/glossary-map.js';
@@ -17,7 +18,7 @@ function svgEl(tag, attrs = {}, ...kids) {
 }
 
 const domainOf = (id) => DOMAINS.find((d) => d.id === id);
-const dotFor = (domain) => {
+export const dotFor = (domain) => {
   const dot = el('span', { class: 'gm-dot', 'aria-hidden': 'true' });
   dot.style.setProperty('--dc', `var(${domainOf(domain).token})`);
   return dot;
@@ -46,6 +47,7 @@ export function createGlossaryMap({ terms, onSelect } = {}) {
   let pNow = 0;
   let drag = null;
   let pinch = null;
+  let panelDemo = null;
   const pointers = new Map();
 
   const world = svgEl('g', { class: 'gm-world' });
@@ -55,7 +57,7 @@ export function createGlossaryMap({ terms, onSelect } = {}) {
   const arrow = (id, cls) => svgEl('marker', { id, viewBox: '0 0 8 8', refX: 7, refY: 4, markerWidth: 8, markerHeight: 8, orient: 'auto', markerUnits: 'userSpaceOnUse' },
     svgEl('path', { d: 'M0,0 L8,4 L0,8 z', class: cls }));
   const svg = svgEl('svg', {
-    class: 'gm-svg', role: 'group', 'aria-label': `Glossary map: ${nodes.length} terms in ${DOMAINS.length} domains. Select a term to see how it relates to the others.`,
+    class: 'gm-svg', role: 'group', 'aria-label': `Glossary map: ${nodes.length} terms in ${DOMAINS.length} categories. Select a term to see how it relates to the others.`,
   }, svgEl('defs', {}, arrow('gm-arr', 'gm-arr'), arrow('gm-arr-on', 'gm-arr-on')), world);
   const hullLayer = svgEl('g', { class: 'gm-hulls', 'aria-hidden': 'true' });
   world.append(hullLayer, edgeLayer, nodeLayer, labelLayer);
@@ -242,6 +244,8 @@ export function createGlossaryMap({ terms, onSelect } = {}) {
   }
 
   function renderPanel() {
+    panelDemo?.close();
+    panelDemo = null;
     const n = selected && byId.get(selected);
     if (!n) {
       panel.replaceChildren(el('p', { class: 'hm-cap muted t-caption' }, 'Select a term to see its definition and how it connects to the others.'));
@@ -249,12 +253,14 @@ export function createGlossaryMap({ terms, onSelect } = {}) {
     }
     const t = termById(n.id);
     const rels = relationsOf(n.id, edges);
-    const demo = t.demo ? [el('a', { href: `#/${t.demo.page}` }, `${t.demo.label} page →`)] : [];
+    const demo = pageLink(t);
+    if (hasAnimation(t)) panelDemo = createDemoToggle(t, { id: `gm-${t.id}` });
     panel.replaceChildren(
       el('div', { class: 'gm-ph' }, dotFor(n.domain), el('h3', { class: 't-subhead' }, t.term)),
-      el('p', { class: 'hm-cap muted t-caption' }, domainOf(n.domain).label),
+      el('p', { class: 'hm-cap muted t-caption' }, `Category: ${domainOf(n.domain).label}`),
       ...(n.aliases.length ? [el('p', { class: 'hm-cap muted t-caption gl-also' }, `Also called: ${n.aliases.join(', ')}`)] : []),
       el('p', { class: 'gl-text t-subhead muted' }, t.text),
+      panelDemo ? panelDemo.node : null,
       el('p', { class: 'gl-more t-caption' }, el('a', { href: `#/glossary/${n.id}` }, 'Open in list'), ...demo),
       rels.length ? el('p', { class: 'gl-label t-caption' }, 'Relations') : null,
       rels.length ? el('ul', { class: 'gm-rels t-caption' }, ...rels.map((r) => relRow(n.id, r))) : null);
@@ -441,7 +447,8 @@ export function createGlossaryMap({ terms, onSelect } = {}) {
     el('button', { type: 'button', class: 'btn outline small', 'aria-label': 'Zoom out', onclick: () => center(1 / 1.4) }, '−'),
     el('button', { type: 'button', class: 'btn outline small', onclick: () => fit({ all: true }) }, 'Fit'));
   const stage = el('div', { class: 'gm-stage' }, svg, tools);
-  const legend = el('ul', { class: 'gm-legend t-caption', 'aria-label': 'Domains' },
+  const legend = el('ul', { class: 'gm-legend t-caption', 'aria-label': 'Categories' },
+    el('li', { class: 'gl-label' }, 'Categories:'),
     ...DOMAINS.map((d) => el('li', {}, dotFor(d.id), `${d.label} (${nodes.filter((n) => n.domain === d.id).length})`)));
   const hint = el('p', { class: 'hm-cap muted t-caption' }, 'Select a term to highlight its neighbours and label the links. Drag to pan; scroll, pinch or use + and − to zoom (terms keep their size and spread apart, and link names appear when there is room); Fit shows everything. Arrow keys move between neighbours.');
   const node = el('div', { class: 'gm' }, legend, el('div', { class: 'gm-body' }, stage, panel), hint);
@@ -464,6 +471,7 @@ export function createGlossaryMap({ terms, onSelect } = {}) {
     },
     size: () => ({ nodes: nodes.length, edges: edges.length }),
     destroy() {
+      panelDemo?.close();
       ro?.disconnect();
     },
   };

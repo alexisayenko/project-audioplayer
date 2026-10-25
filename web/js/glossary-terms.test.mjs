@@ -14,7 +14,8 @@ test('STU-025: terms are alphabetical, have unique ids and every see-also id exi
   for (const t of TERMS) {
     assert.ok(t.text.length > 0, t.id);
     for (const id of t.see ?? []) assert.ok(termById(id), `${t.id} -> ${id}`);
-    if (t.demo) assert.ok(PAGES.some((p) => p.id === t.demo.page), `${t.id} demo ${t.demo.page}`);
+    if (t.demo?.page) assert.ok(PAGES.some((p) => p.id === t.demo.page), `${t.id} demo ${t.demo.page}`);
+    if (t.demo && !t.demo.page) assert.equal(t.demo.type, 'cone-animation', t.id);
   }
 });
 
@@ -123,5 +124,67 @@ test('STU-025: the page lists every term and the count text follows the filter',
   const stop = mountGlossary(pane, win);
   assert.equal(pane.querySelectorAll('.gl-item').length, TERMS.length);
   assert.equal(pane.querySelector('h2').textContent, 'Glossary');
+  stop();
+});
+
+test('STU-044: Sound wave is a term with aliases, see-also links and the cone animation demo; Compression and rarefaction has it too', () => {
+  const t = termById('sound-wave');
+  assert.equal(t.term, 'Sound wave');
+  assert.deepEqual(t.aliases, ['compression wave', 'longitudinal wave']);
+  assert.deepEqual(t.see, ['compression-and-rarefaction', 'wavelength', 'speed-of-sound', 'frequency', 'amplitude']);
+  assert.match(t.text, /^A travelling pattern of compressions \(air squeezed closer: high pressure\) and rarefactions \(air spread thinner: low pressure\)\./);
+  assert.match(t.text, /about 343 m\/s in air\)\.$/);
+  assert.deepEqual(t.demo, { type: 'cone-animation' });
+  assert.deepEqual(termById('compression-and-rarefaction').demo, { type: 'cone-animation' });
+  assert.ok(termById('compression-and-rarefaction').see.includes('sound-wave'));
+  assert.equal(termByAnchor('longitudinal-wave').id, 'sound-wave');
+  assert.equal(termByAnchor('compression-wave').id, 'sound-wave');
+  assert.equal(TERMS.length, 105);
+});
+
+test('STU-044: a term with the demo has a Show animation button that expands and collapses the animation', () => {
+  const pane = document.createElement('div');
+  const win = { location: { hash: '' }, addEventListener() {}, removeEventListener() {} };
+  const stop = mountGlossary(pane, win);
+  const item = pane.querySelector('#gl-sound-wave');
+  const button = item.querySelector('.gl-demo button');
+  assert.equal(button.textContent, 'Show animation');
+  assert.equal(button.getAttribute('aria-expanded'), 'false');
+  assert.equal(item.querySelector('canvas'), null);
+  button.click();
+  assert.equal(button.textContent, 'Hide animation');
+  assert.equal(button.getAttribute('aria-expanded'), 'true');
+  assert.ok(item.querySelector('canvas'));
+  button.click();
+  assert.equal(button.textContent, 'Show animation');
+  assert.equal(item.querySelector('canvas'), null);
+  assert.equal(pane.querySelectorAll('.gl-demo').length, 2);
+  stop();
+});
+
+test('STU-045: the list is grouped by category with counted headings, an Order switch, and the filter hides empty sections', () => {
+  const pane = document.createElement('div');
+  const win = { location: { hash: '' }, addEventListener() {}, removeEventListener() {} };
+  const stop = mountGlossary(pane, win);
+  const heads = () => pane.querySelectorAll('.gl-sec-h').map((h) => h.textContent);
+  assert.deepEqual(heads(), ['Physics of sound (23)', 'Perception (5)', 'Music (22)', 'Music theory (32)', 'Instruments (6)', 'Analysis tools (17)']);
+  assert.equal(pane.querySelectorAll('.gl-sec').length, 6);
+  assert.equal(pane.querySelectorAll('.gl-chip').length, 6);
+  const order = pane.querySelectorAll('.hm-seg').find((g) => g.getAttribute('aria-labelledby') === 'gl-order-label');
+  assert.deepEqual(order.querySelectorAll('button').map((b) => b.textContent), ['By category', 'A-Z']);
+  assert.equal(order.querySelectorAll('button')[0].getAttribute('aria-checked'), 'true');
+  const q = pane.querySelector('.gl-q');
+  q.value = 'beating';
+  q.dispatchEvent(new Event('input'));
+  assert.deepEqual(pane.querySelectorAll('.gl-sec').filter((s) => !s.hidden).map((s) => s.querySelector('.gl-sec-h').textContent), ['Music (1 of 22)', 'Music theory (1 of 32)']);
+  assert.deepEqual(pane.querySelectorAll('.gl-chip').filter((b) => !b.hidden).map((b) => b.textContent), ['Music', 'Music theory']);
+  q.value = '';
+  q.dispatchEvent(new Event('input'));
+  order.querySelectorAll('button')[1].click();
+  assert.equal(pane.querySelectorAll('.gl-sec').length, 0);
+  assert.equal(pane.querySelectorAll('.gl-item').length, TERMS.length);
+  assert.equal(pane.querySelector('.gl-jump').hidden, true);
+  const names = pane.querySelectorAll('.gl-item dt').map((d) => d.firstChild.textContent);
+  assert.deepEqual(names, TERMS.map((t) => t.term));
   stop();
 });

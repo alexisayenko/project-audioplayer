@@ -26,6 +26,17 @@
 .hm-defs dd { break-before: avoid-column; break-inside: avoid; }
 @container stu (max-width: 559px) { .hm-ctl, .sm-ctl { grid-template-columns: minmax(0, 1fr); } }
 @container stu (min-width: 560px) { .hm-ctl, .sm-ctl { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-4) var(--space-5); } }
+.ca { gap: var(--space-3); }
+.ca-title { margin: 0; color: var(--ink); font: var(--font-subhead-strong); }
+.ca-ctl { display: flex; flex-wrap: wrap; align-items: end; gap: var(--space-2) var(--space-5); }
+.ca-ctl .hm-field { flex: none; }
+.ca-ctl input.hm-num { width: 6rem; }
+.ca-view { height: 288px; }
+.ca-key { display: flex; flex-wrap: wrap; gap: var(--space-1) var(--space-4); }
+.ca-key-item { display: inline-flex; align-items: center; gap: var(--space-2); }
+.ca-dot { width: 10px; height: 10px; border-radius: 50%; flex: none; }
+.ca-dot.dense { background: var(--chart-5); }
+.ca-dot.thin { background: var(--fill); }
 @container stu (min-width: 880px) { .hm-ctl { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
 @container stu (min-width: 800px) {
   .hm-defs { display: block; columns: 2; column-gap: var(--space-6); }
@@ -37,6 +48,15 @@
 .gl-link, .gl-more a { display: inline-flex; align-items: center; min-height: var(--hit); color: var(--accent-ink); }
 .gl-card [hidden] { display: none; }
 .gl-q::-webkit-search-cancel-button { -webkit-appearance: none; appearance: none; display: none; }
+.gl-tools { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2) var(--space-5); }
+.gl-jump { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.gl-chip { gap: var(--space-2); }
+.gl-lists { display: grid; gap: var(--space-4); min-width: 0; }
+.gl-sec { display: grid; gap: var(--space-2); min-width: 0; }
+.gl-sec-h { display: flex; align-items: center; gap: var(--space-2); margin: 0; color: var(--ink); font: var(--font-subhead-strong); scroll-margin-top: var(--space-4); }
+.gl-count { color: var(--ink-muted); font-weight: 400; }
+.gl-demo { display: grid; gap: var(--space-3); justify-items: start; min-width: 0; }
+.gl-demo-host { width: 100%; min-width: 0; }
 .gl-list { display: grid; gap: var(--space-2); margin: 0; }
 .gl-item { display: grid; gap: var(--space-1); padding: var(--space-3); border-radius: var(--radius-sm); scroll-margin-top: var(--space-4); }
 .gl-item dt { color: var(--ink); font: var(--font-subhead-strong); }

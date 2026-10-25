@@ -10,7 +10,7 @@ export const DOMAINS = [
 ];
 
 const MEMBERS = {
-  physics: ['sound', 'oscillation', 'vibration', 'compression-and-rarefaction', 'cycle-and-period','frequency', 'wavelength', 'amplitude', 'power', 'speed-of-sound', 'sine-wave', 'sawtooth-wave', 'square-wave', 'triangle-wave', 'pulse-wave', 'duty-cycle', 'white-noise', 'pink-noise', 'infrasound-and-ultrasound', 'soundboard', 'bridge', 'length'],
+  physics: ['sound', 'oscillation', 'vibration', 'compression-and-rarefaction', 'sound-wave', 'cycle-and-period','frequency', 'wavelength', 'amplitude', 'power', 'speed-of-sound', 'sine-wave', 'sawtooth-wave', 'square-wave', 'triangle-wave', 'pulse-wave', 'duty-cycle', 'white-noise', 'pink-noise', 'infrasound-and-ultrasound', 'soundboard', 'bridge', 'length'],
   perception: ['pitch', 'timbre', 'missing-fundamental', 'cent', 'loudness'],
   music: ['note', 'tone', 'fundamental', 'harmonic-1', 'harmonics', 'overtone', 'partial', 'inharmonicity', 'beating', 'hammer-strike-position', 'strings-per-note', 'decay-across-harmonics', 'rhythm', 'beat', 'tempo', 'meter', 'bar', 'downbeat', 'onset', 'syncopation', 'subdivision', 'swing'],
   theory: ['scale', 'major-scale', 'minor-scale', 'chromatic-scale', 'pentatonic-scale', 'mode', 'key', 'tonic', 'semitone', 'whole-tone', 'octave', 'interval', 'third', 'fourth', 'fifth', 'consonance', 'dissonance', 'tuning', 'equal-temperament', 'just-intonation', 'pythagorean-tuning', 'reference-pitch', 'circle-of-fifths', 'chord', 'triad', 'seventh-chord', 'root', 'inversion', 'chord-progression', 'cadence', 'harmony', 'melody'],
@@ -19,6 +19,10 @@ const MEMBERS = {
 };
 
 export const DOMAIN_OF = Object.fromEntries(Object.entries(MEMBERS).flatMap(([domain, ids]) => ids.map((id) => [id, domain])));
+
+export function termsByDomain(terms = TERMS) {
+  return DOMAINS.map((d) => ({ ...d, terms: terms.filter((t) => DOMAIN_OF[t.id] === d.id) })).filter((d) => d.terms.length);
+}
 
 const rel = (from, label, to) => ({ from, label, to });
 
@@ -175,6 +179,10 @@ export const RELATIONS = [
   rel('tempo-grid', 'marks the', 'beat'),
   rel('power', 'is not the same as', 'loudness'),
   rel('loudness', 'also depends on', 'frequency'),
+  rel('sound-wave', 'is made of', 'compression-and-rarefaction'),
+  rel('sound', 'travels as a', 'sound-wave'),
+  rel('wavelength', 'is the length of one', 'sound-wave'),
+  rel('speed-of-sound', 'is the speed of a', 'sound-wave'),
 ];
 
 const LABELS = {

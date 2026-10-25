@@ -18,16 +18,10 @@ export const MAX_RUN_MS = 10 * 60 * 1000;
 export const FFT_SIZE = 32768;
 export const CYCLES = 1;
 export const SCOPE_TICKS = 4;
-export const SLOW = 1000;
-export const SLOW_CHOICES = [250, 500, 1000, 2000, 5000, 10000];
-export const SLOW_DEFAULT = 2000;
-export const SLOW_LABEL = 'Slow motion factor';
-export const FAST_SLOWED_HZ = 5;
-export const MAX_FRAME_MS = 100;
 export const SOUND_SPEED = 343;
 export const NARROW_PX = 480;
 export const SCOPE_TITLE = 'Oscilloscope: one cycle';
-export const SCOPE_SUB = 'Oscilloscope: one cycle. Waveform of the tone over one cycle: time across, amplitude up; the dot is the pressure now.';
+export const SCOPE_SUB = 'Oscilloscope: one cycle. Waveform of the tone over one cycle: time across, amplitude up.';
 export const SCOPE_NOTE = 'The bracket: one cycle in time is one wavelength in space (speed of sound 343 m/s divided by the frequency, in air at 20 °C).';
 export const WINDOW_TITLE = 'Oscilloscope: time window';
 export const WINDOW_SUB = 'Oscilloscope: time window. Waveform over a period of time: time across, amplitude up.';
@@ -38,36 +32,13 @@ export const WINDOW_STEPS = { 10: 2, 20: 5, 50: 10, 200: 50 };
 export const MANY_CYCLES = 60;
 export const MANY_TEXT = 'Too many cycles to see the shape: shorten the window';
 export const WINDOW_MAX_POINTS = 8000;
-export const AIR_ROWS = 5;
-export const AIR_GAP = 12;
-export const AIR_MAX_COLS = 56;
-export const AIR_SHIFT_FRAC = 0.07;
-export const AIR_SHIFT_MIN = 16;
-export const AIR_K = 0.45;
-export const AIR_CURVE_H = 148;
-export const AIR_CURVE_MARGIN = 16;
-export const AIR_CURVE_REF = 42;
-export const AIR_CURVE_GAIN = 3;
-export const AIR_DOT_R = 2.2;
-export const AIR_DOT_GROW = 0.1;
-export const AIR_HEAT_STEPS = 16;
-export const AIR_DENSE_TEXT = 'dense (compression)';
-export const AIR_THIN_TEXT = 'at rest or thinner';
-export const AIR_NOW_TEXT = 'now';
-export const AIR_AGO_TEXT = 'one cycle ago';
-export const AIR_CURVE_TEXT = 'air density';
-export const AIR_CURVE_TITLE = 'Air density: the density along the air in front of the cone, right now';
-export const AIR_CURVE_NOTE = 'The curve is the air density along the path in front of the cone, right now: above the dashed line the air is denser than at rest (compression), below it thinner (rarefaction). It is the same wave as the oscilloscope, seen in space instead of time.';
-export const CONE_TITLE = 'Slow motion: the speaker cone';
-export const coneNote = (slow = SLOW) => `Swing exaggerated. The real cone moves a fraction of a millimetre. Here its motion runs ${slow} times slower. The cone is a quarter cycle behind the pressure: the air is squeezed hardest when the cone moves fastest, in the middle of its swing.`;
-export const CONE_NOTE = coneNote();
-export const PAUSE_TEXT = 'Pause animation';
-export const PLAY_ANIM_TEXT = 'Play animation';
 export const POWER_NOTE = 'Power grows with the square of the amplitude: double the amplitude, four times the power.';
 export const DB_NOTE = 'In decibels of full scale: dBFS = 20 x log10(amplitude). 0 dBFS is the loudest tone the device can play.';
 export const AMP_NOTE = 'How far the speaker cone moves.';
 export const LIMIT_NOTE = 'Limited to 80 % of full scale to protect your hearing and the speaker.';
 export const LENGTH_NOTE = 'A new length applies the next time you press Play. Continuous stops after 10 minutes.';
+export const WAVE_LINK = 'See how a speaker makes a sound wave in the Glossary →';
+export const WAVE_HREF = '#/glossary/sound-wave';
 export const GLOSSARY_LINK = 'Terms: see the Glossary →';
 export const GLOSSARY_HREF = '#/glossary';
 export const SINE_NOTE = 'One sine wave = one frequency = H1 only.';
@@ -84,7 +55,7 @@ export const TEXT = {
 const NOTE_NAMES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
 const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
 const num = (v, fallback) => (Number.isFinite(v) ? v : fallback);
-const trim = (v, digits) => String(+v.toFixed(digits));
+export const trim = (v, digits) => String(+v.toFixed(digits));
 
 export function clampParams(p = {}) {
   return {
@@ -132,37 +103,8 @@ export function readout(p) {
   return `Period ${fmtMs(periodMs(p.freq))} ms = 1/f; pressure swings ±${fmtPct(p.amp * 100)} % of full scale; power ${fmtPct(powerPct(p.amp))} %; sound lasts ${lasts}.`;
 }
 
-export const slowedHz = (freq, slow = SLOW) => freq / slow;
-
-export function advancePhase(phase, freq, dtMs, slow = SLOW) {
-  const next = phase + (slowedHz(freq, slow) * Math.max(0, dtMs)) / 1000;
-  return next - Math.floor(next);
-}
-
-export const fmtSig = (v) => String(+v.toPrecision(3));
-
-export function slowReadout(freq, slow = SLOW) {
-  const rate = slowedHz(freq, slow);
-  const hz = trim(freq, 2);
-  const swings = rate === 1 ? 'swing' : 'swings';
-  const fast = rate > FAST_SLOWED_HZ ? ' Too fast to follow at this frequency.' : '';
-  return `Slowed ${slow}×: real ${hz} Hz = ${fmtSig(rate)} ${swings} per second (one swing every ${fmtSig(1 / rate)} s); the real cone makes ${hz} swings each second.${fast}`;
-}
-
-export const coneOffset = (phase, amp) => -(amp / MAX_AMP) * Math.cos(2 * Math.PI * phase);
-
-export const scopeMarker = (phase, amp) => ({ frac: phase, level: amp * Math.sin(2 * Math.PI * phase) });
-
-export const pressureAt = (phase, dist, wavelength) => Math.sin(2 * Math.PI * (phase - dist / wavelength));
-
 export function wavelengthM(freq) {
   return SOUND_SPEED / freq;
-}
-
-export function fmtWavelength(freq) {
-  const m = wavelengthM(freq);
-  if (m >= 0.995) return `${fmtSig(m)} m`;
-  return `${+(m * 100).toPrecision(2)} cm`;
 }
 
 export function fmtWavelengthLabel(freq) {
@@ -197,69 +139,6 @@ export function scopeGeometry(w, h, bracket = true) {
   const mid = (h - bottom - row) / 2;
   return { left, bottom, pad, row, mid, scale: mid - pad, plotW: Math.max(1, w - left - pad), rowTop: h - bottom - row };
 }
-
-export const airNote = (freq) => `The dots are the air in front of the cone: one dense bunch (high pressure) and one thin gap (low pressure) are one cycle of the wave; the curve above them is the oscilloscope curve mirrored in time, and the dot on the oscilloscope is the pressure now. Red dots are the compression: air squeezed closer than at rest (high pressure). Teal dots are at rest or spread thinner. The spacing is schematic: the real wavelength of ${trim(freq, 2)} Hz is about ${fmtWavelength(freq)}. ${AIR_CURVE_NOTE}`;
-
-export function airGeometry(base, right) {
-  const avail = Math.max(0, right - base);
-  const shift = Math.max(AIR_SHIFT_MIN, avail * AIR_SHIFT_FRAC);
-  const wavelength = Math.max(1, avail - 2 * shift);
-  const cols = clamp(Math.round(wavelength / AIR_GAP), 1, AIR_MAX_COLS);
-  return { start: base + shift, wavelength, shift, cols, gap: wavelength / cols };
-}
-
-export const airRest = (geo, col, row) => (col + 0.25 + 0.5 * (row % 2)) * geo.gap;
-
-export const airK = (amp) => AIR_K * (amp / MAX_AMP);
-
-export const airShift = (phase, amp, geo, dist) => -((geo.wavelength / (2 * Math.PI)) * airK(amp)) * Math.cos(2 * Math.PI * (phase - dist / geo.wavelength));
-
-export const airX = (phase, amp, geo, dist) => geo.start + dist + airShift(phase, amp, geo, dist);
-
-export const airBunchFrac = (phase) => {
-  const u = (phase - 0.25) % 1;
-  return u < 0 ? u + 1 : u;
-};
-
-export const airHeat = (phase, amp, geo, dist) => (amp > 0 ? clamp(pressureAt(phase, dist, geo.wavelength), 0, 1) : 0);
-
-export const airHeatStep = (heat) => Math.round(clamp(heat, 0, 1) * AIR_HEAT_STEPS);
-
-export const airDotRadius = (heat) => AIR_DOT_R * (1 + AIR_DOT_GROW * clamp(heat, 0, 1));
-
-export function parseColor(text) {
-  const s = String(text ?? '').trim();
-  let m = /^#([0-9a-f]{3})$/i.exec(s);
-  if (m) return [...m[1]].map((c) => parseInt(c + c, 16));
-  m = /^#([0-9a-f]{6})/i.exec(s);
-  if (m) return [0, 2, 4].map((i) => parseInt(m[1].slice(i, i + 2), 16));
-  m = /^rgba?\(\s*([\d.]+)[\s,]+([\d.]+)[\s,]+([\d.]+)/i.exec(s);
-  if (m) return [+m[1], +m[2], +m[3]];
-  return null;
-}
-
-export function mixColor(from, to, t) {
-  const a = parseColor(from);
-  const b = parseColor(to);
-  if (!a || !b) return t >= 0.5 ? to : from;
-  return `rgb(${[0, 1, 2].map((i) => Math.round(a[i] + (b[i] - a[i]) * t)).join(',')})`;
-}
-
-export const airRamp = (cool, hot) => Array.from({ length: AIR_HEAT_STEPS + 1 }, (_, k) => (k === 0 ? cool : mixColor(cool, hot, k / AIR_HEAT_STEPS)));
-
-export const airCurveHalf = () => AIR_CURVE_H / 2 - AIR_CURVE_MARGIN;
-
-export const airCurveSwing = (amp) => Math.min(airCurveHalf(), AIR_CURVE_GAIN * AIR_CURVE_REF * (amp / MAX_AMP));
-
-export const airCurveY = (phase, amp, frac) => pressureAt(phase, frac, 1) * airCurveSwing(amp);
-
-export const airSpeedPx =(geo, freq, slow = SLOW) => (geo.wavelength * slowedHz(freq, slow));
-
-export const airSpacing = (phase, amp, geo, dist) => 1 - airK(amp) * pressureAt(phase, dist, geo.wavelength);
-
-export const airDensity = (phase, amp, geo, dist) => 1 + airK(amp) * pressureAt(phase, dist, geo.wavelength);
-
-export const airCurve = (phase, amp, frac) => (amp / MAX_AMP) * pressureAt(phase, frac, 1);
 
 export const windowCycles = (freq, windowMs) => (freq * windowMs) / 1000;
 
@@ -318,22 +197,22 @@ export function scopeTicks(cycles, freq) {
   }));
 }
 
-function readColors(node) {
+export function styleReader(node) {
   const css = node.ownerDocument?.defaultView?.getComputedStyle?.(node);
-  const get = (name, fallback) => css?.getPropertyValue(name).trim() || fallback;
-  const fill = get('--fill', '#2298b1');
-  const hot = get('--chart-5', '#d2601a');
+  return (name, fallback) => css?.getPropertyValue(name).trim() || fallback;
+}
+
+function readColors(node) {
+  const get = styleReader(node);
   return {
     muted: get('--ink-muted', '#5f6669'),
     line: get('--line', '#ddd5c6'),
-    fill,
-    hot,
-    ramp: airRamp(fill, hot),
+    fill: get('--fill', '#2298b1'),
     font: get('--font-sans', 'system-ui, sans-serif'),
   };
 }
 
-function fit(canvas) {
+export function fit(canvas) {
   const box = canvas.parentElement;
   const w = Math.max(1, Math.round(box?.clientWidth || canvas.clientWidth || 320));
   const h = Math.max(1, Math.round(box?.clientHeight || canvas.clientHeight || 160));
@@ -347,160 +226,9 @@ function fit(canvas) {
   return { ctx, w, h };
 }
 
-function drawMarker(g, colors, marker) {
-  const { ctx, w, h } = g;
-  const { left, plotW, mid, scale } = scopeGeometry(w, h);
-  const x = left + marker.frac * plotW;
-  const y = mid - marker.level * scale;
-  ctx.save();
-  ctx.strokeStyle = colors.fill;
-  ctx.fillStyle = colors.fill;
-  ctx.lineWidth = 1;
-  ctx.beginPath(); ctx.moveTo(x, mid); ctx.lineTo(x, y); ctx.stroke();
-  ctx.beginPath(); ctx.arc(x, y, 5, 0, 2 * Math.PI); ctx.fill();
-  ctx.restore();
-}
-
-function drawAirCurve(g, colors, geo, phase, amp) {
-  const { ctx } = g;
-  const mid = AIR_CURVE_H / 2;
-  const x0 = geo.start;
-  const steps = clamp(Math.round(geo.wavelength / 2), 24, 400);
-  ctx.save();
-  ctx.strokeStyle = colors.line;
-  ctx.lineWidth = 1;
-  ctx.setLineDash?.([2, 3]);
-  ctx.beginPath(); ctx.moveTo(x0, mid); ctx.lineTo(x0 + geo.wavelength, mid); ctx.stroke();
-  ctx.setLineDash?.([]);
-  const swing = airCurveSwing(amp);
-  let paint = colors.fill;
-  if (swing > 0.5 && ctx.createLinearGradient) {
-    paint = ctx.createLinearGradient(0, mid, 0, mid - swing);
-    paint.addColorStop(0, colors.fill);
-    paint.addColorStop(1, colors.hot ?? colors.fill);
-  }
-  ctx.strokeStyle = paint;
-  ctx.fillStyle = paint;
-  ctx.lineWidth = 1.5;
-  ctx.lineJoin = 'round';
-  ctx.beginPath();
-  for (let i = 0; i <= steps; i += 1) {
-    const frac = i / steps;
-    const x = x0 + frac * geo.wavelength;
-    const y = mid - airCurveY(phase, amp, frac);
-    if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
-  }
-  ctx.stroke();
-  ctx.lineTo(x0 + geo.wavelength, mid);
-  ctx.lineTo(x0, mid);
-  ctx.closePath();
-  ctx.globalAlpha = 0.12;
-  ctx.fill();
-  ctx.globalAlpha = 1;
-  ctx.font = `10px ${colors.font}`;
-  ctx.textAlign = 'left';
-  ctx.textBaseline = 'top';
-  ctx.fillStyle = colors.muted;
-  ctx.fillText(AIR_CURVE_TEXT, x0, 2);
-  ctx.restore();
-}
-
-function drawCone(g, colors, phase, amp) {
-  const { ctx, w, h } = g;
-  const top = AIR_CURVE_H;
-  const cy = top + (h - top) / 2;
-  const travel = clamp(w * 0.07, 16, 28);
-  const swing = coneOffset(phase, amp) * travel;
-  const magnetX = 10;
-  const magnetW = 26;
-  const magnetH = 44;
-  const restX = magnetX + magnetW + 54;
-  const radius = Math.max(20, Math.min(50, (h - top) / 2 - 12));
-  const rimX = restX + swing;
-  const apexX = rimX - 22;
-  ctx.clearRect(0, 0, w, h);
-  ctx.lineJoin = 'round';
-  ctx.lineCap = 'round';
-  ctx.strokeStyle = colors.line;
-  ctx.lineWidth = 2;
-  ctx.beginPath();
-  for (const s of [-1, 1]) {
-    ctx.moveTo(magnetX + magnetW, cy + s * (magnetH / 2));
-    ctx.lineTo(restX - 8, cy + s * (radius + 6));
-    ctx.lineTo(restX - 2, cy + s * (radius + 6));
-  }
-  ctx.stroke();
-  ctx.save();
-  ctx.setLineDash?.([4, 3]);
-  ctx.lineWidth = 1;
-  ctx.beginPath(); ctx.moveTo(restX, cy - radius - 10); ctx.lineTo(restX, cy + radius + 10); ctx.stroke();
-  ctx.restore();
-  ctx.fillStyle = colors.muted;
-  ctx.fillRect(magnetX, cy - magnetH / 2, magnetW, magnetH);
-  ctx.strokeStyle = colors.muted;
-  ctx.lineWidth = 3;
-  ctx.beginPath(); ctx.moveTo(magnetX + magnetW, cy); ctx.lineTo(apexX, cy); ctx.stroke();
-  ctx.fillStyle = colors.fill;
-  ctx.strokeStyle = colors.fill;
-  ctx.lineWidth = 4;
-  ctx.beginPath();
-  ctx.moveTo(rimX, cy - radius);
-  ctx.lineTo(apexX, cy - 7);
-  ctx.lineTo(apexX, cy + 7);
-  ctx.lineTo(rimX, cy + radius);
-  ctx.globalAlpha = 0.25;
-  ctx.fill();
-  ctx.globalAlpha = 1;
-  ctx.stroke();
-  ctx.font = `10px ${colors.font}`;
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'bottom';
-  ctx.fillStyle = colors.muted;
-  ctx.fillText('rest', restX, h - 2);
-  ctx.textBaseline = 'top';
-  ctx.fillText('magnet', magnetX + magnetW / 2, cy + magnetH / 2 + 4);
-  const geo = airGeometry(restX + travel + 6, w - 8);
-  const areaL = geo.start;
-  const areaR = geo.start + geo.wavelength;
-  const legendY = h - 16;
-  ctx.save();
-  ctx.strokeStyle = colors.line;
-  ctx.lineWidth = 1;
-  ctx.setLineDash?.([2, 3]);
-  ctx.beginPath();
-  for (const x of [areaL, areaR]) { ctx.moveTo(x, cy - radius); ctx.lineTo(x, legendY); }
-  ctx.stroke();
-  ctx.setLineDash?.([]);
-  ctx.beginPath();
-  ctx.moveTo(areaL, legendY); ctx.lineTo(areaR, legendY);
-  for (const x of [areaL, areaR]) { ctx.moveTo(x, legendY - 3); ctx.lineTo(x, legendY + 3); }
-  ctx.stroke();
-  ctx.restore();
-  ctx.fillStyle = colors.muted;
-  ctx.textBaseline = 'top';
-  ctx.textAlign = 'center';
-  ctx.fillText(AIR_NOW_TEXT, areaL, legendY + 5);
-  ctx.textAlign = 'right';
-  ctx.fillText(AIR_AGO_TEXT, areaR, legendY + 5);
-  drawAirCurve(g, colors, geo, phase, amp);
-  const ramp = colors.ramp ?? [colors.fill];
-  ctx.globalAlpha = 0.85;
-  for (let r = 0; r < AIR_ROWS; r += 1) {
-    const y = cy - radius + ((r + 0.5) * 2 * radius) / AIR_ROWS;
-    for (let c = 0; c < geo.cols; c += 1) {
-      const dist = airRest(geo, c, r);
-      const x = airX(phase, amp, geo, dist);
-      const heat = airHeat(phase, amp, geo, dist);
-      ctx.fillStyle = ramp[Math.min(airHeatStep(heat), ramp.length - 1)];
-      ctx.beginPath(); ctx.arc(x, y, airDotRadius(heat), 0, 2 * Math.PI); ctx.fill();
-    }
-  }
-  ctx.globalAlpha = 1;
-}
-
 function drawScope(g, colors, series, need, p, view) {
   const { ctx, w, h } = g;
-  const { ticks, bracket = true, marker = null } = view;
+  const { ticks, bracket = true } = view;
   const { left, bottom, pad, mid, scale, plotW } = scopeGeometry(w, h, bracket);
   ctx.clearRect(0, 0, w, h);
   ctx.font = `10px ${colors.font}`;
@@ -547,7 +275,6 @@ function drawScope(g, colors, series, need, p, view) {
     ctx.stroke();
   }
   if (bracket) drawCycleBracket(g, colors, p.freq);
-  if (marker) drawMarker(g, colors, marker);
 }
 
 function drawCycleBracket(g, colors, freq) {
@@ -584,14 +311,7 @@ export function createSimpleCard(env = {}) {
   let frame = 0;
   let looping = false;
   const cycles = CYCLES;
-  const matchMedia = env.matchMedia ?? globalThis.matchMedia;
-  const reduced = typeof matchMedia === 'function' && !!matchMedia.call(globalThis, '(prefers-reduced-motion: reduce)')?.matches;
-  let phase = reduced ? 0.25 : 0;
-  let paused = reduced;
-  let slow = SLOW_DEFAULT;
   let win = WINDOW_DEFAULT;
-  let inView = true;
-  let animLast = 0;
   let colors = null;
   let colorsAt = 0;
   let gone = false;
@@ -616,15 +336,6 @@ export function createSimpleCard(env = {}) {
   const stateOut = el('p', { class: 'hm-state t-subhead', role: 'status', 'aria-live': 'polite' }, TEXT.idle);
   const canvas = el('canvas', { class: 'hm-canvas', role: 'img' });
   const readoutOut = el('p', { class: 'hm-cap muted t-caption' });
-  const coneCanvas = el('canvas', { class: 'hm-canvas', role: 'img' });
-  const slowOut = el('p', { class: 'hm-cap muted t-caption' });
-  const airOut = el('p', { class: 'hm-cap muted t-caption sm-air' });
-  const pauseButton = el('button', { class: 'btn outline small', type: 'button', onclick: () => togglePause() }, reduced ? PLAY_ANIM_TEXT : PAUSE_TEXT);
-  const coneNoteOut = el('p', { class: 'hm-cap muted t-caption' });
-  const slowSeg = segmented(SLOW_CHOICES.map((n) => [n, `${n}×`]), () => slow, (n) => setSlow(n), { 'aria-labelledby': `${uid}-sl` });
-  const slowField = el('div', { class: 'hm-axis' },
-    el('span', { id: `${uid}-sl`, class: 'hm-lbl' }, SLOW_LABEL),
-    slowSeg.group);
 
   const windowCanvas = el('canvas', { class: 'hm-canvas', role: 'img' });
   const windowCapOut = el('p', { class: 'hm-cap muted t-caption' });
@@ -661,16 +372,7 @@ export function createSimpleCard(env = {}) {
       el('div', { class: 'hm-view hm-wave' }, windowCanvas),
       windowCapOut,
       manyOut),
-    el('div', { class: 'hm-block' },
-      el('div', { class: 'hm-head' }, el('h3', { class: 't-subhead' }, CONE_TITLE), pauseButton),
-      slowField,
-      el('div', { class: 'hm-view sm-cone' }, coneCanvas),
-      slowOut,
-      coneNoteOut,
-      el('p', { class: 'hm-cap muted t-caption sm-key' },
-        el('span', { class: 'sm-key-item' }, el('span', { class: 'sm-dot dense', 'aria-hidden': 'true' }), AIR_DENSE_TEXT),
-        el('span', { class: 'sm-key-item' }, el('span', { class: 'sm-dot thin', 'aria-hidden': 'true' }), AIR_THIN_TEXT)),
-      airOut),
+    el('a', { class: 'gl-link t-subhead', href: WAVE_HREF }, WAVE_LINK),
     el('a', { class: 'gl-link t-subhead', href: GLOSSARY_HREF }, GLOSSARY_LINK));
 
   const active = () => doc?.activeElement;
@@ -702,12 +404,6 @@ export function createSimpleCard(env = {}) {
     windowCanvas.setAttribute('aria-label', `Oscilloscope: time window, sine wave, ${p.freq} Hz, amplitude ${fmtPct(p.amp * 100)} % of full scale, ${windowCaption(p.freq, win)}`);
     winSeg.paint();
     canvas.setAttribute('title', `${cycleLabels(p.freq)[0]} (speed of sound 343 m/s at 20 °C)`);
-    coneCanvas.setAttribute('aria-label', `Side view of a speaker cone moving ${slow} times slower than real at ${p.freq} Hz, swing in proportion to the amplitude, ${fmtPct(p.amp * 100)} % of full scale; the cone is a quarter cycle behind the pressure on the oscilloscope above; the air dots in front of the cone show one cycle of the wave as one dense bunch and one thin gap, and the curve above them is the oscilloscope curve mirrored in time, the density along the air, red above the dashed rest line where the air is denser than at rest and teal below it; red dots are the compression, air squeezed closer than at rest, and teal dots are at rest or spread thinner`);
-    coneCanvas.setAttribute('title', AIR_CURVE_TITLE);
-    slowOut.textContent = slowReadout(p.freq, slow);
-    coneNoteOut.textContent = coneNote(slow);
-    airOut.textContent = airNote(p.freq);
-    slowSeg.paint();
   }
 
   function setWin(n) {
@@ -715,12 +411,6 @@ export function createSimpleCard(env = {}) {
     win = n;
     paintOutputs();
     paintWindow();
-  }
-
-  function setSlow(n) {
-    if (!SLOW_CHOICES.includes(n) || n === slow) return;
-    slow = n;
-    paintOutputs();
   }
 
   function say(key) {
@@ -749,8 +439,7 @@ export function createSimpleCard(env = {}) {
     if (!g) return;
     const c = currentColors();
     const points = Math.max(64, Math.round(g.w * 2));
-    const marker = scopeMarker(phase, params.amp);
-    const view = { ticks: scopeTicks(cycles, params.freq), marker };
+    const view = { ticks: scopeTicks(cycles, params.freq) };
     if (live) {
       live.analyser.getFloatTimeDomainData(live.buf);
       const lw = liveWindow(live.buf, live.ctx.sampleRate, params.freq, cycles, points);
@@ -769,22 +458,10 @@ export function createSimpleCard(env = {}) {
     drawScope(g, currentColors(), scopeSeries(params.amp, points, cyc), points, params, { ticks: windowTicks(win), bracket: false });
   }
 
-  function paintCone() {
-    if (gone) return;
-    const g = fit(coneCanvas);
-    if (!g) return;
-    drawCone(g, currentColors(), phase, params.amp);
-    coneCanvas.setAttribute('data-phase', phase.toFixed(4));
-    coneCanvas.setAttribute('data-offset', coneOffset(phase, params.amp).toFixed(4));
-  }
-
   function paintAll() {
     paintScope();
-    paintCone();
     paintWindow();
   }
-
-  const animOn = () => !gone && !paused && inView && !doc?.hidden;
 
   function schedule() {
     looping = true;
@@ -795,31 +472,19 @@ export function createSimpleCard(env = {}) {
     looping = false;
     frame = 0;
     if (gone) return;
-    const t = now();
-    const running = animOn();
-    if (running) phase = advancePhase(phase, params.freq, Math.min(t - animLast, MAX_FRAME_MS), slow);
-    animLast = t;
-    if (running) { paintScope(); paintCone(); } else paintScope();
-    if (live || running) schedule();
+    paintScope();
+    if (live) schedule();
   }
 
   function syncLoop() {
-    const want = !gone && (!!live || animOn());
+    const want = !gone && !!live;
     if (want && !looping) {
-      animLast = now();
       schedule();
     } else if (!want && looping) {
       looping = false;
       caf(frame);
       frame = 0;
     }
-  }
-
-  function togglePause() {
-    paused = !paused;
-    pauseButton.textContent = paused ? PLAY_ANIM_TEXT : PAUSE_TEXT;
-    paintCone();
-    syncLoop();
   }
 
   function listen(target, type, fn) {
@@ -938,7 +603,7 @@ export function createSimpleCard(env = {}) {
     paintOutputs();
     applyLive(params.amp !== before);
     paintWindow();
-    if (!looping) { paintScope(); paintCone(); }
+    if (!looping) paintScope();
   }
 
   const typed = (input, apply) => {
@@ -959,49 +624,28 @@ export function createSimpleCard(env = {}) {
     ro = new ResizeObserver(() => {
       if (gone) return;
       paintWindow();
-      if (!looping) { paintScope(); paintCone(); }
+      if (!looping) paintScope();
     });
     ro.observe(node);
-  }
-
-  const onVisibility = () => syncLoop();
-  doc?.addEventListener?.('visibilitychange', onVisibility);
-  const IO = env.IntersectionObserver ?? globalThis.IntersectionObserver;
-  let io = null;
-  if (typeof IO === 'function') {
-    io = new IO((entries) => {
-      inView = entries[entries.length - 1].isIntersecting;
-      syncLoop();
-    });
-    io.observe(coneCanvas.parentElement);
   }
 
   paintOutputs(true);
   paintButton();
   if (typeof requestAnimationFrame === 'function') raf(() => { if (!gone && !looping) paintAll(); });
-  syncLoop();
 
   return {
     node,
     get running() { return !!live && !live.stopping; },
     get state() { return state; },
     get params() { return { ...params }; },
-    get phase() { return phase; },
-    get animating() { return looping && animOn(); },
-    get paused() { return paused; },
-    get slow() { return slow; },
     get window() { return win; },
-    setSlow,
     setWindow: setWin,
     start,
     stop: () => stop('stopped'),
     change,
-    togglePause,
     dispose() {
       gone = true;
       ro?.disconnect();
-      io?.disconnect();
-      doc?.removeEventListener?.('visibilitychange', onVisibility);
       syncLoop();
       if (live) teardown(live);
     },
