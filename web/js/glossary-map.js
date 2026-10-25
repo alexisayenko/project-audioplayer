@@ -15,7 +15,7 @@ const MEMBERS = {
   perception: ['pitch', 'timbre', 'missing-fundamental', 'cent', 'loudness', 'flutter-and-roughness'],
   music: ['note', 'tone', 'fundamental', 'harmonic-1', 'harmonics', 'overtone', 'partial', 'inharmonicity', 'beating', 'hammer-strike-position', 'strings-per-note', 'decay-across-harmonics', 'rhythm', 'beat', 'tempo', 'meter', 'bar', 'downbeat', 'onset', 'syncopation', 'subdivision', 'swing'],
   theory: ['scale', 'major-scale', 'minor-scale', 'chromatic-scale', 'pentatonic-scale', 'mode', 'key', 'tonic', 'semitone', 'whole-tone', 'octave', 'interval', 'third', 'fourth', 'fifth', 'consonance', 'dissonance', 'tuning', 'equal-temperament', 'just-intonation', 'pythagorean-tuning', 'reference-pitch', 'circle-of-fifths', 'chord', 'triad', 'seventh-chord', 'root', 'inversion', 'chord-progression', 'cadence', 'harmony', 'melody'],
-  instruments: ['chordophones', 'aerophones', 'membranophones', 'idiophones', 'electrophones', 'primitive', 'additive-synthesis'],
+  instruments: ['chordophones', 'aerophones', 'membranophones', 'idiophones', 'percussion', 'electrophones', 'primitive', 'additive-synthesis'],
   analysis: ['waveform', 'oscilloscope', 'spectrum', 'spectrogram', 'beat-bands', 'tempo-grid', 'bpm', 'analysis-window', 'trails', 'harmonic-markers', 'pitch-detection', 'octave-error', 'dbfs', 'db-spl', 'time-window', 'spectrum-analyzer', 'fourier-transform'],
   digitizing: ['sample', 'sample-rate', 'nyquist-limit', 'fft-size', 'bin', 'band', 'time-frequency-tradeoff', 'gibbs-ringing', 'phase'],
 };
@@ -62,6 +62,9 @@ export const RELATIONS = [
   rel('aerophones', 'give all or only odd', 'harmonics'),
   rel('membranophones', 'have non-integer', 'partial'),
   rel('idiophones', 'have non-integer', 'partial'),
+  rel('percussion', 'includes', 'idiophones'),
+  rel('percussion', 'includes', 'membranophones'),
+  rel('percussion', 'is struck, so it starts with an', 'onset'),
   rel('hammer-strike-position', 'weakens one of the', 'harmonics'),
   rel('strings-per-note', 'detuned strings give', 'beating'),
   rel('strings-per-note', 'is a feature of', 'chordophones'),

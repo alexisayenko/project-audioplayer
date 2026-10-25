@@ -145,7 +145,7 @@ test('STU-044: Sound wave is a term with aliases, see-also links and the cone an
   assert.ok(termById('compression-and-rarefaction').see.includes('sound-wave'));
   assert.equal(termByAnchor('longitudinal-wave').id, 'sound-wave');
   assert.equal(termByAnchor('compression-wave').id, 'sound-wave');
-  assert.equal(TERMS.length, 120);
+  assert.equal(TERMS.length, 121);
 });
 
 test('WEB-212: Harmonic decomposition is a glossary entry with its aliases, see-also terms and a demo link to Primitive', () => {
@@ -223,7 +223,7 @@ test('STU-045: the list is grouped by category with counted headings, an Order s
   const win = { location: { hash: '' }, addEventListener() {}, removeEventListener() {} };
   const stop = mountGlossary(pane, win);
   const heads = () => pane.querySelectorAll('.gl-sec-h').map((h) => h.textContent);
-  assert.deepEqual(heads(), ['Physics of sound (27)', 'Perception (6)', 'Music (22)', 'Music theory (32)', 'Instruments (7)', 'Analysis tools (17)', 'Digitizing sound (9)']);
+  assert.deepEqual(heads(), ['Physics of sound (27)', 'Perception (6)', 'Music (22)', 'Music theory (32)', 'Instruments (8)', 'Analysis tools (17)', 'Digitizing sound (9)']);
   assert.equal(pane.querySelectorAll('.gl-sec').length, 7);
   assert.equal(pane.querySelectorAll('.gl-chip').length, 7);
   const order = pane.querySelectorAll('.hm-seg').find((g) => g.getAttribute('aria-labelledby') === 'gl-order-label');
@@ -243,4 +243,14 @@ test('STU-045: the list is grouped by category with counted headings, an Order s
   const names = pane.querySelectorAll('.gl-item dt').map((d) => d.firstChild.textContent);
   assert.deepEqual(names, TERMS.map((t) => t.term));
   stop();
+});
+
+test('STU-062: Percussion is an Instruments term with its see-also links and the Rhythm demo', () => {
+  const t = termById('percussion');
+  assert.equal(t.term, 'Percussion');
+  assert.match(t.text, /Latin for "to strike"/);
+  assert.match(t.text, /cannot be built from H1\.\.Hn bars/);
+  for (const id of ['timbre', 'inharmonicity', 'spectrum', 'rhythm', 'onset', 'idiophones', 'membranophones']) assert.ok(t.see.includes(id), id);
+  assert.ok(t.see.every((id) => termById(id)));
+  assert.deepEqual(t.demo, { page: 'analyze/rhythm', label: 'Rhythm' });
 });
