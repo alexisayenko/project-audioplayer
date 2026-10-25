@@ -15,7 +15,10 @@ test('STU-025: terms are alphabetical, have unique ids and every see-also id exi
     assert.ok(t.text.length > 0, t.id);
     for (const id of t.see ?? []) assert.ok(termById(id), `${t.id} -> ${id}`);
     if (t.demo?.page) assert.ok(PAGES.some((p) => p.id === t.demo.page), `${t.id} demo ${t.demo.page}`);
-    if (t.demo && !t.demo.page) assert.equal(t.demo.type, 'cone-animation', t.id);
+    if (t.demo && !t.demo.page) {
+      assert.equal(t.demo.type, 'link', t.id);
+      assert.match(t.demo.href, /^#\/learn\/sound-wave(\?wave=(sine|triangle|square|sawtooth))?$/, t.id);
+    }
   }
 });
 
@@ -106,7 +109,7 @@ test('STU-025: filterTerms matches every word in the term or the text, ignoring 
 });
 
 test('STU-025: #/glossary and #/glossary/<term> open the glossary page', () => {
-  assert.ok(PAGES.some((p) => p.id === 'glossary' && p.group === 'Reference' && p.hash === '#/glossary'));
+  assert.ok(PAGES.some((p) => p.id === 'glossary' && p.group === 'Learn' && p.hash === '#/glossary'));
   assert.equal(pageFromHash('#/glossary'), 'glossary');
   assert.equal(pageFromHash('#/glossary/amplitude'), 'glossary');
   assert.equal(pageFromHash('#/glossary/'), 'glossary');
@@ -134,60 +137,40 @@ test('STU-044: Sound wave is a term with aliases, see-also links and the cone an
   assert.deepEqual(t.see, ['compression-and-rarefaction', 'wavelength', 'speed-of-sound', 'frequency', 'amplitude']);
   assert.match(t.text, /^A travelling pattern of compressions \(air squeezed closer: high pressure\) and rarefactions \(air spread thinner: low pressure\)\./);
   assert.match(t.text, /about 343 m\/s in air\)\.$/);
-  assert.deepEqual(t.demo, { type: 'cone-animation' });
-  assert.deepEqual(termById('compression-and-rarefaction').demo, { type: 'cone-animation' });
+  assert.deepEqual(t.demo, { type: 'link', href: '#/learn/sound-wave', label: 'Open the demo' });
+  assert.deepEqual(termById('compression-and-rarefaction').demo, { type: 'link', href: '#/learn/sound-wave', label: 'Open the demo' });
   assert.ok(termById('compression-and-rarefaction').see.includes('sound-wave'));
   assert.equal(termByAnchor('longitudinal-wave').id, 'sound-wave');
   assert.equal(termByAnchor('compression-wave').id, 'sound-wave');
   assert.equal(TERMS.length, 108);
 });
 
-test('STU-044: a term with the demo has a Show animation button that expands and collapses the animation', () => {
+test('STU-056: a term with the demo has an Open the demo link to the Sound wave page and no animation', () => {
   const pane = document.createElement('div');
   const win = { location: { hash: '' }, addEventListener() {}, removeEventListener() {} };
   const stop = mountGlossary(pane, win);
-  const item = pane.querySelector('#gl-sound-wave');
-  const button = item.querySelector('.gl-demo button');
-  assert.equal(button.textContent, 'Show animation');
-  assert.equal(button.getAttribute('aria-expanded'), 'false');
-  assert.equal(item.querySelector('canvas'), null);
-  button.click();
-  assert.equal(button.textContent, 'Hide animation');
-  assert.equal(button.getAttribute('aria-expanded'), 'true');
-  assert.ok(item.querySelector('canvas'));
-  button.click();
-  assert.equal(button.textContent, 'Show animation');
-  assert.equal(item.querySelector('canvas'), null);
-  assert.equal(pane.querySelectorAll('.gl-demo').length, 6);
+  const link = pane.querySelector('#gl-sound-wave .gl-demo-link');
+  assert.equal(link.textContent, 'Open the demo →');
+  assert.equal(link.getAttribute('href'), '#/learn/sound-wave');
+  assert.equal(pane.querySelectorAll('.gl-demo-link').length, 6);
+  assert.equal(pane.querySelectorAll('canvas').length, 0);
+  assert.equal(pane.querySelectorAll('button').filter((b) => /animation/i.test(b.textContent)).length, 0);
   stop();
 });
 
-test('STU-047: the four wave entries open the animation with their own shape behind Show animation and harmonics', () => {
+test('STU-056: the four wave entries link to the Sound wave page with their own shape', () => {
   for (const wave of ['sine', 'triangle', 'square', 'sawtooth']) {
     const t = termById(`${wave}-wave`);
-    assert.equal(t.demo.type, 'cone-animation');
-    assert.equal(t.demo.wave, wave);
-    assert.match(t.text, /Press Show animation to see how it squeezes the air\.$/);
+    assert.deepEqual(t.demo, { type: 'link', href: `#/learn/sound-wave?wave=${wave}`, label: 'Open the demo' });
+    assert.match(t.text, /Open the demo to see how it squeezes the air\.$/);
   }
-  assert.equal(termById('sine-wave').demo.page, 'synthesize/simple');
   assert.equal(termById('pulse-wave').demo, undefined);
   const pane = document.createElement('div');
   const win = { location: { hash: '' }, addEventListener() {}, removeEventListener() {} };
   const stop = mountGlossary(pane, win);
   for (const wave of ['sine', 'triangle', 'square', 'sawtooth']) {
-    const item = pane.querySelector(`#gl-${wave}-wave`);
-    const button = item.querySelector('.gl-demo button');
-    assert.equal(button.textContent, 'Show animation and harmonics');
-    button.click();
-    assert.equal(button.textContent, 'Hide animation and harmonics');
-    assert.equal(item.querySelectorAll('rect')[2].getAttribute('data-amp'), { sine: '0.0000', triangle: '0.1111', square: '0.3333', sawtooth: '0.3333' }[wave]);
-    const group = item.querySelectorAll('.seg').find((g) => g.getAttribute('aria-label') === 'Waveform');
-    const on = group.querySelectorAll('button').filter((b) => b.getAttribute('aria-checked') === 'true');
-    assert.equal(on.length, 1);
-    assert.equal(on[0].getAttribute('aria-label').toLowerCase(), wave);
-    button.click();
+    assert.equal(pane.querySelector(`#gl-${wave}-wave .gl-demo-link`).getAttribute('href'), `#/learn/sound-wave?wave=${wave}`);
   }
-  assert.equal(pane.querySelector('#gl-sound-wave .gl-demo button').textContent, 'Show animation');
   stop();
 });
 

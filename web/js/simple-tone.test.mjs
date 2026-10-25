@@ -156,8 +156,8 @@ test('STU-043: Primitive has no cone animation, no dot, no Slow motion factor an
   const text = card.node.textContent;
   for (const gone of ['Slow motion', 'Slowed', 'Pause animation', 'Play animation', 'dense (compression)', 'the dot is the pressure now', 'Cycles shown']) assert.ok(!text.includes(gone), gone);
   assert.equal(card.node.querySelectorAll('canvas').length, 2);
-  const link = card.node.querySelectorAll('a').find((a) => a.textContent === 'See how a speaker makes a sound wave in the Glossary →');
-  assert.equal(link.getAttribute('href'), '#/glossary/sound-wave');
+  const link = card.node.querySelectorAll('a').find((a) => a.textContent === 'See how a speaker makes a sound wave on the Sound wave page →');
+  assert.equal(link.getAttribute('href'), '#/learn/sound-wave');
   assert.equal(card.paused, undefined);
   assert.equal(card.phase, undefined);
   card.dispose();

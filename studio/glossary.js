@@ -4,7 +4,7 @@ import { TERMS, termById, termByAnchor, filterTerms } from '../web/js/glossary-t
 import { matchSet, termsByDomain } from '../web/js/glossary-map.js';
 import { glossaryTermFromHash, glossaryViewFromHash, glossaryMapTermFromHash } from './routes.js';
 import { createGlossaryMap, dotFor } from './glossary-map-view.js';
-import { createDemoToggle, hasAnimation, pageLink } from './glossary-demo.js';
+import { demoLink, pageLink } from './glossary-demo.js';
 
 export const TITLE = 'Glossary';
 export const INTRO = 'Plain-language definitions of the sound terms used on this site, as a list or as a map of how they connect.';
@@ -22,22 +22,17 @@ export function mountGlossary(pane, win = globalThis) {
   let marked = null;
   let order = 'category';
   const items = new Map();
-  const demos = new Map();
 
   const termLink = (id) => el('a', { href: termHash(id), onclick: () => focusTerm(id) }, termById(id).term);
 
   const build = (t) => {
     const see = t.see?.length ? [el('span', { class: 'gl-label' }, 'See also'), ...t.see.map(termLink)] : [];
     const demo = pageLink(t);
-    let toggle = null;
-    if (hasAnimation(t)) {
-      toggle = createDemoToggle(t, { id: `gl-${t.id}`, onOpen: () => { for (const [id, d] of demos) if (id !== t.id) d.close(); } });
-      demos.set(t.id, toggle);
-    }
+    const openDemo = demoLink(t);
     return el('div', { class: 'gl-item', id: `gl-${t.id}`, tabindex: '-1' },
       el('dt', { class: 't-subhead' }, t.term, t.aliases?.length ? el('span', { class: 'gl-also t-caption' }, ` also: ${t.aliases.join(', ')}`) : null),
       el('dd', { class: 't-subhead muted gl-text' }, t.text),
-      toggle ? el('dd', { class: 'gl-demo-row' }, toggle.node) : null,
+      openDemo.length ? el('dd', { class: 'gl-demo-row' }, ...openDemo) : null,
       see.length || demo.length ? el('dd', { class: 'gl-more t-caption' }, ...see, ...demo) : null);
   };
 
@@ -85,7 +80,6 @@ export function mountGlossary(pane, win = globalThis) {
     const filtered = !!input.value.trim();
     for (const [id, node] of items) {
       node.hidden = !hits.has(id);
-      if (node.hidden) demos.get(id)?.close();
     }
     for (const s of sections) {
       const shown = s.group.terms.filter((t) => hits.has(t.id)).length;
@@ -120,7 +114,6 @@ export function mountGlossary(pane, win = globalThis) {
     orderBar.hidden = v !== 'list';
     jump.hidden = order !== 'category' || v !== 'list';
     mapHost.hidden = v !== 'map';
-    if (v !== 'list') for (const d of demos.values()) d.close();
     if (v !== 'map') return;
     if (!map) {
       map = createGlossaryMap({ onSelect: (id) => win.history?.replaceState?.(null, '', viewHash('map', id ?? '')) });
@@ -140,7 +133,6 @@ export function mountGlossary(pane, win = globalThis) {
     unmark();
     marked = node;
     node.classList.add('gl-hit');
-    demos.get(id)?.open();
     node.scrollIntoView({ block: 'start' });
     node.focus({ preventScroll: true });
   }
@@ -174,7 +166,6 @@ export function mountGlossary(pane, win = globalThis) {
   onHash();
   return () => {
     win.removeEventListener('hashchange', onHash);
-    for (const d of demos.values()) d.close();
     map?.destroy();
   };
 }

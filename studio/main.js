@@ -5,6 +5,7 @@ import { mountClicks } from '../web/js/clicks-tone.js';
 import { PAGES, pageFromHash } from './routes.js';
 import { mountPlaceholder } from './placeholders.js';
 import { mountGlossary } from './glossary.js';
+import { mountSoundWave } from './sound-wave.js';
 import { mountMenu } from './menu.js';
 import { mountFeatures, mountHelp, mountAbout } from './help.js';
 
@@ -17,6 +18,7 @@ const MOUNT = {
   'synthesize/idiophones': (pane) => mountPlaceholder(pane, 'synthesize/idiophones'),
   'analyze/listen': (pane) => mountListen(pane),
   'analyze/rhythm': (pane) => mountRhythm(pane),
+  'learn/sound-wave': (pane) => mountSoundWave(pane),
   glossary: (pane) => mountGlossary(pane),
   'help/features': (pane) => mountFeatures(pane),
   'help/help': (pane) => mountHelp(pane),

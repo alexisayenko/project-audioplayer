@@ -37,8 +37,8 @@ export const DB_NOTE = 'In decibels of full scale: dBFS = 20 x log10(amplitude).
 export const AMP_NOTE = 'How far the speaker cone moves.';
 export const LIMIT_NOTE = 'Limited to 80 % of full scale to protect your hearing and the speaker.';
 export const LENGTH_NOTE = 'A new length applies the next time you press Play. Continuous stops after 10 minutes.';
-export const WAVE_LINK = 'See how a speaker makes a sound wave in the Glossary →';
-export const WAVE_HREF = '#/glossary/sound-wave';
+export const WAVE_LINK = 'See how a speaker makes a sound wave on the Sound wave page →';
+export const WAVE_HREF = '#/learn/sound-wave';
 export const GLOSSARY_LINK = 'Terms: see the Glossary →';
 export const GLOSSARY_HREF = '#/glossary';
 export const SINE_NOTE = 'One sine wave = one frequency = H1 only.';

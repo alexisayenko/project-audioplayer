@@ -38,11 +38,16 @@ test('STU-006: eight routes, #/synthesize/simple is the default, the old two-pag
     ['Synthesize', 'Idiophones', '#/synthesize/idiophones'],
     ['Analyze', 'Listen', '#/analyze/listen'],
     ['Analyze', 'Rhythm', '#/analyze/rhythm'],
-    ['Reference', 'Glossary', '#/glossary'],
+    ['Learn', 'Sound wave', '#/learn/sound-wave'],
+    ['Learn', 'Glossary', '#/glossary'],
     ['Help', 'Features', '#/help/features'],
     ['Help', 'Help', '#/help/help'],
     ['Help', 'About', '#/help/about'],
   ]);
+  assert.equal(pageFromHash('#/learn'), 'learn/sound-wave');
+  assert.equal(pageFromHash('#/sound-wave'), 'learn/sound-wave');
+  assert.equal(pageFromHash('#/learn/sound-wave?wave=square&freq=220'), 'learn/sound-wave');
+  assert.equal(pageFromHash('#/glossary/map'), 'glossary');
   assert.equal(pageFromHash('#/help'), 'help/features');
   assert.equal(pageFromHash('#/help/about'), 'help/about');
 });
@@ -58,15 +63,52 @@ test('STU-017: the three placeholder pages name their physics and a new ticket',
   assert.match(PLACEHOLDERS['synthesize/membranophones'].lines.join(' '), /1, 1\.59, 2\.14, 2\.30, 2\.65 and 2\.92/);
 });
 
-test('STU-005: the left menu is a nav named Studio with the groups Synthesize (six items), Analyze (Listen, Rhythm) and Reference (Glossary), Help (Features, Help, About) and a link back to the main app', () => {
+test('STU-005: the left menu is a nav named Studio with the groups Synthesize (six items), Analyze (Listen, Rhythm), Learn (Sound wave, Glossary) and Help (Features, Help, About) and a link back to the main app', () => {
   const html = read('../../studio/index.html');
   const nav = html.match(/<nav class="site-nav" aria-label="Studio">([\s\S]*?)<\/nav>/)[1];
-  assert.deepEqual([...nav.matchAll(/<h2 [^>]*>([^<]*)<\/h2>/g)].map((m) => m[1]), ['Synthesize', 'Analyze', 'Reference', 'Help']);
+  assert.deepEqual([...nav.matchAll(/<h2 [^>]*>([^<]*)<\/h2>/g)].map((m) => m[1]), ['Synthesize', 'Analyze', 'Learn', 'Help']);
   assert.deepEqual([...nav.matchAll(/<a [^>]*href="([^"]*)"[^>]*data-page="([^"]*)"[^>]*>([^<]*)<\/a>/g)].map((m) => [m[1], m[2], m[3]]), PAGES.map((p) => [p.hash, p.id, p.label]));
   assert.ok(html.indexOf('class="site-nav"') < html.indexOf('class="site-home'));
   assert.match(html, /<a class="site-home[^"]*" href="https:\/\/electrophone\.cc\/">Back to Electrophone<\/a>/);
   assert.doesNotMatch(read('../../studio/main.js'), /studio-tabs|role: 'tab/);
   assert.match(read('../../studio/main.js'), /setAttribute\('aria-current', 'page'\)/);
+});
+
+test('STU-055: the Sound wave page has the animation, a How to read this block and related terms, and reads ?wave and ?freq', async () => {
+  const { mountSoundWave, paramsFromHash, RELATED_IDS, READ_ITEMS } = await import('../../studio/sound-wave.js');
+  assert.deepEqual(paramsFromHash('#/learn/sound-wave?wave=square&freq=220'), { wave: 'square', freq: 220 });
+  assert.deepEqual(paramsFromHash('#/learn/sound-wave?wave=bogus&freq=abc'), { wave: undefined, freq: undefined });
+  assert.deepEqual(paramsFromHash('#/learn/sound-wave'), { wave: undefined, freq: undefined });
+  const listeners = new Set();
+  const win = { location: { hash: '#/learn/sound-wave?wave=square' }, addEventListener: (n, f) => listeners.add(f), removeEventListener: (n, f) => listeners.delete(f) };
+  const pane = document.createElement('div');
+  const stop = mountSoundWave(pane, win);
+  assert.equal(pane.querySelector('h2').textContent, 'Sound wave');
+  assert.match(pane.querySelector('p.hm-cap').textContent, /^See how a vibrating speaker cone squeezes the air into a sound wave: compression \(red\) and rarefaction, slowed down so you can watch\.$/);
+  assert.ok(pane.querySelector('canvas'));
+  const on = () => pane.querySelectorAll('.ca-wave button').filter((b) => b.getAttribute('aria-checked') === 'true').map((b) => b.getAttribute('aria-label'));
+  assert.deepEqual(on(), ['Square']);
+  assert.equal(pane.querySelectorAll('.sw-read li').length, READ_ITEMS.length);
+  assert.deepEqual(pane.querySelectorAll('.sw-related a').map((a) => a.getAttribute('href')), RELATED_IDS.map((id) => `#/glossary/${id}`));
+  win.location.hash = '#/learn/sound-wave?wave=triangle';
+  for (const f of listeners) f();
+  assert.deepEqual(on(), ['Triangle']);
+  stop();
+  assert.equal(listeners.size, 0);
+});
+
+test('STU-056: the Glossary has no animation, and the wave entries link to the Sound wave page with their shape', async () => {
+  const { TERMS } = await import('./glossary-terms.js');
+  const links = TERMS.filter((t) => t.demo?.type === 'link');
+  assert.deepEqual(links.map((t) => [t.id, t.demo.href]).sort(), [
+    ['compression-and-rarefaction', '#/learn/sound-wave'],
+    ['sawtooth-wave', '#/learn/sound-wave?wave=sawtooth'],
+    ['sine-wave', '#/learn/sound-wave?wave=sine'],
+    ['sound-wave', '#/learn/sound-wave'],
+    ['square-wave', '#/learn/sound-wave?wave=square'],
+    ['triangle-wave', '#/learn/sound-wave?wave=triangle'],
+  ]);
+  for (const f of ['glossary.js', 'glossary-map-view.js', 'glossary-demo.js']) assert.doesNotMatch(read(`../../studio/${f}`), /cone-animation/);
 });
 
 test('STU-009: the studio offers no Player source: Listen has no Source switch and the lab has none either', () => {

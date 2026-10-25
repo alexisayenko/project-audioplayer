@@ -1,6 +1,6 @@
 import { el } from '../web/js/dom.js';
 import { termById } from '../web/js/glossary-terms.js';
-import { createDemoToggle, hasAnimation, pageLink } from './glossary-demo.js';
+import { demoLink, pageLink } from './glossary-demo.js';
 import {
   DOMAINS, buildGraph, neighbourMap, relationsOf, layoutDomains, boxBounds, contentBounds, fitView, initialView, zoomAbout, edgeEnds, neighbourInDirection, shapeFor, pillScale, placeLabels,
 } from '../web/js/glossary-map.js';
@@ -47,7 +47,6 @@ export function createGlossaryMap({ terms, onSelect } = {}) {
   let pNow = 0;
   let drag = null;
   let pinch = null;
-  let panelDemo = null;
   const pointers = new Map();
 
   const world = svgEl('g', { class: 'gm-world' });
@@ -244,8 +243,6 @@ export function createGlossaryMap({ terms, onSelect } = {}) {
   }
 
   function renderPanel() {
-    panelDemo?.close();
-    panelDemo = null;
     const n = selected && byId.get(selected);
     if (!n) {
       panel.replaceChildren(el('p', { class: 'hm-cap muted t-caption' }, 'Select a term to see its definition and how it connects to the others.'));
@@ -254,13 +251,13 @@ export function createGlossaryMap({ terms, onSelect } = {}) {
     const t = termById(n.id);
     const rels = relationsOf(n.id, edges);
     const demo = pageLink(t);
-    if (hasAnimation(t)) panelDemo = createDemoToggle(t, { id: `gm-${t.id}` });
+    const openDemo = demoLink(t);
     panel.replaceChildren(
       el('div', { class: 'gm-ph' }, dotFor(n.domain), el('h3', { class: 't-subhead' }, t.term)),
       el('p', { class: 'hm-cap muted t-caption' }, `Category: ${domainOf(n.domain).label}`),
       ...(n.aliases.length ? [el('p', { class: 'hm-cap muted t-caption gl-also' }, `Also called: ${n.aliases.join(', ')}`)] : []),
       el('p', { class: 'gl-text t-subhead muted' }, t.text),
-      panelDemo ? panelDemo.node : null,
+      openDemo.length ? el('p', { class: 'gl-demo-row' }, ...openDemo) : null,
       el('p', { class: 'gl-more t-caption' }, el('a', { href: `#/glossary/${n.id}` }, 'Open in list'), ...demo),
       rels.length ? el('p', { class: 'gl-label t-caption' }, 'Relations') : null,
       rels.length ? el('ul', { class: 'gm-rels t-caption' }, ...rels.map((r) => relRow(n.id, r))) : null);
@@ -471,7 +468,6 @@ export function createGlossaryMap({ terms, onSelect } = {}) {
     },
     size: () => ({ nodes: nodes.length, edges: edges.length }),
     destroy() {
-      panelDemo?.close();
       ro?.disconnect();
     },
   };

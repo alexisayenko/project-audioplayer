@@ -61,6 +61,7 @@ export const PAGE_NOTES = [
   ['Aerophones, Membranophones, Idiophones', 'Placeholders for now; each says what is planned.'],
   ['Listen', 'The microphone as an instrument: level meter, waveform, spectrum with harmonic marks, spectrogram and Beat bands.'],
   ['Rhythm', 'The microphone as a tempo meter: a live BPM, the tempo per analysis window and the Beat bands with a tempo grid.'],
+  ['Sound wave', 'A speaker cone in slow motion: see how it squeezes the air into a sound wave, choose the waveform and see its harmonics.'],
   ['Glossary', 'Plain-language definitions of the sound terms, as a list or as a map of how they connect.'],
 ];
 

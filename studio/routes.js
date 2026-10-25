@@ -20,9 +20,12 @@ export const GROUPS = [
     ],
   },
   {
-    id: 'reference',
-    label: 'Reference',
-    pages: [{ id: 'glossary', label: 'Glossary' }],
+    id: 'learn',
+    label: 'Learn',
+    pages: [
+      { id: 'learn/sound-wave', label: 'Sound wave' },
+      { id: 'glossary', label: 'Glossary' },
+    ],
   },
   {
     id: 'help',
@@ -37,9 +40,11 @@ export const GROUPS = [
 
 export const PAGES = GROUPS.flatMap((g) => g.pages.map((p) => ({ ...p, group: g.label, hash: `#/${p.id}` })));
 export const DEFAULT_PAGE = 'synthesize/simple';
-export const ALIASES = { synthesize: 'synthesize/simple', analyze: 'analyze/listen', 'analyze/bpm': 'analyze/rhythm', help: 'help/features', clicks: 'synthesize/clicks' };
+export const ALIASES = { synthesize: 'synthesize/simple', analyze: 'analyze/listen', 'analyze/bpm': 'analyze/rhythm', help: 'help/features', clicks: 'synthesize/clicks', learn: 'learn/sound-wave', 'sound-wave': 'learn/sound-wave' };
 
-const pathOf = (hash) => String(hash || '').replace(/^#\/?/, '').replace(/\/+$/, '');
+const pathOf = (hash) => String(hash || '').replace(/^#\/?/, '').replace(/\?.*$/, '').replace(/\/+$/, '');
+
+export const queryFromHash = (hash) => new URLSearchParams(String(hash || '').split('?').slice(1).join('?'));
 
 const decode = (s) => {
   try {
