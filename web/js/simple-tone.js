@@ -466,6 +466,8 @@ export function createSimpleCard(env = {}) {
     onPlayBuild: (on) => { custom.playBuild = on; customChanged(); },
   });
   editor.node.hidden = true;
+  editor.presets.hidden = true;
+  waveField.append(editor.presets);
 
   const stack = createStackCard(env);
   stack.node.classList.add('sm-stack');
@@ -567,6 +569,7 @@ export function createSimpleCard(env = {}) {
     harmTitle.textContent = onCustom ? EDITOR_TITLE : HARM_TITLE;
     harm.svg.classList.toggle('he-gone', onCustom);
     editor.node.hidden = !onCustom;
+    editor.presets.hidden = !onCustom;
     editorTip.hidden = !onCustom;
     if (onCustom) editor.paint({ bars: custom.bars, count: custom.count, freq: p.freq, buildN: custom.buildN, playBuild: custom.playBuild, showEach: custom.showEach, notes: customNotes() });
     else harm.paint(p.wave);

@@ -45,7 +45,7 @@
 .sm-wave .seg-btn:focus-visible { outline: 2px solid var(--fill); outline-offset: 1px; }
 .sm-harm { gap: var(--space-2); }
 .sm-harm-head { min-height: 0; }
-.ca-harm.he-gone, .he[hidden] { display: none; }
+.ca-harm.he-gone, .he[hidden], .he-presets[hidden] { display: none; }
 .he { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-3); min-width: 0; }
 .he-scroll { overflow-x: auto; max-width: 100%; overscroll-behavior-x: contain; }
 .ca-harm.he-svg { width: 100%; max-width: none; height: auto; user-select: none; -webkit-user-select: none; touch-action: none; }
@@ -98,6 +98,7 @@
 .he-group-cap { color: var(--ink-muted); }
 .he-chips, .he-actions { display: flex; flex-wrap: wrap; gap: var(--space-2); min-width: 0; }
 .he-actions { justify-content: flex-end; }
+.sm-wave .he-presets { margin-top: var(--space-2); }
 .he-presets .chip.he-action { background: transparent; border: var(--stroke-hairline) solid var(--line); }
 @container stu (min-width: 1100px) { .cl-ctl { grid-template-columns: repeat(2, minmax(0, 1fr)) auto; } }
 .ca { gap: var(--space-3); }

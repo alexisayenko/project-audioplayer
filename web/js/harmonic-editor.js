@@ -210,7 +210,6 @@ export function createHarmonicEditor(handlers) {
   const node = el('div', { class: 'he' },
     read,
     scroll,
-    presets,
     el('div', { class: 'hm-checks he-opts' }, each.node, more.node),
     build,
     notes);
@@ -263,5 +262,5 @@ export function createHarmonicEditor(handlers) {
     }).observe(scroll);
   }
 
-  return { node, svg, hits: cols.map((c) => c.hit), paint, showReadout };
+  return { node, presets, svg, hits: cols.map((c) => c.hit), paint, showReadout };
 }

@@ -42,7 +42,9 @@ test('WEB-211: Custom is the fifth Waveform option; picking it shows the harmoni
   assert.equal(buttons.length, 5);
   assert.equal(buttons[4].getAttribute('aria-label'), 'Custom');
   assert.equal(card.node.querySelector('.he').hidden, true);
+  assert.equal(card.node.querySelector('.he-presets').hidden, true);
   buttons[4].click();
+  assert.equal(card.node.querySelector('.he-presets').hidden, false);
   assert.equal(card.params.wave, 'custom');
   assert.equal(card.node.querySelector('.he').hidden, false);
   assert.ok(card.node.querySelector('.ca-harm:not(.he-svg)').classList.contains('he-gone'));
@@ -50,6 +52,7 @@ test('WEB-211: Custom is the fifth Waveform option; picking it shows the harmoni
   assert.ok(card.node.textContent.includes('Custom wave = the sum of the harmonic bars below'));
   buttons[0].click();
   assert.equal(card.node.querySelector('.he').hidden, true);
+  assert.equal(card.node.querySelector('.he-presets').hidden, true);
   card.dispose();
 });
 
@@ -149,6 +152,13 @@ test('WEB-211: preset chips sit in labelled groups, Clear and Reset are a separa
   assert.equal(actions.getAttribute('role'), 'group');
   assert.deepEqual(actions.querySelectorAll('.chip').map((b) => b.textContent), ['Clear', 'Reset']);
   assert.ok(actions.querySelectorAll('.chip').every((b) => b.getAttribute('aria-pressed') === null && b.classList.contains('he-action')));
+  const field = card.node.querySelector('.sm-wave');
+  const presets = card.node.querySelector('.he-presets');
+  assert.equal(presets.parentNode, field);
+  assert.equal(field.children[field.children.length - 1], presets);
+  assert.ok(field.children[field.children.length - 2].querySelector('.seg-btn') || field.children[field.children.length - 2].classList.contains('seg'));
+  assert.equal(card.node.querySelector('.he').querySelector('.he-presets'), null);
+  assert.equal(presets.hidden, false);
   card.dispose();
 });
 
