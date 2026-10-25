@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 
 const { TERMS, termById } = await import('./glossary-terms.js');
 const {
-  DOMAINS, DOMAIN_OF, RELATIONS, buildGraph, neighbourMap, relationsOf, layoutGraph, layoutDomains, boxBounds, nodeWidth, initialView, boundsOf, fitView, zoomAbout, edgeEnds, neighbourInDirection, matchSet, shapeFor, mapLabel, pillScale, PILL_K, LABEL_PAD, placeLabels,
+  DOMAINS, DOMAIN_OF, RELATIONS, buildGraph, neighbourMap, relationsOf, layoutGraph, layoutDomains, boxBounds, contentBounds, nodeWidth, initialView, boundsOf, fitView, zoomAbout, edgeEnds, neighbourInDirection, matchSet, shapeFor, mapLabel, pillScale, PILL_K, LABEL_PAD, placeLabels,
 } =await import('./glossary-map.js');
 const { glossaryViewFromHash, glossaryTermFromHash, glossaryMapTermFromHash, pageFromHash } = await import('../../studio/routes.js');
 
@@ -18,13 +18,13 @@ test('STU-037: every relation ends at an existing term, with a label, no self lo
     assert.ok(!seen.has(key), `duplicate ${key}`);
     seen.add(key);
   }
-  assert.equal(RELATIONS.length, 106);
-  assert.equal(TERMS.length, 73);
+  assert.equal(RELATIONS.length, 150);
+  assert.equal(TERMS.length, 102);
 });
 
 test('STU-037: every term is in exactly one domain, every domain is non-empty and every term has a relation', () => {
   const ids = new Set(DOMAINS.map((d) => d.id));
-  assert.equal(DOMAINS.length, 5);
+  assert.equal(DOMAINS.length, 6);
   for (const t of TERMS) assert.ok(ids.has(DOMAIN_OF[t.id]), `no domain for ${t.id}`);
   for (const id of Object.keys(DOMAIN_OF)) assert.ok(termById(id), `domain entry for unknown term ${id}`);
   for (const d of DOMAINS) {
@@ -53,7 +53,7 @@ test('STU-037: the relations asked for are present', () => {
   assert.ok(has('interval', 'cent', 'measured in'));
   assert.ok(has('interval', 'octave', 'includes'));
   assert.ok(has('harmony', 'interval', 'built from'));
-  for (const id of ['harmony', 'octave', 'interval']) assert.equal(DOMAIN_OF[id], 'music', id);
+  for (const id of ['harmony', 'octave', 'interval']) assert.equal(DOMAIN_OF[id], 'theory', id);
   assert.match(termById('speed-of-sound').text, /343 m\/s in air at 20 °C/);
   assert.match(termById('loudness').text, /follows the amplitude/);
 });
@@ -82,6 +82,37 @@ test('STU-037: the waveform, noise, analysis and rhythm terms sit in their domai
   assert.ok(has('amplitude', 'loudness', 'perceived'));
 });
 
+test('STU-037: the music theory domain holds 32 terms with its links, and Temperament is an alias of Tuning', () => {
+  const has = (from, to, part) => RELATIONS.some((r) => r.from === from && r.to === to && r.label.includes(part));
+  const theory = DOMAINS.find((d) => d.id === 'theory');
+  assert.equal(theory.label, 'Music theory');
+  assert.match(theory.token, /^--chart-\d+$/);
+  assert.equal(TERMS.filter((t) => DOMAIN_OF[t.id] === 'theory').length, 32);
+  for (const id of ['scale', 'major-scale', 'minor-scale', 'mode', 'key', 'tonic', 'semitone', 'whole-tone', 'tuning', 'equal-temperament', 'just-intonation', 'pythagorean-tuning', 'third', 'fourth', 'fifth', 'triad', 'chord', 'root', 'inversion', 'seventh-chord', 'chord-progression', 'cadence', 'consonance', 'dissonance', 'melody', 'circle-of-fifths', 'chromatic-scale', 'pentatonic-scale', 'reference-pitch']) assert.equal(DOMAIN_OF[id], 'theory', id);
+  for (const id of ['note', 'tone', 'fundamental', 'harmonics', 'rhythm', 'beat']) assert.equal(DOMAIN_OF[id], 'music', id);
+  assert.equal(termById('temperament'), undefined);
+  assert.ok(has('scale', 'semitone', 'built from') && has('scale', 'whole-tone', 'built from'));
+  for (const id of ['major-scale', 'minor-scale', 'chromatic-scale', 'pentatonic-scale']) assert.ok(has(id, 'scale', 'kind of'), id);
+  for (const id of ['equal-temperament', 'just-intonation', 'pythagorean-tuning']) assert.ok(has(id, 'tuning', 'kind of'), id);
+  for (const id of ['third', 'fourth', 'fifth']) assert.ok(has(id, 'interval', 'kind of'), id);
+  assert.ok(has('mode', 'scale', 'rotation'));
+  assert.ok(has('key', 'tonic', 'named by'));
+  assert.ok(has('fifth', 'just-intonation', '3:2'));
+  assert.ok(has('semitone', 'equal-temperament', '100 cents'));
+  assert.ok(has('whole-tone', 'semitone', 'two'));
+  assert.ok(has('triad', 'root', 'stacks thirds'));
+  assert.ok(has('seventh-chord', 'triad', 'adds a seventh'));
+  assert.ok(has('inversion', 'chord', 'rearranges'));
+  assert.ok(has('chord', 'harmony', 'makes'));
+  assert.ok(has('chord-progression', 'chord', 'sequence'));
+  assert.ok(has('cadence', 'chord-progression', 'ends'));
+  assert.ok(has('melody', 'harmony', 'supported'));
+  assert.ok(has('key', 'circle-of-fifths', 'point'));
+  assert.ok(has('circle-of-fifths', 'fifth', 'orders keys'));
+  assert.ok(has('equal-temperament', 'octave', 'divides'));
+  assert.ok(matchSet(TERMS, 'квинта').has('fifth'));
+});
+
 test('STU-037: buildGraph gives one node per mapped term and keeps only edges between them', () => {
   const { nodes, edges } = buildGraph();
   assert.equal(nodes.length, TERMS.length);
@@ -91,8 +122,8 @@ test('STU-037: buildGraph gives one node per mapped term and keeps only edges be
   assert.ok(sub.edges.every((e) => e.from !== 'frequency' && e.to !== 'frequency'));
   assert.equal(mapLabel(termById('spectrum')), 'Spectrum');
   assert.equal(mapLabel(termById('frequency')), 'Frequency');
-  assert.equal(nodes.length, 73);
-  assert.equal(edges.length, 106);
+  assert.equal(nodes.length, 102);
+  assert.equal(edges.length, 150);
   assert.deepEqual(nodes.find((n) => n.id === 'timbre').aliases, termById('timbre').aliases);
   assert.deepEqual(nodes.find((n) => n.id === 'bpm').aliases, termById('bpm').aliases);
   assert.deepEqual(nodes.find((n) => n.id === 'sound').aliases, []);
@@ -177,9 +208,13 @@ test('STU-038: the initial view is readable, shows everything when it can and Fi
   const tall = layoutDomains(t.nodes, t.edges, 'tall');
   const tb = boxBounds(tall.boxes);
   const phone = initialView(tb, 303, 545);
-  assert.ok(phone.k >= 0.65, `phone zoom ${phone.k}`);
+  assert.ok(phone.k >= 0.55, `phone zoom ${phone.k}`);
   assert.ok(phone.x + tb.x0 * phone.k >= 0 && phone.x + tb.x1 * phone.k <= 303);
   assert.ok(fitView(tb, 303, 545).k < phone.k);
+  const content = contentBounds(tall.nodes, tall.boxes);
+  assert.ok(content.x1 - content.x0 < tb.x1 - tb.x0 && content.y0 === tb.y0 && content.y1 === tb.y1);
+  const phoneRead = initialView(content, 303, 545);
+  assert.ok(phoneRead.k >= 0.69, `phone reading zoom ${phoneRead.k}`);
 });
 
 test('STU-038: the wide layout is wide and the tall layout is tall', () => {

@@ -4,6 +4,7 @@ export const DOMAINS = [
   { id: 'physics', label: 'Physics of sound', token: '--chart-6' },
   { id: 'perception', label: 'Perception', token: '--chart-3' },
   { id: 'music', label: 'Music', token: '--chart-7' },
+  { id: 'theory', label: 'Music theory', token: '--chart-2' },
   { id: 'instruments', label: 'Instruments', token: '--chart-5' },
   { id: 'analysis', label: 'Analysis tools', token: '--chart-0' },
 ];
@@ -11,7 +12,8 @@ export const DOMAINS = [
 const MEMBERS = {
   physics: ['sound', 'oscillation', 'vibration', 'cycle-and-period', 'frequency', 'wavelength', 'amplitude', 'power', 'speed-of-sound', 'sine-wave', 'sawtooth-wave', 'square-wave', 'triangle-wave', 'pulse-wave', 'duty-cycle', 'white-noise', 'pink-noise', 'infrasound-and-ultrasound', 'soundboard', 'bridge', 'length'],
   perception: ['pitch', 'timbre', 'missing-fundamental', 'cent', 'loudness'],
-  music: ['note', 'tone', 'fundamental', 'harmonic-1', 'harmonics', 'overtone', 'partial', 'inharmonicity', 'beating', 'hammer-strike-position', 'strings-per-note', 'decay-across-harmonics', 'harmony', 'octave', 'interval', 'rhythm', 'beat', 'tempo', 'meter', 'bar', 'downbeat', 'onset', 'syncopation', 'subdivision', 'swing'],
+  music: ['note', 'tone', 'fundamental', 'harmonic-1', 'harmonics', 'overtone', 'partial', 'inharmonicity', 'beating', 'hammer-strike-position', 'strings-per-note', 'decay-across-harmonics', 'rhythm', 'beat', 'tempo', 'meter', 'bar', 'downbeat', 'onset', 'syncopation', 'subdivision', 'swing'],
+  theory: ['scale', 'major-scale', 'minor-scale', 'chromatic-scale', 'pentatonic-scale', 'mode', 'key', 'tonic', 'semitone', 'whole-tone', 'octave', 'interval', 'third', 'fourth', 'fifth', 'consonance', 'dissonance', 'tuning', 'equal-temperament', 'just-intonation', 'pythagorean-tuning', 'reference-pitch', 'circle-of-fifths', 'chord', 'triad', 'seventh-chord', 'root', 'inversion', 'chord-progression', 'cadence', 'harmony', 'melody'],
   instruments: ['chordophones', 'aerophones', 'membranophones', 'idiophones', 'electrophones', 'primitive'],
   analysis: ['waveform', 'oscilloscope', 'spectrum', 'spectrogram', 'beat-bands', 'tempo-grid', 'bpm', 'trails', 'harmonic-markers', 'pitch-detection', 'octave-error', 'dbfs', 'db-spl', 'time-window', 'spectrum-analyzer', 'fourier-transform'],
 };
@@ -77,6 +79,50 @@ export const RELATIONS = [
   rel('interval', 'is measured in', 'cent'),
   rel('interval', 'includes', 'octave'),
   rel('harmony', 'is built from', 'interval'),
+  rel('scale', 'is built from', 'semitone'),
+  rel('scale', 'is built from', 'whole-tone'),
+  rel('major-scale', 'is a kind of', 'scale'),
+  rel('minor-scale', 'is a kind of', 'scale'),
+  rel('chromatic-scale', 'is a kind of', 'scale'),
+  rel('pentatonic-scale', 'is a kind of', 'scale'),
+  rel('mode', 'is a rotation of', 'scale'),
+  rel('key', 'is named by its', 'tonic'),
+  rel('key', 'uses the notes of a', 'scale'),
+  rel('tonic', 'is the first note of a', 'scale'),
+  rel('tuning', 'sets the frequencies of', 'note'),
+  rel('equal-temperament', 'is a kind of', 'tuning'),
+  rel('just-intonation', 'is a kind of', 'tuning'),
+  rel('pythagorean-tuning', 'is a kind of', 'tuning'),
+  rel('pythagorean-tuning', 'is built by stacking', 'fifth'),
+  rel('reference-pitch', 'fixes', 'tuning'),
+  rel('third', 'is a kind of', 'interval'),
+  rel('fourth', 'is a kind of', 'interval'),
+  rel('fifth', 'is a kind of', 'interval'),
+  rel('fifth', 'has the ratio 3:2 in', 'just-intonation'),
+  rel('third', 'has the ratio 5:4 in', 'just-intonation'),
+  rel('fourth', 'has the ratio 4:3 in', 'just-intonation'),
+  rel('semitone', 'is 100 cents of', 'equal-temperament'),
+  rel('semitone', 'is 100', 'cent'),
+  rel('whole-tone', 'is two', 'semitone'),
+  rel('equal-temperament', 'divides the', 'octave'),
+  rel('chromatic-scale', 'has 12 semitones per', 'octave'),
+  rel('triad', 'stacks thirds on a', 'root'),
+  rel('triad', 'is a kind of', 'chord'),
+  rel('seventh-chord', 'adds a seventh to a', 'triad'),
+  rel('seventh-chord', 'is a kind of', 'chord'),
+  rel('chord', 'is built on a', 'root'),
+  rel('inversion', 'rearranges the notes of a', 'chord'),
+  rel('chord', 'is made of', 'note'),
+  rel('chord', 'makes', 'harmony'),
+  rel('chord-progression', 'is a sequence of', 'chord'),
+  rel('cadence', 'ends a', 'chord-progression'),
+  rel('consonance', 'describes', 'interval'),
+  rel('dissonance', 'describes', 'interval'),
+  rel('dissonance', 'is partly caused by', 'beating'),
+  rel('melody', 'is a sequence of', 'note'),
+  rel('melody', 'is supported by', 'harmony'),
+  rel('circle-of-fifths', 'orders keys by', 'fifth'),
+  rel('key', 'is a point on the', 'circle-of-fifths'),
   rel('pitch-detection', 'finds the', 'fundamental'),
   rel('pitch-detection', 'still works with a', 'missing-fundamental'),
   rel('octave-error', 'is a typical mistake of', 'pitch-detection'),
@@ -182,9 +228,10 @@ const WIDE_START = {
   analysis: { x: 380, y: -130 },
   perception: { x: -300, y: 160 },
   music: { x: 120, y: 170 },
+  theory: { x: 520, y: 200 },
 };
 
-const TALL_ORDER = ['analysis', 'physics', 'instruments', 'music', 'perception'];
+const TALL_ORDER = ['analysis', 'physics', 'instruments', 'music', 'theory', 'perception'];
 
 export const BOX = {
   pad: 14,
@@ -346,6 +393,12 @@ export function boxBounds(boxes) {
     x1: Math.max(...boxes.map((b) => b.x1)),
     y1: Math.max(...boxes.map((b) => b.y1)),
   };
+}
+
+export function contentBounds(nodes, boxes) {
+  const b = boxBounds(boxes);
+  const n = boundsOf(nodes);
+  return { x0: Math.max(b.x0, n.x0 - BOX.pad), x1: Math.min(b.x1, n.x1 + BOX.pad), y0: b.y0, y1: b.y1 };
 }
 
 export function boundsOf(nodes) {

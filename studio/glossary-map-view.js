@@ -1,7 +1,7 @@
 import { el } from '../web/js/dom.js';
 import { termById } from '../web/js/glossary-terms.js';
 import {
-  DOMAINS, buildGraph, neighbourMap, relationsOf, layoutDomains, boxBounds, fitView, initialView, zoomAbout, edgeEnds, neighbourInDirection, shapeFor, pillScale, placeLabels,
+  DOMAINS, buildGraph, neighbourMap, relationsOf, layoutDomains, boxBounds, contentBounds, fitView, initialView, zoomAbout, edgeEnds, neighbourInDirection, shapeFor, pillScale, placeLabels,
 } from '../web/js/glossary-map.js';
 
 const NS = 'http://www.w3.org/2000/svg';
@@ -302,7 +302,7 @@ export function createGlossaryMap({ terms, onSelect } = {}) {
     minK = fitView(b, W, H).k;
     userMoved = false;
     fitted = true;
-    setTf(all ? fitView(b, W, H) : initialView(b, W, H));
+    setTf(all ? fitView(b, W, H) : initialView(contentBounds(nodes, boxes), W, H));
   }
 
   function relayout() {

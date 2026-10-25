@@ -52,9 +52,30 @@ test('STU-025: the filter matches aliases and the new terms are present', () => 
   assert.ok(filterTerms(TERMS, 'Klangfarbe').some((t) => t.id === 'timbre'));
   assert.ok(filterTerms(TERMS, 'upper partial').some((t) => t.id === 'overtone'));
   for (const id of ['harmony', 'octave', 'interval']) assert.ok(termById(id), id);
-  assert.deepEqual(termById('harmony').see, ['harmonics', 'note', 'octave', 'interval']);
-  assert.deepEqual(termById('octave').see, ['cent', 'note', 'interval']);
-  assert.deepEqual(termById('interval').see, ['octave', 'cent', 'harmony']);
+  assert.deepEqual(termById('harmony').see, ['harmonics', 'note', 'octave', 'interval', 'chord', 'chord-progression', 'melody']);
+  assert.deepEqual(termById('octave').see, ['cent', 'note', 'interval', 'semitone', 'chromatic-scale', 'equal-temperament']);
+  assert.deepEqual(termById('interval').see, ['octave', 'cent', 'harmony', 'semitone', 'third', 'fourth', 'fifth', 'consonance', 'dissonance']);
+});
+
+test('STU-025: the music theory entries are present with their Russian aliases and key numbers', () => {
+  const ids = ['scale', 'major-scale', 'minor-scale', 'mode', 'key', 'tonic', 'semitone', 'whole-tone', 'tuning', 'equal-temperament', 'just-intonation', 'pythagorean-tuning', 'third', 'fourth', 'fifth', 'triad', 'chord', 'root', 'inversion', 'seventh-chord', 'chord-progression', 'cadence', 'consonance', 'dissonance', 'melody', 'circle-of-fifths', 'chromatic-scale', 'pentatonic-scale', 'reference-pitch'];
+  for (const id of ids) assert.ok(termById(id), id);
+  assert.equal(ids.length, 29);
+  const ru = { 'гамма': 'scale', 'мажорная гамма': 'major-scale', 'минорная гамма': 'minor-scale', 'лад': 'mode', 'тональность': 'key', 'тоника': 'tonic', 'полутон': 'semitone', 'целый тон': 'whole-tone', 'строй': 'tuning', 'темперация': 'tuning', 'равномерная темперация': 'equal-temperament', 'чистый строй': 'just-intonation', 'пифагорейский строй': 'pythagorean-tuning', 'терция': 'third', 'кварта': 'fourth', 'квинта': 'fifth', 'трезвучие': 'triad', 'аккорд': 'chord', 'основной тон аккорда': 'root', 'обращение': 'inversion', 'септаккорд': 'seventh-chord', 'аккордовая прогрессия': 'chord-progression', 'каденция': 'cadence', 'консонанс': 'consonance', 'диссонанс': 'dissonance', 'мелодия': 'melody', 'квинтовый круг': 'circle-of-fifths', 'хроматическая гамма': 'chromatic-scale', 'пентатоника': 'pentatonic-scale', 'октава': 'octave', 'интервал': 'interval', 'гармония': 'harmony' };
+  for (const [alias, id] of Object.entries(ru)) assert.equal(termByAnchor(aliasSlug(alias)).id, id, alias);
+  assert.equal(termByAnchor('temperament').id, 'tuning');
+  assert.equal(termByAnchor('half-step').id, 'semitone');
+  assert.equal(termByAnchor('whole-step').id, 'whole-tone');
+  assert.equal(termByAnchor('concert-pitch').id, 'reference-pitch');
+  assert.match(termById('equal-temperament').text, /2\^\(1\/12\) = 1\.0595/);
+  assert.match(termById('just-intonation').text, /3:2 for a fifth and 5:4 for a major third/);
+  assert.match(termById('third').text, /about 5:4 \(386 cents just, 400 cents equal-tempered\)/);
+  assert.match(termById('fourth').text, /4:3/);
+  assert.match(termById('fifth').text, /3:2 \(about 702 cents just, 700 equal-tempered\)/);
+  assert.match(termById('whole-tone').text, /Not the same as "tone"/);
+  assert.match(termById('reference-pitch').text, /A4 = 440 Hz/);
+  assert.match(termById('cadence').text, /ends a phrase and gives a feeling of rest or pause/);
+  assert.ok(filterTerms(TERMS, 'квинта').some((t) => t.id === 'fifth'));
 });
 
 test('STU-025: the waveform, noise, analysis, rhythm and volume entries are present with their aliases', () => {
