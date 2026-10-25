@@ -2,7 +2,7 @@
 
 What shipped, newest first. One line each; the web UI and server are live at https://electrophone.cc. Everything listed here is deployed except the sections marked "built, not deployed" (the 2026-10-14 release went out once the SSH access in [task-0027](tasks/task-0027.md) was restored; the live visualizer files match `origin/main` as of 2026-10-15). Why: [tech/decisions.md](tech/decisions.md); runbook: [tech/deploy.md](tech/deploy.md).
 
-## 2026-10-25 (Studio Primitive: dense air drawn red and a 3x larger density curve, built, not yet deployed)
+## 2026-10-25 (Studio Primitive: dense air drawn red and a 3x larger density curve, deployed to studio.electrophone.cc and electrophone.cc as `2534eb6`; the main app only gets the stylesheet)
 
 - Web (WEB-204; owner requests 2026-10-25; no tests run, `node --check`, the builds and the Browser pane with a virtual clock and recorded canvas calls): the compression and rarefaction bands of `3f353e9` are removed; each air dot is drawn from teal to the Beat bands' red-orange (`--chart-5`) by its local density at its rest position, `clamp((rho - 1) / k, 0, 1)`, so the densest dots are red, dots at rest or in a rarefaction teal, with a legend and a new caption; the "air density" curve swings 3 times more (47 px at 30 % amplitude, capped to the 148 px strip, 288 px canvas); at phases 0, 0.25, 0.5 and 0.75 the red-weighted centroid is within 0.4 px of the fitted position of the smallest dot spacing; the glossary entry says the compressions are drawn red.
 
