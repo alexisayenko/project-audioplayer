@@ -89,6 +89,11 @@ test('STU-055: the Sound wave page has the animation, a How to read this block a
   const on = () => pane.querySelectorAll('.ca-wave button').filter((b) => b.getAttribute('aria-checked') === 'true').map((b) => b.getAttribute('aria-label'));
   assert.deepEqual(on(), ['Square']);
   assert.equal(pane.querySelectorAll('.sw-read li').length, READ_ITEMS.length);
+  assert.ok(READ_ITEMS.some((t) => t.includes('free-field picture the pressure follows the cone\'s acceleration')));
+  assert.ok(!READ_ITEMS.some((t) => /plane-wave|cone's speed/.test(t)));
+  assert.ok(pane.textContent.includes('Simplified model: real speakers add resonance, a cabinet and distance effects.'));
+  const { termById } = await import('./glossary-terms.js');
+  assert.ok(termById('sound-wave').text.endsWith('The cone does not copy the wave: the pressure follows its acceleration, so a square wave comes from a cone moving along smooth parabolic arcs, not in straight lines.'));
   assert.deepEqual(pane.querySelectorAll('.sw-related a').map((a) => a.getAttribute('href')), RELATED_IDS.map((id) => `#/glossary/${id}`));
   win.location.hash = '#/learn/sound-wave?wave=triangle';
   for (const f of listeners) f();

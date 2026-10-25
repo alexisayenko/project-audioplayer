@@ -11,7 +11,7 @@ export const READ_ITEMS = [
   'Red dots are a compression: air squeezed closer than at rest (high pressure). Teal dots are at rest or spread thinner (rarefaction, low pressure).',
   'The curve above the dots is the air density along the path, right now: above the dashed line the air is denser than at rest, below it thinner.',
   'One cycle in time is one wavelength in space: one dense bunch and one thin gap are one cycle of the wave, and the pattern moves away from the cone.',
-  'In this plane-wave picture the pressure follows the cone\'s speed, not its position: the air is squeezed hardest when the cone moves forward fastest. The spacing is schematic.',
+  'In this free-field picture the pressure follows the cone\'s acceleration, not its position: the cone is farthest back when the pressure is highest, then it speeds up forward and squeezes the air. The spacing is schematic.',
   'The slow motion factor stretches time so you can watch: at 2000x a real 440 Hz tone is a swing about every 4.5 seconds.',
 ];
 export const RELATED_TITLE = 'Related terms';

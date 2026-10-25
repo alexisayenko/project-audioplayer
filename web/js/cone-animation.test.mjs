@@ -53,18 +53,18 @@ test('STU-043: the readout states the slowed rate and warns above 5 swings per s
   assert.match(c.slowReadout(1000), /= 1 swing per second \(one swing every 1 s\)/);
 });
 
-test('STU-043: the cone is a quarter cycle behind the pressure: mid-swing at the pressure peak, at an extreme at zero pressure', () => {
-  assert.ok(near(c.coneOffset(0.25, 0.8), 0, 1e-12));
-  assert.ok(near(c.coneOffset(0, 0.8), -1));
-  assert.ok(near(c.coneOffset(0.5, 0.8), 1));
-  assert.ok(near(c.coneOffset(0.5, 0.3), 0.375));
-  assert.ok(near(c.coneOffset(0.75, 0.3), 0, 1e-12));
+test('STU-043: the sine cone moves in anti-phase with the pressure: farthest back at the pressure peak, mid-swing at zero pressure, and its acceleration is the pressure', () => {
+  assert.ok(near(c.coneOffset(0.25, 0.8), -1));
+  assert.ok(near(c.coneOffset(0.75, 0.8), 1));
+  assert.ok(near(c.coneOffset(0.25, 0.3), -0.375));
+  assert.ok(near(c.coneOffset(0, 0.8), 0, 1e-12));
+  assert.ok(near(c.coneOffset(0.5, 0.3), 0, 1e-12));
   assert.ok(near(c.pressureAt(0.25, 0, 200), 1));
   assert.ok(near(c.pressureAt(0.25, 50, 200), 0, 1e-12));
-  const dt = 1e-6;
+  const dt = 1e-4;
   for (const phase of [0.1, 0.25, 0.4, 0.5, 0.8]) {
-    const velocity = (c.coneOffset(phase + dt, 0.8) - c.coneOffset(phase - dt, 0.8)) / (2 * dt);
-    assert.ok(near(velocity / (2 * Math.PI), Math.sin(2 * Math.PI * phase), 1e-6));
+    const acceleration = (c.coneOffset(phase + dt, 0.8) - 2 * c.coneOffset(phase, 0.8) + c.coneOffset(phase - dt, 0.8)) / (dt * dt);
+    assert.ok(near(acceleration / (4 * Math.PI * Math.PI), Math.sin(2 * Math.PI * phase), 1e-5));
   }
 });
 
@@ -313,28 +313,74 @@ test('STU-047: the cumulative-integral table has zero mean and the right extreme
   assert.ok(near(c.wavePotential('sine', 0.3), -Math.cos(2 * Math.PI * 0.3) / (2 * Math.PI), 1e-12));
 });
 
-test('STU-047: the cone follows the integral of the pressure: sine and square keep their extremes, the square wave moves in a triangle path', () => {
-  assert.ok(near(c.coneOffset(0, 0.8, 'sine'), -1) && near(c.coneOffset(0.5, 0.8, 'sine'), 1));
-  assert.ok(near(c.coneOffset(0, 0.8, 'square'), -1) && near(c.coneOffset(0.5, 0.8, 'square'), 1, 1e-6));
-  assert.ok(near(c.coneOffset(0.25, 0.8, 'square'), 0, 1e-6));
-  assert.ok(near(c.coneOffset(0.5, 0.3, 'square'), 0.375, 1e-6));
-  assert.ok(near(c.coneOffset(0.1, 0.8, 'square') - c.coneOffset(0, 0.8, 'square'), c.coneOffset(0.3, 0.8, 'square') - c.coneOffset(0.2, 0.8, 'square'), 1e-5));
-  assert.ok(near(c.coneOffset(0, 0.8, 'sawtooth'), 1, 1e-6) && near(c.coneOffset(0.5, 0.8, 'sawtooth'), -0.5, 1e-6));
+test('STU-047: the cone position is the double integral of the pressure: zero mean, peak 1, and its acceleration is the pressure for every shape', () => {
+  const nodes = [66, 130, 205, 338, 400, 460];
+  const h = 4 / c.WAVE_TABLE_N;
   for (const wave of c.WAVES) {
+    const { values, peak } = c.coneTable(wave);
+    assert.ok(values instanceof Float32Array && values.length === c.WAVE_TABLE_N + 1);
+    assert.equal(values[c.WAVE_TABLE_N], values[0]);
+    assert.equal(c.coneTable(wave), c.coneTable(wave));
+    assert.ok(near(c.conePeak(wave), wave === 'sine' ? 1 / (4 * Math.PI * Math.PI) : peak));
+    let mean = 0;
     let hi = -Infinity;
     let lo = Infinity;
-    for (let i = 0; i <= 1000; i += 1) {
-      const v = c.coneOffset(i / 1000, 0.8, wave);
-      hi = Math.max(hi, v);
-      lo = Math.min(lo, v);
+    for (let i = 0; i < c.WAVE_TABLE_N; i += 1) {
+      mean += c.coneShape(wave, i / c.WAVE_TABLE_N) / c.WAVE_TABLE_N;
+      hi = Math.max(hi, c.coneShape(wave, i / c.WAVE_TABLE_N));
+      lo = Math.min(lo, c.coneShape(wave, i / c.WAVE_TABLE_N));
     }
-    assert.ok(near(Math.max(hi, -lo), 1, 1e-3), wave);
-    for (const phase of [0.13, 0.4, 0.66]) {
-      const dt = 1e-4;
-      const velocity = (c.coneOffset(phase + dt, 0.8, wave) - c.coneOffset(phase - dt, 0.8, wave)) / (2 * dt);
-      assert.ok(near(velocity * c.wavePeak(wave), c.waveValue(wave, phase), 0.03), `${wave} ${phase}`);
+    assert.ok(near(mean, 0, 1e-6), wave);
+    assert.ok(near(hi, 1, 1e-4) || near(-lo, 1, 1e-4), wave);
+    assert.ok(Math.max(hi, -lo) <= 1 + 1e-6, wave);
+    assert.ok(near(c.coneShape(wave, 1.3), c.coneShape(wave, 0.3), 1e-6));
+    assert.ok(near(c.coneShape(wave, -0.7), c.coneShape(wave, 0.3), 1e-6));
+    const accelPeak = 1 / c.conePeak(wave);
+    for (const k of nodes) {
+      const u = k / c.WAVE_TABLE_N;
+      const acceleration = (c.coneShape(wave, u + h) - 2 * c.coneShape(wave, u) + c.coneShape(wave, u - h)) / (h * h);
+      assert.ok(Math.abs(acceleration - c.waveValue(wave, u) * accelPeak) < 0.02 * accelPeak, `${wave} ${k}`);
     }
   }
+  assert.equal(c.coneShape('wobble', 0.25), c.coneShape('sine', 0.25));
+  assert.ok(near(c.coneShape('sine', 0.25), -1) && near(c.coneShape('sine', 0.75), 1));
+});
+
+test('STU-047: the square wave cone moves along smooth parabolic arcs: no slope jumps, constant acceleration on each half cycle', () => {
+  const sq = (u) => c.coneShape('square', u);
+  const slope = (u) => (sq(u + 5e-4) - sq(u - 5e-4)) / 1e-3;
+  for (const corner of [0, 0.5, 1]) assert.ok(Math.abs(slope(corner + 2e-3) - slope(corner - 2e-3)) < 0.1, `corner ${corner}`);
+  const h = 4 / c.WAVE_TABLE_N;
+  const accelPeak = 1 / c.conePeak('square');
+  for (const [from, to, sign] of [[20, 236, 1], [276, 492, -1]]) {
+    for (let k = from; k <= to; k += 8) {
+      const u = k / c.WAVE_TABLE_N;
+      const acceleration = (sq(u + h) - 2 * sq(u) + sq(u - h)) / (h * h);
+      assert.ok(Math.abs(acceleration - sign * accelPeak) < 0.01 * accelPeak, `square ${k}`);
+    }
+  }
+  assert.ok(near(sq(0.25), -1, 1e-5) && near(sq(0.75), 1, 1e-5));
+  assert.ok(c.coneShape('triangle', 0.25) < -0.999 && c.coneShape('triangle', 0.75) > 0.999);
+  const saw = c.coneShape('sawtooth', 0.25);
+  assert.ok(saw > 0.9 && saw < 1);
+});
+
+test('STU-047: the caption of every shape describes the free-field model and the simplified-model note is shown', () => {
+  const { env } = clock();
+  const anim = c.createConeAnimation({}, env);
+  assert.ok(anim.node.textContent.includes('In free air a speaker\'s pressure follows how hard the cone is pushed (its acceleration): the cone is farthest back when the pressure is highest, then it speeds up forward and squeezes the air.'));
+  assert.ok(anim.node.textContent.includes('Simplified model: real speakers add resonance, a cabinet and distance effects.'));
+  anim.setWave('square');
+  assert.ok(anim.node.textContent.includes('smooth parabolic arcs, with no straight lines'));
+  anim.setWave('triangle');
+  assert.ok(anim.node.textContent.includes('smooth, cubic-like curve'));
+  anim.setWave('sawtooth');
+  assert.ok(anim.node.textContent.includes('one gentle kink'));
+  for (const wave of c.WAVES) {
+    anim.setWave(wave);
+    assert.ok(!/quarter cycle|cone speed|constant speed|plane-wave/.test(anim.node.textContent), wave);
+  }
+  anim.destroy();
 });
 
 test('STU-047: the dots of every shape never cross, are densest where the pressure is highest and keep the density 1 - ds/dx', () => {

@@ -23,6 +23,7 @@ export const FEATURES = [
   open('planned', 'Theory', 'Music theory page', 'task-0119', 'Scales, modes, chords and tuning with playable examples. The Glossary has the Music theory domain; the page is not built.'),
 
   done('2026-10-25', 'Clicks to tone', 'Clicks to tone: a beat becomes a pitch', 'task-0114', 'A repeating click from 1 to 1000 per second. Slow it is a rhythm; around 20 per second it flutters; fast it is a tone whose pitch is the click rate (100 per second is 100 Hz, 440 is A4).'),
+  done('2026-10-25', 'Glossary', 'Sound wave animation: realistic cone motion (parabolic arcs for a square wave)', 'task-0114', 'The speaker cone now moves the way a real speaker cone does: the pressure follows how hard the cone is pushed, so a square wave comes from smooth parabolic arcs, not straight lines.'),
   done('2026-10-25', 'Site', 'Learn menu with a Sound wave page', 'task-0114', 'The speaker cone animation has its own page, Sound wave, with a short guide to reading it. The Glossary links to it from the wave terms. The menu group Reference is now called Learn.'),
   done('2026-10-25', 'Glossary', 'Choose a waveform in the cone animation and see its harmonics', 'task-0114', 'The Sound wave animation can show a sine, triangle, square or sawtooth wave, with a bar chart of its harmonics.'),
   done('2026-10-25', 'Site', 'Help menu with Features, Help and About', 'task-0114', 'Features lists what the Studio can do and what is on the way; Help says what each page does.'),

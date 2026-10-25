@@ -42,11 +42,12 @@ export const AIR_CURVE_NOTE = 'The curve is the air density along the path in fr
 export const CONE_TITLE = 'Slow motion: the speaker cone';
 export const WAVE_TABLE_N = 512;
 const CONE_SHAPE_NOTE = {
-  sine: 'The cone is a quarter cycle behind the pressure: the air is squeezed hardest when the cone moves fastest, in the middle of its swing.',
-  triangle: 'The cone speed follows the pressure, which rises and falls steadily, so the cone speeds up and slows down steadily and its path is made of parabola arcs.',
-  square: 'The cone speed follows the pressure, which jumps between two levels, so the cone moves at a constant speed forth and back and its path is a triangle.',
-  sawtooth: 'The cone speed follows the pressure, which builds up steadily and then drops at once, so the cone speeds up steadily, reverses suddenly and its path is made of parabola arcs with a sharp corner.',
+  sine: 'In free air a speaker\'s pressure follows how hard the cone is pushed (its acceleration): the cone is farthest back when the pressure is highest, then it speeds up forward and squeezes the air.',
+  triangle: 'The pressure follows how hard the cone is pushed, and a triangle wave rises and falls steadily, so the push changes steadily and the cone path is a smooth, cubic-like curve.',
+  square: 'The pressure follows how hard the cone is pushed, and a square wave jumps between two levels, so the push is constant forward, then constant backward, and the cone path is made of smooth parabolic arcs, with no straight lines.',
+  sawtooth: 'The pressure follows how hard the cone is pushed, and a sawtooth wave builds up steadily and then drops at once, so the cone path is a smooth curve with one gentle kink.',
 };
+export const SIMPLIFIED_NOTE = 'Simplified model: real speakers add resonance, a cabinet and distance effects.';
 export const coneNote = (slow = SLOW, wave = WAVE_DEFAULT) => `Swing exaggerated. The real cone moves a fraction of a millimetre. Here its motion runs ${slow} times slower. ${CONE_SHAPE_NOTE[wave] ?? CONE_SHAPE_NOTE.sine}`;
 export const PAUSE_TEXT = 'Pause animation';
 export const PLAY_ANIM_TEXT = 'Play animation';
@@ -95,7 +96,40 @@ export function wavePotential(wave, u) {
 
 export const wavePeak = (wave) => (wave === 'sine' || !WAVES.includes(wave) ? 1 / TAU : waveTable(wave).peak);
 
-export const waveCone = (wave, u) => wavePotential(wave, u) / wavePeak(wave);
+const coneTables = {};
+
+export function coneTable(wave) {
+  const name = waveName(wave);
+  if (!coneTables[name]) {
+    const slope = waveTable(name).values;
+    const path = new Float64Array(WAVE_TABLE_N);
+    let run = 0;
+    let sum = 0;
+    for (let i = 0; i < WAVE_TABLE_N; i += 1) {
+      path[i] = run;
+      sum += run;
+      run += (slope[i] + slope[i + 1]) / (2 * WAVE_TABLE_N);
+    }
+    const mean = sum / WAVE_TABLE_N;
+    let peak = 0;
+    for (let i = 0; i < WAVE_TABLE_N; i += 1) peak = Math.max(peak, Math.abs(path[i] - mean));
+    const values = new Float32Array(WAVE_TABLE_N + 1);
+    for (let i = 0; i < WAVE_TABLE_N; i += 1) values[i] = (path[i] - mean) / peak;
+    values[WAVE_TABLE_N] = values[0];
+    coneTables[name] = { values, peak };
+  }
+  return coneTables[name];
+}
+
+export function coneShape(wave, u) {
+  if (wave === 'sine' || !WAVES.includes(wave)) return -Math.sin(TAU * u);
+  const { values } = coneTable(wave);
+  const x = (u - Math.floor(u)) * WAVE_TABLE_N;
+  const i = Math.min(WAVE_TABLE_N - 1, Math.floor(x));
+  return values[i] + (values[i + 1] - values[i]) * (x - i);
+}
+
+export const conePeak = (wave) => (wave === 'sine' || !WAVES.includes(wave) ? 1 / (TAU * TAU) : coneTable(wave).peak);
 
 export const WAVE_MAX_POTENTIAL = Math.max(...WAVES.map(wavePeak));
 
@@ -116,7 +150,7 @@ export function slowReadout(freq, slow = SLOW) {
   return `Slowed ${slow}×: real ${hz} Hz = ${fmtSig(rate)} ${swings} per second (one swing every ${fmtSig(1 / rate)} s); the real cone makes ${hz} swings each second.${fast}`;
 }
 
-export const coneOffset = (phase, amp, wave = WAVE_DEFAULT) => (amp / MAX_AMP) * waveCone(wave, phase);
+export const coneOffset = (phase, amp, wave = WAVE_DEFAULT) => (amp / MAX_AMP) * coneShape(wave, phase);
 
 export const pressureAt = (phase, dist, wavelength, wave = WAVE_DEFAULT) => waveValue(wave, phase - dist / wavelength);
 
@@ -397,6 +431,7 @@ export function createConeAnimation({ frequency = DEFAULT_FREQ, amplitude = DEFA
       el('span', { class: 'ca-key-item' }, el('span', { class: 'ca-dot dense', 'aria-hidden': 'true' }), AIR_DENSE_TEXT),
       el('span', { class: 'ca-key-item' }, el('span', { class: 'ca-dot thin', 'aria-hidden': 'true' }), AIR_THIN_TEXT)),
     airOut,
+    el('p', { class: 'hm-cap muted t-caption ca-simplified' }, SIMPLIFIED_NOTE),
     el('p', { class: 't-subhead ca-title ca-harm-title' }, HARM_TITLE),
     harm.svg,
     harmOut);
