@@ -384,7 +384,17 @@ function svgEl(tag, attrs = {}, ...kids) {
   return node;
 }
 
-export const harmonicCell = (n, count = HARM_COUNT) => (HARM_BOX.right - HARM_BOX.left) / count * (n - 0.5) + HARM_BOX.left;
+export const WAVE_GLYPH = {
+  sine: 'M2 10 C5 1 9 1 14 10 C19 19 23 19 26 10',
+  triangle: 'M2 10 L8 3 L20 17 L26 10',
+  square: 'M2 17 V3 H14 V17 H26',
+  sawtooth: 'M2 17 L14 3 V17 L26 3',
+};
+
+export const waveGlyph = (wave) => svgEl('svg', { class: 'ca-glyph', viewBox: '0 0 28 20', 'aria-hidden': 'true', focusable: 'false' },
+  svgEl('path', { d: WAVE_GLYPH[wave], fill: 'none', stroke: 'currentColor', 'stroke-width': 1.8, 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }));
+
+export const harmonicCell =(n, count = HARM_COUNT) => (HARM_BOX.right - HARM_BOX.left) / count * (n - 0.5) + HARM_BOX.left;
 
 export function harmonicLabel(wave, amps) {
   const parts = amps.map((a, i) => (a > 0 ? `H${i + 1} ${+a.toPrecision(3)}` : null)).filter(Boolean);
@@ -452,21 +462,25 @@ export function createConeAnimation({ frequency = DEFAULT_FREQ, amplitude = DEFA
   const coneNoteOut = el('p', { class: 'hm-cap muted t-caption' });
   const pauseButton = el('button', { class: 'btn outline small', type: 'button', onclick: () => setPaused(!paused) }, reduced ? PLAY_ANIM_TEXT : PAUSE_TEXT);
   const slowSeg = segmented(SLOW_CHOICES.map((n) => [n, `${n}×`]), () => slow, (n) => setSlow(n), { 'aria-labelledby': `${uid}-sl` });
-  const waveSeg = segmented(WAVES.map((n) => [n, WAVE_TEXT[n]]), () => shape, (n) => setWave(n), { 'aria-labelledby': `${uid}-wv` });
+  const waveSeg = segmented(WAVES.map((n) => [n, waveGlyph(n)]), () => shape, (n) => setWave(n), { 'aria-label': WAVE_LABEL });
+  waveSeg.group.querySelectorAll('button').forEach((b, i) => {
+    b.setAttribute('aria-label', WAVE_TEXT[WAVES[i]]);
+    b.setAttribute('title', WAVE_TEXT[WAVES[i]]);
+  });
   const harm = createHarmonicsChart();
   const harmOut = el('p', { class: 'hm-cap muted t-caption' });
   const view = el('div', { class: 'hm-view ca-view' }, canvas);
+  const stage = el('div', { class: 'ca-stage' }, el('div', { class: 'ca-wave' }, waveSeg.group), view);
 
   const field = (id, title, ...rest) => el('div', { class: 'hm-field' }, el('label', { htmlFor: id }, title), el('div', { class: 'hm-freq' }, ...rest));
   const node = el('div', { class: 'hm-block ca' },
     el('p', { class: 't-subhead ca-title' }, CONE_TITLE),
     el('div', { class: 'ca-ctl' },
-      el('div', { class: 'hm-axis' }, el('span', { id: `${uid}-wv`, class: 'hm-lbl' }, WAVE_LABEL), waveSeg.group),
       field(`${uid}-fn`, 'Frequency (Hz)', freqNum, noteOut),
       field(`${uid}-an`, 'Amplitude (% of full scale)', ampNum),
       el('div', { class: 'hm-axis' }, el('span', { id: `${uid}-sl`, class: 'hm-lbl' }, SLOW_LABEL), slowSeg.group),
       pauseButton),
-    view,
+    stage,
     slowOut,
     coneNoteOut,
     el('p', { class: 'hm-cap muted t-caption ca-key' },

@@ -51,6 +51,15 @@
 .ca-ctl .hm-field { flex: none; }
 .ca-ctl input.hm-num { width: 6rem; }
 .ca-view { height: 288px; }
+.ca-stage { position: relative; width: 100%; container: caw / inline-size; }
+.ca-wave { position: absolute; left: 12px; top: 12px; z-index: 1; }
+.ca-wave .seg { display: inline-flex; margin: 0; gap: 2px; padding: 2px; border: 1px solid var(--line); border-radius: var(--radius-pill); background: var(--surface); }
+.ca-wave .seg-btn { display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 20px; min-height: 0; padding: 0; border: 0; border-radius: var(--radius-pill); background: transparent; color: var(--ink-muted); cursor: pointer; }
+.ca-wave .seg-btn:not(.on):hover { color: var(--ink); }
+.ca-wave .seg-btn.on { background: var(--fill); color: var(--on-fill); }
+.ca-wave .seg-btn:focus-visible { outline: 2px solid var(--fill); outline-offset: 1px; }
+.ca-glyph { display: block; width: 20px; height: 14px; }
+@container caw (max-width: 479px) { .ca-wave { position: static; margin-bottom: var(--space-2); } }
 .ca-key { display: flex; flex-wrap: wrap; gap: var(--space-1) var(--space-4); }
 .ca-key-item { display: inline-flex; align-items: center; gap: var(--space-2); }
 .ca-harm-title { margin-top: var(--space-3); }

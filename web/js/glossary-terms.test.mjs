@@ -181,9 +181,10 @@ test('STU-047: the four wave entries open the animation with their own shape beh
     button.click();
     assert.equal(button.textContent, 'Hide animation and harmonics');
     assert.equal(item.querySelectorAll('rect')[2].getAttribute('data-amp'), { sine: '0.0000', triangle: '0.1111', square: '0.3333', sawtooth: '0.3333' }[wave]);
-    const on = item.querySelectorAll('.seg')[0].querySelectorAll('button').filter((b) => b.getAttribute('aria-checked') === 'true');
+    const group = item.querySelectorAll('.seg').find((g) => g.getAttribute('aria-label') === 'Waveform');
+    const on = group.querySelectorAll('button').filter((b) => b.getAttribute('aria-checked') === 'true');
     assert.equal(on.length, 1);
-    assert.equal(on[0].textContent.toLowerCase(), wave);
+    assert.equal(on[0].getAttribute('aria-label').toLowerCase(), wave);
     button.click();
   }
   assert.equal(pane.querySelector('#gl-sound-wave .gl-demo button').textContent, 'Show animation');
