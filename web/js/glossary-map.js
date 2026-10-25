@@ -15,7 +15,7 @@ const MEMBERS = {
   music: ['note', 'tone', 'fundamental', 'harmonic-1', 'harmonics', 'overtone', 'partial', 'inharmonicity', 'beating', 'hammer-strike-position', 'strings-per-note', 'decay-across-harmonics', 'rhythm', 'beat', 'tempo', 'meter', 'bar', 'downbeat', 'onset', 'syncopation', 'subdivision', 'swing'],
   theory: ['scale', 'major-scale', 'minor-scale', 'chromatic-scale', 'pentatonic-scale', 'mode', 'key', 'tonic', 'semitone', 'whole-tone', 'octave', 'interval', 'third', 'fourth', 'fifth', 'consonance', 'dissonance', 'tuning', 'equal-temperament', 'just-intonation', 'pythagorean-tuning', 'reference-pitch', 'circle-of-fifths', 'chord', 'triad', 'seventh-chord', 'root', 'inversion', 'chord-progression', 'cadence', 'harmony', 'melody'],
   instruments: ['chordophones', 'aerophones', 'membranophones', 'idiophones', 'electrophones', 'primitive'],
-  analysis: ['waveform', 'oscilloscope', 'spectrum', 'spectrogram', 'beat-bands', 'tempo-grid', 'bpm', 'trails', 'harmonic-markers', 'pitch-detection', 'octave-error', 'dbfs', 'db-spl', 'time-window', 'spectrum-analyzer', 'fourier-transform'],
+  analysis: ['waveform', 'oscilloscope', 'spectrum', 'spectrogram', 'beat-bands', 'tempo-grid', 'bpm', 'analysis-window', 'trails', 'harmonic-markers', 'pitch-detection', 'octave-error', 'dbfs', 'db-spl', 'time-window', 'spectrum-analyzer', 'fourier-transform'],
 };
 
 export const DOMAIN_OF = Object.fromEntries(Object.entries(MEMBERS).flatMap(([domain, ids]) => ids.map((id) => [id, domain])));
@@ -139,6 +139,7 @@ export const RELATIONS = [
   rel('beat-bands', 'split the sound into ranges of', 'frequency'),
   rel('beat-bands', 'show the beat behind the', 'bpm'),
   rel('tempo-grid', 'draws the detected', 'bpm'),
+  rel('bpm', 'is estimated over', 'analysis-window'),
   rel('tempo-grid', 'is drawn over the', 'beat-bands'),
   rel('trails', 'keep a fading ghost on the', 'spectrum'),
   rel('harmonic-markers', 'are ticks on the', 'spectrum'),

@@ -18,8 +18,8 @@ test('STU-037: every relation ends at an existing term, with a label, no self lo
     assert.ok(!seen.has(key), `duplicate ${key}`);
     seen.add(key);
   }
-  assert.equal(RELATIONS.length, 150);
-  assert.equal(TERMS.length, 102);
+  assert.equal(RELATIONS.length, 151);
+  assert.equal(TERMS.length, 103);
 });
 
 test('STU-037: every term is in exactly one domain, every domain is non-empty and every term has a relation', () => {
@@ -122,8 +122,8 @@ test('STU-037: buildGraph gives one node per mapped term and keeps only edges be
   assert.ok(sub.edges.every((e) => e.from !== 'frequency' && e.to !== 'frequency'));
   assert.equal(mapLabel(termById('spectrum')), 'Spectrum');
   assert.equal(mapLabel(termById('frequency')), 'Frequency');
-  assert.equal(nodes.length, 102);
-  assert.equal(edges.length, 150);
+  assert.equal(nodes.length, 103);
+  assert.equal(edges.length, 151);
   assert.deepEqual(nodes.find((n) => n.id === 'timbre').aliases, termById('timbre').aliases);
   assert.deepEqual(nodes.find((n) => n.id === 'bpm').aliases, termById('bpm').aliases);
   assert.deepEqual(nodes.find((n) => n.id === 'sound').aliases, []);
@@ -291,4 +291,12 @@ test('STU-036: #/glossary is the list, #/glossary/map the map, #/glossary/map/<i
   assert.equal(glossaryMapTermFromHash('#/glossary/map'), '');
   assert.equal(glossaryMapTermFromHash('#/glossary/frequency'), '');
   for (const h of ['#/glossary/map', '#/glossary/map/frequency']) assert.equal(pageFromHash(h), 'glossary');
+});
+
+test('STU-037, STU-041: Analysis window is an Analysis tools term, linked from BPM and Tempo, with the relation BPM is estimated over it', () => {
+  assert.equal(DOMAIN_OF['analysis-window'], 'analysis');
+  assert.match(termById('analysis-window').text, /^The stretch of recent sound the detector looks at\. Short windows react fast but are noisy; long windows are stable\.$/);
+  assert.ok(termById('bpm').see.includes('analysis-window'));
+  assert.ok(termById('tempo').see.includes('analysis-window'));
+  assert.ok(RELATIONS.some((r) => r.from === 'bpm' && r.label === 'is estimated over' && r.to === 'analysis-window'));
 });
