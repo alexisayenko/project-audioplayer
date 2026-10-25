@@ -47,6 +47,9 @@ test('STU-025: aliases are unique, do not clash with ids and resolve as anchors'
   assert.equal(termByAnchor('beats-per-minute').id, 'bpm');
   assert.equal(termByAnchor('timbre').id, 'timbre');
   assert.equal(termByAnchor('no-such-term'), undefined);
+  assert.match(termById('timbre').text, /^When we say A4 = 440 Hz|\. When we say A4 = 440 Hz, that is only for H1, but it applies to all instruments\./);
+  assert.match(termById('timbre').text, /More precisely: H1 is the pitch.*the same harmonics with different envelopes sound like a different instrument/);
+  assert.ok(['fundamental', 'inharmonicity', 'spectrum', 'sawtooth-wave', 'square-wave', 'primitive'].every((id) => termById('timbre').see.includes(id)));
   assert.deepEqual(termById('timbre').aliases, ['tone color', 'tone colour', 'tone quality', 'Klangfarbe', 'тембр']);
   assert.match(termById('timbre').text, /Also called tone color or tone quality: the character of a sound that stays when pitch and loudness are the same\./);
 });

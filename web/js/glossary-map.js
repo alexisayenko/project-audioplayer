@@ -78,6 +78,8 @@ export const RELATIONS = [
   rel('partial', 'includes non-integer ones, as in', 'inharmonicity'),
   rel('inharmonicity', 'shifts up the', 'harmonics'),
   rel('timbre', 'comes from the mix of', 'harmonics'),
+  rel('timbre', 'leaves the pitch of the', 'fundamental'),
+  rel('timbre', 'is bent by', 'inharmonicity'),
   rel('note', 'is the musical name of a', 'pitch'),
   rel('note', 'is named after the', 'fundamental'),
   rel('note', 'is coloured by the', 'timbre'),

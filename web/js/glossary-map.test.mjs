@@ -18,7 +18,7 @@ test('STU-037: every relation ends at an existing term, with a label, no self lo
     assert.ok(!seen.has(key), `duplicate ${key}`);
     seen.add(key);
   }
-  assert.equal(RELATIONS.length, 182);
+  assert.equal(RELATIONS.length, 184);
   assert.equal(TERMS.length, 120);
 });
 
@@ -137,7 +137,7 @@ test('STU-037: buildGraph gives one node per mapped term and keeps only edges be
   assert.equal(mapLabel(termById('spectrum')), 'Spectrum');
   assert.equal(mapLabel(termById('frequency')), 'Frequency');
   assert.equal(nodes.length, 120);
-  assert.equal(edges.length, 182);
+  assert.equal(edges.length, 184);
   assert.equal(DOMAIN_OF['harmonic-decomposition'], 'physics');
   assert.ok(RELATIONS.some((r) => r.from === 'fourier-series' && r.label === 'splits a wave into' && r.to === 'harmonic-decomposition'));
   assert.ok(RELATIONS.some((r) => r.from === 'harmonic-decomposition' && r.label === 'shows' && r.to === 'harmonics'));
