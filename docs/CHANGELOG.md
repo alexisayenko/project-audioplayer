@@ -2,6 +2,10 @@
 
 What shipped, newest first. One line each; the web UI and server are live at https://electrophone.cc. Everything listed here is deployed except the sections marked "built, not deployed" (the 2026-10-14 release went out once the SSH access in [task-0027](tasks/task-0027.md) was restored; the live visualizer files match `origin/main` as of 2026-10-15). Why: [tech/decisions.md](tech/decisions.md); runbook: [tech/deploy.md](tech/deploy.md).
 
+## 2026-10-25 (Harmonic editor: grouped presets, Cello-like and a taller chart, deployed to studio.electrophone.cc as `090f598`; the main app is unchanged)
+
+- Web (WEB-211, task-0114; the custom-wave, simple-tone-custom, simple-tone and harmonics-stack tests pass; live bundle checked for "Cello-like" and "Odd and missing harmonics", not checked in a browser): the preset chips are grouped (Simple waves, Instrument-like, Odd and missing harmonics), Cello-like is added, Clear and Reset are separate outline buttons, and the bar chart is twice as tall (256 px plot) with x labels H1..Hn.
+
 ## 2026-10-25 (Primitive custom presets Organ-like, Piano-like and Guitar-like, deployed to studio.electrophone.cc as `de47c6e`; the main app is unchanged)
 
 - Web (WEB-211, task-0114; the custom-wave, simple-tone-custom, simple-tone, harmonics-stack and glossary-terms tests pass; live bundle checked for the three labels, not checked in a browser or by ear): the Organ preset is renamed Organ-like, and Piano-like and Guitar-like are added, all simple hand-picked approximations, not measured from real instruments.
