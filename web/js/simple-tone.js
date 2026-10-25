@@ -447,6 +447,7 @@ export function createSimpleCard(env = {}) {
   const editor = createHarmonicEditor({
     onSet: (i, v) => setBar(i, v),
     onPreset: (id) => { custom.bars = presetBars(id); customChanged(); },
+    onZero: () => { custom.bars = presetBars('clear'); customChanged(); },
     onReset: () => { custom.bars = defaultBars(); custom.buildN = MAX_HARMONICS; custom.playBuild = false; custom.showEach = false; custom.count = VISIBLE_HARMONICS; customChanged(); },
     onMore: (on) => { custom.count = on ? MAX_HARMONICS : VISIBLE_HARMONICS; customChanged(); },
     onEach: (on) => { custom.showEach = on; customChanged(); },

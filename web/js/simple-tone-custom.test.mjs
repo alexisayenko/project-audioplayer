@@ -291,3 +291,81 @@ test('WEB-211: opening the page with ?wave=custom selects Custom', () => {
   card.dispose();
   globalThis.location.hash = before;
 });
+
+test('WEB-211: the 0 label on the chart axis is a button that sets every bar, H1 included, to 0, by click, Enter and Space', () => {
+  const card = customCard(fakeEnv().env);
+  const btn = card.node.querySelector('.he-zero-btn');
+  assert.equal(btn.getAttribute('role'), 'button');
+  assert.equal(btn.getAttribute('tabindex'), '0');
+  assert.equal(btn.getAttribute('aria-label'), 'Set all harmonics to 0');
+  assert.equal(btn.querySelector('title').textContent, 'Set all harmonics to 0');
+  assert.equal(card.custom.bars[0], 100);
+  card.setPreset('square');
+  card.setBar(1, 40);
+  btn.click();
+  assert.ok(card.custom.bars.every((v) => v === 0));
+  assert.equal(card.node.querySelectorAll('.he-hit')[0].getAttribute('aria-valuenow'), '0');
+  assert.equal(card.node.querySelectorAll('.he-val-txt')[0].textContent, '0');
+  card.setBar(3, 20);
+  fire(btn, 'keydown', { key: 'Enter' });
+  assert.equal(card.custom.bars[3], 0);
+  card.setBar(5, -20);
+  fire(btn, 'keydown', { key: ' ' });
+  assert.equal(card.custom.bars[5], 0);
+  card.setBar(5, -20);
+  fire(btn, 'keydown', { key: 'a' });
+  assert.equal(card.custom.bars[5], -20);
+  card.dispose();
+});
+
+test('WEB-211: the readout slot holds the hint and the readout in one grid cell, so hovering a bar never changes its height', () => {
+  const card = customCard(fakeEnv().env);
+  const read = card.node.querySelector('.he-read');
+  assert.equal(read.querySelectorAll('span').length, 2);
+  assert.ok(read.textContent.includes('Hover or focus a bar'));
+  assert.ok(!read.classList.contains('he-reading'));
+  const h3 = card.node.querySelectorAll('.he-hit')[2];
+  fire(h3, 'focus');
+  assert.ok(read.classList.contains('he-reading'));
+  assert.equal(read.querySelector('.he-value').textContent, 'H3 · 1320 Hz · 0 %');
+  assert.ok(read.textContent.includes('Hover or focus a bar'));
+  card.setBar(2, 33.3);
+  assert.equal(read.querySelector('.he-value').textContent, 'H3 · 1320 Hz · 33.3 %');
+  fire(h3, 'blur');
+  assert.ok(!read.classList.contains('he-reading'));
+  card.dispose();
+});
+
+test('WEB-211: a second line under each harmonic number shows its value and follows a drag', () => {
+  const card = customCard(fakeEnv().env);
+  const vals = () => card.node.querySelectorAll('.he-val-txt');
+  assert.equal(vals().length, 32);
+  assert.equal(vals()[0].textContent, '100');
+  assert.equal(vals()[1].textContent, '0');
+  const svg = card.node.querySelector('.he-svg');
+  const rect = svg.getBoundingClientRect();
+  const kx = ed.edWidth(16) / rect.width;
+  const ky = ed.ED.h / rect.height;
+  const at = (col, value, extra = {}) => ({ clientX: (ed.columnX(col) + ed.ED.cell / 2) / kx, clientY: (ed.ED.zero - (value / 100) * ed.ED.half) / ky, pointerId: 5, button: 0, buttons: 1, pointerType: 'mouse', ...extra });
+  fire(svg, 'pointerdown', at(1, -2.4));
+  assert.equal(vals()[1].textContent, '-2');
+  fire(svg, 'pointermove', at(1, -33.34, { shiftKey: true }));
+  assert.equal(vals()[1].textContent, '-33.3');
+  assert.ok(Number(vals()[1].getAttribute('textLength')) > 0);
+  assert.equal(vals()[0].getAttribute('textLength'), null);
+  fire(svg, 'pointerup', at(1, -33.34, { buttons: 0 }));
+  card.dispose();
+});
+
+test('WEB-211: the chart fills its box: cell width grows with the width, never below 18 px; a value label is squeezed only when it would overlap', () => {
+  assert.equal(ed.cellFor(0, 16), ed.ED.cell);
+  assert.equal(ed.cellFor(328, 16), 18);
+  assert.equal(ed.cellFor(100, 16), 18);
+  assert.equal(ed.cellFor(ed.ED.left + ed.ED.right + 16 * 50, 16), 50);
+  assert.equal(ed.edWidth(16, 50), ed.ED.left + ed.ED.right + 16 * 50);
+  assert.equal(ed.columnX(2, 50), ed.ED.left + 100);
+  assert.equal(ed.columnAt(ed.ED.left + 101, 50), 2);
+  assert.equal(ed.valueFit('100', 18), null);
+  assert.equal(ed.valueFit('-33.3', 18), 16);
+  assert.equal(ed.valueFit('-33.3', 40), null);
+});

@@ -2,11 +2,12 @@ import { el } from './dom.js';
 import { svgEl } from './wave-shapes.js';
 import { MAX_HARMONICS, VISIBLE_HARMONICS, BAR_MIN, BAR_MAX, PRESETS, matchesPreset, snapBar, barLabel, hoverText, keyStep, stepBar, fmtBar } from './custom-wave.js';
 
-export const ED = { cell: 18, left: 34, right: 6, top: 10, half: 64, h: 162 };
+export const ED = { cell: 18, left: 34, right: 6, top: 10, half: 64, h: 170 };
 ED.zero = ED.top + ED.half;
 ED.plotBottom = ED.zero + ED.half;
 
 export const READ_DEFAULT = 'Drag a bar up or down (hold Shift for 0.1 steps), or focus one and use the arrow keys. Hover or focus a bar to see its frequency.';
+export const ZERO_LABEL = 'Set all harmonics to 0';
 export const TITLE = 'Harmonics: drag the bars (H1 = 100 %)';
 export const EACH_LABEL = 'Show each harmonic';
 export const MORE_LABEL = 'More harmonics (up to 32)';
@@ -15,9 +16,13 @@ export const PLAY_BUILD_LABEL = 'Play the build-up too';
 export const BUILD_NOTE = 'The scopes draw the sum of the first N bars; the sound keeps all bars unless "Play the build-up too" is on.';
 export const TIP = 'Any repeating shape is a sum of sine waves at whole-number multiples of the frequency. Each bar is the height of one of them, as a percent of H1 = 100 (up is +, down is -). The sign flips that sine upside down: the sum is bars x sin(n x phase), so the Sawtooth preset is a falling ramp (the Sawtooth option rises; the sound is the same) and Triangle alternates +, -, +. Loudness is matched to the other shapes, so only the shape changes, not the volume.';
 
-export const edWidth = (count) => ED.left + count * ED.cell + ED.right;
+export const edWidth = (count, cell = ED.cell) => ED.left + count * cell + ED.right;
 
-export const columnAt = (x) => Math.floor((x - ED.left) / ED.cell);
+export const cellFor = (avail, count) => (avail > 0 ? Math.max(ED.cell, (avail - ED.left - ED.right) / count) : ED.cell);
+
+export const valueFit = (text, cell) => (text.length * 4.6 > cell - 2 ? cell - 2 : null);
+
+export const columnAt = (x, cell = ED.cell) => Math.floor((x - ED.left) / cell);
 
 export const valueAt = (y, fine = false) => snapBar(((ED.zero - y) / ED.half) * 100, fine);
 
@@ -26,12 +31,13 @@ export function barExtent(v) {
   return v >= 0 ? { y: ED.zero - len, h: len } : { y: ED.zero, h: len };
 }
 
-export const columnX = (i) => ED.left + i * ED.cell;
+export const columnX = (i, cell = ED.cell) => ED.left + i * cell;
 
 export function createHarmonicEditor(handlers) {
   const uid = `he-${Math.random().toString(36).slice(2, 7)}`;
-  const state = { bars: [], count: VISIBLE_HARMONICS, freq: 440, buildN: MAX_HARMONICS };
+  const state = { bars: [], count: VISIBLE_HARMONICS, freq: 440, buildN: MAX_HARMONICS, cell: ED.cell, fitted: false };
   let lastCount = 0;
+  let lastCell = 0;
   let drag = null;
 
   const grid = [];
@@ -40,12 +46,24 @@ export function createHarmonicEditor(handlers) {
     line('ca-axis', ED.top), line('ca-axis', ED.zero - ED.half / 2), line('he-zero', ED.zero),
     line('ca-axis', ED.zero + ED.half / 2), line('ca-axis', ED.plotBottom),
   ];
-  const yText = [[ED.top, '+100'], [ED.zero, '0'], [ED.plotBottom, '-100']].map(([y, t]) => Object.assign(
+  const yText = [[ED.top, '+100'], [ED.plotBottom, '-100']].map(([y, t]) => Object.assign(
     svgEl('text', { class: 'ca-axis-text', x: ED.left - 4, y: y + 3, 'text-anchor': 'end' }), { textContent: t }));
+  const zeroTitle = Object.assign(svgEl('title'), { textContent: ZERO_LABEL });
+  const zeroBtn = svgEl('g', { class: 'he-zero-btn', role: 'button', tabindex: 0, 'aria-label': ZERO_LABEL },
+    zeroTitle,
+    svgEl('rect', { class: 'he-zero-rect', x: 6, y: ED.zero - 8, width: ED.left - 10, height: 16, rx: 4 }),
+    Object.assign(svgEl('text', { class: 'ca-axis-text he-zero-text', x: 6 + (ED.left - 10) / 2, y: ED.zero + 3, 'text-anchor': 'middle' }), { textContent: '0' }));
+  zeroBtn.addEventListener('click', () => handlers.onZero?.());
+  zeroBtn.addEventListener('keydown', (ev) => {
+    if (ev.key !== 'Enter' && ev.key !== ' ' && ev.key !== 'Spacebar') return;
+    ev.preventDefault();
+    handlers.onZero?.();
+  });
 
   const cols = Array.from({ length: MAX_HARMONICS }, (_, i) => {
     const bar = svgEl('rect', { class: 'ca-bar he-bar', x: columnX(i) + 3, width: ED.cell - 6, y: ED.zero, height: 0 });
     const num = Object.assign(svgEl('text', { class: 'ca-axis-text he-num', x: columnX(i) + ED.cell / 2, y: ED.plotBottom + 13, 'text-anchor': 'middle' }), { textContent: String(i + 1) });
+    const val = Object.assign(svgEl('text', { class: 'ca-axis-text he-val-txt', x: columnX(i) + ED.cell / 2, y: ED.plotBottom + 25, 'text-anchor': 'middle', 'lengthAdjust': 'spacingAndGlyphs' }), { textContent: '0' });
     const hit = svgEl('rect', {
       class: 'he-hit', x: columnX(i), y: 0, width: ED.cell, height: ED.plotBottom + 2, tabindex: 0, role: 'slider', 'data-h': i + 1,
       'aria-orientation': 'vertical', 'aria-valuemin': BAR_MIN, 'aria-valuemax': BAR_MAX, 'aria-valuenow': 0,
@@ -60,26 +78,57 @@ export function createHarmonicEditor(handlers) {
     });
     hit.addEventListener('focus', () => showReadout(i));
     hit.addEventListener('blur', () => showReadout(-1));
-    return { bar, num, hit, title };
+    return { bar, num, val, hit, title };
   });
 
   const svg = svgEl('svg', { class: 'ca-harm he-svg', viewBox: `0 0 ${edWidth(VISIBLE_HARMONICS)} ${ED.h}`, role: 'group', 'aria-label': 'Harmonic bars editor: one slider per harmonic', preserveAspectRatio: 'xMidYMid meet' },
-    ...lines, ...yText, ...cols.map((c) => c.bar), ...cols.map((c) => c.num), ...cols.map((c) => c.hit));
+    ...lines, ...yText, zeroBtn, ...cols.map((c) => c.bar), ...cols.map((c) => c.num), ...cols.map((c) => c.val), ...cols.map((c) => c.hit));
   const scroll = el('div', { class: 'he-scroll' }, svg);
-  const read = el('p', { class: 'hm-cap muted t-caption he-read' }, READ_DEFAULT);
+  const hint = el('span', { class: 'he-hint' }, READ_DEFAULT);
+  const value = el('span', { class: 'he-value' });
+  const read = el('p', { class: 'hm-cap muted t-caption he-read' }, hint, value);
+  let shown = -1;
 
   function showReadout(i) {
-    if (i < 0 || i >= state.count) { read.textContent = READ_DEFAULT; return; }
-    read.textContent = hoverText(i + 1, state.freq, state.bars[i] ?? 0);
+    shown = i >= 0 && i < state.count ? i : -1;
+    if (shown >= 0) value.textContent = hoverText(shown + 1, state.freq, state.bars[shown] ?? 0);
+    read.classList.toggle('he-reading', shown >= 0);
+  }
+
+  function geometry() {
+    const { count, cell, fitted } = state;
+    const w = edWidth(count, cell);
+    svg.setAttribute('viewBox', `0 0 ${w} ${ED.h}`);
+    if (fitted) svg.setAttribute('style', `width:${w}px`); else svg.removeAttribute('style');
+    const wide = count > VISIBLE_HARMONICS || (fitted && w > scroll.clientWidth + 0.5);
+    svg.setAttribute('class', `ca-harm he-svg${wide ? ' he-wide' : ''}`);
+    for (const l of grid) l.setAttribute('x2', w - ED.right);
+    cols.forEach((c, i) => {
+      const x = columnX(i, cell);
+      c.bar.setAttribute('x', x + 3);
+      c.bar.setAttribute('width', cell - 6);
+      c.num.setAttribute('x', x + cell / 2);
+      c.val.setAttribute('x', x + cell / 2);
+      c.hit.setAttribute('x', x);
+      c.hit.setAttribute('width', cell);
+    });
+  }
+
+  function fit() {
+    const avail = scroll.clientWidth;
+    state.fitted = avail > 0;
+    state.cell = cellFor(avail, state.count);
+    geometry();
+    lastCell = state.cell;
   }
 
   function locate(ev) {
     const r = svg.getBoundingClientRect?.();
     if (!r || !r.width || !r.height) return null;
-    const k = edWidth(state.count) / r.width;
+    const k = edWidth(state.count, state.cell) / r.width;
     const x = (ev.clientX - r.left) * k;
     const y = (ev.clientY - r.top) * (ED.h / r.height);
-    return { col: columnAt(x), y };
+    return { col: columnAt(x, state.cell), y };
   }
 
   function apply(ev, spot) {
@@ -158,20 +207,22 @@ export function createHarmonicEditor(handlers) {
     const { bars, count, freq, buildN } = state;
     if (count !== lastCount) {
       lastCount = count;
-      svg.setAttribute('viewBox', `0 0 ${edWidth(count)} ${ED.h}`);
-      svg.setAttribute('class', `ca-harm he-svg${count > VISIBLE_HARMONICS ? ' he-wide' : ''}`);
-      for (const l of grid) l.setAttribute('x2', edWidth(count) - ED.right);
+      fit();
     }
     cols.forEach((c, i) => {
       const shown = i < count;
       const v = bars[i] ?? 0;
-      for (const part of [c.bar, c.num, c.hit]) part.setAttribute('display', shown ? 'inline' : 'none');
+      for (const part of [c.bar, c.num, c.val, c.hit]) part.setAttribute('display', shown ? 'inline' : 'none');
       if (!shown) return;
       const { y, h } = barExtent(v);
       c.bar.setAttribute('y', y.toFixed(2));
       c.bar.setAttribute('height', Math.max(h, v === 0 ? 1.5 : 0).toFixed(2));
       c.bar.setAttribute('class', `ca-bar he-bar${v === 0 ? ' he-zero-bar' : ''}${i >= buildN ? ' he-off' : ''}`);
-      c.hit.setAttribute('aria-valuenow', fmtBar(v));
+      const text = fmtBar(v);
+      c.val.textContent = text;
+      const squeeze = valueFit(text, state.cell);
+      if (squeeze === null) c.val.removeAttribute('textLength'); else c.val.setAttribute('textLength', squeeze.toFixed(1));
+      c.hit.setAttribute('aria-valuenow', text);
       const label = barLabel(i + 1, freq, v);
       c.hit.setAttribute('aria-label', label);
       c.title.textContent = hoverText(i + 1, freq, v);
@@ -187,10 +238,14 @@ export function createHarmonicEditor(handlers) {
     buildRange.value = String(buildN);
     buildOut.textContent = `N = ${buildN}`;
     notes.replaceChildren(...(state.notes ?? []).map((t) => el('p', { class: 'hm-cap t-caption he-note', role: 'status' }, t)));
-    if (read.textContent !== READ_DEFAULT) {
-      const focused = cols.findIndex((c) => c.hit === (globalThis.document?.activeElement));
-      if (focused >= 0) showReadout(focused);
-    }
+    if (shown >= 0) showReadout(shown);
+  }
+
+  if (globalThis.ResizeObserver) {
+    new globalThis.ResizeObserver(() => {
+      const next = cellFor(scroll.clientWidth, state.count);
+      if (next !== lastCell || state.fitted !== scroll.clientWidth > 0) { fit(); paint({}); }
+    }).observe(scroll);
   }
 
   return { node, svg, hits: cols.map((c) => c.hit), paint, showReadout };

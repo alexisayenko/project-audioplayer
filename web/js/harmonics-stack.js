@@ -12,10 +12,10 @@ export const ROWS_DEFAULT = 8;
 export const SCAN_MAX = 32;
 export const CYCLE_S = 6;
 export const NARROW_PX = 480;
-export const ROW_H = 30;
-export const ROW_H_NARROW = 26;
-export const SUM_H = 68;
-export const SUM_H_NARROW = 56;
+export const ROW_H = 60;
+export const ROW_H_NARROW = 52;
+export const SUM_H = 136;
+export const SUM_H_NARROW = 112;
 export const PAD_Y = 6;
 export const GUIDES = [0, 0.25, 0.5, 0.75, 1];
 export const PEAK_POINTS = 720;
@@ -90,14 +90,17 @@ export function rowSeries(h, scale, points, { cycles = 1, phase = 0 } = {}) {
   return out;
 }
 
-export function stackModel(harmonics, { rows = ROWS_DEFAULT, highlightN, partialSumN } = {}) {
+export function stackModel(harmonics, { rows = ROWS_DEFAULT, freq, highlightN, partialSumN } = {}) {
   const all = harmonics.filter((h) => h.amp > EPS).sort((a, b) => a.n - b.n);
   const count = Math.max(1, Math.round(Number.isFinite(rows) ? rows : ROWS_DEFAULT));
-  const shown = all.slice(0, count);
+  const first = harmonics.find((h) => h.cycles > 0);
+  const base = freq > 0 ? freq : first ? first.freqHz / first.cycles : 0;
+  const byN = new Map(all.map((h) => [h.n, h]));
+  const shown = base > 0 ? Array.from({ length: count }, (_, i) => byN.get(i + 1) ?? makeHarmonic(i + 1, (i + 1) * base, 0)) : all.slice(0, count);
   const limit = Number.isFinite(partialSumN) ? partialSumN : Infinity;
   const active = shown.filter((h) => h.n <= limit);
   const pool = all.filter((h) => h.n <= limit);
-  const truncated = pool.length > active.length;
+  const truncated = pool.length > active.filter((h) => h.amp > EPS).length;
   const cut = all.some((h) => h.n > limit);
   return {
     all,
@@ -137,11 +140,12 @@ export function sumLabels(model, narrow = false) {
 }
 
 export function sumNote(model) {
-  if (!model.shown.length) return 'There are no harmonics: all amplitudes are zero, which is silence.';
-  const first = `Showing the first ${model.shown.length} of ${model.total} harmonics.`;
-  if (model.truncated) return `${first} The bold Sum adds the ${model.active.length} rows shown; the faint line is the sum of all ${model.pool.length} harmonics.`;
-  if (model.cut) return `${first} The Sum adds only the first ${model.partialSumN} harmonics (Build up).`;
-  return model.total > model.shown.length ? first : `All ${model.total} harmonic${model.total === 1 ? ' is' : 's are'} shown, and the Sum adds them all.`;
+  if (!model.total) return 'There are no harmonics: all amplitudes are zero, which is silence.';
+  const zeros = model.shown.filter((h) => !(h.amp > EPS)).length;
+  const head = `Showing H1 to H${model.shown.length}${zeros ? `; the ${zeros} at 0 % are flat lines` : ''}.`;
+  if (model.truncated) return `${head} The bold Sum adds the ${model.active.length} rows shown; the faint line is the sum of all ${model.pool.length} harmonics.`;
+  if (model.cut) return `${head} The Sum adds only the first ${model.partialSumN} harmonics (Build up).`;
+  return `${head} The Sum adds all ${model.total} nonzero harmonic${model.total === 1 ? '' : 's'}.`;
 }
 
 export const tableRows = (model) => model.shown.map((h) => [
@@ -389,7 +393,7 @@ export function createStackCard(env = {}) {
 
   function paint() {
     if (gone || !state) return;
-    model = stackModel(state.harmonics, { rows, highlightN: state.highlightN, partialSumN: state.partialSumN });
+    model = stackModel(state.harmonics, { rows, freq: state.freq, highlightN: state.highlightN, partialSumN: state.partialSumN });
     note.textContent = `${sumNote(model)} ${PERCENT_NOTE}`;
     extra.hidden = !state.extra;
     extra.textContent = state.extra ?? '';

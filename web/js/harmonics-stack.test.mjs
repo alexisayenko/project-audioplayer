@@ -34,33 +34,45 @@ test('WEB-212: the custom bars give signed rows, zero bars give no row', () => {
   assert.deepEqual(h.barHarmonics(cw.presetBars('overtones'), 100).map((x) => x.n), [2, 3, 4, 5, 6, 7, 8]);
 });
 
-test('WEB-212: the model shows the first 4, 8 or 12 nonzero harmonics, scales the rows by the largest and says when the sum is partial', () => {
+test('WEB-212: the model always shows H1 to Hn (n = 4, 8 or 12), zero harmonics as flat rows, scales the rows by the largest and says when the sum is partial', () => {
   const sq = h.shapeHarmonics('square', 440);
   for (const rows of [4, 8, 12]) {
     const m = h.stackModel(sq, { rows });
     assert.equal(m.shown.length, rows);
-    assert.equal(m.shown.at(-1).n, 2 * rows - 1);
+    assert.deepEqual(m.shown.map((x) => x.n), Array.from({ length: rows }, (_, i) => i + 1));
+    assert.equal(m.shown[1].amp, 0);
     assert.equal(m.total, 16);
     assert.equal(m.truncated, true);
     assert.equal(m.scale, 1);
   }
   const organ = h.stackModel(h.barHarmonics(cw.presetBars('organ'), 440), { rows: 8 });
   assert.equal(organ.truncated, false);
-  assert.equal(organ.shown.length, 5);
+  assert.equal(organ.shown.length, 8);
+  assert.deepEqual(organ.shown.map((x) => x.amp > 0), [true, true, true, true, true, false, false, false]);
   const over = h.stackModel(h.barHarmonics(cw.presetBars('overtones'), 440), { rows: 4 });
   assert.ok(near(over.scale, 0.5));
-  assert.equal(h.stackModel(h.shapeHarmonics('sine', 440)).shown.length, 1);
+  const sine = h.stackModel(h.shapeHarmonics('sine', 440));
+  assert.equal(sine.shown.length, 8);
+  assert.equal(sine.total, 1);
+  assert.equal(h.rowLabel(sine.shown[1]), 'H2 · 880 Hz · 0 %');
+  assert.equal(h.rowLabel(sine.shown[1], true), 'H2 0 %');
+  assert.ok(h.rowSeries(sine.shown[1], sine.scale, 50).every((v) => v === 0));
+  assert.match(h.sumNote(sine), /^Showing H1 to H8; the 7 at 0 % are flat lines\. The Sum adds all 1 nonzero harmonic\.$/);
+  const none = h.stackModel(h.barHarmonics(cw.emptyBars(), 440), { rows: 4, freq: 440 });
+  assert.equal(none.shown.length, 4);
+  assert.equal(none.scale, 0);
+  assert.match(h.sumNote(none), /silence/);
   assert.deepEqual(h.stackModel([], {}).shown, []);
 });
 
-test('WEB-212: the Sum row is the scope curve: 8 square rows equal the 32-harmonic partial sum of the first 15, and a full set equals the whole table', () => {
+test('WEB-212: the Sum row is the scope curve: 8 square rows (H1 to H8) equal the 32-harmonic partial sum of the first 8, and a full set equals the whole table', () => {
   const N = 1000;
   const bars = cw.presetBars('square');
   const m = h.stackModel(h.shapeHarmonics('square', 440), { rows: 8 });
   const mine = Array.from(h.sumSeries(m.active, N, { peak: m.peak }));
-  const table = cw.analyzeBars(cw.partialBars(bars, 15)).table;
+  const table = cw.analyzeBars(cw.partialBars(bars, 8)).table;
   assert.ok(maxDiff(mine, grid(N, (u) => cw.tableAt(table, u))) < 0.01);
-  for (const id of ['organ', 'hollow', 'overtones', 'sine']) {
+  for (const id of ['organ', 'overtones', 'sine']) {
     const b = cw.presetBars(id);
     const full = h.stackModel(h.barHarmonics(b, 440), { rows: 12 });
     assert.equal(full.truncated, false, id);
@@ -71,7 +83,8 @@ test('WEB-212: the Sum row is the scope curve: 8 square rows equal the 32-harmon
 
 test('WEB-212: Build up N sums only the first N harmonics and names the cut', () => {
   const m = h.stackModel(h.barHarmonics(cw.presetBars('square'), 440), { rows: 8, partialSumN: 5, highlightN: 5 });
-  assert.deepEqual(m.active.map((x) => x.n), [1, 3, 5]);
+  assert.deepEqual(m.active.map((x) => x.n), [1, 2, 3, 4, 5]);
+  assert.deepEqual(m.active.filter((x) => x.amp > 0).map((x) => x.n), [1, 3, 5]);
   assert.equal(m.cut, true);
   assert.equal(m.truncated, false);
   assert.equal(m.shown.length, 8);
@@ -80,18 +93,18 @@ test('WEB-212: Build up N sums only the first N harmonics and names the cut', ()
   const table = cw.analyzeBars(cw.partialBars(cw.presetBars('square'), 5)).table;
   const N = 500;
   assert.ok(maxDiff(Array.from(h.sumSeries(m.active, N, { peak: m.peak })), grid(N, (u) => cw.tableAt(table, u))) < 0.01);
-  const none = h.stackModel(h.barHarmonics(cw.presetBars('square'), 440), { rows: 8 });
-  assert.equal(none.cut, false);
+  const uncut = h.stackModel(h.barHarmonics(cw.presetBars('square'), 440), { rows: 8 });
+  assert.equal(uncut.cut, false);
 });
 
 test('WEB-212: a row is one sine at its own height; an inverted bar starts downwards', () => {
   const sq = h.stackModel(h.shapeHarmonics('square', 440), { rows: 4 });
   const s1 = h.rowSeries(sq.shown[0], sq.scale, 1000);
-  const s3 = h.rowSeries(sq.shown[1], sq.scale, 1000);
+  const s3 = h.rowSeries(sq.shown[2], sq.scale, 1000);
   assert.ok(near(Math.max(...s1), 1, 1e-4) && near(Math.max(...s3), 1 / 3, 1e-4));
   const tri = h.shapeHarmonics('triangle', 440)[1];
   assert.ok(h.rowSeries(tri, 1, 100)[5] < 0);
-  assert.ok(h.rowSeries(sq.shown[1], sq.scale, 100, { phase: 0.25 })[0] !== 0);
+  assert.ok(h.rowSeries(sq.shown[2], sq.scale, 100, { phase: 0.25 })[0] !== 0);
 });
 
 test('WEB-212: the inharmonic partial n completes n x sqrt(1 + B n squared) cycles over the fundamental window', () => {
@@ -135,9 +148,9 @@ test('WEB-212: row labels show the real Hz and the percent, and shorten below 48
   assert.deepEqual(h.sumLabels(m, true), { title: 'Sum of 8', note: 'all 16' });
   assert.deepEqual(h.sumLabels(h.stackModel(h.shapeHarmonics('sine', 440))), { title: 'Sum', note: '' });
   assert.match(h.sumNote(m), /the faint line is the sum of all 16 harmonics/);
-  assert.equal(h.stackHeight(8, false), 12 + 240 + 68);
-  assert.equal(h.stackHeight(8, true), 12 + 208 + 56);
-  assert.deepEqual(h.tableRows(h.stackModel(sq, { rows: 4 }))[1], ['H3', '1320', '33', 'normal (0 degrees)']);
+  assert.equal(h.stackHeight(8, false), 12 + 480 + 136);
+  assert.equal(h.stackHeight(8, true), 12 + 416 + 112);
+  assert.deepEqual(h.tableRows(h.stackModel(sq, { rows: 4 }))[2], ['H3', '1320', '33', 'normal (0 degrees)']);
 });
 
 test('WEB-212: the card has the Rows 4, 8, 12 switch (8 by default), a hidden table with the harmonics and the caption', () => {
