@@ -10,8 +10,8 @@ export const DOMAINS = [
 ];
 
 const MEMBERS = {
-  physics: ['sound', 'oscillation', 'vibration', 'compression-and-rarefaction', 'sound-wave', 'cycle-and-period','frequency', 'wavelength', 'amplitude', 'power', 'speed-of-sound', 'sine-wave', 'sawtooth-wave', 'square-wave', 'triangle-wave', 'pulse-wave', 'duty-cycle', 'white-noise', 'pink-noise', 'infrasound-and-ultrasound', 'soundboard', 'bridge', 'length'],
-  perception: ['pitch', 'timbre', 'missing-fundamental', 'cent', 'loudness'],
+  physics: ['sound', 'oscillation', 'vibration', 'compression-and-rarefaction', 'sound-wave', 'cycle-and-period','frequency', 'wavelength', 'amplitude', 'power', 'speed-of-sound', 'sine-wave', 'sawtooth-wave', 'square-wave', 'triangle-wave', 'pulse-wave', 'duty-cycle', 'white-noise', 'pink-noise', 'infrasound-and-ultrasound', 'soundboard', 'bridge', 'length', 'click-train', 'repetition-rate'],
+  perception: ['pitch', 'timbre', 'missing-fundamental', 'cent', 'loudness', 'flutter-and-roughness'],
   music: ['note', 'tone', 'fundamental', 'harmonic-1', 'harmonics', 'overtone', 'partial', 'inharmonicity', 'beating', 'hammer-strike-position', 'strings-per-note', 'decay-across-harmonics', 'rhythm', 'beat', 'tempo', 'meter', 'bar', 'downbeat', 'onset', 'syncopation', 'subdivision', 'swing'],
   theory: ['scale', 'major-scale', 'minor-scale', 'chromatic-scale', 'pentatonic-scale', 'mode', 'key', 'tonic', 'semitone', 'whole-tone', 'octave', 'interval', 'third', 'fourth', 'fifth', 'consonance', 'dissonance', 'tuning', 'equal-temperament', 'just-intonation', 'pythagorean-tuning', 'reference-pitch', 'circle-of-fifths', 'chord', 'triad', 'seventh-chord', 'root', 'inversion', 'chord-progression', 'cadence', 'harmony', 'melody'],
   instruments: ['chordophones', 'aerophones', 'membranophones', 'idiophones', 'electrophones', 'primitive'],
@@ -39,6 +39,13 @@ export const RELATIONS = [
   rel('speed-of-sound', 'does not depend on', 'pitch'),
   rel('amplitude', 'is perceived as', 'loudness'),
   rel('frequency', 'is perceived as', 'pitch'),
+  rel('rhythm', 'speeds up (above 20 per second) into', 'pitch'),
+  rel('beat', 'is a slow', 'click-train'),
+  rel('click-train', 'has all equal', 'harmonics'),
+  rel('click-train', 'is set by its', 'repetition-rate'),
+  rel('click-train', 'at 15-30 per second gives', 'flutter-and-roughness'),
+  rel('repetition-rate', 'is the same number as', 'frequency'),
+  rel('tempo', '1 Hz = 60 BPM: tempo is a slow', 'frequency'),
   rel('power', 'is proportional to the square of', 'amplitude'),
   rel('sine-wave', 'has just one', 'frequency'),
   rel('infrasound-and-ultrasound', 'are named by their', 'frequency'),

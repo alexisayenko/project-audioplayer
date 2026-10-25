@@ -104,6 +104,9 @@ const RAW = [
   { id: 'syncopation', term: 'Syncopation', text: 'accents placed between the beats or on weak beats, so the rhythm feels off the pulse.', see: ['beat', 'downbeat', 'rhythm', 'subdivision'] },
   { id: 'subdivision', term: 'Subdivision', text: 'a beat split into equal smaller parts: two eighth notes or four sixteenth notes per beat.', see: ['beat', 'swing', 'syncopation'] },
   { id: 'swing', term: 'Swing', text: 'uneven long-short subdivisions: the first eighth note of each pair is longer than the second, often about 2:1. The opposite is straight eighths.', see: ['subdivision', 'beat', 'rhythm'] },
+  { id: 'click-train', term: 'Click train', aliases: ['impulse train', 'pulse train'], text: 'A series of identical short clicks at a steady rate. Below about 20 per second you hear a rhythm; above, a tone whose pitch equals the rate.', see: ['repetition-rate', 'flutter-and-roughness', 'harmonics', 'beat', 'rhythm', 'pitch', 'tempo'], demo: { page: 'synthesize/clicks', label: 'Clicks to tone' } },
+  { id: 'flutter-and-roughness', term: 'Flutter and roughness', aliases: ['flutter', 'roughness'], text: 'The fluttering or rough sound of 15-30 events per second, at the border between rhythm and tone.', see: ['click-train', 'beating', 'pitch', 'rhythm'], demo: { page: 'synthesize/clicks', label: 'Clicks to tone' } },
+  { id: 'repetition-rate', term: 'Repetition rate', text: 'How many times per second a pattern repeats: for a click train or a wave it is the same number as the frequency in Hz; 1 Hz = 60 BPM.', see: ['frequency', 'bpm', 'tempo', 'click-train', 'cycle-and-period'], demo: { page: 'synthesize/clicks', label: 'Clicks to tone' } },
 ];
 
 const byTerm = (a, b) => a.term.localeCompare(b.term, 'en', { sensitivity: 'base' });

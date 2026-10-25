@@ -14,15 +14,16 @@ const read = (rel) => readFileSync(new URL(rel, import.meta.url), 'utf8');
 
 const player = (available) => ({ available, playing: false, analyser: null, sampleRate: 0, failed: false, ensure() {} });
 
-test('STU-006: seven routes, #/synthesize/simple is the default, the old two-page hashes are aliases, anything else falls back', () => {
+test('STU-006: eight routes, #/synthesize/simple is the default, the old two-page hashes are aliases, anything else falls back', () => {
   assert.equal(DEFAULT_PAGE, 'synthesize/simple');
-  for (const id of ['synthesize/simple', 'synthesize/chordophones', 'synthesize/aerophones', 'synthesize/membranophones', 'synthesize/idiophones', 'analyze/listen', 'analyze/rhythm']) {
+  for (const id of ['synthesize/simple', 'synthesize/clicks', 'synthesize/chordophones', 'synthesize/aerophones', 'synthesize/membranophones', 'synthesize/idiophones', 'analyze/listen', 'analyze/rhythm']) {
     assert.equal(pageFromHash(`#/${id}`), id);
   }
   assert.equal(pageFromHash('#/analyze/bpm'), 'analyze/rhythm');
   assert.equal(pageFromHash('#/analyze/bpm/'), 'analyze/rhythm');
   assert.equal(pageFromHash('#/synthesize/chordophones/'), 'synthesize/chordophones');
   assert.equal(pageFromHash('#/synthesize'), 'synthesize/simple');
+  assert.equal(pageFromHash('#/clicks'), 'synthesize/clicks');
   assert.equal(pageFromHash('#/analyze'), 'analyze/listen');
   assert.equal(pageFromHash(''), 'synthesize/simple');
   assert.equal(pageFromHash('#/bogus'), 'synthesize/simple');
@@ -30,6 +31,7 @@ test('STU-006: seven routes, #/synthesize/simple is the default, the old two-pag
   assert.equal(pageFromHash('#/studio/tools'), 'synthesize/simple');
   assert.deepEqual(PAGES.map((p) => [p.group, p.label, p.hash]), [
     ['Synthesize', 'Primitive', '#/synthesize/simple'],
+    ['Synthesize', 'Clicks to tone', '#/synthesize/clicks'],
     ['Synthesize', 'Chordophones', '#/synthesize/chordophones'],
     ['Synthesize', 'Aerophones', '#/synthesize/aerophones'],
     ['Synthesize', 'Membranophones', '#/synthesize/membranophones'],
@@ -56,7 +58,7 @@ test('STU-017: the three placeholder pages name their physics and a new ticket',
   assert.match(PLACEHOLDERS['synthesize/membranophones'].lines.join(' '), /1, 1\.59, 2\.14, 2\.30, 2\.65 and 2\.92/);
 });
 
-test('STU-005: the left menu is a nav named Studio with the groups Synthesize (five items), Analyze (Listen, Rhythm) and Reference (Glossary), Help (Features, Help, About) and a link back to the main app', () => {
+test('STU-005: the left menu is a nav named Studio with the groups Synthesize (six items), Analyze (Listen, Rhythm) and Reference (Glossary), Help (Features, Help, About) and a link back to the main app', () => {
   const html = read('../../studio/index.html');
   const nav = html.match(/<nav class="site-nav" aria-label="Studio">([\s\S]*?)<\/nav>/)[1];
   assert.deepEqual([...nav.matchAll(/<h2 [^>]*>([^<]*)<\/h2>/g)].map((m) => m[1]), ['Synthesize', 'Analyze', 'Reference', 'Help']);

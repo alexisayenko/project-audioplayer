@@ -210,7 +210,7 @@ export function styleReader(node) {
   return (name, fallback) => css?.getPropertyValue(name).trim() || fallback;
 }
 
-function readColors(node) {
+export function readColors(node) {
   const get = styleReader(node);
   return {
     muted: get('--ink-muted', '#5f6669'),
@@ -234,9 +234,9 @@ export function fit(canvas) {
   return { ctx, w, h };
 }
 
-function drawScope(g, colors, series, need, p, view) {
+export function drawScope(g, colors, series, need, p, view) {
   const { ctx, w, h } = g;
-  const { ticks, bracket = true } = view;
+  const { ticks, bracket = true, tickText } = view;
   const { left, bottom, pad, mid, scale, plotW } = scopeGeometry(w, h, bracket);
   ctx.clearRect(0, 0, w, h);
   ctx.font = `10px ${colors.font}`;
@@ -255,7 +255,7 @@ function drawScope(g, colors, series, need, p, view) {
     const x = left + t.frac * plotW;
     ctx.beginPath(); ctx.moveTo(x, mid - scale); ctx.lineTo(x, mid + scale); ctx.stroke();
     ctx.textAlign = t.frac === 0 ? 'left' : t.frac >= 1 ? 'right' : 'center';
-    ctx.fillText(`${fmtMs(t.ms)} ms`, x, h - bottom + 3);
+    ctx.fillText(tickText ? tickText(t) : `${fmtMs(t.ms)} ms`, x, h - bottom + 3);
   }
   if (p.amp > 0) {
     ctx.save();

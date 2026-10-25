@@ -45,6 +45,11 @@
 @container stu (min-width: 900px) { .sm-scopes { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 .sm-scopes .hm-head { min-height: var(--control); align-items: center; }
 .sm-links { display: flex; flex-wrap: wrap; gap: 0 var(--space-5); margin: 0; }
+.cl-rate { display: grid; gap: var(--space-3); min-width: 0; }
+.cl-regime { margin: 0; color: var(--ink); font-weight: 500; overflow-wrap: anywhere; }
+.cl-presets { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.cl-presets .chip { cursor: pointer; text-align: left; }
+@container stu (min-width: 1100px) { .cl-ctl { grid-template-columns: repeat(2, minmax(0, 1fr)) auto; } }
 .ca { gap: var(--space-3); }
 .ca-title { margin: 0; color: var(--ink); font: var(--font-subhead-strong); }
 .ca-ctl { display: flex; flex-wrap: wrap; align-items: end; gap: var(--space-2) var(--space-5); }

@@ -56,6 +56,7 @@ const block = (title, ...kids) => el('section', { class: 'hp-sec' }, el('h3', { 
 
 export const PAGE_NOTES = [
   ['Primitive', 'One sine wave, one frequency, H1 only. Set frequency, amplitude and length, press Play, and see the wave on an oscilloscope.'],
+  ['Clicks to tone', 'A repeating click from 1 to 1000 per second: slow it is a beat, fast it fuses into a tone whose pitch equals the rate.'],
   ['Chordophones', 'A harmonics lab for strings: choose the harmonics, their decay and the strike, and see the waveform, spectrum, spectrogram and beating.'],
   ['Aerophones, Membranophones, Idiophones', 'Placeholders for now; each says what is planned.'],
   ['Listen', 'The microphone as an instrument: level meter, waveform, spectrum with harmonic marks, spectrogram and Beat bands.'],

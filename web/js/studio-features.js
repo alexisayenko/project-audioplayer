@@ -1,6 +1,6 @@
 export const STATUSES = ['in-progress', 'planned', 'released'];
 export const STATUS_LABELS = { 'in-progress': 'In progress', planned: 'Planned', released: 'Released' };
-export const AREAS = ['Site', 'Primitive', 'Chordophones', 'Aerophones', 'Membranophones', 'Idiophones', 'Listen', 'Rhythm', 'Glossary', 'Modify', 'Tools', 'iOS', 'Theory'];
+export const AREAS = ['Site', 'Primitive', 'Clicks to tone', 'Chordophones', 'Aerophones', 'Membranophones', 'Idiophones', 'Listen', 'Rhythm', 'Glossary', 'Modify', 'Tools', 'iOS', 'Theory'];
 export const TASK_URL = 'https://github.com/alexisayenko/project-audioplayer/blob/main/docs/tasks/';
 
 const done = (date, area, title, task, text) => ({ status: 'released', date, area, title, ...(text ? { text } : {}), ...(task ? { task } : {}) });
@@ -22,6 +22,7 @@ export const FEATURES = [
   open('planned', 'Tools', 'Waveforms page', 'task-0118', 'Hear and see sine, triangle, square, sawtooth, pulse and noise. The Glossary has the terms; the page is not built.'),
   open('planned', 'Theory', 'Music theory page', 'task-0119', 'Scales, modes, chords and tuning with playable examples. The Glossary has the Music theory domain; the page is not built.'),
 
+  done('2026-10-25', 'Clicks to tone', 'Clicks to tone: a beat becomes a pitch', 'task-0114', 'A repeating click from 1 to 1000 per second. Slow it is a rhythm; around 20 per second it flutters; fast it is a tone whose pitch is the click rate (100 per second is 100 Hz, 440 is A4).'),
   done('2026-10-25', 'Glossary', 'Choose a waveform in the cone animation and see its harmonics', 'task-0114', 'The Sound wave animation can show a sine, triangle, square or sawtooth wave, with a bar chart of its harmonics.'),
   done('2026-10-25', 'Site', 'Help menu with Features, Help and About', 'task-0114', 'Features lists what the Studio can do and what is on the way; Help says what each page does.'),
   done('2026-10-25', 'Site', 'Collapsible menu and full-width content', 'task-0114', 'A button next to the title folds the menu away, and the pages use the whole width.'),

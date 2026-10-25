@@ -1,6 +1,7 @@
 import { el } from '../web/js/dom.js';
 import { mountRhythm, mountListen, mountChordophones } from '../web/js/studio-tools.js';
 import { mountSimple } from '../web/js/simple-tone.js';
+import { mountClicks } from '../web/js/clicks-tone.js';
 import { PAGES, pageFromHash } from './routes.js';
 import { mountPlaceholder } from './placeholders.js';
 import { mountGlossary } from './glossary.js';
@@ -9,6 +10,7 @@ import { mountFeatures, mountHelp, mountAbout } from './help.js';
 
 const MOUNT = {
   'synthesize/simple': (pane) => mountSimple(pane),
+  'synthesize/clicks': (pane) => mountClicks(pane),
   'synthesize/chordophones': (pane) => mountChordophones(pane),
   'synthesize/aerophones': (pane) => mountPlaceholder(pane, 'synthesize/aerophones'),
   'synthesize/membranophones': (pane) => mountPlaceholder(pane, 'synthesize/membranophones'),

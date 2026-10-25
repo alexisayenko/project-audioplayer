@@ -4,6 +4,7 @@ export const GROUPS = [
     label: 'Synthesize',
     pages: [
       { id: 'synthesize/simple', label: 'Primitive' },
+      { id: 'synthesize/clicks', label: 'Clicks to tone' },
       { id: 'synthesize/chordophones', label: 'Chordophones' },
       { id: 'synthesize/aerophones', label: 'Aerophones' },
       { id: 'synthesize/membranophones', label: 'Membranophones' },
@@ -36,7 +37,7 @@ export const GROUPS = [
 
 export const PAGES = GROUPS.flatMap((g) => g.pages.map((p) => ({ ...p, group: g.label, hash: `#/${p.id}` })));
 export const DEFAULT_PAGE = 'synthesize/simple';
-export const ALIASES = { synthesize: 'synthesize/simple', analyze: 'analyze/listen', 'analyze/bpm': 'analyze/rhythm', help: 'help/features' };
+export const ALIASES = { synthesize: 'synthesize/simple', analyze: 'analyze/listen', 'analyze/bpm': 'analyze/rhythm', help: 'help/features', clicks: 'synthesize/clicks' };
 
 const pathOf = (hash) => String(hash || '').replace(/^#\/?/, '').replace(/\/+$/, '');
 

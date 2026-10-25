@@ -139,7 +139,7 @@ test('STU-044: Sound wave is a term with aliases, see-also links and the cone an
   assert.ok(termById('compression-and-rarefaction').see.includes('sound-wave'));
   assert.equal(termByAnchor('longitudinal-wave').id, 'sound-wave');
   assert.equal(termByAnchor('compression-wave').id, 'sound-wave');
-  assert.equal(TERMS.length, 105);
+  assert.equal(TERMS.length, 108);
 });
 
 test('STU-044: a term with the demo has a Show animation button that expands and collapses the animation', () => {
@@ -196,7 +196,7 @@ test('STU-045: the list is grouped by category with counted headings, an Order s
   const win = { location: { hash: '' }, addEventListener() {}, removeEventListener() {} };
   const stop = mountGlossary(pane, win);
   const heads = () => pane.querySelectorAll('.gl-sec-h').map((h) => h.textContent);
-  assert.deepEqual(heads(), ['Physics of sound (23)', 'Perception (5)', 'Music (22)', 'Music theory (32)', 'Instruments (6)', 'Analysis tools (17)']);
+  assert.deepEqual(heads(), ['Physics of sound (25)', 'Perception (6)', 'Music (22)', 'Music theory (32)', 'Instruments (6)', 'Analysis tools (17)']);
   assert.equal(pane.querySelectorAll('.gl-sec').length, 6);
   assert.equal(pane.querySelectorAll('.gl-chip').length, 6);
   const order = pane.querySelectorAll('.hm-seg').find((g) => g.getAttribute('aria-labelledby') === 'gl-order-label');
