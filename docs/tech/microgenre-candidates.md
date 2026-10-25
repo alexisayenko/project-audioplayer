@@ -121,6 +121,25 @@ Parent of each proposed addition is a proposal. None is in RYM under psytrance (
 
 Scanned and left as full genres without a row (no microgenre signal): the broad Discogs styles and regional or era genres, for example house, techno, psychedelic rock, post-punk, darkwave, city pop, cloud rap, plunderphonics, jumpstyle, speedcore, kuduro, gqom, and the Electronic and Rock extras not listed above.
 
+## Synthwave family candidates for structure v2 (2026-10-25)
+
+Not added to Genres map v2 with the Synthwave and Vapor clusters (GEN-105); each waits for the owner's Rate Your Music (RYM) page, since Wikipedia alone does not attest a genre ([source policy](genre-terminology.md#source-policy-for-new-genres)). No v1 data changes.
+
+| Candidate | Relation | Note |
+|---|---|---|
+| Vaportrap | under Vaporwave (RYM) | |
+| Future Funk | under Vaporwave (RYM) | |
+| Eccojams | under Vaporwave (RYM) | The origin of Vaporwave (Chuck Person). RYM's own parent of Vaporwave is Vapor. |
+| Sweatwave | under Synthwave | Awaiting the RYM page. |
+| Spacewave | under Synthwave (Wikipedia subgenre; RYM's Synthwave text names it as a niche with 1980s space-film imagery) | The same style as the v1 entry `spacesynth` (parents synthwave and italo disco, left untouched). |
+| Scifiwave | under Synthwave (Wikipedia subgenre) | Wikipedia lists Darksynth, Dreamwave, Outrun, Scifiwave and Spacewave as subgenres of Synthwave. |
+| Dreamsynth | under Synthwave (v1 entry `dreamsynth`) | The owner's call whether it folds into Dreamwave (open point 5). |
+| Chillwave | second RYM parent of Chillsynth; Musicmap Indietronica & Chillwave (con05, 2005) | For a later indie cluster. |
+| Indietronica | Musicmap Indietronica & Chillwave (con05) | For a later indie cluster. |
+| Eurobeat | Wikipedia "other topics" of Synthwave (related, not a child) | Not a v1 genre. |
+
+Related, not children (Wikipedia, other topics of Synthwave): Eurobeat, synth-pop (v1 `synthpop`), vaporwave, new wave (v1 `new wave`). They are recorded in the details of the Synthwave row, not in a `related` field, so no v1 count or snapshot changes.
+
 ## Summary of recommendations
 
 | Recommendation | Rows |

@@ -2,6 +2,10 @@
 
 What shipped, newest first. One line each; the web UI and server are live at https://electrophone.cc. Everything listed here is deployed except the sections marked "built, not deployed" (the 2026-10-14 release went out once the SSH access in [task-0027](tasks/task-0027.md) was restored; the live visualizer files match `origin/main` as of 2026-10-15). Why: [tech/decisions.md](tech/decisions.md); runbook: [tech/deploy.md](tech/deploy.md).
 
+## 2026-10-25 (Synthwave family added to Genres map v2, built, not deployed)
+
+- Server data (owner decision IK1, 2026-10-25; GEN-103, GEN-105, DATA-197, task-0096; load check of the validator only, no tests run, test assertions edited): two clusters in `genres_v2.json`, "Synthwave" (#881DF7, the v1 synthwave hex) and "Vapor" (#D0549A, the chart-2 pink token; Rate Your Music's parent of Vaporwave), with level 1 Synthwave and Vaporwave (Wikipedia treats Vaporwave as separate, owner decision IL2; Musicmap's pairing dtp14 is a note) and level 2 Chillsynth, Darksynth, Dreamwave, Outrun and Sovietwave under Synthwave; 24 genres in all. `v1` names the same-name v1 genre, except Chillsynth (none; own description; v1 unchanged, 537 genres). Own descriptions for Chillsynth, Darksynth, Dreamwave, Vaporwave and Sovietwave, Rate Your Music release counts and notes (Downtempo / Ambient, Chillwave, Indietronica, Electronic Dance Music, related topics) in `details`; Rate Your Music links for vaporwave, darksynth, dreamwave and sovietwave; candidates in `microgenre-candidates.md`. No web change: the adapter reads clusters from the data.
+
 ## 2026-10-25 (task statuses audited, docs only)
 
 - Docs: task statuses audited 2026-10-25: 24 tasks corrected (task-0004, 0005, 0006, 0009, 0019, 0021, 0022, 0023, 0026, 0034, 0043, 0044, 0049, 0058, 0059, 0087, 0088, 0090, 0098, 0099, 0106, 0110, 0114, 0118), free-text status values moved into the task bodies, IOS-043 marked built, and the C1 and C2 roll-ups repaired so every task appears once under its status.
