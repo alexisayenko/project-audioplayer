@@ -2,6 +2,10 @@
 
 What shipped, newest first. One line each; the web UI and server are live at https://electrophone.cc. Everything listed here is deployed except the sections marked "built, not deployed" (the 2026-10-14 release went out once the SSH access in [task-0027](tasks/task-0027.md) was restored; the live visualizer files match `origin/main` as of 2026-10-15). Why: [tech/decisions.md](tech/decisions.md); runbook: [tech/deploy.md](tech/deploy.md).
 
+## 2026-10-25 (Harmonic editor fits its width and gets a zero-all control, deployed to studio.electrophone.cc as `f9956f4`; the main app is unchanged)
+
+- Web (WEB-211, task-0114; the two harmonic test files pass, the rest of the suite not run, not checked in a browser): the harmonic bars widen to fill the chart (18 px minimum, scrolls below it), the `0` axis label is a button "Set all harmonics to 0", each harmonic's value shows under its number, and the readout keeps a fixed height on hover.
+
 ## 2026-10-25 (Harmonics stack on Primitive and Chordophones, deployed to studio.electrophone.cc as `89a6d0c`; the main app is unchanged)
 
 - Web (WEB-212, WEB-213, STU-058, STU-059, task-0114; owner decision IN1: each harmonic is its own sine wave and the sound is their sum, so show them; no tests run, `node --check`, the builds, node numeric checks and the Browser pane only, test files written and edited, not run): a "Harmonics stack" block with one sine row per harmonic (first 4, 8 or 12, labelled with the real Hz and percent), a bottom Sum row, Build up on Primitive, an Animate checkbox (one frame loop, off by default) and a hidden table for screen readers. Primitive: under the one-cycle scope for every waveform. Chordophones: rows follow the harmonics count, roll-off, Mute H1, inharmonicity and strike position. New Glossary entry "Harmonic decomposition" (111 terms, 168 relations). The Sum of 8 square rows matches the 32-harmonic scope partial sum within 0.09 % of the peak. Not verified: Safari, a phone, a screen reader.
