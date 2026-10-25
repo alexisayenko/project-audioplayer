@@ -2,6 +2,10 @@
 
 What shipped, newest first. One line each; the web UI and server are live at https://electrophone.cc. Everything listed here is deployed except the sections marked "built, not deployed" (the 2026-10-14 release went out once the SSH access in [task-0027](tasks/task-0027.md) was restored; the live visualizer files match `origin/main` as of 2026-10-15). Why: [tech/decisions.md](tech/decisions.md); runbook: [tech/deploy.md](tech/deploy.md).
 
+## 2026-10-25 (Rhythm 16 and 24 bands and the Glossary "Digitizing sound" category, deployed to studio.electrophone.cc as `ac631d4` and `982100d`; the main app is unchanged)
+
+- Web (WEB-191, STU-032, STU-060, task-0114; the beat-bands and glossary-terms tests pass, glossary-map has one known failure, "initial view is readable" at zoom 0.694 < 0.7, not fixed; not checked in a browser): Rhythm offers 16 and 24 beat bands (20 Hz to 16 kHz, no two lanes share an FFT bin), lanes are 108 px and the height cap is gone (the phone cap applies up to 12 bands). The Glossary has a seventh category, "Digitizing sound", with 9 new entries (120 terms).
+
 ## 2026-10-25 (Harmonic editor fits its width and gets a zero-all control, deployed to studio.electrophone.cc as `f9956f4`; the main app is unchanged)
 
 - Web (WEB-211, task-0114; the two harmonic test files pass, the rest of the suite not run, not checked in a browser): the harmonic bars widen to fill the chart (18 px minimum, scrolls below it), the `0` axis label is a button "Set all harmonics to 0", each harmonic's value shows under its number, and the readout keeps a fixed height on hover.
