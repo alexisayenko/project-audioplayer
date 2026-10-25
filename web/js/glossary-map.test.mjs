@@ -18,8 +18,8 @@ test('STU-037: every relation ends at an existing term, with a label, no self lo
     assert.ok(!seen.has(key), `duplicate ${key}`);
     seen.add(key);
   }
-  assert.equal(RELATIONS.length, 151);
-  assert.equal(TERMS.length, 103);
+  assert.equal(RELATIONS.length, 152);
+  assert.equal(TERMS.length, 104);
 });
 
 test('STU-037: every term is in exactly one domain, every domain is non-empty and every term has a relation', () => {
@@ -122,8 +122,8 @@ test('STU-037: buildGraph gives one node per mapped term and keeps only edges be
   assert.ok(sub.edges.every((e) => e.from !== 'frequency' && e.to !== 'frequency'));
   assert.equal(mapLabel(termById('spectrum')), 'Spectrum');
   assert.equal(mapLabel(termById('frequency')), 'Frequency');
-  assert.equal(nodes.length, 103);
-  assert.equal(edges.length, 151);
+  assert.equal(nodes.length, 104);
+  assert.equal(edges.length, 152);
   assert.deepEqual(nodes.find((n) => n.id === 'timbre').aliases, termById('timbre').aliases);
   assert.deepEqual(nodes.find((n) => n.id === 'bpm').aliases, termById('bpm').aliases);
   assert.deepEqual(nodes.find((n) => n.id === 'sound').aliases, []);

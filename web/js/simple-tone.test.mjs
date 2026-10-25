@@ -87,9 +87,12 @@ test('WEB-204: the phase of the slowed cone accumulates f/1000 cycles per second
   assert.equal(s.advancePhase(0.3, 440, -5), 0.3);
 });
 
-test('WEB-204: the slow motion factor is 1000, 2000, 5000 or 10000, defaults to 2000 and divides the phase rate', () => {
-  assert.deepEqual(s.SLOW_CHOICES, [1000, 2000, 5000, 10000]);
+test('WEB-204: the slow motion factor is 250, 500, 1000, 2000, 5000 or 10000, defaults to 2000 and divides the phase rate', () => {
+  assert.deepEqual(s.SLOW_CHOICES, [250, 500, 1000, 2000, 5000, 10000]);
   assert.equal(s.SLOW_DEFAULT, 2000);
+  assert.ok(near(s.advancePhase(0, 440, 1000, 250), 0.76));
+  assert.equal(s.slowReadout(440, 250), 'Slowed 250×: real 440 Hz = 1.76 swings per second (one swing every 0.568 s); the real cone makes 440 swings each second.');
+  assert.ok(s.slowReadout(2000, 250).endsWith('Too fast to follow at this frequency.'));
   assert.ok(near(s.advancePhase(0, 440, 1000, 2000), 0.22));
   assert.ok(near(s.advancePhase(0, 440, 1000, 10000), 0.044));
   assert.equal(s.slowReadout(440, 2000), 'Slowed 2000×: real 440 Hz = 0.22 swings per second (one swing every 4.55 s); the real cone makes 440 swings each second.');
@@ -208,12 +211,33 @@ test('WEB-204: the air pattern is exactly one wavelength across the visible area
   assert.ok(s.airGeometry(122, 5000).cols * s.AIR_ROWS < 300);
 });
 
+test('WEB-204: the compression band sits on the densest bunch, the rarefaction band half an area behind, and both fade at the wrap', () => {
+  const geo = s.airGeometry(122, 367);
+  for (const phase of [0, 0.25, 0.5, 0.75, 0.9]) {
+    const x = s.airBandX(geo, phase);
+    const frac = (x - geo.start) / geo.wavelength;
+    assert.ok(near(s.airCurve(phase, 0.8, frac), 1, 1e-9));
+    assert.ok(near(s.airDensity(phase, 0.8, geo, frac * geo.wavelength), 1 + s.airK(0.8), 1e-9));
+    assert.ok(near(s.airX(phase, 0.8, geo, frac * geo.wavelength), x, 1e-9));
+    assert.ok(near(s.airCurve(phase, 0.8, s.airBandFrac(phase, true)), -1, 1e-9));
+  }
+  assert.ok(near(s.airBandFrac(0.25), 0, 1e-12));
+  assert.ok(near(s.airBandFrac(0.5), 0.25, 1e-12));
+  assert.ok(near(s.airBandFrac(0.25, true), 0.5, 1e-12));
+  assert.equal(s.airBandFade(0), 0);
+  assert.equal(s.airBandFade(0.5), 1);
+  assert.ok(near(s.airBandFade(0.05), 0.5, 1e-12));
+  assert.ok(near(s.airBandFade(0.95), 0.5, 1e-12));
+  assert.ok(s.airCurveHalf() * 2 >= 80);
+});
+
 test('WEB-204: the real wavelength is 343 m/s over the live frequency', () => {
   assert.ok(near(s.wavelengthM(440), 0.7795, 1e-3));
   assert.equal(s.fmtWavelength(440), '78 cm');
   assert.equal(s.fmtWavelength(100), '3.43 m');
   assert.equal(s.fmtWavelength(20000), '1.7 cm');
   assert.match(s.airNote(440), /one dense bunch \(high pressure\) and one thin gap \(low pressure\) are one cycle of the wave/);
+  assert.match(s.airNote(440), /The highlighted band follows the densest bunch of air \(highest pressure\) as it travels away from the cone; it crosses the density curve at its peak\./);
   assert.match(s.airNote(440), /the real wavelength of 440 Hz is about 78 cm\.$/);
 });
 

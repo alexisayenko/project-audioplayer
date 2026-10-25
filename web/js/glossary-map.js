@@ -10,7 +10,7 @@ export const DOMAINS = [
 ];
 
 const MEMBERS = {
-  physics: ['sound', 'oscillation', 'vibration', 'cycle-and-period', 'frequency', 'wavelength', 'amplitude', 'power', 'speed-of-sound', 'sine-wave', 'sawtooth-wave', 'square-wave', 'triangle-wave', 'pulse-wave', 'duty-cycle', 'white-noise', 'pink-noise', 'infrasound-and-ultrasound', 'soundboard', 'bridge', 'length'],
+  physics: ['sound', 'oscillation', 'vibration', 'compression-and-rarefaction', 'cycle-and-period','frequency', 'wavelength', 'amplitude', 'power', 'speed-of-sound', 'sine-wave', 'sawtooth-wave', 'square-wave', 'triangle-wave', 'pulse-wave', 'duty-cycle', 'white-noise', 'pink-noise', 'infrasound-and-ultrasound', 'soundboard', 'bridge', 'length'],
   perception: ['pitch', 'timbre', 'missing-fundamental', 'cent', 'loudness'],
   music: ['note', 'tone', 'fundamental', 'harmonic-1', 'harmonics', 'overtone', 'partial', 'inharmonicity', 'beating', 'hammer-strike-position', 'strings-per-note', 'decay-across-harmonics', 'rhythm', 'beat', 'tempo', 'meter', 'bar', 'downbeat', 'onset', 'syncopation', 'subdivision', 'swing'],
   theory: ['scale', 'major-scale', 'minor-scale', 'chromatic-scale', 'pentatonic-scale', 'mode', 'key', 'tonic', 'semitone', 'whole-tone', 'octave', 'interval', 'third', 'fourth', 'fifth', 'consonance', 'dissonance', 'tuning', 'equal-temperament', 'just-intonation', 'pythagorean-tuning', 'reference-pitch', 'circle-of-fifths', 'chord', 'triad', 'seventh-chord', 'root', 'inversion', 'chord-progression', 'cadence', 'harmony', 'melody'],
@@ -24,6 +24,7 @@ const rel = (from, label, to) => ({ from, label, to });
 
 export const RELATIONS = [
   rel('sound', 'is a kind of', 'oscillation'),
+  rel('sound', 'is a pattern of', 'compression-and-rarefaction'),
   rel('vibration', 'is a kind of', 'oscillation'),
   rel('oscillation', 'is described by', 'frequency'),
   rel('oscillation', 'is described by', 'amplitude'),
