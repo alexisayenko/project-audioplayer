@@ -2,7 +2,7 @@
 
 What shipped, newest first. One line each; the web UI and server are live at https://electrophone.cc. Everything listed here is deployed except the sections marked "built, not deployed" (the 2026-10-14 release went out once the SSH access in [task-0027](tasks/task-0027.md) was restored; the live visualizer files match `origin/main` as of 2026-10-15). Why: [tech/decisions.md](tech/decisions.md); runbook: [tech/deploy.md](tech/deploy.md).
 
-## 2026-10-25 (Sound wave animation: free-field cone motion, built, not deployed)
+## 2026-10-25 (Sound wave animation: free-field cone motion, deployed to studio.electrophone.cc as `fc2fbb5`)
 
 - Web (STU-043, STU-047, STU-055, STU-044; owner decision 2026-10-25, "do": the cone moves like a real speaker; no tests run, test assertions edited, `node --check`, the build, node numeric checks and the Browser pane with a stepped clock): the cone position is now the double integral of the pressure shape (`coneTable`, `coneShape`, second zero-mean `Float32Array` table, peak 1), so the pressure follows the cone's acceleration instead of its speed. Sine: anti-phase with the pressure; square: smooth parabolic arcs, no straight lines; triangle: cubic-like; sawtooth: one gentle kink. Dots, density curve and colours unchanged. Captions, the Learn page "How to read this" bullet and the Sound wave Glossary text are rewritten, a "Simplified model" note sits under the animation, and Features lists the change.
 
