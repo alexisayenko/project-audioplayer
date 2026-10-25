@@ -2,7 +2,7 @@
 
 What shipped, newest first. One line each; the web UI and server are live at https://electrophone.cc. Everything listed here is deployed except the sections marked "built, not deployed" (the 2026-10-14 release went out once the SSH access in [task-0027](tasks/task-0027.md) was restored; the live visualizer files match `origin/main` as of 2026-10-15). Why: [tech/decisions.md](tech/decisions.md); runbook: [tech/deploy.md](tech/deploy.md).
 
-## 2026-10-25 (Studio menu: collapsed, the content takes the full width and the expand button overlays it, built, not deployed yet; the main app is unchanged)
+## 2026-10-25 (Studio menu: collapsed, the content takes the full width and the expand button overlays it, deployed to studio.electrophone.cc as `a69792e`; the main app is unchanged)
 
 - Web (STU-030, STU-031; owner: "make the main area take the left space as well; the > button displays as an overlay"; no tests run, the build and the Browser pane at 1024 px (the pane viewport caps there) and 375 px): with the menu collapsed above 720 px the first card starts at x = 16 px (was 48 px) and the "Expand menu" button sits at 24 px, 24 px as an overlay on the card's top-left corner (soft shadow); only the heading row gets 52 px of extra left padding so the title starts right of the button; the card top stays 16 px (0 px jump); the canvases redraw to the wider card; the phone top bar is unchanged.
 
