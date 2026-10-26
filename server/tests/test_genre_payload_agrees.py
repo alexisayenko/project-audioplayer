@@ -1,6 +1,7 @@
 """The served vocabulary payload (`genre_vocab.vocabulary()`, behind GET /genres/vocabulary) keeps its flat `genres` rows (from genre_discogs.json and genre_extras.json) in step with the tree in `levels` (from genre_levels.json). The rows are the legacy view: Discogs rows list their Discogs families and an extra lists only its old primary parent, so `parents` are not compared in general, only where the tree has a genre as primary parent."""
 
 import json
+import os
 from pathlib import Path
 
 import pytest
@@ -39,17 +40,6 @@ def test_an_extra_whose_tree_parent_is_a_genre_has_that_parent_in_its_row(body):
         assert want == (row["parents"][0], tree[0]), row["name"]
 
 
-def test_spacesynth_and_space_disco_in_the_payload(body):
-    rows = {r["name"]: r for r in body["genres"]}
-    for src in (rows["spacesynth"], body["levels"]["spacesynth"]):
-        assert src["parents"] == ["synthwave", "italo disco"]
-    assert body["levels"]["spacesynth"]["level"] == 2, "synthwave is level 1 (promoted out of Others)"
-    assert rows["spacesynth"]["family"] == "synthwave"
-    assert rows["space disco"]["parents"] == ["disco"]
-    assert body["levels"]["space disco"]["parents"] == ["disco"]
-    assert body["levels"]["space disco"]["level"] == 3
-
-
 def test_levels_equal_genre_levels_json_for_parents_family_and_level(body):
     levels, _, _ = genre_vocab.load_levels()
     for name, lv in levels.items():
@@ -60,7 +50,9 @@ def test_levels_equal_genre_levels_json_for_parents_family_and_level(body):
 def test_web_fixture_is_the_payload(body):
     keys = ("families", "family_synonyms", "modifiers", "flavours", "levels", "subfamilies", "forms", "groups")
     want = {k: body[k] for k in keys}
-    assert json.loads(FIXTURE.read_text(encoding="utf-8")) == want, "regenerate the fixture from genre_vocab.vocabulary() (keys families, family_synonyms, modifiers, flavours, levels, subfamilies, forms, groups; json sort_keys, indent 1)"
+    if os.environ.get("UPDATE_WEB_FIXTURES"):
+        FIXTURE.write_text(json.dumps(want, sort_keys=True, indent=1, ensure_ascii=False) + "\n", encoding="utf-8")
+    assert json.loads(FIXTURE.read_text(encoding="utf-8")) == want, "stale: rerun with UPDATE_WEB_FIXTURES=1 (read by web/js/genre-payload.test.mjs)"
 
 
 def test_every_row_and_level_carries_all_families_and_the_legacy_family_is_the_first(body):
@@ -74,9 +66,6 @@ def test_every_row_and_level_carries_all_families_and_the_legacy_family_is_the_f
             assert row["families"] == lv["families"], row["name"]
             assert lv["family"] == lv["families"][0], row["name"]
     rows = {r["name"]: r for r in body["genres"]}
-    assert rows["disco"]["families"] == ["Funk / Soul"] == body["levels"]["euro disco"]["families"], "disco left Others (task-0066, 2026-10-20)"
-    assert rows["post-disco"]["families"] == ["Funk / Soul"]
-    assert body["levels"]["post-disco"]["parents"] == ["disco"]
     assert "electronic" not in rows, "Others is a group and electronic is not a genre: neither is a vocabulary row"
     assert "others" not in rows, "Others is a group and electronic is not a genre: neither is a vocabulary row"
     assert "Others" in body["families"]

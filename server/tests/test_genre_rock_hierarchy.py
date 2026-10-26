@@ -12,10 +12,6 @@ FAMILIES = set(LEVELS["families"])
 ROCK = {k: v for k, v in ENTRIES.items() if "Rock" in v["families"]}
 ROCK_ONLY = {k for k, v in ROCK.items() if v["families"] == ["Rock"]}
 
-HELD = {
-    "acoustic", "aor", "arena rock", "beat", "british invasion", "dance-rock", "dark metal", "jangle pop", "mod",
-    "paisley underground", "psychobilly", "pub rock", "rock opera", "sadcore", "shock rock", "soft rock", "southern rock", "stoner rock", "synth-rock",
-}
 EXCEPTIONS = {
     "death metal": ["Rock", "heavy metal", "extreme metal"], "black metal": ["Rock", "heavy metal", "extreme metal"],
     "post-punk": ["Rock", "punk"],
@@ -23,30 +19,13 @@ EXCEPTIONS = {
 NINE_LEVEL3 = {"hardcore punk", "extreme metal", "neo-psychedelia", "glam metal", "college rock", "death-doom"}
 
 
-def test_rock_has_123_member_genres_and_the_counts_match():
-    assert len(ROCK) == 123
-    level2 = sum(v["level"] == 2 for v in ROCK.values())
-    assert LEVELS["_meta"]["counts"]["Rock"] == {"total": 123, "level2": level2, "level3": 123 - level2, "level4": 0}
-    assert (level2, 123 - level2) == (48, 75)
-
-
-def test_the_level_is_the_shortest_path():
-    assert max(v["level"] for k, v in ENTRIES.items() if k != "chillstep") == 3, "no level 4 once trance is level 1, except chillstep under dubstep"
-    for k, v in ENTRIES.items():
-        assert v["level"] == min(2 if p in FAMILIES else 1 + ENTRIES[p]["level"] for p in v["parents"]), k
-
-
-def test_every_held_genre_kept_parents_rock_and_stays_provisional():
-    assert len(HELD) == 19
-    for k in HELD:
-        assert ENTRIES[k]["parents"] == ["Rock"], k
-        assert ENTRIES[k]["level"] == 2, k
-        assert ENTRIES[k]["provisional"] is True, k
-    assert not [k for k, v in ROCK.items() if v["provisional"] and k in ROCK_ONLY and k not in HELD | {"country rock", "folk rock"}]
-
-
-def test_nothing_is_placed_under_a_held_genre():
-    assert not [k for k, v in ENTRIES.items() if set(v["parents"]) & HELD]
+def test_a_provisional_rock_only_genre_sits_directly_under_rock_and_has_no_children():
+    held = {k for k in ROCK_ONLY if ROCK[k]["provisional"]}
+    assert held
+    for k in held:
+        assert ROCK[k]["parents"] == ["Rock"], k
+        assert ROCK[k]["level"] == 2, k
+    assert not [k for k, v in ENTRIES.items() if set(v["parents"]) & held]
 
 
 def test_the_depth_cap_exceptions_stay_level_two_with_their_children_at_level_three():

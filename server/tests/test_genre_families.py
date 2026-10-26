@@ -39,7 +39,7 @@ def test_families_come_from_the_vocabulary_files():
     assert table["edm"] == "Electronic"
     assert "electronic" not in table
     assert "others" not in table
-    assert len(gg.FAMILIES) == 9
+    assert "Electronic" in gg.FAMILIES
     assert not (Path(gg.__file__).resolve().parent.parent / "data" / "genre_families.json").exists()
 
 

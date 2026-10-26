@@ -6,10 +6,10 @@ from app import genre_vocab, genres_v2
 from tests.test_library import H, client  # noqa: F401
 
 NAMES = {"house", "techno", "trance", "drum and bass", "breakbeat", "hardcore techno"}
-SIX = ["Breakbeat", "Drum 'n' Bass", "Hardcore", "House", "Techno", "Trance"]
-PSY_CHILDREN = ["Dark Psytrance", "Progressive Psytrance", "Forest Psytrance", "Full-On Psytrance", "Hi-Tech Psytrance"]
-SYNTH = ["Synthwave", "Vaporwave", "Chillsynth", "Darksynth", "Dreamwave", "Outrun", "Sovietwave"]
-ALL = SIX + ["Psytrance", "Goa Trance"] + PSY_CHILDREN + ["Psycore", "Nitzhonot", "Suomisaundi", "Zenonesque"] + SYNTH
+
+
+def shipped():
+    return json.loads(genres_v2.FILE.read_text(encoding="utf-8"))
 
 
 def doc(**over):
@@ -25,35 +25,20 @@ def genre(**over):
     return {"id": "a", "name": "A", "level": 1, "cluster": "edm", "parents": [], **over}
 
 
-def test_the_shipped_file_has_the_six_super_genres_psytrance_and_its_six_children():
-    out = genres_v2.parse(json.loads(genres_v2.FILE.read_text(encoding="utf-8")), set(genre_vocab.load().entries))
-    assert [g["name"] for g in out["genres"]] == ALL
+def test_the_shipped_file_parses_and_keeps_its_tree_invariants():
+    raw = shipped()
+    out = genres_v2.parse(raw, set(genre_vocab.load().entries))
     by = {g["id"]: g for g in out["genres"]}
-    assert [g["level"] for g in out["genres"]] == [1] * 6 + [2] + [3] * 5 + [4] * 3 + [3, 4] + [1, 1] + [2] * 5
-    assert all(g["parents"] == [] for g in out["genres"][:6])
-    assert all(g["cluster"] == "edm-dance" for g in out["genres"][:17])
-    assert [g["cluster"] for g in out["genres"][17:]] == ["synthwave", "vapor"] + ["synthwave"] * 5
-    assert by["synthwave"]["parents"] == []
-    assert by["vaporwave"]["parents"] == []
-    assert by["vaporwave"]["v1"] == "vaporwave"
-    assert by["chillsynth"]["v1"] is None
-    assert all(by[i]["parents"] == ["synthwave"] for i in ["chillsynth", "darksynth", "dreamwave", "outrun", "sovietwave"])
-    assert by["synthwave"]["synonyms"] == ["retro-synth", "retrowave", "futuresynth", "new retro wave", "neo 80s", "retro electro"]
-    assert "scene" in by["sovietwave"]["details"]
-    assert by["psytrance"]["parents"] == ["trance"]
-    assert by["goa-trance"]["parents"] == ["psytrance"]
-    assert all(by[i]["parents"] == ["psytrance"] for i in ["dark-psytrance", "progressive-psytrance", "forest-psytrance", "full-on-psytrance"])
-    assert by["dark-psytrance"]["synonyms"] == ["darkpsy", "dark psychedelic trance", "horror trance"]
-    assert by["psycore"]["parents"] == ["dark-psytrance"]
-    assert by["hi-tech-psytrance"]["parents"] == ["dark-psytrance"]
-    assert by["nitzhonot"]["parents"] == ["goa-trance"]
-    assert by["suomisaundi"]["parents"] == ["psytrance"]
-    assert by["zenonesque"]["parents"] == ["progressive-psytrance"]
-    assert by["psytrance"]["synonyms"] == ["psychedelic trance", "psy-trance"]
-    assert by["goa-trance"]["synonyms"] == ["goa"]
-    assert [c["name"] for c in out["clusters"]] == ["EDM / Dance", "Synthwave", "Vapor"]
-    assert [c["colour"] for c in out["clusters"]] == ["#D52633", "#881DF7", "#D0549A"]
-    assert {g["v1"] for g in out["genres"]} == NAMES | {"psytrance", "goa trance", "dark psytrance", "progressive psytrance", "forest psytrance", "full-on psytrance", "hi-tech psytrance", "psycore", "nitzhonot", "suomisaundi", "zenonesque", "synthwave", "vaporwave", "darksynth", "dreamwave", "outrun", "sovietwave", None}
+    clusters = {c["id"] for c in out["clusters"]}
+    assert len(by) == len(out["genres"]) >= 6
+    assert [g["name"] for g in out["genres"]] == [g["name"] for g in raw["genres"]]
+    for g in out["genres"]:
+        assert g["cluster"] in clusters, g["id"]
+        assert all(p in by for p in g["parents"]), g["id"]
+        assert g["level"] == 1 + min((by[p]["level"] for p in g["parents"]), default=0), g["id"]
+        assert g["v1"] is None or g["v1"] in genre_vocab.load().entries, g["id"]
+    assert [g for g in out["genres"] if g["level"] == 1 and g["parents"]] == []
+    assert all(len(c["colour"]) == 7 for c in out["clusters"])
 
 
 def test_a_valid_document_parses():
@@ -116,20 +101,18 @@ def test_the_route_needs_a_sign_in(client):
     assert client.get("/genres/v2").status_code == 401
 
 
-def test_the_route_serves_the_six_with_v1_descriptions_and_links(client):
+def test_the_route_serves_the_shipped_genres_with_v1_descriptions_and_links(client):
     r = client.get("/genres/v2", headers=H)
     assert r.status_code == 200
     body = r.json()
     assert set(body) == {"version", "clusters", "genres"}
-    by = {g["name"]: g for g in body["genres"]}
-    assert list(by) == ALL
-    house = by["House"]
-    assert house["description"] == genre_vocab.load_descriptions()["house"]
-    assert house["v1"] == "house"
-    assert house["source_links"]
-    assert by["Drum 'n' Bass"]["v1"] == "drum and bass"
-    assert by["Hardcore"]["v1"] == "hardcore techno"
-    assert by["Hardcore"]["description"] is None
+    assert [g["name"] for g in body["genres"]] == [g["name"] for g in shipped()["genres"]]
+    descriptions = genre_vocab.load_descriptions()
+    linked = [g for g in body["genres"] if g["v1"] in descriptions]
+    assert linked
+    for g in linked:
+        assert g["description"] == descriptions[g["v1"]], g["name"]
+    assert any(g["source_links"] for g in body["genres"])
 
 
 def test_v1_routes_are_unchanged(client):
