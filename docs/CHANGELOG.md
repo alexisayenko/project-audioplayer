@@ -6,6 +6,11 @@ What shipped, newest first. One line each; the web UI and server are live at htt
 
 - Docs: [task-0120](tasks/task-0120.md) "Complete albums: browse and download full albums" (Album as a new, light, derived entity; Library sub-navigation Songs, Albums, Artists, Drafts; completeness from MusicBrainz or Discogs; iOS album download within the quotas; phases 0 to 7; open questions JA to JL), [ADR-0050](tech/decisions.md) (proposed; narrows ADR-0039), and planned spec rows LIB-220 to LIB-229, CAT-050 to CAT-057, DATA-202 to DATA-204, API-241 to API-247, IOS-098 to IOS-102.
 
+## 2026-10-26 (Glossary Percussion entry and preset chips under the Waveform tabs, deployed to studio.electrophone.cc as `a4bd1ac`; the main app is unchanged)
+
+- Studio (STU-062, task-0114): the Glossary has a Percussion entry (Instruments, 121 terms, 187 relations); the glossary layout check passes, not run as a test suite, checked in the built-in browser (list, map, 375 px without horizontal scroll).
+- Web (WEB-211, task-0114): the harmonic preset chips sit right under the Waveform tabs and show only while Custom is selected (Square preset changes the bars); live bundle checked for the new entry and the chips.
+
 ## 2026-10-25 (Harmonic editor: grouped presets, Cello-like and a taller chart, deployed to studio.electrophone.cc as `090f598`; the main app is unchanged)
 
 - Web (WEB-211, task-0114; the custom-wave, simple-tone-custom, simple-tone and harmonics-stack tests pass; live bundle checked for "Cello-like" and "Odd and missing harmonics", not checked in a browser): the preset chips are grouped (Simple waves, Instrument-like, Odd and missing harmonics), Cello-like is added, Clear and Reset are separate outline buttons, and the bar chart is twice as tall (256 px plot) with x labels H1..Hn.
