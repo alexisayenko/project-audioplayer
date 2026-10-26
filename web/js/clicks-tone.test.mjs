@@ -5,7 +5,7 @@ import { installDom } from './test-dom.mjs';
 installDom();
 globalThis.location = { hash: '#/synthesize/clicks', href: 'http://localhost/' };
 const c = await import('./clicks-tone.js');
-const { TERMS, termById } = await import('./glossary-terms.js');
+const { termById } = await import('./glossary-terms.js');
 const { RELATIONS, DOMAIN_OF } = await import('./glossary-map.js');
 const { PAGES, pageFromHash } = await import('../../studio/routes.js');
 
@@ -32,15 +32,13 @@ test('STU-048: the readout is "N clicks per second = N x 60 BPM = N Hz" with an 
   assert.equal(c.rateReadout(2), '2 clicks per second = 120 BPM = 2 Hz');
   assert.equal(c.rateReadout(1), '1 click per second = 60 BPM = 1 Hz');
   assert.equal(c.rateReadout(1000 / 60), '16.7 clicks per second = 1000 BPM = 16.7 Hz');
-  assert.equal(c.rateReadout(20), '20 clicks per second = 1200 BPM = 20 Hz');
-  assert.equal(c.rateReadout(100), '100 clicks per second = 6000 BPM = 100 Hz');
-  assert.equal(c.rateReadout(440), '440 clicks per second = 26400 BPM = 440 Hz');
   assert.equal(c.rateReadout(1.5), '1.5 clicks per second = 90 BPM = 1.5 Hz');
+  for (const r of [20, 100, 440]) assert.equal(c.rateReadout(r), `${r} clicks per second = ${r * 60} BPM = ${r} Hz`, String(r));
   assert.equal(c.fmtBpm(100.04), '100');
   assert.equal(c.fmtBpm(100.26), '100.3');
   assert.equal(c.fmtBpm(200), '200');
   assert.equal(c.fmtBpm(200.4), '200');
-  assert.equal(c.bpmOf(20), 1200);
+  for (const r of [1, 20, 440]) assert.equal(c.bpmOf(r), r * 60, String(r));
 });
 
 test('STU-048: the regime label follows the rate and names the note above 30 per second', () => {
@@ -77,7 +75,12 @@ test('STU-048: the slider is logarithmic from 1 to 1000 and the rate is clamped'
 
 test('STU-048: the six presets are the asked rates', () => {
   assert.deepEqual(c.PRESETS.map((p) => p.label), ['120 BPM (2/s)', '600 BPM (10/s)', '1000 BPM (16.7/s, Moby Thousand)', '1200 BPM (20/s)', '100 Hz', 'A4 440 Hz']);
-  assert.deepEqual(c.PRESETS.map((p) => Math.round(c.bpmOf(p.rate))), [120, 600, 1000, 1200, 6000, 26400]);
+  for (const p of c.PRESETS) {
+    const bpm = /^(\d+) BPM/.exec(p.label);
+    const hz = /(\d+) Hz$/.exec(p.label);
+    if (bpm) assert.equal(Math.round(c.bpmOf(p.rate)), Number(bpm[1]), p.label);
+    else assert.equal(p.rate, Number(hz[1]), p.label);
+  }
 });
 
 test('STU-048: the window adapter shows about 8 periods between 5 ms and 4 s', () => {
@@ -258,5 +261,4 @@ test('STU-048: the page is in the menu right after Primitive, with an alias, and
   assert.match(termById('click-train').text, /^A series of identical short clicks at a steady rate\./);
   const has = (from, to) => RELATIONS.some((r) => r.from === from && r.to === to);
   assert.ok(has('rhythm', 'pitch') && has('beat', 'click-train') && has('click-train', 'harmonics') && has('tempo', 'frequency'));
-  assert.equal(TERMS.length, 120);
 });

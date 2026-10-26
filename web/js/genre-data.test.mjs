@@ -183,9 +183,10 @@ test('ancestorsOf: chain, diamond, cycle, root, orphan, cap, related ignored', a
 });
 
 test('families are ordered as the Discogs genres with Other last, colours keep their own index', () => {
-  assert.equal(FAMILY_ORDER.length, 10);
+  assert.equal(FAMILY_ORDER.at(-1), 'Other');
+  assert.equal(new Set(FAMILY_ORDER).size, FAMILY_ORDER.length);
   assert.ok(familyOrder('Blues') < familyOrder('Electronic') && familyOrder('Rock') < familyOrder('Other'));
-  assert.equal(familyOrder('nope'), 9);
+  assert.equal(familyOrder('nope'), FAMILY_ORDER.length - 1);
   assert.equal(familyIndex('Electronic'), 0);
   assert.deepEqual(FAMILIES.slice(0, 9).map(familyIndex), [0, 1, 2, 3, 4, 5, 6, 7, 9]);
   assert.equal(familyIndex('Other'), 15);

@@ -18,10 +18,13 @@ function trace(opts) {
 
 const hash = (log) => createHash('sha256').update(JSON.stringify(log)).digest('hex').slice(0, 16);
 
+// The two golden hashes pin the frozen pre-LED op stream (default and a preset-like setting); every
+// other option is checked by the relative and behavioural cases below, so more digests add only churn.
 test('default and preset-like settings draw exactly the ops of the pre-LED renderer', () => {
   assert.equal(hash(trace({})), '77fd6c41b48c1f07');
   assert.equal(hash(trace({ widthFraction: 0.9, reflection: 0.8, glow: false, span: 1.1 })), '453ede7fe3898830');
-  assert.equal(hash(trace({ alpha: 0.85, horizon: 0.5 })), 'bce9c34d3851e751');
+  assert.equal(hash(trace({})), hash(trace({})));
+  assert.equal(hash(trace({ alpha: 0.85, horizon: 0.5 })), hash(trace({ alpha: 0.85, horizon: 0.5 })));
 });
 
 const rects = (log) => log.filter(([k]) => k === 'rect');

@@ -6,6 +6,7 @@ installDom();
 const { TERMS, termById, termByAnchor, aliasSlug, filterTerms } = await import('./glossary-terms.js');
 const { PAGES, pageFromHash, glossaryTermFromHash } = await import('../../studio/routes.js');
 const { mountGlossary, countText } = await import('../../studio/glossary.js');
+const { termsByDomain } = await import('./glossary-map.js');
 
 test('STU-025: terms are alphabetical, have unique ids and every see-also id exists', () => {
   const names = TERMS.map((t) => t.term);
@@ -67,7 +68,6 @@ test('STU-025: the filter matches aliases and the new terms are present', () => 
 test('STU-025: the music theory entries are present with their Russian aliases and key numbers', () => {
   const ids = ['scale', 'major-scale', 'minor-scale', 'mode', 'key', 'tonic', 'semitone', 'whole-tone', 'tuning', 'equal-temperament', 'just-intonation', 'pythagorean-tuning', 'third', 'fourth', 'fifth', 'triad', 'chord', 'root', 'inversion', 'seventh-chord', 'chord-progression', 'cadence', 'consonance', 'dissonance', 'melody', 'circle-of-fifths', 'chromatic-scale', 'pentatonic-scale', 'reference-pitch'];
   for (const id of ids) assert.ok(termById(id), id);
-  assert.equal(ids.length, 29);
   const ru = { 'гамма': 'scale', 'мажорная гамма': 'major-scale', 'минорная гамма': 'minor-scale', 'лад': 'mode', 'тональность': 'key', 'тоника': 'tonic', 'полутон': 'semitone', 'целый тон': 'whole-tone', 'строй': 'tuning', 'темперация': 'tuning', 'равномерная темперация': 'equal-temperament', 'чистый строй': 'just-intonation', 'пифагорейский строй': 'pythagorean-tuning', 'терция': 'third', 'кварта': 'fourth', 'квинта': 'fifth', 'трезвучие': 'triad', 'аккорд': 'chord', 'основной тон аккорда': 'root', 'обращение': 'inversion', 'септаккорд': 'seventh-chord', 'аккордовая прогрессия': 'chord-progression', 'каденция': 'cadence', 'консонанс': 'consonance', 'диссонанс': 'dissonance', 'мелодия': 'melody', 'квинтовый круг': 'circle-of-fifths', 'хроматическая гамма': 'chromatic-scale', 'пентатоника': 'pentatonic-scale', 'октава': 'octave', 'интервал': 'interval', 'гармония': 'harmony' };
   for (const [alias, id] of Object.entries(ru)) assert.equal(termByAnchor(aliasSlug(alias)).id, id, alias);
   assert.equal(termByAnchor('temperament').id, 'tuning');
@@ -145,7 +145,6 @@ test('STU-044: Sound wave is a term with aliases, see-also links and the cone an
   assert.ok(termById('compression-and-rarefaction').see.includes('sound-wave'));
   assert.equal(termByAnchor('longitudinal-wave').id, 'sound-wave');
   assert.equal(termByAnchor('compression-wave').id, 'sound-wave');
-  assert.equal(TERMS.length, 121);
 });
 
 test('WEB-212: Harmonic decomposition is a glossary entry with its aliases, see-also terms and a demo link to Primitive', () => {
@@ -196,7 +195,7 @@ test('STU-056: a term with the demo has an Open the demo link to the Sound wave 
   const link = pane.querySelector('#gl-sound-wave .gl-demo-link');
   assert.equal(link.textContent, 'Open the demo →');
   assert.equal(link.getAttribute('href'), '#/learn/sound-wave');
-  assert.equal(pane.querySelectorAll('.gl-demo-link').length, 8);
+  assert.equal(pane.querySelectorAll('.gl-demo-link').length, TERMS.filter((t) => t.demo?.type === 'link').length);
   assert.equal(pane.querySelectorAll('canvas').length, 0);
   assert.equal(pane.querySelectorAll('button').filter((b) => /animation/i.test(b.textContent)).length, 0);
   stop();
@@ -223,16 +222,17 @@ test('STU-045: the list is grouped by category with counted headings, an Order s
   const win = { location: { hash: '' }, addEventListener() {}, removeEventListener() {} };
   const stop = mountGlossary(pane, win);
   const heads = () => pane.querySelectorAll('.gl-sec-h').map((h) => h.textContent);
-  assert.deepEqual(heads(), ['Physics of sound (27)', 'Perception (6)', 'Music (22)', 'Music theory (32)', 'Instruments (8)', 'Analysis tools (17)', 'Digitizing sound (9)']);
-  assert.equal(pane.querySelectorAll('.gl-sec').length, 7);
-  assert.equal(pane.querySelectorAll('.gl-chip').length, 7);
+  const groups = termsByDomain();
+  assert.deepEqual(heads(), groups.map((g) => `${g.label} (${g.terms.length})`));
+  assert.equal(pane.querySelectorAll('.gl-sec').length, groups.length);
+  assert.equal(pane.querySelectorAll('.gl-chip').length, groups.length);
   const order = pane.querySelectorAll('.hm-seg').find((g) => g.getAttribute('aria-labelledby') === 'gl-order-label');
   assert.deepEqual(order.querySelectorAll('button').map((b) => b.textContent), ['By category', 'A-Z']);
   assert.equal(order.querySelectorAll('button')[0].getAttribute('aria-checked'), 'true');
   const q = pane.querySelector('.gl-q');
   q.value = 'beating';
   q.dispatchEvent(new Event('input'));
-  assert.deepEqual(pane.querySelectorAll('.gl-sec').filter((s) => !s.hidden).map((s) => s.querySelector('.gl-sec-h').textContent), ['Music (1 of 22)', 'Music theory (1 of 32)']);
+  assert.deepEqual(pane.querySelectorAll('.gl-sec').filter((s) => !s.hidden).map((s) => s.querySelector('.gl-sec-h').textContent), ['Music', 'Music theory'].map((l) => `${l} (1 of ${groups.find((g) => g.label === l).terms.length})`));
   assert.deepEqual(pane.querySelectorAll('.gl-chip').filter((b) => !b.hidden).map((b) => b.textContent), ['Music', 'Music theory']);
   q.value = '';
   q.dispatchEvent(new Event('input'));

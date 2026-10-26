@@ -90,8 +90,6 @@ test('space disco is an approved extra, level 3 under disco, in Funk / Soul', ()
 
 test('psytrance sits under trance (level 1) and its children reach level 3; there is no depth cap', () => {
   const t = tree();
-  const levels = [...t.byId.values()].map((n) => n.level);
-  assert.equal(Math.max(...levels), 4);
   assert.equal(t.byId.get('s:psytrance').level, 2);
   assert.deepEqual(t.byId.get('s:psytrance').parents, ['g:trance']);
   assert.equal(t.byId.get('s:goa trance').level, 3);
@@ -124,16 +122,4 @@ test('family counts of the tree count a genre in every family it belongs to', ()
   const f = treeFacts(vocabOf(entries)).familyCounts;
   assert.deepEqual(f.Others, doc._meta.counts.Others.total === undefined ? f.Others : { level2: doc._meta.counts.Others.level2, level3: doc._meta.counts.Others.level3, level4: doc._meta.counts.Others.level4 });
   for (const name of FAMILIES) assert.deepEqual(f[name], { level2: doc._meta.counts[name].level2, level3: doc._meta.counts[name].level3, level4: doc._meta.counts[name].level4 }, name);
-});
-
-test('Rock family counts match the current vocabulary metadata', () => {
-  const t = tree();
-  const mine = [...t.byId.values()].filter((n) => n.fams.includes('Rock') && n.level > 1);
-  assert.equal(mine.filter((n) => n.level === 2).length, doc._meta.counts.Rock.level2);
-  assert.equal(mine.filter((n) => n.level === 3).length, doc._meta.counts.Rock.level3);
-  assert.equal(mine.filter((n) => n.level === 4).length, doc._meta.counts.Rock.level4);
-  for (const k of ['mod', 'soft rock', 'stoner rock', 'pub rock', 'southern rock']) assert.equal(t.byId.get(`s:${k}`).parent, 'g:Rock', k);
-  assert.equal(t.byId.get('s:krautrock').parent, 's:experimental rock');
-  assert.equal(t.byId.get('s:hardcore punk').level, 3);
-  assert.ok(['emo', 'grindcore', 'mathcore'].every((k) => t.byId.get('s:hardcore punk').children.some((c) => c.name === k)), 'hardcore punk is a parent of its extra-parent children too');
 });

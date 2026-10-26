@@ -4,7 +4,7 @@ import { buildTree, applyCounts, genreLines, resolveNode, libraryTags, visibleRo
 import { buildMapGraph, seedPositions } from './genre-map-graph.js';
 import { layoutRadial, defaultRoot } from './genre-radial.js';
 import { familyIndex, pieIndices, OTHER_COLOR, FAMILY_ORDER, SPARE_SLOTS, HIDDEN_FAMILY_NODES } from './genre-data.js';
-import { shadeTable } from './genre-shade.js';
+import { shadeTable, MAX_SHADES } from './genre-shade.js';
 import { buildIndex, resolveGenre, searchGenres, didYouMean, isGroupText } from './genre-vocab.js';
 import { OTHERS_VOCAB, OTHERS_SONGS, promote } from './genre-others-fixture.mjs';
 import { realVocab } from './genre-real-vocab.mjs';
@@ -46,7 +46,7 @@ test('genres under Others are grey in the graph and carry the neutral shade ladd
   assert.deepEqual(g.byId.get('s:house').fis, [OTHER_COLOR]);
   assert.equal(g.subIdx, OTHER_COLOR, 'the subfamily shades are applied to the neutral slot');
   const ladder = shadeTable('#8a8f93');
-  assert.equal(ladder.length, 11);
+  assert.equal(ladder.length, MAX_SHADES + 1);
   assert.ok(new Set(ladder.slice(1)).size > 5, 'the ladder keeps its steps on a neutral base');
   seedPositions(g);
   assert.ok(g.nodes.every((n) => Number.isFinite(n.x) && Number.isFinite(n.y)));
