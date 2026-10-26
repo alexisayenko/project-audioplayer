@@ -1,0 +1,225 @@
+[
+  {
+    "name": "plain mm:ss with title only",
+    "text": "0:00 Intro\n3:21 Second\n6:40 Third",
+    "duration": 600,
+    "tracks": [
+      {"start": 0, "end": 201, "artists": [], "title": "Intro", "track_no": 1, "warnings": ["Artist is the channel"]},
+      {"start": 201, "end": 400, "title": "Second", "track_no": 2},
+      {"start": 400, "end": 600, "title": "Third", "track_no": 3}
+    ]
+  },
+  {
+    "name": "h:mm:ss with a dash and artist",
+    "text": "00:00:00 - Artist A - Title A\n00:04:10 - Artist B - Title B",
+    "duration": 600,
+    "tracks": [
+      {"start": 0, "end": 250, "artists": ["Artist A"], "title": "Title A", "warnings": []},
+      {"start": 250, "end": 600, "artists": ["Artist B"], "title": "Title B"}
+    ]
+  },
+  {
+    "name": "number before the title and the time at the end",
+    "text": "1. Artist A - Title A 0:00\n2. Artist B - Title B 3:21",
+    "duration": 500,
+    "tracks": [
+      {"start": 0, "end": 201, "artists": ["Artist A"], "title": "Title A", "track_no": 1},
+      {"start": 201, "end": 500, "artists": ["Artist B"], "title": "Title B", "track_no": 2}
+    ]
+  },
+  {
+    "name": "wrapped and trailing time codes",
+    "text": "[00:00] Artist A - Title A\n(03:21) Artist B - Title B\nArtist C - Title C (06:40)\nArtist D - Title D [08:00]",
+    "duration": 600,
+    "tracks": [
+      {"start": 0, "end": 201, "artists": ["Artist A"], "title": "Title A"},
+      {"start": 201, "end": 400, "artists": ["Artist B"], "title": "Title B"},
+      {"start": 400, "end": 480, "artists": ["Artist C"], "title": "Title C"},
+      {"start": 480, "end": 600, "artists": ["Artist D"], "title": "Title D"}
+    ]
+  },
+  {
+    "name": "numbering forms",
+    "text": "0:00 #1 A - One\n1:00 2) B - Two\n2:00 Track 3: C - Three\n3:00 04 .D - Four\n4:00 5 - E - Five",
+    "duration": 600,
+    "tracks": [
+      {"track_no": 1, "title": "One"},
+      {"track_no": 2, "title": "Two"},
+      {"track_no": 3, "title": "Three"},
+      {"track_no": 4, "artists": ["D"], "title": "Four"},
+      {"track_no": 5, "artists": ["E"], "title": "Five"}
+    ]
+  },
+  {
+    "name": "separators",
+    "text": "0:00 A – B\n1:00 A — B\n2:00 A | B\n3:00 A: B\n4:00 Half-Life - Self-Titled\n5:00 A -B",
+    "duration": 600,
+    "tracks": [
+      {"artists": ["A"], "title": "B"},
+      {"artists": ["A"], "title": "B"},
+      {"artists": ["A"], "title": "B"},
+      {"artists": ["A"], "title": "B"},
+      {"artists": ["Half-Life"], "title": "Self-Titled"},
+      {"artists": [], "title": "A -B", "warnings": ["Artist is the channel"]}
+    ]
+  },
+  {
+    "name": "credits and versions",
+    "text": "0:00 A & B - Song (Original Mix)\n1:00 C feat. D - Song Two\n2:00 E - Song Three (F Remix)\n3:00 G - Song Four [Live]\n4:00 H, I x J - Song Five",
+    "duration": 600,
+    "tracks": [
+      {"artists": ["A", "B"], "title": "Song"},
+      {"artists": ["C"], "featured": ["D"], "title": "Song Two"},
+      {"artists": ["E"], "title": "Song Three", "version": "F Remix"},
+      {"artists": ["G"], "title": "Song Four", "version": "Live"},
+      {"artists": ["H", "I", "J"], "title": "Song Five"}
+    ]
+  },
+  {
+    "name": "a bare and does not split",
+    "text": "0:00 San and Tac - Vine Swinger\n1:00 Kool & The Gang - Jungle Boogie",
+    "duration": 300,
+    "tracks": [
+      {"artists": ["San and Tac"], "warnings": ["Check the artist"]},
+      {"artists": ["Kool", "The Gang"], "warnings": []}
+    ]
+  },
+  {
+    "name": "junk, headers, links and a total line are ignored",
+    "text": "Best mix ever!\n\nTracklist:\n0:00 A - One\nhttps://example.com/x\nFollow me: https://example.com/me\n3:00 B - Two\nTotal time 5:00\nSubscribe",
+    "duration": 300,
+    "tracks": [
+      {"artists": ["A"], "title": "One", "end": 180},
+      {"artists": ["B"], "title": "Two", "end": 300}
+    ],
+    "warnings": []
+  },
+  {
+    "name": "bullets, emoji, nbsp and CRLF",
+    "text": "- 0:00 A - One\r\n• 3:00 B - Two\r\n🎵 6:00 C - Three",
+    "duration": 600,
+    "tracks": [
+      {"start": 0, "artists": ["A"], "title": "One"},
+      {"start": 180, "artists": ["B"], "title": "Two"},
+      {"start": 360, "artists": ["C"], "title": "Three"}
+    ]
+  },
+  {
+    "name": "a time range and a duration after the title",
+    "text": "0:00 - 3:00 A - One (3:00)\n[3:00-6:00] B - Two",
+    "duration": 600,
+    "tracks": [
+      {"start": 0, "end": 180, "artists": ["A"], "title": "One"},
+      {"start": 180, "end": 600, "artists": ["B"], "title": "Two"}
+    ]
+  },
+  {
+    "name": "minutes of 60 or more",
+    "text": "0:00 A - One\n75:30 B - Two\n120:00 C - Three",
+    "duration": 9000,
+    "tracks": [
+      {"start": 0, "end": 4530},
+      {"start": 4530, "end": 7200},
+      {"start": 7200, "end": 9000}
+    ]
+  },
+  {
+    "name": "a first time above zero starts there",
+    "text": "0:42 A - One\n3:00 B - Two",
+    "duration": 600,
+    "tracks": [
+      {"start": 42, "end": 180},
+      {"start": 180, "end": 600}
+    ]
+  },
+  {
+    "name": "an unknown duration leaves the last end empty",
+    "text": "0:00 A - One\n3:00 B - Two",
+    "duration": null,
+    "tracks": [
+      {"end": 180},
+      {"end": null}
+    ]
+  },
+  {
+    "name": "a time not after the previous is flagged and has no end",
+    "text": "0:00 A - One\n3:00 B - Two\n2:00 C - Three\n6:00 D - Four",
+    "duration": 600,
+    "tracks": [
+      {"start": 0, "end": 180, "warnings": []},
+      {"start": 180, "end": 360, "warnings": []},
+      {"start": 120, "end": null, "warnings": ["Time is not after the previous track"]},
+      {"start": 360, "end": 600, "warnings": []}
+    ]
+  },
+  {
+    "name": "an equal time is flagged",
+    "text": "0:00 A - One\n0:00 B - Two\n3:00 C - Three",
+    "duration": 600,
+    "tracks": [
+      {"end": 180, "warnings": []},
+      {"end": null, "warnings": ["Time is not after the previous track"]},
+      {"end": 600, "warnings": []}
+    ]
+  },
+  {
+    "name": "a time past the end is flagged and has no end",
+    "text": "0:00 A - One\n5:00 B - Two\n20:00 C - Three",
+    "duration": 600,
+    "tracks": [
+      {"end": 300, "warnings": []},
+      {"end": 600, "warnings": []},
+      {"end": null, "warnings": ["After the end of the video"]}
+    ]
+  },
+  {
+    "name": "a span under five seconds is flagged",
+    "text": "0:00 A - One\n0:03 B - Two\n3:00 C - Three",
+    "duration": 600,
+    "tracks": [
+      {"end": 3, "warnings": ["Shorter than 5 s"]},
+      {"end": 180, "warnings": []},
+      {"end": 600}
+    ]
+  },
+  {
+    "name": "a time-coded line without a title is kept and flagged",
+    "text": "0:00 A - One\n3:00\n6:00 B - Two",
+    "duration": 600,
+    "tracks": [
+      {"end": 180},
+      {"start": 180, "end": 360, "title": "", "warnings": ["Could not read this line"]},
+      {"end": 600}
+    ]
+  },
+  {
+    "name": "a time inside a sentence is not a track list",
+    "text": "Watch the drop at 12:30\nThanks for listening",
+    "duration": 600,
+    "tracks": [],
+    "warnings": ["Fewer than two time-coded lines: not a track list"]
+  },
+  {
+    "name": "one time-coded line is not a track list",
+    "text": "0:00 A - One",
+    "duration": 600,
+    "tracks": [],
+    "warnings": ["Fewer than two time-coded lines: not a track list"]
+  },
+  {
+    "name": "a total that differs from the duration is reported",
+    "text": "0:00 A - One\n3:00 B - Two\nTotal: 95:20",
+    "duration": 600,
+    "tracks": [{}, {}],
+    "warnings": ["The total time in the text differs from the video length"]
+  },
+  {
+    "name": "a dot is not a time separator",
+    "text": "0:00 A - One\n1.02 Not a time\n3:00 B - Two",
+    "duration": 600,
+    "tracks": [
+      {"title": "One"},
+      {"title": "Two"}
+    ]
+  }
+]

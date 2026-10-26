@@ -2,6 +2,10 @@
 
 What shipped, newest first. One line each; the web UI and server are live at https://electrophone.cc. Everything listed here is deployed except the sections marked "built, not deployed" (the 2026-10-14 release went out once the SSH access in [task-0027](tasks/task-0027.md) was restored; the live visualizer files match `origin/main` as of 2026-10-15). Why: [tech/decisions.md](tech/decisions.md); runbook: [tech/deploy.md](tech/deploy.md).
 
+## 2026-10-26 (Tracklist parser; server only, built, not deployed)
+
+- Server (task-0038 phase 0, ADD-193 to ADD-198; `test_tracklist` passes): `server/app/tracklist.py` turns a description, pasted text or yt-dlp chapters into tracks (start, end, artists, title, version, flags); the reference fixture of 13 tracks and a JSON case file are tested; no API yet.
+
 ## 2026-10-26 (Albums decisions recorded; docs only, nothing built or deployed)
 
 - Docs (owner, 2026-10-26, "all recommended"): decisions JA to JL of [task-0120](tasks/task-0120.md) and JM to JQ of [task-0038](tasks/task-0038.md) Phase 1B are recorded (complete means every track linked, "On phone N of M" separate; iOS-only download within the existing quotas; compilations as "Various Artists"; server and web first, then iOS; time-coded video albums with 1 s fades on mixes and compilations, 4 hours and 100 tracks, the split costs one add). [ADR-0050](tech/decisions.md) is accepted in the light per-user form, ADR-0039 is narrowed, task-0083 is superseded by task-0120, task-0120 is in progress with its phases marked (built: store, Library menu and Albums list and page, Discogs and YouTube playlist albums, covers; remaining: MusicBrainz, `type`, status, iOS, Download album, Artists view), and the album spec rows are marked built, replaced, dropped or planned.
