@@ -2,6 +2,10 @@
 
 What shipped, newest first. One line each; the web UI and server are live at https://electrophone.cc. Everything listed here is deployed except the sections marked "built, not deployed" (the 2026-10-14 release went out once the SSH access in [task-0027](tasks/task-0027.md) was restored; the live visualizer files match `origin/main` as of 2026-10-15). Why: [tech/decisions.md](tech/decisions.md); runbook: [tech/deploy.md](tech/deploy.md).
 
+## 2026-10-26 (Albums decisions recorded; docs only, nothing built or deployed)
+
+- Docs (owner, 2026-10-26, "all recommended"): decisions JA to JL of [task-0120](tasks/task-0120.md) and JM to JQ of [task-0038](tasks/task-0038.md) Phase 1B are recorded (complete means every track linked, "On phone N of M" separate; iOS-only download within the existing quotas; compilations as "Various Artists"; server and web first, then iOS; time-coded video albums with 1 s fades on mixes and compilations, 4 hours and 100 tracks, the split costs one add). [ADR-0050](tech/decisions.md) is accepted in the light per-user form, ADR-0039 is narrowed, task-0083 is superseded by task-0120, task-0120 is in progress with its phases marked (built: store, Library menu and Albums list and page, Discogs and YouTube playlist albums, covers; remaining: MusicBrainz, `type`, status, iOS, Download album, Artists view), and the album spec rows are marked built, replaced, dropped or planned.
+
 ## 2026-10-26 (Albums: total length in the title line; web deployed)
 
 - Web (owner request 2026-10-26, LIB-244, LIB-231; `albums-length`, `albums-list` and `albums` tests pass): an album row shows the total length after the track count, "Eye To Eye · 10 tracks · 1 h 12 min" (under a minute "45 s", under an hour "48 min", from an hour "1 h 12 min", rounded to the nearest minute; with some tracks lacking a duration the known ones are summed as "~1 h 05 min" with the tooltip "Some tracks have no duration"; none known: omitted). The group is nowrap and shrinks as one unit. The same format is in the album page header title and the info box "Length" detail; the separate right-aligned `m:ss` time on the row is gone.
