@@ -391,13 +391,13 @@ final class MicBPM {
     }
 
     static func levelFraction(_ rms: Double) -> Double {
-        if !(rms > 0) { return 0 }
+        if rms.isNaN || rms <= 0 { return 0 }
         let db = 20 * log10(rms)
         return min(1, max(0, (db - LiveBPMConst.meterFloorDB) / (LiveBPMConst.meterCeilDB - LiveBPMConst.meterFloorDB)))
     }
 
     func push(_ samples: [Float], sampleRate: Double) {
-        if samples.isEmpty || !(sampleRate > 0) { return }
+        if samples.isEmpty || sampleRate.isNaN || sampleRate <= 0 { return }
         quietS = Self.rms(samples) < LiveBPMConst.silentRMS ? quietS + Double(samples.count) / sampleRate : 0
         let quiet = quietS >= LiveBPMConst.silentHoldS
         if quiet && !silent { engine.reset(); recent = [] }

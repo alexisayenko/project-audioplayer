@@ -22,10 +22,15 @@ struct AnonJobStatus: Decodable, Equatable {
 
     private enum Keys: String, CodingKey { case status, progress, error_code, meta, size, sha256, expires_at }
 
-    init(status: String, progress: Double? = nil, error_code: String? = nil, meta: AnonMeta? = nil,
-         size: Int64? = nil, sha256: String? = nil, expires_at: Date? = nil) {
-        self.status = status; self.progress = progress; self.error_code = error_code; self.meta = meta
-        self.size = size; self.sha256 = sha256; self.expires_at = expires_at
+    init(status: String, progress: Double? = nil, error_code errorCode: String? = nil, meta: AnonMeta? = nil,
+         size: Int64? = nil, sha256: String? = nil, expires_at expiresAt: Date? = nil) {
+        self.status = status
+        self.progress = progress
+        self.error_code = errorCode
+        self.meta = meta
+        self.size = size
+        self.sha256 = sha256
+        self.expires_at = expiresAt
     }
 
     init(from decoder: Decoder) throws {
@@ -183,10 +188,10 @@ struct LiveAnonAPI: AnonAPI {
     let baseURL: String
     var session: AnonSession = .shared
 
-    private static let jobID = try! NSRegularExpression(pattern: "^[A-Za-z0-9._-]{1,128}$")
+    private static let jobID = try? NSRegularExpression(pattern: "^[A-Za-z0-9._-]{1,128}$")
 
     private func url(_ path: String) throws -> URL {
-        guard path.hasPrefix("/anon/"), var c = URLComponents(string: baseURL) else { throw APIError.badURL }
+        guard path.hasPrefix(Endpoints.anonPrefix), var c = URLComponents(string: baseURL) else { throw APIError.badURL }
         c.path = path
         c.queryItems = nil
         guard let u = c.url else { throw APIError.badURL }
@@ -195,7 +200,7 @@ struct LiveAnonAPI: AnonAPI {
 
     private func checked(_ id: String) throws -> String {
         let range = NSRange(id.startIndex..., in: id)
-        guard id != ".", id != "..", Self.jobID.firstMatch(in: id, range: range) != nil else { throw AnonError.expired }
+        guard id != ".", id != "..", Self.jobID?.firstMatch(in: id, range: range) != nil else { throw AnonError.expired }
         return id
     }
 
@@ -381,7 +386,7 @@ private final class RangeFetcher: NSObject, URLSessionDataDelegate, @unchecked S
         }
     }
 
-    func urlSession(_ session: URLSession, dataTask: URLSessionDataTask, didReceive response: URLResponse,
+    func urlSession(_: URLSession, dataTask _: URLSessionDataTask, didReceive response: URLResponse,
                     completionHandler: @escaping (URLSession.ResponseDisposition) -> Void) {
         guard let http = response as? HTTPURLResponse else { completionHandler(.cancel); return }
         self.response = http
@@ -403,7 +408,7 @@ private final class RangeFetcher: NSObject, URLSessionDataDelegate, @unchecked S
         }
     }
 
-    func urlSession(_ session: URLSession, dataTask: URLSessionDataTask, didReceive data: Data) {
+    func urlSession(_: URLSession, dataTask: URLSessionDataTask, didReceive data: Data) {
         guard let handle else { body.append(data); return }
         do {
             try handle.write(contentsOf: data)
@@ -415,7 +420,7 @@ private final class RangeFetcher: NSObject, URLSessionDataDelegate, @unchecked S
         }
     }
 
-    func urlSession(_ session: URLSession, task: URLSessionTask, didCompleteWithError error: Error?) {
+    func urlSession(_: URLSession, task _: URLSessionTask, didCompleteWithError error: Error?) {
         try? handle?.close()
         handle = nil
         let cont = continuation

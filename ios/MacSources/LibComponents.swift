@@ -93,7 +93,7 @@ func finalTags(_ tags: [String], pending: String) -> [String] {
 
 func libWikiDisplay(_ url: String) -> String {
     guard let r = url.range(of: #"^https?://(m\.)?en\.wikipedia\.org/wiki/(.+)$"#, options: [.regularExpression, .caseInsensitive]),
-          let slash = url[r].range(of: "/wiki/", options: .caseInsensitive) else { return url }
+          let slash = url[r].range(of: Endpoints.wikiSection, options: .caseInsensitive) else { return url }
     var title = String(url[slash.upperBound...])
     if let cut = title.firstIndex(where: { $0 == "#" || $0 == "?" }) { title = String(title[..<cut]) }
     guard !title.isEmpty else { return url }
@@ -107,7 +107,7 @@ func libWikiNormalize(_ text: String) -> String {
     var allowed = CharacterSet.alphanumerics
     allowed.insert(charactersIn: "()',.:!*~-_")
     let name = t.replacingOccurrences(of: " ", with: "_").addingPercentEncoding(withAllowedCharacters: allowed) ?? t
-    return "https://en.wikipedia.org/wiki/" + name
+    return Endpoints.wikiArticles + name
 }
 
 /// Square cover with the copper rim; a missing or failed cover shows the vinyl placeholder. Server covers load with the auth header.

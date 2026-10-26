@@ -103,7 +103,10 @@ struct StatisticsView: View {
 
     private func loadListening() async {
         guard signedIn else { return }
-        if case .loaded = listening {} else { listening = .loading }
+        switch listening {
+        case .loaded: break
+        default: listening = .loading
+        }
         do {
             let payload = try JSONDecoder().decode(ListeningPayload.self, from: try await fetchListening())
             listening = .loaded(payload)

@@ -61,7 +61,8 @@ enum AudioFiles {
 
     /// True when `stem` is `base` or `base (n)`, so a name that already got a collision suffix stays put.
     private static func matches(stem: String, base: String) -> Bool {
-        let s = fold(stem), b = fold(base)
+        let s = fold(stem)
+        let b = fold(base)
         if s == b { return true }
         guard s.hasPrefix(b + " ("), s.hasSuffix(")") else { return false }
         return Int(s.dropFirst(b.count + 2).dropLast()) != nil

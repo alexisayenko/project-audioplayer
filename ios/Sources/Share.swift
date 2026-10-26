@@ -33,7 +33,9 @@ enum SongShare {
 
     static func formatClock(_ seconds: Double) -> String {
         let s = clampT(seconds)
-        let h = s / 3600, m = (s % 3600) / 60, r = s % 60
+        let h = s / 3600
+        let m = (s % 3600) / 60
+        let r = s % 60
         return h > 0 ? String(format: "%d:%02d:%02d", h, m, r) : String(format: "%d:%02d", m, r)
     }
 

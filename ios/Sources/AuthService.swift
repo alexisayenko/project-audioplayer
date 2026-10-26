@@ -93,7 +93,9 @@ final class AuthService: NSObject, ObservableObject {
             guard session?.provider == .apple else { return }
             signOut()
             error = "Sign in failed: the server did not accept the Apple token"
-        } catch {}
+        } catch {
+            return
+        }
     }
 
     // MARK: Google (authorization code + PKCE, no SDK)

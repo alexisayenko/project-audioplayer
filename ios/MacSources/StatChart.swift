@@ -40,8 +40,8 @@ final class StatChartModel: ObservableObject {
     @Published private(set) var insetTop = 0.0
 
     let overlay = StatOverlay()
-    var onOpen: (StatPoint) -> Void = { _ in }
-    var onFocus: (StatPoint) -> Void = { _ in }
+    var onOpen: ((StatPoint) -> Void)?
+    var onFocus: ((StatPoint) -> Void)?
 
     private var full = (x: StatRange(lo: 2000, hi: 2010), y: StatData.bpmDefault)
     private var items: [StatItem] = []
@@ -192,7 +192,7 @@ final class StatChartModel: ObservableObject {
             overlay.band = nil
             if let i = hit(pos) {
                 overlay.focus = i
-                onOpen(points[i])
+                onOpen?(points[i])
             } else {
                 clearSelection()
             }
@@ -214,7 +214,7 @@ final class StatChartModel: ObservableObject {
     func key(code: UInt16, chars: String) -> Bool {
         switch code {
         case 36, 76:
-            if let f = overlay.focus, points.indices.contains(f) { onOpen(points[f]); return true }
+            if let f = overlay.focus, points.indices.contains(f) { onOpen?(points[f]); return true }
             return false
         case 53:
             clearSelection()
@@ -241,7 +241,7 @@ final class StatChartModel: ObservableObject {
     func focus(_ i: Int) {
         guard points.indices.contains(i) else { return }
         overlay.focus = i
-        onFocus(points[i])
+        onFocus?(points[i])
     }
 }
 
@@ -361,7 +361,12 @@ final class StatInputView: NSView {
 
     override var isFlipped: Bool { true }
     override var acceptsFirstResponder: Bool { true }
-    override var focusRingType: NSFocusRingType { get { .none } set {} }
+    override var focusRingType: NSFocusRingType {
+        get { .none }
+        set {
+            // The focus ring stays off.
+        }
+    }
 
     private var tracking: NSTrackingArea?
 

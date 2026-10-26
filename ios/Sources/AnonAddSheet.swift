@@ -72,9 +72,10 @@ struct AnonAddSheet: View {
             defer { starting = false }
             do {
                 jobID = try await anon.start(url: link, serverURL: settings.serverURL, library: library)
-            } catch is CancellationError {
             } catch {
-                startError = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
+                if !(error is CancellationError) {
+                    startError = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
+                }
             }
         }
     }

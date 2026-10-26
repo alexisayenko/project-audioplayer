@@ -152,7 +152,7 @@ struct SongStatsPage: View {
         var polls = 0
         while !Task.isCancelled {
             var decoded: StatGraph?
-            if let data = try? await api.fetch(Endpoints.genres + "/graph") { decoded = try? JSONDecoder().decode(StatGraph.self, from: data) }
+            if let data = try? await api.fetch(Endpoints.genresGraph) { decoded = try? JSONDecoder().decode(StatGraph.self, from: data) }
             let usable = !(decoded?.nodes ?? []).isEmpty
             if usable, let decoded { resolver = StatData.Resolver(decoded) }
             let pending = (decoded?.pending ?? false) && polls < 24

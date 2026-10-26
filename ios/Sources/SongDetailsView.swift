@@ -92,10 +92,19 @@ struct SongDetailsView: View {
         let phone = library.contains(id)
         let transfer = server.transfers[id] ?? anon.transfers[id]
         let noAudio = !phone && track.onServer == false && transfer == nil
-        let title = transfer.map { "Downloading \(Int(min(1, max(0, $0.progress)) * 100))%" }
-            ?? (phone ? current && player.isPlaying ? "Pause" : "Play" : noAudio ? "No audio yet" : "Download to iPhone")
+        let pausing = current && player.isPlaying
+        let idleTitle: String
+        let symbol: String
+        if phone {
+            idleTitle = pausing ? "Pause" : "Play"
+            symbol = pausing ? "pause.fill" : "play.fill"
+        } else {
+            idleTitle = noAudio ? "No audio yet" : "Download to iPhone"
+            symbol = "arrow.down.circle"
+        }
+        let title = transfer.map { "Downloading \(Int(min(1, max(0, $0.progress)) * 100))%" } ?? idleTitle
         return Button { if phone { play(track) } else { download(track) } } label: {
-            Label(title, systemImage: phone ? current && player.isPlaying ? "pause.fill" : "play.fill" : "arrow.down.circle")
+            Label(title, systemImage: symbol)
                 .frame(minWidth: DS.Component.detailsCover)
         }
         .buttonStyle(LibraryPrimaryStyle()).disabled(noAudio || transfer != nil || (!phone && !signedIn))
@@ -241,8 +250,10 @@ struct SongDetailsView: View {
 
 /// Retain the native edge-swipe gesture with the artboard's custom navigation bar.
 private struct LibraryBackSwipe: UIViewControllerRepresentable {
-    func makeUIViewController(context: Context) -> Controller { Controller() }
-    func updateUIViewController(_ controller: Controller, context: Context) {}
+    func makeUIViewController(context _: Context) -> Controller { Controller() }
+    func updateUIViewController(_: Controller, context _: Context) {
+        // The controller holds all the state it needs.
+    }
 
     final class Controller: UIViewController {
         private weak var previousDelegate: UIGestureRecognizerDelegate?

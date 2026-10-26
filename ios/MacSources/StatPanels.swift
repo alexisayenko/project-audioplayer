@@ -169,7 +169,9 @@ struct StatSelectionPanel: View {
     var body: some View {
         HStack(spacing: DS.Space.space2) {
             Text("\(count) selected:").font(DS.Font.subheadStrong).foregroundStyle(DS.Color.ink)
-            Button("Show in Library") {}.buttonStyle(StatActStyle()).disabled(true).help("Coming soon")
+            Button("Show in Library") {
+                // Disabled until the Library can show a selection.
+            }.buttonStyle(StatActStyle()).disabled(true).help("Coming soon")
             Button(action: add) { Image(systemName: "text.badge.plus") }.buttonStyle(LibRoundButtonStyle())
                 .help("Add to playlist").accessibilityLabel("Add to playlist")
             Button(action: play) { Image(systemName: "play.fill") }.buttonStyle(LibRoundButtonStyle(on: true))

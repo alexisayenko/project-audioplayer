@@ -147,7 +147,7 @@ struct PlaybackView: View {
         }
     }
 
-    private func upNextRow(_ i: Int, _ t: Track) -> some View {
+    private func upNextRow(_ t: Track) -> some View {
         return HStack(spacing: DS.Space.space3) {
             CoverImage(source: t.thumbnail).frame(width: 40, height: 40)
                 .clipShape(RoundedRectangle(cornerRadius: DS.Radius.radiusSm, style: .continuous))
@@ -179,7 +179,7 @@ struct PlaybackView: View {
             }
             ForEach(Array(upNext.enumerated()), id: \.element.id) { i, t in
                 SwipeToRemoveQueueRow {
-                    upNextRow(i, t)
+                    upNextRow(t)
                 } onRemove: {
                     guard let base = player.index.map({ $0 + 1 }) else { return }
                     withAnimation(.easeOut(duration: 0.2)) {

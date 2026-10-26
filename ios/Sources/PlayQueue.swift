@@ -169,7 +169,9 @@ final class PlayQueue {
 
     private func send(_ batch: Batch, settings: Settings) async {
         #if os(iOS)
-        let background = UIApplication.shared.beginBackgroundTask(withName: "plays") {}
+        let background = UIApplication.shared.beginBackgroundTask(withName: "plays") {
+            // Nothing to clean up when the time runs out.
+        }
         defer { if background != .invalid { UIApplication.shared.endBackgroundTask(background) } }
         #endif
         var status: Int?

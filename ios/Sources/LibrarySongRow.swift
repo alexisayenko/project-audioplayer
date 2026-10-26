@@ -112,10 +112,23 @@ struct LibrarySongRow: View {
             }.buttonStyle(LibraryPressStyle()).accessibilityLabel(queued ? "Remove from queue" : "Add to queue")
         }
     }
+    private var transferState: String {
+        if onPhone { return "on iPhone" }
+        if let progress {
+            return waiting ? "waiting for the server" : "downloading \(Int(progress * 100)) percent"
+        }
+        return noAudio ? "no audio yet" : "on server"
+    }
+    private var playState: String {
+        if !playing { return "" }
+        return isPlaying ? "playing" : "paused"
+    }
     private var accessibilityLabel: String {
-        let state = onPhone ? "on iPhone" : progress != nil ? waiting ? "waiting for the server" : "downloading \(Int((progress ?? 0) * 100)) percent" : noAudio ? "no audio yet" : "on server"
-        return [track.title, track.libraryArtist, track.libraryYear.map(String.init) ?? "", track.duration.map(formatTime) ?? "", state,
-                queued ? "in queue" : "", playing ? isPlaying ? "playing" : "paused" : "",
+        return [track.title, track.libraryArtist, track.libraryYear.map(String.init) ?? "", track.duration.map(formatTime) ?? "", transferState,
+                queued ? "in queue" : "", playState,
                 listenedCount.map { "Listened \($0) \($0 == 1 ? "time" : "times")" } ?? ""].filter { !$0.isEmpty }.joined(separator: ", ")
+    }
+    static let inert: () -> Void = {
+        // Rows that are still arriving are not interactive.
     }
 }

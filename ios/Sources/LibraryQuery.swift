@@ -34,8 +34,9 @@ final class LibraryQuery: ObservableObject {
     }
 
     func results(_ songs: [Track], phoneIDs: Set<String>, listening: [String: LibraryListeningEntry]) -> [Track] {
-        LibraryMatching.results(songs, search: search, selection: selection,
-                                neverListened: neverListened, downloadedOnly: downloadedOnly,
-                                phoneIDs: phoneIDs, sort: sort, reversed: reversed, listening: listening)
+        let matches = LibraryMatching.filtered(songs, search: search, selection: selection,
+                                               neverListened: neverListened, downloadedOnly: downloadedOnly,
+                                               phoneIDs: phoneIDs, listening: listening)
+        return LibraryMatching.sorted(matches, sort: sort, reversed: reversed, listening: listening)
     }
 }

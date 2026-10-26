@@ -171,7 +171,8 @@ final class LibraryStore: ObservableObject {
             while let self, !Task.isCancelled {
                 let phone = self.songs.filter { self.phoneIDs.contains($0.id) }
                 let settings = Settings()
-                let base = settings.serverURL, token = settings.token
+                let base = settings.serverURL
+                let token = settings.token
                 let missing = await CoverCache.missing(phone.compactMap(\.thumbnail).filter { CoverCache.isServerCover($0) }, baseURL: base)
                 for source in missing {
                     if Task.isCancelled { break }
@@ -390,16 +391,18 @@ enum CoverCache {
         }
     }
 
+    @MainActor private static func observedEmail() -> String {
+        if lock.withLock({ accountObserver }) == nil {
+            let observer = AuthService.shared.$session.sink { s in lock.withLock { account = s?.email ?? "" } }
+            lock.withLock { accountObserver = observer }
+        }
+        return AuthService.shared.session?.email ?? ""
+    }
+
     private static func ensureScope(baseURL: String) async {
         if scopeReady(baseURL) { return }
         if lock.withLock({ account }) == nil {
-            let email = await MainActor.run { () -> String in
-                if lock.withLock({ accountObserver }) == nil {
-                    let observer = AuthService.shared.$session.sink { s in lock.withLock { account = s?.email ?? "" } }
-                    lock.withLock { accountObserver = observer }
-                }
-                return AuthService.shared.session?.email ?? ""
-            }
+            let email = await observedEmail()
             lock.withLock { if account == nil { account = email } }
         }
         guard let key = lock.withLock({ scopeKeyLocked(baseURL) }) else { return }
@@ -438,13 +441,20 @@ enum CoverCache {
     private static func index() async -> [String: Stored] {
         if let ready = lock.withLock({ diskIndex }) { return ready }
         return await Task.detached(priority: .utility) {
-            let built = ioLock.withLock { lock.withLock { diskIndex } ?? buildIndex() }
-            return lock.withLock { () -> [String: Stored] in
-                if let ready = diskIndex { return ready }
-                diskIndex = built
-                return built
-            }
+            publishIndex(loadIndex())
         }.value
+    }
+
+    private static func loadIndex() -> [String: Stored] {
+        ioLock.withLock { lock.withLock { diskIndex } ?? buildIndex() }
+    }
+
+    private static func publishIndex(_ built: [String: Stored]) -> [String: Stored] {
+        lock.withLock { () -> [String: Stored] in
+            if let ready = diskIndex { return ready }
+            diskIndex = built
+            return built
+        }
     }
 
     private static func setStored(_ n: String, _ stored: Stored?) async {

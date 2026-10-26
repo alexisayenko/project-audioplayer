@@ -47,7 +47,10 @@ enum LibraryFacet: String, CaseIterable, Identifiable {
         case .countries: "country"
         }
     }
-    func noun(_ n: Int) -> String { n == 1 ? noun : self == .countries ? "countries" : noun + "s" }
+    func noun(_ n: Int) -> String {
+        if n == 1 { return noun }
+        return self == .countries ? "countries" : noun + "s"
+    }
     var unknown: String { prefix + "__unset__" }
 
     func keys(_ song: Track) -> Set<String> {
@@ -140,9 +143,9 @@ enum LibraryMatching {
     }
     static func compare(_ a: String, _ b: String) -> ComparisonResult { folded(a).compare(folded(b)) }
 
-    static func results(_ songs: [Track], search: String, selection: Set<String>, neverListened: Bool,
-                        downloadedOnly: Bool, phoneIDs: Set<String>, sort: LibrarySort, reversed: Bool,
-                        listening: [String: LibraryListeningEntry]) -> [Track] {
+    static func filtered(_ songs: [Track], search: String, selection: Set<String>, neverListened: Bool,
+                         downloadedOnly: Bool, phoneIDs: Set<String>,
+                         listening: [String: LibraryListeningEntry]) -> [Track] {
         let q = folded(search.trimmingCharacters(in: .whitespacesAndNewlines))
         let groups = LibraryFacet.allCases.map { facet in
             (facet, Set(selection.filter { $0.hasPrefix(facet.prefix) }))
@@ -154,7 +157,12 @@ enum LibraryMatching {
                 if facet.keys(song).isDisjoint(with: picked) { return false }
             }
             return q.isEmpty || song.librarySearchTerms.contains { folded($0).contains(q) }
-        }.sorted { a, b in
+        }
+    }
+
+    static func sorted(_ songs: [Track], sort: LibrarySort, reversed: Bool,
+                       listening: [String: LibraryListeningEntry]) -> [Track] {
+        songs.sorted { a, b in
             let result: ComparisonResult
             switch sort {
             case .title: result = compare(a.title, b.title)
@@ -174,12 +182,18 @@ enum LibraryMatching {
     }
 
     private static func inverse(_ order: ComparisonResult) -> ComparisonResult {
-        order == .orderedAscending ? .orderedDescending : order == .orderedDescending ? .orderedAscending : .orderedSame
+        switch order {
+        case .orderedAscending: .orderedDescending
+        case .orderedDescending: .orderedAscending
+        case .orderedSame: .orderedSame
+        }
     }
     private static func optionalCompare<T: Comparable>(_ a: T?, _ b: T?, reversed: Bool, descending: Bool) -> ComparisonResult {
         guard let a else { return b == nil ? .orderedSame : .orderedDescending }
         guard let b else { return .orderedAscending }
-        let result: ComparisonResult = a == b ? .orderedSame : a < b ? .orderedAscending : .orderedDescending
+        let result: ComparisonResult
+        if a == b { result = .orderedSame }
+        else { result = a < b ? .orderedAscending : .orderedDescending }
         return descending != reversed ? inverse(result) : result
     }
 }

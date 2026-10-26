@@ -257,7 +257,7 @@ final class AnonDownloader: ObservableObject {
                 await sleep(Double(e.retryAfter.map { min(max($0, 1), 30) } ?? (1 << tries)))
             }
         }
-        let track = try store(partial, id: id, localID: localID, meta: meta)
+        let track = try store(partial, localID: localID, meta: meta)
         if let data = try? await api.cover(serverID(id)), let source = LocalCover.write(data, for: localID) {
             var t = track
             t.thumbnail = source
@@ -270,7 +270,7 @@ final class AnonDownloader: ObservableObject {
         anonLog.debug("stored \(localID, privacy: .public)")
     }
 
-    private func store(_ partial: URL, id: String, localID: String, meta: AnonMeta) throws -> Track {
+    private func store(_ partial: URL, localID: String, meta: AnonMeta) throws -> Track {
         let track = Track(id: localID, title: meta.title ?? "Untitled", artist: meta.artist ?? "", duration: meta.duration,
                           thumbnail: nil, year: meta.year, sourceURL: meta.source_url, addedAt: Date(), onServer: false, localOnly: true)
         let fm = FileManager.default

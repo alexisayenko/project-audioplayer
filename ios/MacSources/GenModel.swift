@@ -150,7 +150,7 @@ final class GenModel: ObservableObject {
         while !Task.isCancelled {
             var wire: GenWire?
             var failed = false
-            do { wire = try JSONDecoder().decode(GenWire.self, from: try await api.fetch(Endpoints.genres + "/graph")) }
+            do { wire = try JSONDecoder().decode(GenWire.self, from: try await api.fetch(Endpoints.genresGraph)) }
             catch { failed = true }
             if Task.isCancelled { return }
             if !failed, let wire, !(wire.nodes ?? []).isEmpty {

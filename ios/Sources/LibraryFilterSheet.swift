@@ -28,7 +28,8 @@ struct LibraryFilterSheet: View {
         let ordered = category == .era ? values : values.sorted { a, b in
             if a.id == category.unknown { return false }
             if b.id == category.unknown { return true }
-            let aSelected = selection.wrappedValue.contains(a.id), bSelected = selection.wrappedValue.contains(b.id)
+            let aSelected = selection.wrappedValue.contains(a.id)
+            let bSelected = selection.wrappedValue.contains(b.id)
             if aSelected != bSelected { return aSelected }
             return a.count == b.count ? LibraryMatching.compare(a.label, b.label) == .orderedAscending : a.count > b.count
         }

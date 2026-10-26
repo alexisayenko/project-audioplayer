@@ -45,21 +45,21 @@ struct MacAPI {
     }
 
     func usage() async throws -> Usage {
-        try JSONDecoder().decode(Usage.self, from: await send(request("/me/usage", method: "GET")))
+        try JSONDecoder().decode(Usage.self, from: await send(request(Endpoints.meUsage, method: "GET")))
     }
 
     func uploadCover(_ id: String, data: Data, contentType: String) async throws -> ServerSong {
-        let out = try await send(request(Endpoints.song(id) + "/cover", method: "PUT", contentType: contentType, body: data))
+        let out = try await send(request(Endpoints.songCover(id), method: "PUT", contentType: contentType, body: data))
         return try JSONDecoder().decode(ServerSong.self, from: out)
     }
 
     func coverFromURL(_ id: String, url: String) async throws -> ServerSong {
         let body = try JSONSerialization.data(withJSONObject: ["url": url])
-        let out = try await send(request(Endpoints.song(id) + "/cover/from-url", method: "POST", contentType: "application/json", body: body))
+        let out = try await send(request(Endpoints.songCoverFromURL(id), method: "POST", contentType: "application/json", body: body))
         return try JSONDecoder().decode(ServerSong.self, from: out)
     }
 
     func removeCover(_ id: String) async throws {
-        _ = try await send(request(Endpoints.song(id) + "/cover", method: "DELETE"))
+        _ = try await send(request(Endpoints.songCover(id), method: "DELETE"))
     }
 }

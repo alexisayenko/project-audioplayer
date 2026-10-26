@@ -25,7 +25,7 @@ struct LibrarySearchField: View {
     @Binding var text: String
     var placeholder = "Search songs, artists, tags"
     var height = DS.Space.hit
-    var onFocus: () -> Void = {}
+    var onFocus: (() -> Void)?
     @FocusState private var focused: Bool
 
     var body: some View {
@@ -50,7 +50,7 @@ struct LibrarySearchField: View {
         .background(RoundedRectangle(cornerRadius: DS.Radius.radiusKey).fill(DS.Color.surfaceSunken))
         .overlay(RoundedRectangle(cornerRadius: DS.Radius.radiusKey)
             .strokeBorder(focused ? DS.Color.accentInk : .clear, lineWidth: DS.Stroke.strokeMedium))
-        .onChange(of: focused) { _, value in if value { onFocus() } }
+        .onChange(of: focused) { _, value in if value { onFocus?() } }
     }
 }
 
@@ -210,13 +210,14 @@ struct LibrarySortSheet: View {
                 VStack(spacing: 0) {
                     ForEach(LibrarySort.allCases) { criterion in
                         let disabled = criterion == .listened && !listeningAvailable
+                        let enabledTint = query.sort == criterion ? DS.Color.accentInk : DS.Color.inkMuted
                         Button {
                             if criterion != query.sort { query.choose(criterion); scrollTop() }
                             dismiss()
                         } label: {
                             HStack(spacing: DS.Space.space3) {
                                 Image(systemName: criterion.symbol).font(.system(size: DS.Icon.iconNav))
-                                    .foregroundStyle(disabled ? DS.Color.inkFaint : (query.sort == criterion ? DS.Color.accentInk : DS.Color.inkMuted))
+                                    .foregroundStyle(disabled ? DS.Color.inkFaint : enabledTint)
                                     .frame(width: DS.Icon.iconNav)
                                 VStack(alignment: .leading, spacing: DS.Space.space1) {
                                     Text(criterion.rawValue).font(query.sort == criterion ? T.body.weight(.semibold) : T.body)
@@ -284,6 +285,10 @@ struct LibraryPrimaryStyle: ButtonStyle {
 struct LibrarySkeleton: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var pulse = false
+    private var opacity: Double {
+        if reduceMotion { return 0.7 }
+        return pulse ? 0.5 : 1
+    }
     var body: some View {
         VStack(spacing: 0) {
             ForEach(0..<8) { index in
@@ -305,7 +310,7 @@ struct LibrarySkeleton: View {
                 if index < 7 { LibraryHairline().padding(.horizontal, DS.Space.space3) }
             }
         }
-        .opacity(reduceMotion ? 0.7 : pulse ? 0.5 : 1)
+        .opacity(opacity)
         .animation(reduceMotion ? nil : .dsPulse, value: pulse)
         .onAppear { pulse = true }.onChange(of: reduceMotion) { _, _ in pulse = true }
         .librarySlab().accessibilityElement(children: .ignore).accessibilityLabel("Loading your library")

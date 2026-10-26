@@ -2,8 +2,8 @@ import Foundation
 
 /// Port of the pure logic in `web/js/theory.js`.
 enum Thy {
-    static let termsPath = "/data/theory-terms.json"
-    static let anatomyPath = "/data/theory-anatomy.json"
+    static let termsPath = Endpoints.theoryTerms
+    static let anatomyPath = Endpoints.theoryAnatomy
     static let failText = "Could not load the terms. Reload to try again."
     static let emptyText = "No terms yet."
     static let anatomyFailText = "Could not load the examples. Reload to try again."

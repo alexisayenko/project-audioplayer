@@ -184,7 +184,9 @@ private let tapPrepare: MTAudioProcessingTapPrepareCallback = { tap, _, format i
     Unmanaged<VizTapContext>.fromOpaque(MTAudioProcessingTapGetStorage(tap)).takeUnretainedValue().prepare(format.pointee)
 }
 
-private let tapUnprepare: MTAudioProcessingTapUnprepareCallback = { _ in /* no per-tap state to release */ }
+private let tapUnprepare: MTAudioProcessingTapUnprepareCallback = { _ in
+    // No per-tap state to release.
+}
 
 private let tapProcess: MTAudioProcessingTapProcessCallback = { tap, frames, _, list, framesOut, flagsOut in
     guard MTAudioProcessingTapGetSourceAudio(tap, frames, list, flagsOut, nil, framesOut) == noErr else { return }

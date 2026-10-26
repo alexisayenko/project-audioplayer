@@ -3,7 +3,7 @@ import SwiftUI
 
 struct MetronomeCard: View {
     @ObservedObject var model: MetronomeModel
-    var beforeStart: () -> Void = {}
+    var beforeStart: (() -> Void)?
     @EnvironmentObject private var player: PlayerService
     @State private var editing = false
     @State private var draft = ""
@@ -33,7 +33,7 @@ struct MetronomeCard: View {
                                   symbol: model.running ? "stop.fill" : "play.fill",
                                   filled: !model.running) {
                     focused = false
-                    if !model.running { beforeStart() }
+                    if !model.running { beforeStart?() }
                     model.toggle(ownPlayback: player.isPlaying)
                 }
                 .accessibilityLabel(model.running ? "Stop metronome" : "Start metronome")

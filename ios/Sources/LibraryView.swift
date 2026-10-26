@@ -119,7 +119,8 @@ struct LibraryView: View {
         .onChange(of: signedIn) { _, value in if !value { query.clear(); path = []; collapsed = false } }
         .onChange(of: path) { old, new in
             if new.isEmpty, let id = old.last {
-                rowFocus = tracks.contains(where: { $0.id == id }) ? id : tracks.isEmpty ? nil : tracks[min(returnIndex, tracks.count - 1)].id
+                if tracks.contains(where: { $0.id == id }) { rowFocus = id }
+                else { rowFocus = tracks.isEmpty ? nil : tracks[min(returnIndex, tracks.count - 1)].id }
             }
         }
         .onChange(of: library.phoneIDs) { _, _ in server.reconcile(library) }
@@ -219,7 +220,7 @@ struct LibraryView: View {
                 ForEach(arriving) { track in
                     LibrarySongRow(track: track, progress: (server.transfers[track.id] ?? anon.transfers[track.id])?.progress ?? 0,
                                    onPhone: false, playing: false, isPlaying: false, queued: false,
-                                   waiting: server.waiting.contains(track.id), arriving: true, play: {}, details: {}, download: {})
+                                   waiting: server.waiting.contains(track.id), arriving: true, play: LibrarySongRow.inert, details: LibrarySongRow.inert, download: LibrarySongRow.inert)
                     LibraryHairline().padding(.horizontal, DS.Space.space3)
                 }
                 ForEach(Array(matches.enumerated()), id: \.element.id) { index, track in
