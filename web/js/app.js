@@ -240,19 +240,8 @@ try {
 syncGuestUi();
 route();
 void loadLegal(legalEl, legalCtx);
-async function startUpdates() {
-  try {
-    const m = await import('./update-check.js');
-    m.startUpdateCheck();
-  } catch { /* update checks are optional */ }
-}
-
-async function runBackgroundLoad() {
-  try { await startBackgroundLoad(); } catch { /* background load is best effort */ }
-}
-
-void runBackgroundLoad();
-void startUpdates();
+startBackgroundLoad().catch(() => { /* background load is best effort */ });
+import('./update-check.js').then((m) => m.startUpdateCheck()).catch(() => { /* update checks are optional */ });
 
 const warn = document.getElementById('sync-warn');
 const led = document.getElementById('server-led');

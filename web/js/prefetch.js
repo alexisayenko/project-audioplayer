@@ -55,14 +55,19 @@ function fetchBatch(doc, hrefs, waitMs) {
   })));
 }
 
+const runSequential = (items, step) => items.reduce((chain, item) => chain.then(() => step(item)), Promise.resolve());
+
+async function warmBatch(win, hrefs, waitMs) {
+  await whenGateOpen();
+  await idle(win);
+  await whenGateOpen();
+  await fetchBatch(win.document, hrefs, waitMs);
+}
+
 /** Tier 2: warm the lazy modules quietly, a few at a time, when the browser is idle. Resolves when every batch has been fetched. */
 export async function prefetchModules(list, { win = window, batch = PREFETCH_BATCH, waitMs = PREFETCH_BATCH_WAIT_MS * 4 } = {}) {
-  for (let i = 0; i < list.length; i += batch) {
-    await whenGateOpen();
-    await idle(win);
-    await whenGateOpen();
-    await fetchBatch(win.document, list.slice(i, i + batch), waitMs);
-  }
+  const starts = Array.from({ length: Math.ceil(list.length / batch) }, (_, n) => n * batch);
+  await runSequential(starts, (i) => warmBatch(win, list.slice(i, i + batch), waitMs));
   globalThis.performance?.mark?.('tier2-done');
 }
 

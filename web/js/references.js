@@ -82,7 +82,7 @@ let loading = null;
 const byGenre = new Map();
 const listeners = new Set();
 
-const emit = () => { for (const fn of [...listeners]) fn(); };
+const emit = () => { for (const fn of Array.from(listeners)) fn(); };
 
 export const onReferencesChange = (fn) => { listeners.add(fn); return () => listeners.delete(fn); };
 export const cachedReferences = () => all;
@@ -173,25 +173,43 @@ function eraYearError(name, start, end) {
   return '';
 }
 
+function eraFields(r) {
+  return {
+    name: String(r?.name || '').trim(),
+    startText: String(r?.start ?? '').trim(),
+    endText: String(r?.end ?? '').trim(),
+    note: String(r?.note || '').trim(),
+    sourceRows: r?.sources || [],
+  };
+}
+
+const isBlankEra = ({ name, startText, endText, note, sourceRows }) => !name && !startText && !endText && !note && !sourceRows.some((x) => String(x?.url || '').trim());
+
+function cleanEra(r) {
+  const fields = eraFields(r);
+  if (isBlankEra(fields)) return null;
+  const { name, startText, endText, note, sourceRows } = fields;
+  if (!name) return { error: 'Every era needs a name.' };
+  const start = startText ? eraYear(startText) : null;
+  const end = endText ? eraYear(endText) : null;
+  const yearError = eraYearError(name, start, end);
+  if (yearError) return { error: yearError };
+  const cleaned = cleanSources(sourceRows);
+  if (cleaned.error) return { error: cleaned.error };
+  return {
+    era: {
+      ...(r.id ? { id: r.id } : {}), name, start, end, ...(note ? { note } : {}), sources: cleaned.sources,
+    },
+  };
+}
+
 export function cleanEras(rows) {
   const out = [];
   for (const r of rows || []) {
-    const name = String(r?.name || '').trim();
-    const startText = String(r?.start ?? '').trim();
-    const endText = String(r?.end ?? '').trim();
-    const note = String(r?.note || '').trim();
-    const sourceRows = r?.sources || [];
-    if (!name && !startText && !endText && !note && !sourceRows.some((x) => String(x?.url || '').trim())) continue;
-    if (!name) return { eras: [], error: 'Every era needs a name.' };
-    const start = startText ? eraYear(startText) : null;
-    const end = endText ? eraYear(endText) : null;
-    const yearError = eraYearError(name, start, end);
-    if (yearError) return { eras: [], error: yearError };
-    const cleaned = cleanSources(sourceRows);
-    if (cleaned.error) return { eras: [], error: cleaned.error };
-    out.push({
-      ...(r.id ? { id: r.id } : {}), name, start, end, ...(note ? { note } : {}), sources: cleaned.sources,
-    });
+    const res = cleanEra(r);
+    if (!res) continue;
+    if (res.error) return { eras: [], error: res.error };
+    out.push(res.era);
   }
   const names = out.map((e) => e.name.toLowerCase());
   if (new Set(names).size !== names.length) return { eras: [], error: 'Era names must be different.' };

@@ -9,8 +9,10 @@ export const MSG_BAD_LINK = 'That does not look like a YouTube playlist link.';
 
 const YT_LINK = /https?:\/\/(?:www\.|m\.|music\.)?(?:youtube\.com|youtu\.be)\/[^\s<>"']+/gi;
 const VIDEO_ID = /^[A-Za-z0-9_-]{11}$/;
-const BRACKETED_NOISE = /\s?[([] ?(?:(?:official )?(?:(?:music|lyric|hd|4k) )?(?:video|audio|visuali[sz]er|lyrics?)|official|hd|hq|4k) ?[)\]]/gi;
-const TRAILING_NOISE = /\s*[|\-–—:]?\s*(?:official\s+(?:music\s+)?(?:video|audio)|lyrics?(?:\s+video)?|hd|hq|4k)\s*$/i;
+const NOISE_WORDS = '(?:official )?(?:(?:music|lyric|hd|4k) )?(?:video|audio|visuali[sz]er|lyrics?)';
+const BRACKETED_NOISE = new RegExp(`\\s?[([] ?(?:${NOISE_WORDS}|official|hd|hq|4k) ?[)\\]]`, 'gi');
+const TRAILING_WORDS = 'official\\s+(?:music\\s+)?(?:video|audio)|lyrics?(?:\\s+video)?|hd|hq|4k';
+const TRAILING_NOISE = new RegExp(`(?<!\\s)(?:\\s*[|\\-–—:])?\\s*(?:${TRAILING_WORDS})\\s*$`, 'i');
 const EDGE = ' \t-–—|:,;.';
 
 const squash = (s) => String(s ?? '').split(/\s+/).filter(Boolean).join(' ');
@@ -170,17 +172,26 @@ function countChunk(resp, r) {
   r.rateLimited ||= !!c.rateLimited;
 }
 
+async function* readItems(lines, { fetchPlaylist, onProgress, isCancelled }, r) {
+  for (const item of classify(lines)) {
+    if (isCancelled()) { r.cancelled = true; return; }
+    if (item.kind === 'line') {
+      yield { item, got: null };
+    } else {
+      onProgress({ phase: 'reading', done: 0, total: 0 });
+      yield readPlaylist(item, fetchPlaylist, r).then((got) => ({ item, got }));
+    }
+  }
+}
+
 async function buildQueue(lines, { fetchPlaylist, ids, onProgress, isCancelled }, r) {
   const queue = [];
   const taken = new Set(ids);
-  for (const item of classify(lines)) {
-    if (isCancelled()) { r.cancelled = true; return null; }
-    if (item.kind === 'line') { queue.push({ line: item.line, origin: null }); continue; }
-    onProgress({ phase: 'reading', done: 0, total: 0 });
-    const got = await readPlaylist(item, fetchPlaylist, r);
-    if (got) queuePlaylist(got.list, item, taken, queue, r);
+  for await (const { item, got } of readItems(lines, { fetchPlaylist, onProgress, isCancelled }, r)) {
+    if (item.kind === 'line') queue.push({ line: item.line, origin: null });
+    else if (got) queuePlaylist(got.list, item, taken, queue, r);
   }
-  return queue;
+  return r.cancelled ? null : queue;
 }
 
 /**

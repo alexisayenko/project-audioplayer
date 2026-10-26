@@ -91,12 +91,13 @@ function descriptorKind(text) {
 }
 
 export function kindOf(text) {
-  if (MASHUP_WORD.test(text.trim())) return 'mashup';
   const descriptor = descriptorKind(text);
-  if (descriptor !== '' && !/\bremix\b|\bmashup\b|\bmixed\s+by\b/i.test(text)) return descriptor;
-  if (MIXED_BY.test(text) && !REMIX_OR_MASHUP.test(text)) return 'other';
-  for (const [kind, rx] of KIND_WORDS) if (rx.test(text)) return kind;
-  return 'remix';
+  let kind;
+  if (MASHUP_WORD.test(text.trim())) kind = 'mashup';
+  else if (descriptor !== '' && !/\bremix\b|\bmashup\b|\bmixed\s+by\b/i.test(text)) kind = descriptor;
+  else if (MIXED_BY.test(text) && !REMIX_OR_MASHUP.test(text)) kind = 'other';
+  else kind = KIND_WORDS.find(([, rx]) => rx.test(text))?.[0] ?? 'remix';
+  return kind;
 }
 
 const RELEASE_TAG = /(?<!\s)\s*[([]\s*((?:[^\s()[\]][^()[\]]*?)??\brelease)\s*[)\]]\s*$/i;

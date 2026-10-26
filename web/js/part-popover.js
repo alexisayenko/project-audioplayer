@@ -30,7 +30,30 @@ function place(btn, node, host) {
   node.style.top = `${top - h.top + (host.scrollTop || 0) - (host.clientTop || 0)}px`;
 }
 
-const yearsText = (v) => String(v).replace(/\s*[-–]\s*/g, ' – ');
+const isSpace = (c) => /\s/.test(c);
+
+function skipSpace(s, from) {
+  let i = from;
+  while (i < s.length && isSpace(s[i])) i += 1;
+  return i;
+}
+
+function yearsText(v) {
+  const s = String(v);
+  let out = '';
+  let i = 0;
+  while (i < s.length) {
+    const j = skipSpace(s, i);
+    if (s[j] === '-' || s[j] === '–') {
+      out += ' – ';
+      i = skipSpace(s, j + 1);
+    } else {
+      out += s.slice(i, j + 1);
+      i = j + 1;
+    }
+  }
+  return out;
+}
 
 function valueNodes(rows) {
   const out = [];

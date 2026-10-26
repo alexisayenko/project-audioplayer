@@ -1,7 +1,36 @@
 import { creditParts, releasedYear, versionYear, albumsOf, isStructured } from './credits.js';
 
 const text = (v) => String(v ?? '').trim();
-const FEAT = /\s+(?:feat\.?|ft\.?|featuring|with)\s+|\s+(?:and|&)\s+|\s*,\s*|\s+x\s+/gi;
+const FEAT_WORD = /(?:feat\.?|ft\.?|featuring|with|and|&|x)\s+/iy;
+
+function skipSpace(s, from) {
+  let i = from;
+  while (i < s.length && /\s/.test(s[i])) i += 1;
+  return i;
+}
+
+function featSeparators(raw) {
+  const found = [];
+  let i = 0;
+  while (i < raw.length) {
+    const word = skipSpace(raw, i);
+    let end = -1;
+    if (raw[word] === ',') {
+      end = skipSpace(raw, word + 1);
+    } else if (word > i) {
+      FEAT_WORD.lastIndex = word;
+      const m = FEAT_WORD.exec(raw);
+      if (m) end = word + m[0].length;
+    }
+    if (end >= 0) {
+      found.push({ index: i, text: raw.slice(i, end) });
+      i = end;
+    } else {
+      i = word + 1;
+    }
+  }
+  return found;
+}
 
 function pushList(out, list, ownerKind) {
   list.forEach((name, i) => {
@@ -29,10 +58,10 @@ function legacyArtists(song) {
   const raw = text(song?.artist);
   const out = [];
   let last = 0;
-  for (const m of raw.matchAll(FEAT)) {
-    if (m.index > last) out.push({ kind: 'artist', text: raw.slice(last, m.index), name: raw.slice(last, m.index) });
-    out.push({ kind: 'text', text: m[0] });
-    last = m.index + m[0].length;
+  for (const sep of featSeparators(raw)) {
+    if (sep.index > last) out.push({ kind: 'artist', text: raw.slice(last, sep.index), name: raw.slice(last, sep.index) });
+    out.push({ kind: 'text', text: sep.text });
+    last = sep.index + sep.text.length;
   }
   if (last < raw.length) out.push({ kind: 'artist', text: raw.slice(last), name: raw.slice(last) });
   return out.filter((p) => p.kind === 'text' || p.text.trim());

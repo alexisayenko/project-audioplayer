@@ -84,11 +84,31 @@ function scatterUnplaced(graph, rng, ring) {
   }
 }
 
+const familyRank = (n) => {
+  const i = FAMILY_ORDER.indexOf(n.name);
+  return i < 0 ? FAMILY_ORDER.length : i;
+};
+
+function placeKids(graph, kids, out, rng, id, depth) {
+  const list = kids.get(id) || [];
+  const p = graph.byId.get(id);
+  const base = out.get(id) ?? 0;
+  list.forEach((cid, j) => {
+    const c = graph.byId.get(cid);
+    const arc = depth === 0 ? 1.7 : 1.3;
+    const spread = list.length > 1 ? ((j + 0.5) / list.length - 0.5) * Math.PI * arc : 0;
+    const ang = base + spread + (rng() - 0.5) * 0.1;
+    const dist = (depth === 0 ? 50 : 34) + 5 * Math.sqrt(j + 1) + rng() * 6;
+    c.x = p.x + Math.cos(ang) * dist; c.y = p.y + Math.sin(ang) * dist;
+    out.set(cid, ang);
+    placeKids(graph, kids, out, rng, cid, depth + 1);
+  });
+}
+
 export function seedPositions(graph, seed = 1, { ring = 240 } = {}) {
   const rng = mulberry32(seed);
   const fams = graph.nodes.filter((n) => n.level === 1);
-  const orderOf = (n) => { const i = FAMILY_ORDER.indexOf(n.name); return i < 0 ? FAMILY_ORDER.length : i; };
-  fams.sort((a, b) => orderOf(a) - orderOf(b) || a.name.localeCompare(b.name));
+  fams.sort((a, b) => familyRank(a) - familyRank(b) || a.name.localeCompare(b.name));
   const out = new Map();
   fams.forEach((f, i) => {
     const a = (i / Math.max(1, fams.length)) * 2 * Math.PI - Math.PI / 2;
@@ -96,22 +116,7 @@ export function seedPositions(graph, seed = 1, { ring = 240 } = {}) {
     out.set(f.id, a);
   });
   const kids = childMap(graph);
-  const place = (id, depth) => {
-    const list = kids.get(id) || [];
-    const p = graph.byId.get(id);
-    const base = out.get(id) ?? 0;
-    list.forEach((cid, j) => {
-      const c = graph.byId.get(cid);
-      const arc = depth === 0 ? 1.7 : 1.3;
-      const spread = list.length > 1 ? ((j + 0.5) / list.length - 0.5) * Math.PI * arc : 0;
-      const ang = base + spread + (rng() - 0.5) * 0.1;
-      const dist = (depth === 0 ? 50 : 34) + 5 * Math.sqrt(j + 1) + rng() * 6;
-      c.x = p.x + Math.cos(ang) * dist; c.y = p.y + Math.sin(ang) * dist;
-      out.set(cid, ang);
-      place(cid, depth + 1);
-    });
-  };
-  for (const f of fams) place(f.id, 0);
+  for (const f of fams) placeKids(graph, kids, out, rng, f.id, 0);
   scatterUnplaced(graph, rng, ring);
   return graph;
 }

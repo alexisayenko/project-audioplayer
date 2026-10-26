@@ -111,6 +111,17 @@ export function createAnnealer({ xs, ys, radii, segs, fixed = null, seed = 5, te
     return [x0 + (rng() - 0.5) * 2 * sigma, y0 + (rng() - 0.5) * 2 * sigma];
   }
 
+  function markTouched(group) {
+    const touched = [];
+    for (const g of group) for (const k of inc[g]) if (!segMark[k]) { segMark[k] = 1; touched.push(k); }
+    return touched;
+  }
+
+  function restore(group, ox, oy, touched) {
+    group.forEach((g, n) => { xs[g] = ox[n]; ys[g] = oy[n]; });
+    for (const k of touched) box(k);
+  }
+
   function move() {
     if (moves % 400 === 0) refreshHot();
     moves++;
@@ -120,8 +131,7 @@ export function createAnnealer({ xs, ys, radii, segs, fixed = null, seed = 5, te
     const mode = rng();
     const group = buildGroup(i, mode);
     for (const g of group) inGroup[g] = 1;
-    const touched = [];
-    for (const g of group) for (const k of inc[g]) if (!segMark[k]) { segMark[k] = 1; touched.push(k); }
+    const touched = markTouched(group);
     const ox = group.map((g) => xs[g]);
     const oy = group.map((g) => ys[g]);
     const before = cost(group, touched);
@@ -135,10 +145,7 @@ export function createAnnealer({ xs, ys, radii, segs, fixed = null, seed = 5, te
     const dEnergy = after.c + after.o * OVERLAP_PENALTY - before.c - before.o * OVERLAP_PENALTY + anchor(group) - anchorBefore;
     const ok = dEnergy <= 0 || rng() < Math.exp(-dEnergy / temp);
     if (ok) current += after.c - before.c;
-    else {
-      group.forEach((g, n) => { xs[g] = ox[n]; ys[g] = oy[n]; });
-      for (const k of touched) box(k);
-    }
+    else restore(group, ox, oy, touched);
     for (const g of group) inGroup[g] = 0;
     for (const k of touched) segMark[k] = 0;
     temp = Math.max(0.05, temp * cooling);

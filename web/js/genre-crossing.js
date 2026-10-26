@@ -28,24 +28,32 @@ function buildGrid(xs, ys, segs, cell) {
   return grid;
 }
 
+function pairCrosses(xs, ys, segs, p, q) {
+  const [a, b] = segs[p];
+  const [c, d] = segs[q];
+  if (a === c || a === d || b === c || b === d) return false;
+  return segmentsCross(xs[a], ys[a], xs[b], ys[b], xs[c], ys[c], xs[d], ys[d]);
+}
+
+function countCell(list, n, seen, xs, ys, segs) {
+  let count = 0;
+  for (let i = 0; i < list.length; i++) {
+    for (let j = i + 1; j < list.length; j++) {
+      const key = list[i] * n + list[j];
+      if (seen.has(key)) continue;
+      seen.add(key);
+      if (pairCrosses(xs, ys, segs, list[i], list[j])) count++;
+    }
+  }
+  return count;
+}
+
 export function countCrossingsXY(xs, ys, segs, cell = 90) {
   const grid = buildGrid(xs, ys, segs, cell);
   const n = segs.length;
   const seen = new Set();
   let count = 0;
-  for (const list of grid.values()) {
-    for (let i = 0; i < list.length; i++) {
-      for (let j = i + 1; j < list.length; j++) {
-        const key = list[i] * n + list[j];
-        if (seen.has(key)) continue;
-        seen.add(key);
-        const [a, b] = segs[list[i]];
-        const [c, d] = segs[list[j]];
-        if (a === c || a === d || b === c || b === d) continue;
-        if (segmentsCross(xs[a], ys[a], xs[b], ys[b], xs[c], ys[c], xs[d], ys[d])) count++;
-      }
-    }
-  }
+  for (const list of grid.values()) count += countCell(list, n, seen, xs, ys, segs);
   return count;
 }
 

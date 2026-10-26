@@ -60,17 +60,141 @@ function firstSource(initial) {
   return s && typeof s === 'object' ? s : {};
 }
 
+const linkInput = (v) => el('input', { type: 'text', value: v || '', autocomplete: 'off', autocapitalize: 'off', spellcheck: 'false' });
+
+const setUnlessFocused = (inp, value) => {
+  if (globalThis.document?.activeElement !== inp) inp.value = value || '';
+};
+
+const whenLive = (req, fn) => { if (req.live()) fn(); };
+
+const discogsOf = (s) => s.discogs_url ?? null;
+
+const firstTitle = (isAdd, initial) => (isAdd ? cleanTitleEx(initial.title_raw ?? initial.title ?? '') : { title: initial.title || '', removed: [] });
+
+const moreAlbumsOf = (initial) => (Array.isArray(initial.albums) ? initial.albums.slice(1) : []);
+
+const storedLinkValues = (initial, storedLinks) => ({
+  youtube: storedLinks.youtube?.url ?? null,
+  soundcloud: storedLinks.soundcloud?.url ?? null,
+  spotify: initial.spotify_url ?? null,
+});
+
+const storedStates = (initial, mbUrl, discogsUrl) => ({
+  ...storedLinkStates(initial),
+  ...(mbUrl ? { musicbrainz: { on: true, url: mbUrl } } : {}),
+  ...(discogsUrl ? { discogs: { on: true, url: discogsUrl } } : {}),
+});
+
+const panelOptions = (isAdd) => ({
+  readOnly: isAdd ? ['youtube', 'soundcloud'] : [],
+  id: isAdd ? 'song-links-add' : 'song-links-edit',
+});
+
+function applyLinkVals(out, { linkVals, srcInp, isAdd }) {
+  for (const k of Object.keys(linkVals)) {
+    if (isAdd && k !== 'spotify') continue;
+    if (linkVals[k] && !linkError(k, linkVals[k])) out[k] = { on: true, url: linkVals[k] };
+    else delete out[k];
+    setUnlessFocused(srcInp[k], linkVals[k]);
+  }
+}
+
+function iconStates({ base, lastStates, wv, mbUrl, discogsUrl, linkVals, srcInp, isAdd }) {
+  const out = { ...base };
+  mergeLiveStates(out, base, lastStates);
+  const wl = wikiEntry(wv);
+  if (wl) out.wikipedia = { on: true, url: wl.url, label: wl.label };
+  else if (!lastStates.wikipedia?.on) delete out.wikipedia;
+  if (mbUrl) out.musicbrainz = { on: true, url: mbUrl };
+  if (discogsUrl) out.discogs = { on: true, url: discogsUrl };
+  applyLinkVals(out, { linkVals, srcInp, isAdd });
+  return out;
+}
+
+function hintView(suggest, cur) {
+  const sug = suggest ? suggestion(suggest, cur()) : null;
+  return { hidden: !sug, text: sug ? `Wikipedia says: ${suggestionText(sug, cur())}` : '' };
+}
+
+function applySuggestion(f, sug) {
+  if (sug.artist) f.artists.value = sug.artist;
+  if (sug.title) f.title.value = sug.title;
+}
+
+function mergeMetadataUrls(states, mbUrl, discogsUrl) {
+  return {
+    mbUrl: states.musicbrainz.url || mbUrl,
+    discogsUrl: states.discogs.url && !discogsUrl ? states.discogs.url : discogsUrl,
+  };
+}
+
+function bindSrcInputs({ srcInp, linkVals, panel, own, paintIcons }) {
+  for (const k of Object.keys(srcInp)) {
+    srcInp[k].addEventListener('input', () => { linkVals[k] = srcInp[k].value.trim() || null; panel.setErrors(linkErrors(linkVals, { ownKind: own })); paintIcons(); });
+  }
+}
+
+function wikiFromPlan(plan, cur) {
+  return { song: plan.wikipedia_song ?? cur.wikipedia_song, artist: plan.wikipedia_artist ?? cur.wikipedia_artist, album: plan.wikipedia_album ?? cur.wikipedia_album };
+}
+
+function planLinkUrls(plan, versioned, mbUrl, discogsUrl) {
+  return {
+    mbUrl: plan.musicbrainz_url && !versioned ? plan.musicbrainz_url : mbUrl,
+    discogsUrl: plan.discogs_url && !versioned ? plan.discogs_url : discogsUrl,
+  };
+}
+
+function trimOptions(isAdd, initial) {
+  const src0 = isAdd ? {} : firstSource(initial);
+  return {
+    start: isAdd ? null : src0.trim_start ?? null,
+    end: isAdd ? null : src0.trim_end ?? null,
+    hint: isAdd ? initial.trim_start_hint ?? null : null,
+    duration: (isAdd ? initial.duration : src0.duration ?? initial.duration) || null,
+    audio: !isAdd && hasAudio(initial),
+    songId: initial.id,
+    redownload: isAdd ? null : (id, cut) => api.redownload(id, cut),
+  };
+}
+
+const identTarget = (isAdd, initial) => ({ id: isAdd ? null : initial.id, audio: !isAdd && hasAudio(initial) });
+
+const ownLinkUrls = (isAdd, linkVals) => (isAdd ? {} : { youtube_url: linkVals.youtube, soundcloud_url: linkVals.soundcloud });
+
+function withoutOwnLinks(errors, isAdd) {
+  if (isAdd) {
+    delete errors.youtube;
+    delete errors.soundcloud;
+  }
+  return errors;
+}
+
+function commitChips(commit, ...chips) {
+  if (commit) for (const c of chips) c.commit();
+}
+
+const initialValues = (initial, startTitle) => ({
+  title: startTitle,
+  ...initialCredits(initial),
+  albums: [firstAlbum(initial)],
+  wikipedia_song: initial.wikipedia_song || '',
+  wikipedia_artist: initial.wikipedia_artist || '',
+  wikipedia_album: initial.wikipedia_album || '',
+});
+
 export function songForm({ mode = 'add', song = {}, source = null, onChange = null } = {}) {
   const isAdd = mode === 'add';
   const initial = { ...song };
   const tg = tokenGroup();
-  const first = isAdd ? cleanTitleEx(initial.title_raw ?? initial.title ?? '') : { title: initial.title || '', removed: [] };
+  const first = firstTitle(isAdd, initial);
   const startTitle = first.title;
   const f = {
     title: tg.field('title', startTitle),
     album: el('input', { type: 'text', value: firstAlbum(initial) }),
   };
-  const moreAlbums = Array.isArray(initial.albums) ? initial.albums.slice(1) : [];
+  const moreAlbums = moreAlbumsOf(initial);
   const credits = creditsBlock({
     tg,
     song: initial,
@@ -79,7 +203,8 @@ export function songForm({ mode = 'add', song = {}, source = null, onChange = nu
     emit: () => f.title.dispatchEvent(new Event('input', { bubbles: true })),
   });
   Object.assign(f, credits.f);
-  const editor = tagEditor({ tags: initial.tags || [], suggested: isAdd ? initial.tags || [] : [], hideNs: true });
+  const tags0 = initial.tags || [];
+  const editor = tagEditor({ tags: tags0, suggested: isAdd ? tags0 : [], hideNs: true });
   const genres = chipField('genre', editor);
   const countries = chipField('country', editor);
   const wiki = wikiFields({ song: initial.wikipedia_song, artist: initial.wikipedia_artist, album: initial.wikipedia_album });
@@ -100,49 +225,24 @@ export function songForm({ mode = 'add', song = {}, source = null, onChange = nu
 
   const initialMb = () => serviceState({ musicbrainz: { found: true, url: initial.musicbrainz_url } }).musicbrainz.url;
   let mbUrl = initialMb();
-  let discogsUrl = initial.discogs_url ?? null;
+  let discogsUrl = discogsOf(initial);
   const own = isAdd ? null : ownSourceKind(initial);
   const storedLinks = storedLinkStates(initial);
-  const linkVals = { youtube: storedLinks.youtube?.url ?? null, soundcloud: storedLinks.soundcloud?.url ?? null, spotify: initial.spotify_url ?? null };
+  const linkVals = storedLinkValues(initial, storedLinks);
   let lastStates = {};
-  const stored = () => ({
-    ...storedLinkStates(initial),
-    ...(mbUrl ? { musicbrainz: { on: true, url: mbUrl } } : {}),
-    ...(discogsUrl ? { discogs: { on: true, url: discogsUrl } } : {}),
-  });
-  const linkInp = (v) => el('input', { type: 'text', value: v || '', autocomplete: 'off', autocapitalize: 'off', spellcheck: 'false' });
-  const mbInp = linkInp(mbUrl);
-  const dcInp = linkInp(discogsUrl);
-  const srcInp = { youtube: linkInp(linkVals.youtube), soundcloud: linkInp(linkVals.soundcloud), spotify: linkInp(linkVals.spotify) };
+  const stored = () => storedStates(initial, mbUrl, discogsUrl);
+  const mbInp = linkInput(mbUrl);
+  const dcInp = linkInput(discogsUrl);
+  const srcInp = { youtube: linkInput(linkVals.youtube), soundcloud: linkInput(linkVals.soundcloud), spotify: linkInput(linkVals.spotify) };
   const wf = wiki.fields;
   const panel = linksPanel({
     inputs: { wikipedia_song: wf.song.inp, wikipedia_artist: wf.artist.inp, wikipedia_album: wf.album.inp, musicbrainz: mbInp, discogs: dcInp, ...srcInp },
-    readOnly: isAdd ? ['youtube', 'soundcloud'] : [],
-    id: isAdd ? 'song-links-add' : 'song-links-edit',
+    ...panelOptions(isAdd),
   });
   const icons = panel.summary;
-  const setUnlessFocused = (inp, value) => {
-    if (globalThis.document?.activeElement !== inp) inp.value = value || '';
-  };
-  const applyLinkVals = (out) => {
-    for (const k of Object.keys(linkVals)) {
-      if (isAdd && k !== 'spotify') continue;
-      if (linkVals[k] && !linkError(k, linkVals[k])) out[k] = { on: true, url: linkVals[k] };
-      else delete out[k];
-      setUnlessFocused(srcInp[k], linkVals[k]);
-    }
-  };
   const paintIcons = () => {
-    const base = stored();
-    const out = { ...base };
-    mergeLiveStates(out, base, lastStates);
     const wv = wiki.values();
-    const wl = wikiEntry(wv);
-    if (wl) out.wikipedia = { on: true, url: wl.url, label: wl.label };
-    else if (!lastStates.wikipedia?.on) delete out.wikipedia;
-    if (mbUrl) out.musicbrainz = { on: true, url: mbUrl };
-    if (discogsUrl) out.discogs = { on: true, url: discogsUrl };
-    applyLinkVals(out);
+    const out = iconStates({ base: stored(), lastStates, wv, mbUrl, discogsUrl, linkVals, srcInp, isAdd });
     setUnlessFocused(mbInp, mbUrl);
     setUnlessFocused(dcInp, discogsUrl);
     panel.paint({
@@ -154,9 +254,7 @@ export function songForm({ mode = 'add', song = {}, source = null, onChange = nu
   const fromInput = (inp) => (inp.value.trim() || null);
   mbInp.addEventListener('input', () => { mbUrl = fromInput(mbInp); paintIcons(); });
   dcInp.addEventListener('input', () => { discogsUrl = fromInput(dcInp); paintIcons(); });
-  for (const k of Object.keys(srcInp)) {
-    srcInp[k].addEventListener('input', () => { linkVals[k] = fromInput(srcInp[k]); panel.setErrors(linkErrors(linkVals, { ownKind: own })); paintIcons(); });
-  }
+  bindSrcInputs({ srcInp, linkVals, panel, own, paintIcons });
   for (const r of Object.values(wf)) r.inp.addEventListener('input', paintIcons);
   const resetIcons = () => {
     lastStates = {};
@@ -167,7 +265,7 @@ export function songForm({ mode = 'add', song = {}, source = null, onChange = nu
   const metaBtn = el('button', { class: 'btn outline small', type: 'button' }, 'Get metadata');
   const metaMsg = el('p', { class: 't-caption muted', role: 'status' });
   const orig = suggestedBox({ have: () => editor.peek(), onPick: (tag) => editor.addTags([tag]) });
-  if (isAdd) orig.set(suggestedGenres(initial, initial.tags || []));
+  if (isAdd) orig.set(suggestedGenres(initial, tags0));
   editor.subscribe(() => orig.refresh());
   const hint = el('button', { class: 'link-btn t-caption wiki-hint', type: 'button', hidden: true });
   let suggest = null;
@@ -176,15 +274,14 @@ export function songForm({ mode = 'add', song = {}, source = null, onChange = nu
   const tc = titleCleaner({ f, isAdd, initial, first, emit });
   const cur = () => ({ title: f.title.value, artist: artistString({ mainArtists: credits.values().mainArtists }) });
   const paintHint = () => {
-    const sug = suggest ? suggestion(suggest, cur()) : null;
-    hint.hidden = !sug;
-    hint.textContent = sug ? `Wikipedia says: ${suggestionText(sug, cur())}` : '';
+    const view = hintView(suggest, cur);
+    hint.hidden = view.hidden;
+    hint.textContent = view.text;
   };
   hint.addEventListener('click', () => {
     const sug = suggestion(suggest, cur());
     if (!sug) return;
-    if (sug.artist) f.artists.value = sug.artist;
-    if (sug.title) f.title.value = sug.title;
+    applySuggestion(f, sug);
     paintHint();
     emit();
   });
@@ -209,10 +306,28 @@ export function songForm({ mode = 'add', song = {}, source = null, onChange = nu
     orig.set(suggestedGenres(resp, editor.peek()));
     metaMsg.textContent = metaMessage(plan, discogsState, orig.count());
   };
+  const finishMetadata = (resp) => {
+    icons.setBusy(false);
+    const states = versionedStates(serviceState(resp?.services), credits.hasVersion());
+    ({ mbUrl, discogsUrl } = mergeMetadataUrls(states, mbUrl, discogsUrl));
+    discogsState = states.discogs;
+    lastStates = states;
+    paintIcons();
+    suggest = resp?.suggest || null;
+    applyMeta(resp);
+    paintHint();
+  };
+  const failMetadata = () => {
+    resetIcons();
+    metaMsg.textContent = 'Couldn\'t load metadata';
+  };
+  const restoreMetaBtn = () => {
+    metaBtn.disabled = false;
+    metaBtn.textContent = 'Get metadata';
+  };
   metaBtn.addEventListener('click', async () => {
     const wv = wiki.values();
-    const src = typeof source === 'function' ? source() : source;
-    const body = metadataBody({ title: f.title.value, ...credits.values(), ...wv, discogs_url: discogsUrl }, sourceList(src));
+    const body = metadataBody({ title: f.title.value, ...credits.values(), ...wv, discogs_url: discogsUrl }, sourceList(typeof source === 'function' ? source() : source));
     const req = begin();
     resetMeta();
     metaBtn.disabled = true;
@@ -220,27 +335,12 @@ export function songForm({ mode = 'add', song = {}, source = null, onChange = nu
     icons.setBusy(true);
     try {
       const resp = await api.metadata(body, req.signal);
-      if (!req.live()) return;
-      icons.setBusy(false);
-      const states = versionedStates(serviceState(resp?.services), credits.hasVersion());
-      if (states.musicbrainz.url) mbUrl = states.musicbrainz.url;
-      if (states.discogs.url && !discogsUrl) discogsUrl = states.discogs.url;
-      discogsState = states.discogs;
-      lastStates = states;
-      paintIcons();
-      suggest = resp?.suggest || null;
-      applyMeta(resp);
-      paintHint();
+      whenLive(req, () => finishMetadata(resp));
     } catch {
-      if (!req.live()) return;
-      resetIcons();
-      metaMsg.textContent = 'Couldn\'t load metadata';
+      whenLive(req, failMetadata);
     } finally {
       req.done();
-      if (req.live()) {
-        metaBtn.disabled = false;
-        metaBtn.textContent = 'Get metadata';
-      }
+      whenLive(req, restoreMetaBtn);
     }
   });
 
@@ -249,26 +349,15 @@ export function songForm({ mode = 'add', song = {}, source = null, onChange = nu
     f.released.dispatchEvent(new Event('input', { bubbles: true }));
   };
   const applyLinks = (plan) => {
-    const cur = wiki.values();
-    wiki.set({ song: plan.wikipedia_song ?? cur.wikipedia_song, artist: plan.wikipedia_artist ?? cur.wikipedia_artist, album: plan.wikipedia_album ?? cur.wikipedia_album });
-    if (plan.musicbrainz_url && !credits.hasVersion()) mbUrl = plan.musicbrainz_url;
-    if (plan.discogs_url && !credits.hasVersion()) discogsUrl = plan.discogs_url;
+    wiki.set(wikiFromPlan(plan, wiki.values()));
+    ({ mbUrl, discogsUrl } = planLinkUrls(plan, credits.hasVersion(), mbUrl, discogsUrl));
     paintIcons();
     emit();
   };
-  const ident = identifyBlock({ id: isAdd ? null : initial.id, audio: !isAdd && hasAudio(initial), editor, getReleased: () => f.released.value, setReleased, applyLinks });
+  const ident = identifyBlock({ ...identTarget(isAdd, initial), editor, getReleased: () => f.released.value, setReleased, applyLinks });
 
   const bpmEl = bpmRow({ isAdd, initial });
-  const src0 = isAdd ? {} : firstSource(initial);
-  const trim = trimBlock({
-    start: isAdd ? null : src0.trim_start ?? null,
-    end: isAdd ? null : src0.trim_end ?? null,
-    hint: isAdd ? initial.trim_start_hint ?? null : null,
-    duration: (isAdd ? initial.duration : src0.duration ?? initial.duration) || null,
-    audio: !isAdd && hasAudio(initial),
-    songId: initial.id,
-    redownload: isAdd ? null : (id, cut) => api.redownload(id, cut),
-  });
+  const trim = trimBlock(trimOptions(isAdd, initial));
 
   const node = el('div', { class: 'add-fields' },
     tc.node, credits.node,
@@ -286,10 +375,7 @@ export function songForm({ mode = 'add', song = {}, source = null, onChange = nu
   if (onChange) node.addEventListener('input', onChange);
 
   const values = ({ commit = true } = {}) => {
-    if (commit) {
-      genres.commit();
-      countries.commit();
-    }
+    commitChips(commit, genres, countries);
     return {
       title: f.title.value,
       keep_title: tc.restoredRaw !== null && f.title.value === tc.restoredRaw,
@@ -300,15 +386,11 @@ export function songForm({ mode = 'add', song = {}, source = null, onChange = nu
       musicbrainz_url: mbUrl,
       discogs_url: discogsUrl,
       spotify_url: linkVals.spotify,
-      ...(isAdd ? {} : { youtube_url: linkVals.youtube, soundcloud_url: linkVals.soundcloud }),
+      ...ownLinkUrls(isAdd, linkVals),
     };
   };
   const linkProblems = () => {
-    const errors = linkErrors(linkVals, { ownKind: own });
-    if (isAdd) {
-      delete errors.youtube;
-      delete errors.soundcloud;
-    }
+    const errors = withoutOwnLinks(linkErrors(linkVals, { ownKind: own }), isAdd);
     panel.setErrors(errors);
     return Object.values(errors)[0] || null;
   };
@@ -338,8 +420,8 @@ export function songForm({ mode = 'add', song = {}, source = null, onChange = nu
     reset() {
       abortAll();
       mbUrl = initialMb();
-      discogsUrl = initial.discogs_url ?? null;
-      Object.assign(linkVals, { youtube: storedLinks.youtube?.url ?? null, soundcloud: storedLinks.soundcloud?.url ?? null, spotify: initial.spotify_url ?? null });
+      discogsUrl = discogsOf(initial);
+      Object.assign(linkVals, storedLinkValues(initial, storedLinks));
       panel.setErrors({});
       ident.reset();
       resetMeta();
@@ -349,7 +431,7 @@ export function songForm({ mode = 'add', song = {}, source = null, onChange = nu
       trim.reset();
       tc.clearRestored();
       tc.paintCleaned(first.removed);
-      setValues({ title: startTitle, ...initialCredits(initial), albums: [firstAlbum(initial)], wikipedia_song: initial.wikipedia_song || '', wikipedia_artist: initial.wikipedia_artist || '', wikipedia_album: initial.wikipedia_album || '' });
+      setValues(initialValues(initial, startTitle));
       credits.resetYear(initial.published_year);
     },
     destroy() {

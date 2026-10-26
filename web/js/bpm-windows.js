@@ -206,31 +206,35 @@ function isAlone(list, i, k) {
   return !next || next.v[k] === null || (next.t - list[i].t) / 1000 > GAP_S;
 }
 
+function lineStep(ctx, geo, model, range, k, run, i) {
+  const { list, endT, spanS } = model;
+  const s = list[i];
+  const v = s.v[k];
+  if (v === null) { run.prev = null; return; }
+  const x = timeX(s.t, endT, spanS, geo);
+  const y = geo.top + geo.plotH * (1 - yFraction(v, range));
+  if (run.prev !== null && (s.t - run.prev) / 1000 <= GAP_S) {
+    if (!run.open) { startRun(ctx, geo, model, range, run.prev, list[i - 1].v[k]); run.open = true; }
+    ctx.lineTo(x, y);
+  } else {
+    if (run.open) { ctx.stroke(); run.open = false; }
+    if (isAlone(list, i, k)) { ctx.beginPath(); ctx.arc(x, y, 1.6, 0, Math.PI * 2); ctx.fill(); }
+  }
+  run.prev = s.t;
+}
+
 function drawLine(ctx, pal, geo, model, range, k) {
   const { list, endT, spanS } = model;
   const from = endT - (spanS + GAP_S) * 1000;
   ctx.strokeStyle = css(pal.series[k], LINE_ALPHA);
   ctx.fillStyle = css(pal.series[k], LINE_ALPHA);
   ctx.lineWidth = THICK_WINDOWS.includes(WINDOWS_S[k]) ? 2 : 1.2;
-  let prev = null;
-  let open = false;
+  const run = { prev: null, open: false };
   for (let i = 0; i < list.length; i += 1) {
-    const s = list[i];
-    if (s.t < from) continue;
-    const v = s.v[k];
-    if (v === null) { prev = null; continue; }
-    const x = timeX(s.t, endT, spanS, geo);
-    const y = geo.top + geo.plotH * (1 - yFraction(v, range));
-    if (prev !== null && (s.t - prev) / 1000 <= GAP_S) {
-      if (!open) { startRun(ctx, geo, model, range, prev, list[i - 1].v[k]); open = true; }
-      ctx.lineTo(x, y);
-    } else {
-      if (open) { ctx.stroke(); open = false; }
-      if (isAlone(list, i, k)) { ctx.beginPath(); ctx.arc(x, y, 1.6, 0, Math.PI * 2); ctx.fill(); }
-    }
-    prev = s.t;
+    if (list[i].t < from) continue;
+    lineStep(ctx, geo, model, range, k, run, i);
   }
-  if (open) ctx.stroke();
+  if (run.open) ctx.stroke();
 }
 
 function drawSeries(g, pal, geo, model, range) {

@@ -297,7 +297,7 @@ export function smoothDown(prev, next, dt, rate = METER_FALL_DB_S) {
 
 export function trailLevel(peak, peakAt, now, rate = TRAIL_DECAY_DB_S, floor = TRAIL_FLOOR_DB) {
   const fell = peak - rate * (Math.max(0, now - peakAt) / 1000);
-  return fell > floor ? fell : floor;
+  return Math.max(fell, floor);
 }
 
 export function holdTrail(shown, peaks, peakTimes, current, now, rate = TRAIL_DECAY_DB_S, floor = TRAIL_FLOOR_DB) {
@@ -307,7 +307,7 @@ export function holdTrail(shown, peaks, peakTimes, current, now, rate = TRAIL_DE
     if (level >= ghost) {
       peaks[i] = level;
       peakTimes[i] = now;
-      shown[i] = level > floor ? level : floor;
+      shown[i] = Math.max(level, floor);
     } else {
       shown[i] = ghost;
     }

@@ -151,16 +151,19 @@ export function createTreeLayout(graph, { seed = 1, sweeps = 4 } = {}) {
     return out;
   };
   const boxesApart = (t, s) => sx1[t] < sx0[s] || sx0[t] > sx1[s] || sy1[t] < sy0[s] || sy0[t] > sy1[s];
+  const crossesSeg = (s, a, b, t) => {
+    if (boxesApart(t, s)) return false;
+    const [p, q] = segs[t];
+    if (sharesEndpoint(a, b, p, q)) return false;
+    return segmentsCross(xs[a], ys[a], xs[b], ys[b], xs[p], ys[p], xs[q], ys[q]);
+  };
   const touching = ({ list, mask }) => {
     let c = 0;
     for (const s of list) {
       const [a, b] = segs[s];
       for (let t = 0; t < nSeg; t++) {
         if (t === s || (mask[t] && t < s)) continue;
-        if (boxesApart(t, s)) continue;
-        const [p, q] = segs[t];
-        if (sharesEndpoint(a, b, p, q)) continue;
-        if (segmentsCross(xs[a], ys[a], xs[b], ys[b], xs[p], ys[p], xs[q], ys[q])) c++;
+        if (crossesSeg(s, a, b, t)) c++;
       }
     }
     return c;
