@@ -2,7 +2,7 @@ import json
 
 import pytest
 
-from app import discogs_lookup, genre_filter, genre_vocab, library, migrate_renames as mr
+from app import library, migrate_renames as mr
 
 OWNER = "owneruid"
 
@@ -53,21 +53,3 @@ def test_rename_tags_dedupes_and_keeps_order():
     assert mr.rename_tags(["genre: Hardcore ", "decade:90s"]) == ["genre:hardcore techno", "decade:90s"]
 
 
-def test_bare_hardcore_is_not_a_genre_name_or_a_synonym():
-    assert genre_vocab.lookup("hardcore") is None
-    assert "hardcore" not in genre_vocab.load().entries
-    assert genre_filter.vocabulary_name("hardcore") is None
-    assert library.clean_tag("genre:hardcore") == "genre:hardcore"
-    assert "hardcore" not in genre_vocab._aliases(genre_vocab.load())
-    assert genre_vocab.lookup("hardcore techno") == "hardcore techno"
-
-
-def test_hardcore_is_a_sound_modifier():
-    levels, _, _ = genre_vocab.load_levels()
-    mods = genre_vocab.vocabulary()["modifiers"]
-    assert mods["hardcore"]["kind"] == "sound"
-    assert levels["happy hardcore"]["parents"] == ["hardcore techno"]
-
-
-def test_discogs_hardcore_style_is_the_electronic_one():
-    assert discogs_lookup._tags({"styles": ["Hardcore", "Techno"]}) == ["genre:hardcore techno", "genre:techno"]

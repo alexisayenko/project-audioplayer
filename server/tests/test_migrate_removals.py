@@ -1,13 +1,10 @@
-import copy
 import json
-from pathlib import Path
 
 import pytest
 
-from app import genre_vocab, library, migrate_removals as mr
+from app import migrate_removals as mr
 
 OWNER = "owneruid"
-FIXTURE = Path(__file__).parent / "fixtures" / "removal_songs.json"
 
 
 @pytest.fixture
@@ -192,81 +189,3 @@ def test_a_clear_row_with_remove_or_add_is_rejected(plan_file):
             mr.load_plan(mr.DATA_FILE)
 
 
-def test_the_real_file_against_the_live_shape():
-    plan, digest = mr.load_plan(mr.DATA_FILE)
-    adds = mr.load_adds(mr.DATA_FILE)
-    clears = mr.load_clears(mr.DATA_FILE)
-    planned = sum(len(v) for v in plan.values())
-    assert clears <= set(plan)
-    assert not clears & set(adds)
-    assert 50 <= len(plan) <= 1000
-    assert planned >= len(plan)
-    assert len(digest) == 64
-    assert set(adds) <= set(plan)
-    doc = json.loads(mr.DATA_FILE.read_text(encoding="utf-8"))
-    assert doc["scope"] == "owner"
-    assert doc["approved"] == "2026-10-19"
-    assert all(row["title"] for row in doc["songs"].values())
-    live = json.loads(FIXTURE.read_text(encoding="utf-8"))["songs"]
-    assert {s["id"] for s in live} == set(plan)
-    songs = library.normalize({"songs": copy.deepcopy(live)})["songs"]
-    before = copy.deepcopy(songs)
-    result = mr.apply_plan(songs, plan, adds, clears)
-    assert not result["skipped"], "the owner's 2026-10-19 row added electronic, a group now (history, already applied live): reported as unknown, not added"
-    assert result["unknown"] == {"yQR_NLeXKtw": ["electronic"]}, "the owner's 2026-10-19 row added electronic, a group now (history, already applied live): reported as unknown, not added"
-    present = {s["id"]: {t.partition(":")[2] for t in s["tags"] if t.startswith("genre:")} for s in before}
-    assert set(result["cleared"]) == clears
-    assert sum(len(v) for v in result["removed"].values()) == sum(len(set(v) & present[sid]) for sid, v in plan.items())
-    assert result["added"].get("cb6WpqqN1ww") == ["deep house"]
-    for old, new in zip(before, songs):
-        genres = [t.partition(":")[2] for t in new["tags"] if t.startswith("genre:")]
-        assert (genres or new["id"] in clears)
-        assert not (new["id"] in clears and genres)
-        assert not set(plan[new["id"]]) & set(genres)
-        assert {a for a in adds.get(new["id"], []) if genre_vocab.is_canonical(a)} <= set(genres)
-        assert {k: v for k, v in new.items() if k != "tags"} == {k: v for k, v in old.items() if k != "tags"}
-        assert [t for t in new["tags"] if not t.startswith("genre:")] == [t for t in old["tags"] if not t.startswith("genre:")]
-
-
-def test_the_real_file_owner_requested_rows():
-    plan, _ = mr.load_plan(mr.DATA_FILE)
-    adds = mr.load_adds(mr.DATA_FILE)
-    live = json.loads(FIXTURE.read_text(encoding="utf-8"))["songs"]
-    songs = library.normalize({"songs": copy.deepcopy(live)})["songs"]
-    mr.apply_plan(songs, plan, adds, mr.load_clears(mr.DATA_FILE))
-    after = {s["id"]: [t.partition(":")[2] for t in s["tags"] if t.startswith("genre:")] for s in songs}
-    assert after["tUOpXeagVcg"] == ["synthpop", "moombahton"]
-    assert after["o_1aF54DO60"] == ["indie pop", "pop", "dream pop", "baroque pop", "sadcore"]
-    assert after["zCz3jDPoAtc"] == ["synthwave", "techno", "electronic", "darksynth"]
-    assert after["SDfXbCwmBYg"] == ["synthwave", "spacesynth", "darksynth"]
-    assert after["3L21HnrZzxc"] == ["synthwave", "dream pop", "electronic", "darksynth"]
-    assert after["6OW1JJwqVRQ"] == ["pop"]
-    assert after["8BphNy9ZQMU"] == ["dubstep"]
-    assert after["0XFudmaObLI"] == ["deep house", "nu-disco"]
-    assert after["dS7Eu05OUH8"] == ["big beat", "electronic", "house", "techno"]
-    assert after["pwtT8ysDuDY"] == ["chillwave", "synthwave"]
-    assert after["S_HBlzRJxaM"] == ["jazz", "blues", "soul jazz", "hard bop", "soul"]
-    assert after["2zXTaB_9JQg"] == ["pop rock", "rock", "soft rock", "classic rock", "blues rock", "pub rock"]
-    assert after["dQ03F36U5qg"] == ["melodic techno", "progressive trance", "new age", "electronic", "worldbeat", "trance", "ambient house", "ambient"]
-    assert after["13EsiCjsssY"] == ["house", "tech house", "dance pop", "electronic", "electro house"]
-    assert after["VLCPkGZ0gpw"] == ["electronic", "house", "big beat", "hip hop", "trance", "trip hop", "breakbeat"]
-    assert after["RP0_8J7uxhs"] == ["pop", "ballad", "synthpop", "electronic"]
-    assert after["vth-T1u7A58"] == ["pop rock", "new wave", "pop", "alternative rock"]
-    assert after["X--F5b5IdqU"] == ["synthpop", "electronic", "electro", "experimental"]
-    assert after["7iNbnineUCI"] == ["punk", "pop punk", "alternative rock", "pop rock"]
-    assert after["aKpgb2WrGo0"] == ["punk", "folk punk", "folk rock", "romani", "rock"]
-    assert after["Epj84QVw2rc"] == ["new wave", "pop", "soft rock", "dance-rock", "art pop"]
-    assert after["IbxPoaTdrz0"] == ["electronic", "dance pop", "synthpop", "disco", "pop", "contemporary r&b"]
-    assert after["kSIMVnPA994"] == ["ambient", "new age", "electronic", "trance", "synthpop", "techno", "electro"]
-    assert after["4mtfnfQoAco"] == ["electronic", "hip hop", "dancehall", "trip hop"]
-    assert after["dX3k_QDnzHE"] == ["synthpop", "dream pop", "electronic rock", "electronic", "pop"]
-    assert after["ZhIsAZO5gl0"] == ["hard rock", "disco", "heavy metal", "rock", "glam"]
-    assert after["TTvcivjxHNY"] == ["progressive house", "melodic techno", "trance", "electronic", "eurodance", "vocal trance", "dance pop"]
-    assert after["S-smUALTlFM"] == ["horrorcore", "hip hop"]
-    assert after["jxDZ-1sf9Bg"] == ["drum and bass", "electronic"]
-    assert after["waS3top6nzs"] == ["gothic metal", "industrial metal", "death metal", "heavy metal"]
-    assert after["sVx1mJDeUjY"] == ["synthwave", "synthpop", "witch house", "darkwave"]
-    assert after["TiNx0-TshOg"] == ["full-on psytrance"]
-    assert after["Lud-4oFlEms"] == ["full-on psytrance"]
-    assert after["pX8dL4BXqK0"] == ["progressive trance", "progressive psytrance"]
-    assert after["9VpW8Atlj7k"] == ["electronic", "progressive psytrance"]

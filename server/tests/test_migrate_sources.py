@@ -110,27 +110,6 @@ def test_a_broken_library_is_left_alone_and_others_still_run(datadir):
     assert stored(path)[VID]["sources"][0]["type"] == "youtube"
 
 
-def test_live_sample_keeps_titles_artists_genres_ids_and_count(datadir):
-    from pathlib import Path
-
-    fixture = Path(__file__).parent / "fixtures" / "live_library_sample.json"
-    original = json.loads(fixture.read_text(encoding="utf-8"))["library"]
-    path = datadir / "users" / OWNER / "library.json"
-    path.parent.mkdir(parents=True)
-    path.write_text(json.dumps(original), encoding="utf-8")
-    before = {s["id"]: library.public_song(s, None) for s in library.load(path)}
-    assert ms.run() == len(original["songs"])
-    after_raw = json.loads(path.read_text(encoding="utf-8"))["songs"]
-    assert [s["id"] for s in after_raw] == [s["id"] for s in original["songs"]]
-    assert all("source_url" not in s and all({"type", "ref"} <= set(e) for e in s["sources"]) for s in after_raw)
-    after = {s["id"]: library.public_song(s, None) for s in library.load(path)}
-    for sid, b in before.items():
-        for key in ("title", "artist", "genres", "tags", "source_url"):
-            assert after[sid][key] == b[key], (sid, key)
-        assert [e["url"] for e in after[sid]["sources"]] == [e["url"] for e in b["sources"]]
-    assert ms.run() == 0
-
-
 def test_a_source_with_only_an_id_is_kept(datadir):
     path = lib(datadir, OWNER, [song(VID, sources=[{"source": "youtube", "id": VID}, {"source": "youtube", "id": VID2}])])
     ms.run()

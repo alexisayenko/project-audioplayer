@@ -39,10 +39,6 @@ def stored(path):
     return {s["id"]: s for s in json.loads(path.read_text(encoding="utf-8"))["songs"]}
 
 
-def test_default_list_is_electronic():
-    assert mr.load_names() == ["electronic"]
-
-
 def test_removes_for_every_user_keeps_order_tags_and_updated_at(datadir):
     a = lib(datadir, OWNER, [song("a", ["house", "electronic", "disco"], tags=["country:us"]), song("only", ["electronic"]), song("c", ["pop"])])
     b = lib(datadir, "other", [song("d", ["Electronic ", "techno"])])

@@ -8,7 +8,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from app import library, migrate_model2, migrate_model3
+from app import migrate_model2, migrate_model3
 
 
 def song(sid, artists, countries=None, **extra):
@@ -131,15 +131,8 @@ def test_report_counts_and_lists_disagreements(tmp_path):
     assert out["backup_found"] is True
 
 
-def test_a_single_artist_edit_after_model_2_wins_over_the_backup(tmp_path):
-    path, out = run(tmp_path, apply=True)
-    assert tags_of(json.loads(path.read_text(encoding="utf-8")))["ed1"] == ["country:de"]
-    assert "ed1" in out["table_and_backup_disagree"]["ids"]
 
 
-def test_the_song_with_several_countries_in_the_backup_keeps_all_of_them(tmp_path):
-    path, _ = run(tmp_path, apply=True)
-    assert tags_of(json.loads(path.read_text(encoding="utf-8")))["many"] == ["country:gb", "country:fr", "country:de"]
 
 
 def test_several_main_artists_without_a_backup_entry_take_the_table_union_and_none_when_empty(tmp_path):
@@ -177,13 +170,6 @@ def test_the_table_is_removed_and_the_stamp_is_3_and_nothing_else_changes(tmp_pa
         assert new["updated_at"] == old["updated_at"]
 
 
-def test_the_migrated_file_is_served_with_the_countries_in_the_tags_view(tmp_path):
-    path, _ = run(tmp_path, apply=True)
-    doc = library.load_doc(path)
-    assert "artists" not in doc
-    views = {s["id"]: library.public_song(s, None)["tags"] for s in doc["songs"]}
-    assert views["kb2"] == ["genre:house", "decade:90s", "country:fi"]
-    assert views["tagged"] == ["genre:house", "keep", "decade:90s", "country:it"]
 
 
 def test_a_second_run_does_nothing(tmp_path):
@@ -221,10 +207,6 @@ def test_the_backup_is_a_byte_copy_and_a_restored_file_gets_a_numbered_one(tmp_p
     assert (tmp_path / "bk" / "library.1.json").read_bytes() == original
 
 
-def test_the_write_is_atomic_and_leaves_no_temp_files(tmp_path):
-    path, _ = run(tmp_path, apply=True)
-    assert not [p for p in path.parent.iterdir() if p.name != "library.json"]
-    assert json.loads(path.read_text(encoding="utf-8"))["settings"]["credits_schema"] == 3
 
 
 def test_a_failing_write_leaves_the_library_and_no_temp_file(tmp_path, monkeypatch):

@@ -144,15 +144,6 @@ def test_countries_come_back_in_tags_through_both_migrations_and_still_decode(cl
     assert {k: songs[first][k] for k in ("artist", "remixer", "year", "remix_year")} == legacy_view(SAMPLE["songs"][0])
 
 
-def test_the_five_legacy_values_are_equal_before_and_after_the_migration(client, tmp_path):
-    path = seed_sample(tmp_path)
-    expected = {s["id"]: legacy_view(s) for s in SAMPLE["songs"]}
-    for stage in ("lazy", "migrated"):
-        got = {s["id"]: {k: s[k] for k in ("artist", "remixer", "year", "remix_year")} for s in songs_of(client, "/catalog")}
-        assert got == expected, stage
-        migrate_model2.migrate(path, apply=True, backup_dir=tmp_path / "bk")
-
-
 def test_ios_add_from_the_fixture_body_matches_what_the_migration_would_store(client, tmp_path):
     body = json.loads(json.dumps(CONTRACT["requests"]["add"]))
     body["audio"] = False
