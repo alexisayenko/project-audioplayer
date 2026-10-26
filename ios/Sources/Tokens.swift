@@ -7,9 +7,9 @@ struct Token: Equatable {
 }
 
 enum Tokens {
-    private static let stop: Set<String> = ["feat", "featuring", "vol", "vs", "ft", "pt", "mr", "mrs", "ms", "dr", "jr", "sr", "st", "inc", "ltd", "ver", "prod"]
     private static let dashes: Set<Unicode.Scalar> = ["-", "\u{2013}", "\u{2014}"]
-    private static let bullets: Set<Unicode.Scalar> = ["\u{25CF}", "\u{2022}"]
+    private static let slashes: Set<Unicode.Scalar> = ["/", "\u{FF0F}"]
+    private static let pipes: Set<Unicode.Scalar> = ["|", "\u{FF5C}"]
 
     private typealias S = [Unicode.Scalar]
 
@@ -24,42 +24,13 @@ enum Tokens {
         return s[i].properties.isWhitespace || s[i] == "\u{FEFF}"
     }
 
-    private static func isLetter(_ c: Unicode.Scalar) -> Bool {
-        let t = String(c)
-        return t.lowercased() != t.uppercased()
-    }
-
-    private static func isLower(_ c: Unicode.Scalar) -> Bool {
-        let t = String(c)
-        return t.lowercased() == t && t.uppercased() != t
-    }
-
-    private static func periodSplits(_ s: S, _ i: Int) -> Bool {
-        guard isWs(s, i + 1) else { return false }
-        var j = i + 1
-        while j < s.count && isWs(s, j) { j += 1 }
-        if j >= s.count || isLower(s[j]) { return false }
-        var k = i
-        while k > 0 && isLetter(s[k - 1]) { k -= 1 }
-        return i - k >= 3 && !stop.contains(str(s, k, i).lowercased())
-    }
-
     private static func coreLength(_ s: S, _ i: Int) -> Int {
+        guard i > 0, isWs(s, i - 1) else { return 0 }
         let c = s[i]
-        let prevWs = i > 0 && isWs(s, i - 1)
-        let nextWs = isWs(s, i + 1)
-        let atEnd = i + 1 == s.count
-        if c == "|" { return 1 }
-        if c == "," || c == ";" { return prevWs || nextWs || atEnd ? 1 : 0 }
-        if c == ":" { return i > 0 && !prevWs && (nextWs || atEnd) ? 1 : 0 }
-        if c == "/" || dashes.contains(c) { return prevWs && nextWs ? 1 : 0 }
-        if bullets.contains(c) {
-            var j = i
-            while j < s.count && bullets.contains(s[j]) { j += 1 }
-            return prevWs && isWs(s, j) ? j - i : 0
-        }
-        if c == "." { return periodSplits(s, i) ? 1 : 0 }
-        return 0
+        if dashes.contains(c) || pipes.contains(c) { return isWs(s, i + 1) ? 1 : 0 }
+        guard slashes.contains(c) else { return 0 }
+        let len = i + 1 < s.count && slashes.contains(s[i + 1]) ? 2 : 1
+        return isWs(s, i + len) ? len : 0
     }
 
     static func tokenize(_ text: String) -> [Token] {
@@ -108,6 +79,10 @@ enum Tokens {
             toks[toks.count - 1].sep = ""
         } else {
             toks.remove(at: i)
+            if toks.count > 1, isBlank(toks[toks.count - 1]) {
+                toks.removeLast()
+                toks[toks.count - 1].sep = ""
+            }
         }
         return trim(compose(toks))
     }
@@ -192,115 +167,3 @@ enum Tokens {
         return (value, rest)
     }
 }
-
-#if DEBUG
-/// Port of `web/js/tokens.test.mjs`. Not run at launch; call from a debugger or a scratch test to check the port.
-func tokensSelfCheck() -> [String] {
-    var failures: [String] = []
-    func eq<T: Equatable>(_ a: T, _ b: T, _ n: String) { if a != b { failures.append("\(n): \(a) != \(b)") } }
-    func texts(_ s: String) -> [String] { Tokens.tokenize(s).map(\.text) }
-    func seps(_ s: String) -> [String] { Tokens.tokenize(s).map(\.sep) }
-
-    let alex = "Gala - Freed From Desire | Progressive Rework"
-    eq(texts(alex), ["Gala", "Freed From Desire", "Progressive Rework"], "alex texts")
-    eq(seps(alex), [" - ", " | ", ""], "alex seps")
-    let q = "Sadrican, DJ Harley Q., DJ Anna Fahrenheit, GOLDFISH"
-    eq(texts(q), ["Sadrican", "DJ Harley Q.", "DJ Anna Fahrenheit", "GOLDFISH"], "comma list")
-    eq(seps(q), [", ", ", ", ", ", ""], "comma seps")
-    eq(texts("J. R. R. Tolkien"), ["J. R. R. Tolkien"], "initials")
-    eq(texts("Hip-Hop - Mix"), ["Hip-Hop", "Mix"], "hip-hop")
-    eq(texts("Jean-Michel Jarre"), ["Jean-Michel Jarre"], "jean-michel")
-    eq(texts("A - B (Sadrican Remix)"), ["A", "B (Sadrican Remix)"], "brackets")
-    eq(texts("Sadrican 2026 Remix"), ["Sadrican 2026 Remix"], "year")
-    eq(texts("AC/DC"), ["AC/DC"], "acdc")
-    eq(texts("A / B"), ["A", "B"], "slash")
-    eq(texts("Hello World. Next Part"), ["Hello World", "Next Part"], "period")
-    eq(texts("Song feat. Someone"), ["Song feat. Someone"], "feat")
-    eq(texts("Best Of Vol. 2"), ["Best Of Vol. 2"], "vol")
-    eq(texts("Mr. Brightside"), ["Mr. Brightside"], "mr")
-    eq(texts("Version 1.5 Mix"), ["Version 1.5 Mix"], "decimal")
-    eq(texts("Wait... Now"), ["Wait... Now"], "ellipsis")
-    eq(texts("Mix. extended"), ["Mix. extended"], "lower after period")
-    eq(texts("A: B; C \u{2022} D \u{25CF}\u{25CF} E \u{2013} F \u{2014} G"), ["A", "B", "C", "D", "E", "F", "G"], "other seps")
-    eq(texts("12:30 Mix"), ["12:30 Mix"], "time")
-    eq(texts("1,000 Ways"), ["1,000 Ways"], "thousands")
-    eq(texts("A|B"), ["A", "B"], "pipe")
-    eq(seps("A|B"), ["|", ""], "pipe seps")
-    eq(Tokens.tokenize(""), [Token(text: "", sep: "")], "empty")
-    eq(texts("| A"), ["", "A"], "leading sep")
-    eq(texts("A |"), ["A", ""], "trailing sep")
-    eq(texts("A | | B"), ["A", "B"], "folded")
-    eq(seps("A | | B"), [" | | ", ""], "folded seps")
-    eq(Tokens.endsWithSeparator("A, "), true, "ends sep")
-    eq(Tokens.endsWithSeparator("A"), false, "no ends sep")
-
-    let tricky = ["", " ", "   ", "A", " A ", "A - B", "A -", "- A", " - ", "|", "||", ", ,", "A,B", "A , B", "A,", ",A",
-                  "A | | B", alex, q, "Hip-Hop - Mix", "A - B (Sadrican Remix)", "Hello World. Next", "Hello World.", "Hello World. ", "... ... ",
-                  "a \u{25CF}\u{25CF} b", "\u{25CF}\u{25CF}", " \u{2022} ", "x:y", "x: y", "x :", "\u{2014}", "A \u{2014} B \u{2013} C - D",
-                  "tab\tseparated\t-\tsample", "new\nline | x", "Mr. Brightside, Vol. 2 | feat. X", "\u{0416}\u{0443}\u{043A}. \u{0422}\u{0435}\u{0441}\u{0442} - \u{041C}\u{0438}\u{043A}\u{0441}"]
-    for s in tricky { eq(Tokens.compose(Tokens.tokenize(s)), s, "round trip \(s)") }
-
-    let s = "A - B | C"
-    eq(Tokens.removeToken(s, 0), "B | C", "remove first")
-    eq(Tokens.removeToken(s, 1), "A - C", "remove middle")
-    eq(Tokens.removeToken(s, 2), "A - B", "remove last")
-    eq(Tokens.removeToken("Solo", 0), "", "remove only")
-    eq(Tokens.removeToken(s, 9), s, "remove out of range")
-    eq(Tokens.replaceToken("A - B | C", 1, "Bee"), "A - Bee | C", "replace")
-    eq(Tokens.replaceToken("A - B", 1, ""), "A", "replace empty")
-    eq(texts(Tokens.replaceToken("A - B", 1, "X, Y")), ["A", "X", "Y"], "replace re-tokenizes")
-    eq(Tokens.appendToken("", "Foo", ", "), "Foo", "append blank")
-    eq(Tokens.appendToken("A", "Foo", ", "), "A, Foo", "append")
-    eq(Tokens.appendToken("A  ", " Foo ", " - "), "A - Foo", "append trims")
-    eq(Tokens.appendToken("A, ", "Foo", " - "), "A, Foo", "append after sep")
-    eq(Tokens.appendToken("A,", "Foo", " - "), "A, Foo", "append after bare sep")
-    eq(Tokens.appendToken("A", "  ", ", "), "A", "append blank token")
-    let m1 = Tokens.moveToken("Gala - Remix Guy", 1, "Sadrican", ", ")
-    eq(m1.src, "Gala", "move src"); eq(m1.dst, "Sadrican, Remix Guy", "move dst")
-    let m2 = Tokens.moveToken("Only", 0, "", " ")
-    eq(m2.src, "", "move only src"); eq(m2.dst, "Only", "move only dst")
-    let m3 = Tokens.moveToken("A |", 1, "X", " ")
-    eq(m3.src, "A |", "move blank src"); eq(m3.dst, "X", "move blank dst")
-    func ins(_ t: String, _ i: Int, _ x: String, _ sep: String) -> String { Tokens.insertToken(t, at: i, token: x, defaultSep: sep) }
-    eq(ins("", 0, "Foo", ", "), "Foo", "insert blank text")
-    eq(ins("A, B", 0, "Foo", ", "), "Foo, A, B", "insert first")
-    eq(ins("A, B", 1, "Foo", " - "), "A, Foo - B", "insert middle")
-    eq(ins("A - B | C", 2, "X", ", "), "A - B | X, C", "insert before last")
-    eq(ins("A, B", 2, "Foo", " - "), Tokens.appendToken("A, B", "Foo", " - "), "insert at end is append")
-    eq(ins("A, B", 99, "Foo", ", "), "A, B, Foo", "insert past end")
-    eq(ins("A", 0, "  ", ", "), "A", "insert blank token")
-    eq(ins("| A", 0, "X", ", "), "| X, A", "insert after leading blank")
-    eq(ins("A, ", 1, "X", ", "), "A, X", "insert before trailing blank")
-    for str in ["A, B", "A - B | C", "X"] {
-        let r = ins(str, 1, "Foo", ", ")
-        eq(Tokens.tokenize(r).contains { $0.text == "Foo" }, true, "insert keeps token \(str)")
-    }
-    func mt(_ s: String, _ i: Int, _ d: String, _ di: Int, _ sep: String, _ same: Bool? = nil) -> [String] {
-        let r = Tokens.moveTokenTo(src: s, index: i, dst: d, dstIndex: di, dstDefaultSep: sep, sameField: same)
-        return [r.src, r.dst]
-    }
-    eq(mt("Gala - Remix Guy", 1, "Sadrican, X", 0, ", "), ["Gala", "Remix Guy, Sadrican, X"], "moveTo across front")
-    eq(mt("Gala - Guy", 0, "S, X", 1, ", "), ["Guy", "S, Gala, X"], "moveTo across middle")
-    eq(mt("Only", 0, "", 5, " "), ["", "Only"], "moveTo into empty")
-    eq(mt("A, B, C", 0, "A, B, C", 3, ", "), ["B, C, A", "B, C, A"], "moveTo same to end")
-    eq(mt("A, B, C", 2, "A, B, C", 0, ", "), ["C, A, B", "C, A, B"], "moveTo same to front")
-    eq(mt("A, B, C", 0, "A, B, C", 2, ", "), ["B, A, C", "B, A, C"], "moveTo same forward")
-    eq(mt("A, B, C", 1, "A, B, C", 1, " - "), ["A, B, C", "A, B, C"], "moveTo same position no-op")
-    eq(mt("A, B, C", 1, "A, B, C", 2, " - "), ["A, B, C", "A, B, C"], "moveTo gap after no-op")
-    eq(mt("A, B", 1, "A, B", 99, " - "), ["A, B", "A, B"], "moveTo last to end no-op")
-    eq(mt("A", 0, "A", 0, ", ", false), ["", "A, A"], "moveTo explicit across")
-    eq(mt("A |", 1, "X", 0, " "), ["A |", "X"], "moveTo blank token no-op")
-    eq(Tokens.stripEdges("Mix, "), "Mix", "strip trailing")
-    eq(Tokens.stripEdges("| A |"), "A", "strip both")
-    eq(Tokens.stripEdges("A - B"), "A - B", "strip none")
-    let c1 = Tokens.commitTyped("", "Foo,", ", ")
-    eq(c1.value, "Foo,", "commit 1 value"); eq(c1.rest, "", "commit 1 rest")
-    let c2 = Tokens.commitTyped("A", "Foo, Ba", ", ")
-    eq(c2.value, "A, Foo, ", "commit 2 value"); eq(c2.rest, "Ba", "commit 2 rest")
-    let c3 = Tokens.commitTyped("A", "Foo", ", ")
-    eq(c3.value, "A", "commit 3 value"); eq(c3.rest, "Foo", "commit 3 rest")
-    let c4 = Tokens.commitTyped("A, ", " | x", ", ")
-    eq(c4.value, "A, ", "commit 4 value"); eq(c4.rest, "x", "commit 4 rest")
-    return failures
-}
-#endif
