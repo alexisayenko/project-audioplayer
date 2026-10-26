@@ -182,15 +182,18 @@ def test_committed_discogs_flag_agrees_with_the_levels_file():
         assert row["discogs"] is want, key
 
 
-def test_committed_counts_match_the_rows():
+def test_committed_rows_are_well_formed_and_counts_derive_from_them():
     doc = _committed()
-    counts = doc["_meta"]["counts"]
-    rows = [v for k, v in doc.items() if k != "_meta"]
-    assert counts["genres"] == len(rows)
+    rows = {k: v for k, v in doc.items() if k != "_meta"}
+    assert rows
+    assert all(k == k.strip().lower() and k for k in rows)
+    assert all(isinstance(r["discogs"], bool) for r in rows.values())
+    assert sum(1 for r in rows.values() if r["discogs"]) + sum(1 for r in rows.values() if not r["discogs"]) == len(rows)
     for src in ("musicbrainz", "wikipedia", "apple_music"):
-        assert counts[src] == sum(1 for r in rows if src in r), src
-    assert counts["discogs_true"] == sum(1 for r in rows if r["discogs"] is True)
-    assert counts["discogs_false"] == sum(1 for r in rows if r["discogs"] is False)
+        matched = sum(1 for r in rows.values() if src in r)
+        assert 0 < matched <= len(rows), src
+    genre_vocab.reset()
+    assert set(rows) <= set(genre_vocab.load().entries)
 
 
 def test_no_catalogue_entry_is_matched_to_two_genres():

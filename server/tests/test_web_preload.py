@@ -13,7 +13,8 @@ LAZY = [
     "settings", "genres", "genres-rework", "playlists", "stats", "theory", "about", "features", "viz-ui", "song-card", "add", "edit-dialog", "song-form", "drafts",
     "share-ui", "share-open", "player-tag-picker", "player-actions", "library-toolbar", "viz-modes", "viz-terrain-gl", "update-check",
 ]
-ORPHANS = {"js/display-title.js", "js/track-sub.js", "js/viz-deltae.js", "js/viz-timeline-worker.js"}
+ORPHANS = {"js/display-title.js", "js/studio-tabs.js", "js/track-sub.js", "js/viz-deltae.js", "js/viz-timeline-worker.js"}
+STUDIO_SITE = Path(__file__).resolve().parents[2] / "studio"
 
 
 def _tree(root: Path, files: dict[str, str]) -> None:
@@ -126,6 +127,24 @@ def _reachable_any_edge(root: Path) -> set[str]:
     return seen
 
 
+def _studio_site_modules() -> set[str]:
+    spec = re.compile(r"""(?:\bfrom\s*|\bimport\s*\(?\s*)['"](\.{1,2}/[^'"]+)['"]""")
+    web_js = (REAL_WEB / "js").resolve()
+    seen, todo = set(), [STUDIO_SITE / "main.js"]
+    visited = set()
+    while todo:
+        path = todo.pop().resolve()
+        if path in visited:
+            continue
+        visited.add(path)
+        for s in spec.findall(path.read_text(encoding="utf-8")):
+            dep = (path.parent / s).resolve()
+            if dep.is_relative_to(web_js):
+                seen.add(f"js/{dep.name}")
+            todo.append(dep)
+    return seen
+
+
 def test_web_121_real_tier2_is_every_module_that_tier1_does_not_hold():
     tier1 = set(module_closure(REAL_WEB))
     tier2 = lazy_modules(REAL_WEB)
@@ -133,7 +152,8 @@ def test_web_121_real_tier2_is_every_module_that_tier1_does_not_hold():
     assert all((REAL_WEB / p).is_file() for p in tier2)
     assert not tier1 & set(tier2)
     assert set(tier2) == _reachable_any_edge(REAL_WEB) - tier1
-    assert _all_modules(REAL_WEB) - tier1 - set(tier2) == ORPHANS, "a js module that nothing loads (add it to ORPHANS or delete it)"
+    unloaded = _all_modules(REAL_WEB) - tier1 - set(tier2) - _studio_site_modules()
+    assert unloaded == ORPHANS, "a js module that no page loads (add it to ORPHANS or delete it)"
 
 
 def test_web_121_tier2_starts_with_the_song_card_then_add_edit_then_the_visualizer_then_the_routes():
