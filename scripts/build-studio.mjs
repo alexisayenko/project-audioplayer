@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { copyFileSync, mkdirSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from 'node:fs';
+import { copyFileSync, existsSync, mkdirSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { TARGET, loadEsbuild } from './build-lib.mjs';
@@ -21,10 +21,18 @@ const FILES = [
 
 const short = (data) => createHash('sha256').update(data).digest('hex').slice(0, 8);
 
+const GIT_CANDIDATES = [
+  '/usr/bin/git',
+  '/usr/local/bin/git',
+  '/opt/homebrew/bin/git',
+  'C:\Program Files\Git\cmd\git.exe',
+];
+
 function buildStamp() {
   let hash = '';
+  const git = GIT_CANDIDATES.find((p) => existsSync(p));
   try {
-    hash = execFileSync('git', ['-C', repo, 'rev-parse', '--short=7', 'HEAD'], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim();
+    if (git) hash = execFileSync(git, ['-C', repo, 'rev-parse', '--short=7', 'HEAD'], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'], env: { HOME: process.env.HOME, USERPROFILE: process.env.USERPROFILE } }).trim();
   } catch { /* no git: the About page shows no build line */ }
   return { hash: /^[0-9a-f]{7}$/.test(hash) ? hash : '', date: new Date().toISOString().slice(0, 10) };
 }

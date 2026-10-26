@@ -103,7 +103,11 @@ function grade(a, b) {
  * Order: exact Wikipedia title, then the normalised key or display, then a normalised synonym; several keys at the first tier that hits means null.
  */
 export function buildResolver(vocab, sources) {
-  const add = (m, k, key) => { if (k) { if (!m.has(k)) m.set(k, new Set()); m.get(k).add(key); } };
+  const add = (m, k, key) => {
+    if (!k) return;
+    if (!m.has(k)) m.set(k, new Set());
+    m.get(k).add(key);
+  };
   const byQ = new Map();
   const byTitle = new Map();
   const byName = new Map();

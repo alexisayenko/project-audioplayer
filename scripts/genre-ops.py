@@ -19,6 +19,7 @@ import copy
 import json
 import subprocess
 import sys
+import tempfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -192,6 +193,14 @@ def review(base: dict, new: dict, base_name: str) -> str:
     return "\n".join(out) + "\n"
 
 
+def safe_base_dir(raw: str) -> Path:
+    path = Path(raw).resolve()
+    for allowed in (ROOT.resolve(), Path(tempfile.gettempdir()).resolve()):
+        if path.is_relative_to(allowed):
+            return path
+    raise SystemExit(f"--base-dir must be inside the repo or the temp directory: {raw}")
+
+
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("command", choices=["promote", "move", "parents", "unparent", "report"])
@@ -242,7 +251,7 @@ def main() -> None:
             (DATA / LEVELS_NAME).write_text(dump(levels), encoding="utf-8", newline="\n")
             (DATA / "genre_discogs.json").write_text(dump(discogs), encoding="utf-8", newline="\n")
             (DATA / "genre_extras.json").write_text(dump(extras), encoding="utf-8", newline="\n")
-    base = json.loads((Path(a.base_dir) / LEVELS_NAME).read_text(encoding="utf-8")) if a.base_dir else from_git(a.base, LEVELS_NAME)
+    base = json.loads((safe_base_dir(a.base_dir) / LEVELS_NAME).read_text(encoding="utf-8")) if a.base_dir else from_git(a.base, LEVELS_NAME)
     text = review(base, levels, a.base_dir or a.base)
     if a.out:
         Path(a.out).write_text(text, encoding="utf-8")

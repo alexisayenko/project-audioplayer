@@ -2,6 +2,7 @@
 set -e
 repo=$(cd "$(dirname "$0")/.." && pwd)
 dry=0
+wrangler_version=4.153.0
 for arg in "$@"; do
   case "$arg" in
     --dry-run) dry=1 ;;
@@ -19,5 +20,11 @@ fi
   . "$HOME/.config/cloudflare/token.env"
   set +a
   cd "$repo"
-  npx --yes wrangler pages deploy studio/dist --project-name electrophone-studio --branch main --commit-dirty=true
+  wrangler_dir="${XDG_CACHE_HOME:-$HOME/.cache}/electrophone-wrangler-$wrangler_version"
+  if [ ! -f "$wrangler_dir/node_modules/wrangler/bin/wrangler.js" ]; then
+    mkdir -p "$wrangler_dir"
+    echo '{"private":true}' > "$wrangler_dir/package.json"
+    npm install --prefix "$wrangler_dir" --ignore-scripts --no-audit --no-fund --loglevel=error "wrangler@$wrangler_version"
+  fi
+  node "$wrangler_dir/node_modules/wrangler/bin/wrangler.js" pages deploy studio/dist --project-name electrophone-studio --branch main --commit-dirty=true
 )
