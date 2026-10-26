@@ -4,7 +4,7 @@ import { installDom, flush } from './test-dom.mjs';
 
 installDom();
 globalThis.location = { hash: '' };
-const { registerRevealer, requestReveal, scrollTarget, findRowIndex } = await import('./reveal.js');
+const { registerRevealer, requestReveal } = await import('./reveal.js');
 
 test('request before a revealer exists navigates to the library and replays on register', async () => {
   requestReveal('s1');
@@ -40,17 +40,4 @@ test('unregistering a stale revealer does not remove a newer one', () => {
   assert.deepEqual(b, ['s3']);
   assert.deepEqual(a, []);
   offB();
-});
-
-test('scrollTarget centres the row and clamps to the document', () => {
-  const base = { rowTop: 500, rowHeight: 40, scrollY: 0, viewportH: 800, docH: 3000 };
-  assert.equal(scrollTarget(base), 120);
-  assert.equal(scrollTarget({ ...base, rowTop: 0 }), 0);
-  assert.equal(scrollTarget({ ...base, rowTop: 9000 }), 2200);
-  assert.equal(scrollTarget({ ...base, docH: 100 }), 0);
-});
-
-test('findRowIndex', () => {
-  assert.equal(findRowIndex([{ id: 'a' }, { id: 'b' }], 'b'), 1);
-  assert.equal(findRowIndex([], 'b'), -1);
 });

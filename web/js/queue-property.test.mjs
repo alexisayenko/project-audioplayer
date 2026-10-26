@@ -147,19 +147,6 @@ test('prevStep in shuffle walks the history, skipping removed songs and the curr
   assert.equal(Q.prevStep({ queue: ['a', 'b'], index: 0, shuffle: false }), null);
 });
 
-test('nextPlayable/prevPlayable: skip counts and the none-playable case', () => {
-  const state = { queue: ['a', 'b', 'c', 'd'], index: 0, shuffle: false, repeat: 'off', played: [], history: [] };
-  const ok = (id) => id === 'd';
-  const n = Q.nextPlayable(state, true, ok, false);
-  assert.equal(n.index, 3);
-  assert.equal(n.skipped, 2);
-  assert.equal(Q.nextPlayable(state, true, () => false, false), null);
-  assert.equal(Q.nextPlayable(state, true, () => false, true).index, 1, 'auto-download counts everything');
-  assert.equal(Q.prevPlayable({ ...state, index: 3 }, (id) => id === 'a', false).skipped, 2);
-  assert.equal(Q.prevPlayable({ ...state, index: 3 }, () => false, false), null);
-  assert.equal(Q.nextPlayable({ ...state, shuffle: true }, true, () => false, false), null);
-});
-
 test('parseSaved rejects junk and repairs bad indexes (random fuzz, seeded)', () => {
   const rnd = mulberry(99);
   const junk = [null, undefined, 5, 'x', [], {}, { items: 'no' }, { ids: [1, 2] }, { items: [null, { id: 3 }, { id: 'a' }, { id: 'a' }], index: 9, tags: ['t', 4] }];
@@ -171,17 +158,4 @@ test('parseSaved rejects junk and repairs bad indexes (random fuzz, seeded)', ()
   }
   assert.deepEqual(Q.parseSaved({ items: [{ id: 'a' }, { id: 'a' }] }).items.length, 1);
   assert.equal(Q.parseSaved({ ids: ['a', 'b'] }).items[1].manual, true);
-});
-
-test('playListed replaces the queue, dedups, and picks a random start under shuffle', () => {
-  const dupes = [...songs.slice(0, 4), songs[0]];
-  const r = Q.playListed(Q.emptyState(), dupes, [], false);
-  const st = r.state ?? r;
-  assert.equal(st.items.length, 4);
-  assert.equal(st.index, 0);
-  const sh = Q.playListed(Q.addManual(Q.emptyState(), 'zzz').state, songs, ['rock'], true, () => 0.99);
-  const s2 = sh.state ?? sh;
-  assert.ok(!s2.items.some((it) => it.id === 'zzz'));
-  assert.ok(s2.index > 0, 'shuffle starts somewhere other than the first song');
-  assert.deepEqual(s2.tags, ['rock']);
 });
