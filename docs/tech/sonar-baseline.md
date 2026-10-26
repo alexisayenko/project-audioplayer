@@ -241,3 +241,16 @@ Owner plan "fix all Sonar issues" (web and scripts side; the server side is a se
 | S7778 | one `push` call in `build-genre-sources.mjs` |
 
 Marked "False positive" in SonarCloud with a comment (reasons in [`.sonarcloud.properties`](../../.sonarcloud.properties)): `Web:S6819` x4, `Web:S6825` (the custom player group, sliders and visualizer dialog in `web/index.html`), `css:S4666` (`.side-toggle` in `web/style.css`), and `javascript:S7785` x2 in `web/js/app.js` (the background load and the update check are fire-and-forget on purpose; a top-level await would hold the module, and DOMContentLoaded, until the whole library prefetch ends). The multicriteria ignores in the properties file do not clear `Web:*` and `css:*` issues that were already open, hence the manual transitions.
+
+## Server cleanup 2026-10-26
+
+Owner plan "fix all sonar issues", `server/` (app and tests). Open code issues for `server/` at the analysis of 2026-10-26 20:19 UTC (`92fdbf2`): 19 (1 critical, 18 major; 12 `S8786`/`S5843` regexes, 3 `S3415`, `S5754`, `S1172`, `S8415`, `S8495`); 0 bugs, 0 vulnerabilities, 0 hotspots to review. Earlier commits of the same day (`3bd295c`, `b554d10`, `38cc361`) had already fixed most of them; the analysis of `2a9ff93` (20:34 UTC) shows 5 open, all marked below, so 0 open.
+
+| Rule | Fix |
+|---|---|
+| python:S8415 | `_read` in `routes/playlists.py` no longer raises the 404 for an unknown playlist; the routes that document it call `_stored` themselves |
+| python:S8495 | `table_families` in `genre_graph.py` builds the group colour tuple from one expression instead of returning 1-tuples and 0-tuples |
+| python:S8786 | the album bracket pattern rescanned to the end of the title for every unclosed opener (about 6 s on 20000 openers, a real quadratic case); `_strip_brackets` in `album_youtube.py` now scans in one pass with the same result (300000 random strings, 0 differences) |
+| python:S5843 | the album noise pattern shares its album words through a named part |
+
+Marked "False positive" in SonarCloud with a comment: `python:S8786` x5 on the album title patterns `_NOISE_TAIL`, `_SEP`, `_TOPIC`, `_TRAIL_SQUARE`, `_TRAIL_YEAR` in `album_youtube.py`. Each starts with a single-character lookbehind, so a whitespace run is only tried from its first character; measured at 80000 characters in about 10 ms and guarded by `test_album_title_patterns_stay_linear`; Sonar does not model the lookbehind. New tests: playlist route 404s and create, list, read and export; the album title patterns stay linear; `_strip_brackets` cases. Full server suite: 4537 passed, 19 skipped, 0 failed.
