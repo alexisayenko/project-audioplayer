@@ -54,14 +54,7 @@ def is_entry(doc: dict, name: str) -> bool:
     return name not in ("_meta", "families", "modifiers", "subfamilies", "hex") and isinstance(doc.get(name), dict)
 
 
-def promote(levels: dict, discogs: dict, extras: dict, name: str, colour: str | None) -> None:
-    """Move the genre entry `name` into the families block: a level 1 node keyed by the same name (children keep their `parents` text), keeping every parent that is not a group."""
-    if name in levels["families"]:
-        raise SystemExit(f"{name}: already level 1")
-    if not is_entry(levels, name):
-        raise SystemExit(f"{name}: not a genre entry of genre_levels.json")
-    e = levels[name]
-    groups = groups_of(levels)
+def _promoted_node(name: str, e: dict, groups: list[str], colour: str | None) -> dict:
     left = [p for p in e["parents"] if p in groups]
     keep = [p for p in e["parents"] if p not in groups]
     node: dict = {"name": name, "synonyms": e.get("synonyms", [])}
@@ -79,16 +72,30 @@ def promote(levels: dict, discogs: dict, extras: dict, name: str, colour: str | 
     for f in ("provisional", "status"):
         if e.get(f):
             print(f"note: {name} had {f}={e[f]!r}; a level 1 node carries neither", file=sys.stderr)
+    return node
+
+
+def _with_node_before_groups(families: dict, name: str, node: dict) -> collections.OrderedDict:
     fams = collections.OrderedDict()
     placed = False
-    for k, v in levels["families"].items():
+    for k, v in families.items():
         if not placed and isinstance(v, dict) and v.get("group"):
             fams[name] = node
             placed = True
         fams[k] = v
     if not placed:
         fams[name] = node
-    levels["families"] = fams
+    return fams
+
+
+def promote(levels: dict, discogs: dict, extras: dict, name: str, colour: str | None) -> None:
+    """Move the genre entry `name` into the families block: a level 1 node keyed by the same name (children keep their `parents` text), keeping every parent that is not a group."""
+    if name in levels["families"]:
+        raise SystemExit(f"{name}: already level 1")
+    if not is_entry(levels, name):
+        raise SystemExit(f"{name}: not a genre entry of genre_levels.json")
+    node = _promoted_node(name, levels[name], groups_of(levels), colour)
+    levels["families"] = _with_node_before_groups(levels["families"], name, node)
     del levels[name]
     discogs["genres"].pop(name, None)
     extras["extras"].pop(name, None)
@@ -134,6 +141,48 @@ def refresh_meta(levels: dict) -> None:
     levels["_meta"]["counts"], levels["_meta"]["non_discogs"], levels["_meta"]["total"] = counts, non, len(entries)
 
 
+def _famcount(entries: dict) -> collections.Counter:
+    c: collections.Counter = collections.Counter()
+    for v in entries.values():
+        for f in v["families"]:
+            c[f] += 1
+    return c
+
+
+def _row_side(v: dict | None) -> str:
+    return "-" if v is None else "[%s] L%s" % (", ".join(v["parents"]) or "-", v["level"])
+
+
+def _change_notes(o: dict, w: dict) -> list[str]:
+    notes = []
+    if bool(o.get("form")) != bool(w.get("form")):
+        notes.append("promoted to level 1" if w.get("form") else "no longer level 1")
+    if o["families"] != w["families"]:
+        notes.append(f"level 1 names {o['families']} -> {w['families']}")
+    for f in ("related", "synonyms"):
+        if o.get(f) != w.get(f):
+            notes.append(f"{f} {o.get(f) or '-'} -> {w.get(f) or '-'}")
+    return notes
+
+
+def _changed_row(k: str, o: dict | None, w: dict | None) -> str | None:
+    if o is None or w is None:
+        return f"| {k} | {_row_side(o)} | {_row_side(w)} | {'new' if o is None else 'removed'} |"
+    notes = _change_notes(o, w)
+    if o["parents"] != w["parents"] or o["level"] != w["level"] or notes:
+        return f"| {k} | {_row_side(o)} | {_row_side(w)} | {'; '.join(notes)} |"
+    return None
+
+
+def _review_checks(P, old_all: dict, new_all: dict, new_groups: dict) -> None:
+    gone = sorted(set(old_all) - set(new_all))
+    P(f"- CHECK every genre still exists exactly once (as a genre or a promoted genre): {'OK' if not gone else 'FAIL missing ' + ', '.join(gone)}")
+    lost = sorted(k for k, v in new_all.items() if not v["families"])
+    P(f"- CHECK no genre lost its place (every genre has at least one level 1 ancestor): {'OK' if not lost else 'FAIL ' + ', '.join(lost)}")
+    bad = sorted(k for k in new_all if k in {g.lower() for g in new_groups} or k in {s.lower() for g in new_groups.values() for s in g["synonyms"]})
+    P(f"- CHECK no group (or group synonym) is a genre: {'OK' if not bad else 'FAIL ' + ', '.join(bad)}")
+
+
 def review(base: dict, new: dict, base_name: str) -> str:
     out: list[str] = []
     P = out.append
@@ -143,49 +192,20 @@ def review(base: dict, new: dict, base_name: str) -> str:
     _, new_groups = gv.parse_groups(base), gv.parse_groups(new)
     P(f"# Genre data review: working tree against {base_name}\n")
     P(f"- genres below level 1: {len(old_e)} -> {len(new_e)}; promoted level 1 genres: {len(old_f)} -> {len(new_f)} ({', '.join(new_f) or '-'}); groups: {', '.join(new_groups) or '-'}")
-    gone = sorted(set(old_all) - set(new_all))
-    P(f"- CHECK every genre still exists exactly once (as a genre or a promoted genre): {'OK' if not gone else 'FAIL missing ' + ', '.join(gone)}")
-    lost = sorted(k for k, v in new_all.items() if not v["families"])
-    P(f"- CHECK no genre lost its place (every genre has at least one level 1 ancestor): {'OK' if not lost else 'FAIL ' + ', '.join(lost)}")
-    bad = sorted(k for k in new_all if k in {g.lower() for g in new_groups} or k in {s.lower() for g in new_groups.values() for s in g["synonyms"]})
-    P(f"- CHECK no group (or group synonym) is a genre: {'OK' if not bad else 'FAIL ' + ', '.join(bad)}")
+    _review_checks(P, old_all, new_all, new_groups)
     oc = collections.Counter(v["level"] for v in old_all.values())
     nc = collections.Counter(v["level"] for v in new_all.values())
     P("\n## Level distribution (every genre, promoted ones are level 1)\n\n| level | before | after |\n|---|---|---|")
     for lvl in sorted(set(oc) | set(nc)):
         P(f"| {lvl} | {oc.get(lvl, 0)} | {nc.get(lvl, 0)} |")
-
-    def famcount(entries: dict) -> collections.Counter:
-        c: collections.Counter = collections.Counter()
-        for v in entries.values():
-            for f in v["families"]:
-                c[f] += 1
-        return c
-
-    fo, fn = famcount(old_e), famcount(new_e)
+    fo, fn = _famcount(old_e), _famcount(new_e)
     P("\n## Genres below each level 1 name (a genre under several is counted in each)\n\n| level 1 name | before | after |\n|---|---|---|")
     for f in dict.fromkeys([*fo, *fn]):
         P(f"| {f} | {fo.get(f, '-')} | {fn.get(f, '-')} |")
     P("\n## Changed genres (old parents / level -> new parents / level)\n\n| genre | before | after | notes |\n|---|---|---|---|")
-    n = 0
-    for k in dict.fromkeys([*old_all, *new_all]):
-        o, w = old_all.get(k), new_all.get(k)
-        if o is None or w is None:
-            P(f"| {k} | {'-' if o is None else '[%s] L%s' % (', '.join(o['parents']) or '-', o['level'])} | {'-' if w is None else '[%s] L%s' % (', '.join(w['parents']) or '-', w['level'])} | {'new' if o is None else 'removed'} |")
-            n += 1
-            continue
-        notes = []
-        if bool(o.get("form")) != bool(w.get("form")):
-            notes.append("promoted to level 1" if w.get("form") else "no longer level 1")
-        if o["families"] != w["families"]:
-            notes.append(f"level 1 names {o['families']} -> {w['families']}")
-        for f in ("related", "synonyms"):
-            if o.get(f) != w.get(f):
-                notes.append(f"{f} {o.get(f) or '-'} -> {w.get(f) or '-'}")
-        if o["parents"] != w["parents"] or o["level"] != w["level"] or notes:
-            n += 1
-            P(f"| {k} | [{', '.join(o['parents']) or '-'}] L{o['level']} | [{', '.join(w['parents']) or '-'}] L{w['level']} | {'; '.join(notes)} |")
-    P(f"\nChanged rows: {n}.")
+    rows = [r for r in (_changed_row(k, old_all.get(k), new_all.get(k)) for k in dict.fromkeys([*old_all, *new_all])) if r]
+    out.extend(rows)
+    P(f"\nChanged rows: {len(rows)}.")
     moved = collections.Counter((old_all[k]["level"], new_all[k]["level"]) for k in old_all if k in new_all and old_all[k]["level"] != new_all[k]["level"])
     P("Level moves (old -> new: genres): " + (", ".join(f"L{a}->L{b}: {c}" for (a, b), c in sorted(moved.items())) or "none"))
     multi = sorted(k for k, v in new_all.items() if len(v["families"]) >= 2)
@@ -201,6 +221,52 @@ def safe_base_dir(raw: str) -> Path:
     raise SystemExit(f"--base-dir must be inside the repo or the temp directory: {raw}")
 
 
+def _move(levels: dict, a: argparse.Namespace) -> None:
+    if len(a.names) != 1 or not a.to:
+        raise SystemExit('move: move "<genre>" --to <parent> [--from <parent>]')
+    name = a.names[0]
+    spec = levels["families"].get(name) if name in levels["families"] else levels.get(name)
+    if spec is None:
+        raise SystemExit(f"{name}: unknown genre")
+    cur = list(spec.get("parents", []))
+    frm = a.frm or next((p for p in cur if p in groups_of(levels)), None)
+    if frm not in cur:
+        raise SystemExit(f"{name}: parents are {cur}; say which to replace with --from")
+    reparent(levels, name, [a.to if p == frm else p for p in cur if not (p == a.to and p != frm)])
+
+
+def _apply(a: argparse.Namespace, levels: dict, discogs: dict, extras: dict) -> None:
+    if a.command == "promote":
+        if not a.names:
+            raise SystemExit("promote: give one or more genre names")
+        for name in a.names:
+            promote(levels, discogs, extras, name, a.colour)
+    elif a.command == "move":
+        _move(levels, a)
+    elif a.command == "parents":
+        if len(a.names) != 2:
+            raise SystemExit('parents: parents "<genre>" "A,B"')
+        reparent(levels, a.names[0], [p.strip() for p in a.names[1].split(",") if p.strip()])
+    elif a.command == "unparent":
+        if not a.names or not a.frm:
+            raise SystemExit("unparent: unparent <genre> [<genre> ...] --from <parent>")
+        for name in a.names:
+            unparent(levels, name, a.frm)
+
+
+def _validate_and_write(a: argparse.Namespace, levels: dict, discogs: dict, extras: dict) -> None:
+    try:
+        gv.parse_all(levels)
+    except ValueError as e:
+        raise SystemExit(f"INVALID, nothing written: {e}")
+    refresh_meta(levels)
+    gv.parse_all(levels)
+    if not a.dry_run:
+        (DATA / LEVELS_NAME).write_text(dump(levels), encoding="utf-8", newline="\n")
+        (DATA / "genre_discogs.json").write_text(dump(discogs), encoding="utf-8", newline="\n")
+        (DATA / "genre_extras.json").write_text(dump(extras), encoding="utf-8", newline="\n")
+
+
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("command", choices=["promote", "move", "parents", "unparent", "report"])
@@ -214,43 +280,9 @@ def main() -> None:
     ap.add_argument("--out")
     a = ap.parse_args()
     levels, discogs, extras = (load(f) for f in FILES)
-    if a.command == "promote":
-        if not a.names:
-            raise SystemExit("promote: give one or more genre names")
-        for name in a.names:
-            promote(levels, discogs, extras, name, a.colour)
-    elif a.command == "move":
-        if len(a.names) != 1 or not a.to:
-            raise SystemExit('move: move "<genre>" --to <parent> [--from <parent>]')
-        name = a.names[0]
-        spec = levels["families"].get(name) if name in levels["families"] else levels.get(name)
-        if spec is None:
-            raise SystemExit(f"{name}: unknown genre")
-        cur = list(spec.get("parents", []))
-        frm = a.frm or next((p for p in cur if p in groups_of(levels)), None)
-        if frm not in cur:
-            raise SystemExit(f"{name}: parents are {cur}; say which to replace with --from")
-        reparent(levels, name, [a.to if p == frm else p for p in cur if not (p == a.to and p != frm)])
-    elif a.command == "parents":
-        if len(a.names) != 2:
-            raise SystemExit('parents: parents "<genre>" "A,B"')
-        reparent(levels, a.names[0], [p.strip() for p in a.names[1].split(",") if p.strip()])
-    elif a.command == "unparent":
-        if not a.names or not a.frm:
-            raise SystemExit("unparent: unparent <genre> [<genre> ...] --from <parent>")
-        for name in a.names:
-            unparent(levels, name, a.frm)
+    _apply(a, levels, discogs, extras)
     if a.command != "report":
-        try:
-            gv.parse_all(levels)
-        except ValueError as e:
-            raise SystemExit(f"INVALID, nothing written: {e}")
-        refresh_meta(levels)
-        gv.parse_all(levels)
-        if not a.dry_run:
-            (DATA / LEVELS_NAME).write_text(dump(levels), encoding="utf-8", newline="\n")
-            (DATA / "genre_discogs.json").write_text(dump(discogs), encoding="utf-8", newline="\n")
-            (DATA / "genre_extras.json").write_text(dump(extras), encoding="utf-8", newline="\n")
+        _validate_and_write(a, levels, discogs, extras)
     base = json.loads((safe_base_dir(a.base_dir) / LEVELS_NAME).read_text(encoding="utf-8")) if a.base_dir else from_git(a.base, LEVELS_NAME)
     text = review(base, levels, a.base_dir or a.base)
     if a.out:

@@ -25,7 +25,7 @@ const GIT_CANDIDATES = [
   '/usr/bin/git',
   '/usr/local/bin/git',
   '/opt/homebrew/bin/git',
-  'C:\Program Files\Git\cmd\git.exe',
+  'C:\\Program Files\\Git\\cmd\\git.exe',
 ];
 
 function buildStamp() {
@@ -41,6 +41,25 @@ function list(dir, base = dir) {
   return readdirSync(dir, { withFileTypes: true }).flatMap((e) => (e.isDirectory()
     ? list(join(dir, e.name), base)
     : [join(dir, e.name).slice(base.length + 1)])).sort();
+}
+
+const SHIPPED_URL = /^["']?(?:data:|#)/;
+
+function strayUrls(code) {
+  const found = [];
+  let at = code.indexOf('url(');
+  while (at >= 0) {
+    const close = code.indexOf(')', at + 4);
+    if (close < 0) break;
+    const arg = code.slice(at + 4, close);
+    if (/^\s/.test(arg) || !SHIPPED_URL.test(arg)) {
+      found.push(code.slice(at, close + 1));
+      at = code.indexOf('url(', close + 1);
+    } else {
+      at = code.indexOf('url(', at + 1);
+    }
+  }
+  return found;
 }
 
 async function build() {
@@ -63,8 +82,8 @@ async function build() {
   });
   const [js] = Object.keys(result.metafile.outputs).map((p) => p.split('/').pop());
   const css = await esbuild.transform(SHEETS.map((p) => readFileSync(p, 'utf8')).join('\n'), { loader: 'css', minify: true, target: TARGET, legalComments: 'none' });
-  const stray = css.code.match(/url\(\s*(?!["']?(?:data:|#))[^)]*\)/g);
-  if (stray) throw new Error(`stylesheet references files the site does not ship: ${stray.join(', ')}`);
+  const stray = strayUrls(css.code);
+  if (stray.length) throw new Error(`stylesheet references files the site does not ship: ${stray.join(', ')}`);
   const cssName = `site-${short(css.code)}.css`;
   writeFileSync(join(dist, 'assets', cssName), css.code);
   const html = readFileSync(join(site, 'index.html'), 'utf8')

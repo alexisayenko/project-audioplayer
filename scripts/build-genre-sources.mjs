@@ -7,6 +7,7 @@ import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { cacheKey, flattenApple, indexByNorm, matchSource, normalise } from "./genre-sources-lib.mjs";
+import { applyManual, buildIndexes, chunk, classifyEntities, entityNorms, mergeWikiMatches, nonGenreReview, runSequential, summarise } from "./genre-build-helpers.mjs";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const DATA = join(ROOT, "server", "data");
@@ -24,27 +25,34 @@ let lastCall = 0;
 let network = 0;
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
+async function fetchOnce(url, file, attempt) {
+  const wait = lastCall + GAP_MS - Date.now();
+  if (wait > 0) await sleep(wait);
+  lastCall = Date.now();
+  try {
+    const res = await fetch(url, { headers: { "User-Agent": UA, Accept: "application/json" } });
+    network++;
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const body = await res.json();
+    writeFileSync(file, JSON.stringify(body));
+    return { body };
+  } catch (e) {
+    await sleep(3000 * (attempt + 1));
+    return { error: e };
+  }
+}
+
+async function fetchWithRetry(url, file, attempt = 0) {
+  const { body, error } = await fetchOnce(url, file, attempt);
+  if (!error) return body;
+  if (attempt >= 3) throw new Error(`${url}: ${error.message}`);
+  return fetchWithRetry(url, file, attempt + 1);
+}
+
 async function getJson(url) {
   const file = join(CACHE, cacheKey(url) + ".json");
   if (!REFRESH && existsSync(file)) return JSON.parse(readFileSync(file, "utf8"));
-  let lastErr;
-  for (let attempt = 0; attempt < 4; attempt++) {
-    const wait = lastCall + GAP_MS - Date.now();
-    if (wait > 0) await sleep(wait);
-    lastCall = Date.now();
-    try {
-      const res = await fetch(url, { headers: { "User-Agent": UA, Accept: "application/json" } });
-      network++;
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const body = await res.json();
-      writeFileSync(file, JSON.stringify(body));
-      return body;
-    } catch (e) {
-      lastErr = e;
-      await sleep(3000 * (attempt + 1));
-    }
-  }
-  throw new Error(`${url}: ${lastErr.message}`);
+  return fetchWithRetry(url, file);
 }
 
 const readJson = (name) => JSON.parse(readFileSync(join(DATA, name), "utf8"));
@@ -98,140 +106,80 @@ async function wikidata(vocab, notes) {
   };
   const loadEntities = async () => {
     const need = [...hits.keys()].filter((q) => !entities.has(q));
-    for (let i = 0; i < need.length; i += 50) {
-      const ids = need.slice(i, i + 50).join("|");
-      const body = await getJson(`${api}?action=wbgetentities&ids=${ids}&props=labels|aliases|claims|sitelinks&languages=en&sitefilter=enwiki&format=json`);
+    await runSequential(chunk(need, 50), async (part) => {
+      const body = await getJson(`${api}?action=wbgetentities&ids=${part.join("|")}&props=labels|aliases|claims|sitelinks&languages=en&sitefilter=enwiki&format=json`);
       for (const [id, e] of Object.entries(body.entities || {})) entities.set(id, e);
-    }
+    });
   };
-  const norms = (e) => {
-    const out = new Set();
-    const l = e.labels?.en?.value;
-    if (l) out.add(normalise(l));
-    for (const a of e.aliases?.en || []) out.add(normalise(a.value));
-    return out;
-  };
-  for (const g of vocab) await search(g.name);
+  await runSequential(vocab, (g) => search(g.name));
   await loadEntities();
-  const hasName = (g) => [...entities.values()].some((e) => norms(e).has(normalise(g.name)));
-  for (const g of vocab) if (!hasName(g)) for (const s of g.synonyms.slice(0, 4)) await search(s);
+  const hasName = (g) => [...entities.values()].some((e) => entityNorms(e).has(normalise(g.name)));
+  await runSequential(vocab.filter((g) => !hasName(g)).flatMap((g) => g.synonyms.slice(0, 4)), search);
   await loadEntities();
-  const classStats = {};
-  const items = [];
-  const nonGenre = [];
-  for (const [id, e] of entities) {
-    const title = e.sitelinks?.enwiki?.title;
-    const claimIds = (p) => (e.claims?.[p] || []).map((c) => c.mainsnak?.datavalue?.value?.id).filter(Boolean);
-    const p31 = claimIds("P31");
-    const isGenre = [...p31, ...claimIds("P279")].some((c) => MUSIC_GENRE_CLASSES.has(c));
-    for (const c of p31) classStats[c] = (classStats[c] || 0) + 1;
-    if (!title) continue;
-    const label = e.labels?.en?.value;
-    const it = { qid: id, title, norms: norms(e), labelNorm: label ? normalise(label) : null, p31 };
-    (isGenre ? items : nonGenre).push(it);
-  }
+  const { classStats, items, nonGenre } = classifyEntities(entities, MUSIC_GENRE_CLASSES);
   notes.wikidata_classes = classStats;
-  const idx = new Map();
-  const labelIdx = new Map();
-  for (const it of items) {
-    for (const k of it.norms) {
-      if (!idx.has(k)) idx.set(k, []);
-      idx.get(k).push(it);
-    }
-    if (it.labelNorm) {
-      if (!labelIdx.has(it.labelNorm)) labelIdx.set(it.labelNorm, []);
-      labelIdx.get(it.labelNorm).push(it);
-    }
-  }
-  return { idx, labelIdx, items, nonGenre };
+  return { ...buildIndexes(items), items, nonGenre };
 }
 
 const tagged = (source, list) => list.map((r) => ({ source, ...r }));
 
-async function main() {
-  const vocab = loadVocabulary();
-  const sources = {};
-  const review = [];
-  const unreachable = [];
-  const notes = {};
+function recordCatalogue(st, key, items, describe, rank) {
+  const r = matchSource(st.vocab, indexByNorm(items, (x) => x.name), (x) => x.id, describe, rank);
+  for (const [g, m] of Object.entries(r.matches)) st.out[g][key] = { id: m.item.id, name: m.item.name, match: m.match };
+  st.review.push(...tagged(key, r.review));
+  st.sources[key] = items.length;
+}
+
+async function recordMusicbrainz(st) {
+  const mb = await musicbrainz();
+  recordCatalogue(st, "musicbrainz", mb, (x) => `${x.name} (${x.id})`);
+}
+
+async function recordApple(st) {
+  const apple = await appleGenres();
+  recordCatalogue(st, "apple_music", apple, (x) => `${x.path.join(" > ")} (${x.id})`, (x) => x.depth);
+}
+
+async function recordWikipedia(st) {
+  const { idx, labelIdx, items, nonGenre } = await wikidata(st.vocab, st.notes);
+  const desc = (x) => `${x.title} (${x.qid})`;
+  const r = mergeWikiMatches(st.vocab, labelIdx, idx, desc);
+  for (const [g, m] of Object.entries(r.matches)) st.out[g].wikipedia = { title: m.item.title, wikidata: m.item.qid, match: m.match };
+  st.review.push(...tagged("wikipedia", r.review));
+  st.review.push(...nonGenreReview(st.vocab, st.out, r.review, nonGenre));
+  st.sources.wikipedia = items.length;
+}
+
+async function guarded(label, unreachable, fn) {
+  try {
+    await fn();
+  } catch (e) {
+    unreachable.push(`${label}: ${e.message}`);
+  }
+}
+
+function initialOut(vocab) {
   const out = {};
   for (const g of vocab) {
     out[g.name] = { discogs: g.discogs };
     if (g.discogsName.toLowerCase() !== g.name) out[g.name].discogs_name = g.discogsName;
   }
+  return out;
+}
 
-  try {
-    const mb = await musicbrainz();
-    const r = matchSource(vocab, indexByNorm(mb, (x) => x.name), (x) => x.id, (x) => `${x.name} (${x.id})`);
-    for (const [g, m] of Object.entries(r.matches)) out[g].musicbrainz = { id: m.item.id, name: m.item.name, match: m.match };
-    review.push(...tagged("musicbrainz", r.review));
-    sources.musicbrainz = mb.length;
-  } catch (e) {
-    unreachable.push(`musicbrainz: ${e.message}`);
-  }
+async function main() {
+  const vocab = loadVocabulary();
+  const st = { vocab, sources: {}, review: [], notes: {}, out: initialOut(vocab) };
+  const unreachable = [];
+  const { sources, review, notes, out } = st;
 
-  try {
-    const apple = await appleGenres();
-    const r = matchSource(vocab, indexByNorm(apple, (x) => x.name), (x) => x.id, (x) => `${x.path.join(" > ")} (${x.id})`, (x) => x.depth);
-    for (const [g, m] of Object.entries(r.matches)) out[g].apple_music = { id: m.item.id, name: m.item.name, match: m.match };
-    review.push(...tagged("apple_music", r.review));
-    sources.apple_music = apple.length;
-  } catch (e) {
-    unreachable.push(`apple_music: ${e.message}`);
-  }
+  await guarded("musicbrainz", unreachable, () => recordMusicbrainz(st));
+  await guarded("apple_music", unreachable, () => recordApple(st));
+  await guarded("wikipedia/wikidata", unreachable, () => recordWikipedia(st));
 
-  try {
-    const { idx, labelIdx, items, nonGenre } = await wikidata(vocab, notes);
-    const desc = (x) => `${x.title} (${x.qid})`;
-    const byLabel = matchSource(vocab, labelIdx, (x) => x.qid, desc);
-    const rest = vocab.filter((g) => !byLabel.matches[g.name] && !byLabel.review.some((x) => x.genre === g.name));
-    const byAlias = matchSource(rest, idx, (x) => x.qid, desc);
-    const taken = new Set(Object.values(byLabel.matches).map((m) => m.item.qid));
-    const r = { matches: { ...byLabel.matches }, review: [...byLabel.review] };
-    for (const [g, m] of Object.entries(byAlias.matches)) {
-      if (taken.has(m.item.qid)) r.review.push({ genre: g, candidate: desc(m.item), reason: "alias of an item already matched by label to another genre" });
-      else r.matches[g] = m;
-    }
-    r.review.push(...byAlias.review);
-    for (const [g, m] of Object.entries(r.matches)) out[g].wikipedia = { title: m.item.title, wikidata: m.item.qid, match: m.match };
-    review.push(...tagged("wikipedia", r.review));
-    const seen = new Set(r.review.map((x) => x.genre));
-    for (const g of vocab) {
-      if (out[g.name].wikipedia || seen.has(g.name)) continue;
-      const k = normalise(g.name);
-      for (const c of nonGenre.filter((x) => x.labelNorm === k && normalise(x.title) === k && !x.title.includes("(")).slice(0, 3)) {
-        review.push({ source: "wikipedia", genre: g.name, candidate: `${c.title} (${c.qid})`, reason: `label matches but the Wikidata item is not a music genre (instance of ${c.p31.join(", ") || "nothing"})` });
-      }
-    }
-    sources.wikipedia = items.length;
-  } catch (e) {
-    unreachable.push(`wikipedia/wikidata: ${e.message}`);
-  }
+  if (existsSync(join(DATA, "genre_sources_manual.json"))) applyManual(out, review, readJson("genre_sources_manual.json"));
 
-  const manualFile = join(DATA, "genre_sources_manual.json");
-  if (existsSync(manualFile)) {
-    const manual = readJson("genre_sources_manual.json");
-    for (const [g, per] of Object.entries(manual)) {
-      if (g.startsWith("_") || !out[g]) continue;
-      for (const [src, val] of Object.entries(per)) {
-        out[g][src] = { ...val, match: "manual" };
-        for (let i = review.length - 1; i >= 0; i--) if (review[i].genre === g && review[i].source === src) review.splice(i, 1);
-      }
-    }
-  }
-
-  const counts = { genres: vocab.length, discogs_true: 0, discogs_false: 0, musicbrainz: 0, wikipedia: 0, apple_music: 0 };
-  const byMatch = {};
-  for (const v of Object.values(out)) {
-    if (v.discogs === true) counts.discogs_true++;
-    if (v.discogs === false) counts.discogs_false++;
-    for (const s of SOURCES) {
-      if (!v[s]) continue;
-      counts[s]++;
-      byMatch[s] = byMatch[s] || {};
-      byMatch[s][v[s].match] = (byMatch[s][v[s].match] || 0) + 1;
-    }
-  }
+  const { counts, byMatch } = summarise(out, vocab.length, SOURCES);
   const meta = {
     generated_at: new Date().toISOString(),
     counts,

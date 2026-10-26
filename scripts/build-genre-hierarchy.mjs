@@ -7,6 +7,7 @@ import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { cacheKey } from "./genre-sources-lib.mjs";
+import { chunk, claimIdsOf as claimIds, runSequential } from "./genre-build-helpers.mjs";
 import { buildResolver, parseInfobox, parseLead } from "./genre-hierarchy-lib.mjs";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
@@ -25,27 +26,34 @@ let network = 0;
 const failures = [];
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
+async function fetchOnce(url, file, attempt) {
+  const wait = lastCall + GAP_MS - Date.now();
+  if (wait > 0) await sleep(wait);
+  lastCall = Date.now();
+  try {
+    const res = await fetch(url, { headers: { "User-Agent": UA, Accept: "application/json" } });
+    network++;
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const body = await res.json();
+    writeFileSync(file, JSON.stringify(body));
+    return { body };
+  } catch (e) {
+    await sleep(3000 * (attempt + 1));
+    return { error: e };
+  }
+}
+
+async function fetchWithRetry(url, file, attempt = 0) {
+  const { body, error } = await fetchOnce(url, file, attempt);
+  if (!error) return body;
+  if (attempt >= 3) throw new Error(`${url}: ${error.message}`);
+  return fetchWithRetry(url, file, attempt + 1);
+}
+
 async function getJson(url) {
   const file = join(CACHE, cacheKey(url) + ".json");
   if (!REFRESH && existsSync(file)) return JSON.parse(readFileSync(file, "utf8"));
-  let lastErr;
-  for (let attempt = 0; attempt < 4; attempt++) {
-    const wait = lastCall + GAP_MS - Date.now();
-    if (wait > 0) await sleep(wait);
-    lastCall = Date.now();
-    try {
-      const res = await fetch(url, { headers: { "User-Agent": UA, Accept: "application/json" } });
-      network++;
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const body = await res.json();
-      writeFileSync(file, JSON.stringify(body));
-      return body;
-    } catch (e) {
-      lastErr = e;
-      await sleep(3000 * (attempt + 1));
-    }
-  }
-  throw new Error(`${url}: ${lastErr.message}`);
+  return fetchWithRetry(url, file);
 }
 
 const readJson = (name) => JSON.parse(readFileSync(join(DATA, name), "utf8"));
@@ -69,14 +77,39 @@ function loadVocabulary() {
 
 async function entities(ids, props) {
   const out = {};
-  for (let i = 0; i < ids.length; i += 50) {
-    const body = await getJson(`https://www.wikidata.org/w/api.php?action=wbgetentities&ids=${ids.slice(i, i + 50).join("|")}&props=${props}&languages=en&format=json`);
+  await runSequential(chunk(ids, 50), async (part) => {
+    const body = await getJson(`https://www.wikidata.org/w/api.php?action=wbgetentities&ids=${part.join("|")}&props=${props}&languages=en&format=json`);
     Object.assign(out, body.entities || {});
-  }
+  });
   return out;
 }
 
-const claimIds = (e, p) => (e?.claims?.[p] || []).map((c) => c.mainsnak?.datavalue?.value?.id).filter(Boolean);
+const collectParentIds = (ents) => new Set(Object.values(ents).flatMap((e) => ["P279", "P31"].flatMap((p) => claimIds(e, p))).filter((q) => !GENERIC_CLASSES.has(q)));
+
+function fillFromWikitext(entry, text, resolver, name) {
+  const ref = (label) => { const key = resolver.label(label); return { label, key: key === name ? null : key }; };
+  entry.lead_parents = parseLead(text).map((x) => ({ ...ref(x.label), phrase_kind: x.phrase_kind }));
+  const box = parseInfobox(text);
+  entry.origins = box.origins.map(ref);
+  entry.derivatives = box.derivatives.map(ref);
+}
+
+async function buildEntry(g, wp, ent, asRef, resolver) {
+  const entry = { wikidata: wp.wikidata, wikipedia: wp.title };
+  entry.subclass_of = claimIds(ent, "P279").map((q) => asRef(q, g.name));
+  entry.instance_of = claimIds(ent, "P31").filter((q) => !GENERIC_CLASSES.has(q)).map((q) => asRef(q, g.name));
+  entry.lead_parents = [];
+  entry.origins = [];
+  entry.derivatives = [];
+  try {
+    const body = await getJson(`https://en.wikipedia.org/w/api.php?action=parse&page=${encodeURIComponent(wp.title)}&prop=wikitext&section=0&redirects=1&format=json&formatversion=2`);
+    fillFromWikitext(entry, body.parse?.wikitext || "", resolver, g.name);
+  } catch (err) {
+    failures.push(`${g.name}: ${err.message}`);
+    entry.error = "wikipedia fetch failed";
+  }
+  return entry;
+}
 
 async function main() {
   const vocab = loadVocabulary();
@@ -85,8 +118,7 @@ async function main() {
   const matched = vocab.filter((g) => sources[g.name]?.wikipedia);
 
   const ents = await entities(matched.map((g) => sources[g.name].wikipedia.wikidata), "claims|labels");
-  const parentIds = new Set();
-  for (const e of Object.values(ents)) for (const p of ["P279", "P31"]) for (const q of claimIds(e, p)) if (!GENERIC_CLASSES.has(q)) parentIds.add(q);
+  const parentIds = collectParentIds(ents);
   const labels = await entities([...parentIds], "labels");
   const labelOf = (q) => labels[q]?.labels?.en?.value || null;
   const asRef = (q, self) => {
@@ -96,35 +128,14 @@ async function main() {
   };
 
   const out = {};
-  let withWd = 0;
-  let withLead = 0;
-  let withOrigins = 0;
-  for (const g of matched) {
+  await runSequential(matched, async (g) => {
     const wp = sources[g.name].wikipedia;
-    const e = ents[wp.wikidata];
-    const entry = { wikidata: wp.wikidata, wikipedia: wp.title };
-    entry.subclass_of = claimIds(e, "P279").map((q) => asRef(q, g.name));
-    entry.instance_of = claimIds(e, "P31").filter((q) => !GENERIC_CLASSES.has(q)).map((q) => asRef(q, g.name));
-    entry.lead_parents = [];
-    entry.origins = [];
-    entry.derivatives = [];
-    try {
-      const body = await getJson(`https://en.wikipedia.org/w/api.php?action=parse&page=${encodeURIComponent(wp.title)}&prop=wikitext&section=0&redirects=1&format=json&formatversion=2`);
-      const text = body.parse?.wikitext || "";
-      const ref = (label) => { const key = resolver.label(label); return { label, key: key === g.name ? null : key }; };
-      entry.lead_parents = parseLead(text).map((x) => ({ ...ref(x.label), phrase_kind: x.phrase_kind }));
-      const box = parseInfobox(text);
-      entry.origins = box.origins.map(ref);
-      entry.derivatives = box.derivatives.map(ref);
-    } catch (err) {
-      failures.push(`${g.name}: ${err.message}`);
-      entry.error = "wikipedia fetch failed";
-    }
-    if (entry.subclass_of.length || entry.instance_of.length) withWd++;
-    if (entry.lead_parents.length) withLead++;
-    if (entry.origins.length) withOrigins++;
-    out[g.name] = entry;
-  }
+    out[g.name] = await buildEntry(g, wp, ents[wp.wikidata], asRef, resolver);
+  });
+  const entries = Object.values(out);
+  const withWd = entries.filter((e) => e.subclass_of.length || e.instance_of.length).length;
+  const withLead = entries.filter((e) => e.lead_parents.length).length;
+  const withOrigins = entries.filter((e) => e.origins.length).length;
   const meta = {
     generated_at: new Date().toISOString(),
     review_only: "Not loaded by the server and not in the payload. Compare with scripts/hierarchy-diff.mjs.",

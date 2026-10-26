@@ -1,4 +1,5 @@
 import { normalise } from "./genre-sources-lib.mjs";
+import { anyLink, infoboxFields, labelledLink, replaceLinks, scanLinks, targetLink } from "./wikitext-scan.mjs";
 
 const GENERIC = new Set(["musicgenre", "music", "genre", "subgenre", "style", "form", "popularmusic", "musicalstyle", "musicalgenre", "list", "type"]);
 const NAMESPACE = /^(?:file|image|category|wikt|wiktionary|help|wikipedia|template|talk|special|portal|draft):/i;
@@ -18,8 +19,8 @@ export function stripWikitext(text) {
 /** Article titles linked in a piece of wikitext, in order, without namespaces, anchors or generic names. */
 export function linkTargets(text) {
   const out = [];
-  for (const m of text.matchAll(/\[\[([^\]|#]+)(?:#[^\]|]*)?(?:\|[^\]]*)?\]\]/g)) {
-    const t = m[1].replaceAll("_", " ").trim();
+  for (const link of scanLinks(text, targetLink)) {
+    const t = link.title.replaceAll("_", " ").trim();
     if (!t || NAMESPACE.test(t) || GENERIC.has(normalise(t))) continue;
     if (!out.includes(t)) out.push(t);
   }
@@ -33,15 +34,30 @@ const PHRASES = [
   [/\b(?:derived|derives|evolved|developed|emerged|originated|grew|stemmed|branched)\s+(?:directly\s+)?from\b/gi, "offshoot"],
   [/\b(?:genre|style|form|type|kind|category|variety|branch|variant)\s+of\b/gi, "genre_of"],
 ];
-const STOP = /\b(?:that|which|who|whose|characterized|characterised|originating|originated|emerged|developed|popular|typically|featuring|associated|primarily|mainly|mostly|often|where|while|in|during|around|from|since|with|within|by|as|into|using|incorporating)\b|[;:()]|\.\s|$/i;
+const STOP_WORDS = [
+  /\b(?:that|which|who|whose|characterized|characterised|originating|originated|emerged|developed|popular)\b/i,
+  /\b(?:typically|featuring|associated|primarily|mainly|mostly|often|where|while|in|during|around)\b/i,
+  /\b(?:from|since|with|within|by|as|into|using|incorporating)\b/i,
+];
+const STOP_PUNCT = /[;:()]|\.\s|$/;
+
+function stopIndex(text) {
+  let first = text.search(STOP_PUNCT);
+  for (const re of STOP_WORDS) {
+    const at = text.search(re);
+    if (at >= 0 && at < first) first = at;
+  }
+  return first;
+}
 
 /** The first paragraph of an article's wikitext as one cleaned sentence (links kept as [[...]]). */
 export function leadSentence(wikitext) {
   const clean = stripWikitext(wikitext);
-  const para = clean.split(/\n/).map((l) => l.trim()).find((l) => l && !/^(?:\[\[(?:file|image):|[=*#:|!{]|<)/i.test(l) && /[A-Za-z]{3}/.test(l.replace(/\[\[[^\]]*\]\]/g, "x")));
+  const para = clean.split(/\n/).map((l) => l.trim()).find((l) => l && !/^(?:\[\[(?:file|image):|[=*#:|!{]|<)/i.test(l) && /[A-Za-z]{3}/.test(replaceLinks(l, anyLink, () => "x")));
   if (!para) return "";
-  const text = para.replace(/'{2,}/g, "").replace(/\s+/g, " ").replace(/\[\[([^\]|#]+)(?:\|([^\]]*))?\]\]/g, (m, t, d) => (GENERIC.has(normalise(t)) ? d || t : m));
-  const hidden = text.replace(/\[\[[^\]]*\]\]/g, (m) => m.replaceAll(".", "\u0001"));
+  const squashed = para.replace(/'{2,}/g, "").replace(/\s+/g, " ");
+  const text = replaceLinks(squashed, labelledLink, (link) => (GENERIC.has(normalise(link.title)) ? link.label || link.title : link.raw));
+  const hidden = replaceLinks(text, anyLink, (link) => link.raw.replaceAll(".", "\u0001"));
   const end = hidden.search(/\.\s+(?=[A-Z"'[])/);
   const sentence = end < 0 ? hidden : hidden.slice(0, end + 1);
   return sentence.replaceAll("\u0001", ".");
@@ -56,9 +72,8 @@ export function parseLead(wikitext) {
     re.lastIndex = 0;
     for (const m of sentence.matchAll(re)) {
       const rest = sentence.slice(m.index + m[0].length);
-      const hiddenRest = rest.replace(/\[\[[^\]]*\]\]/g, (x) => "X".repeat(x.length));
-      const stop = hiddenRest.search(STOP);
-      const span = rest.slice(0, stop < 0 ? rest.length : stop);
+      const hiddenRest = replaceLinks(rest, anyLink, (link) => "X".repeat(link.raw.length));
+      const span = rest.slice(0, stopIndex(hiddenRest));
       for (const label of linkTargets(span)) {
         const k = `${label}|${kind}`;
         if (!seen.has(k) && !out.some((o) => o.label === label)) {
@@ -85,9 +100,7 @@ function infoboxBlock(wikitext) {
 /** Infobox fields `stylistic_origins` and `derivatives` as linked article titles. */
 export function parseInfobox(wikitext) {
   const block = infoboxBlock(wikitext);
-  const fields = {};
-  const re = /^\s*\|\s*([A-Za-z_ ]+?)\s*=\s*([\s\S]*?)(?=^\s*\|\s*[A-Za-z_ ]+?\s*=|\n\s*\}\}\s*$|$(?![\s\S]))/gm;
-  for (const m of block.matchAll(re)) fields[m[1].toLowerCase().replaceAll(" ", "_")] = m[2];
+  const fields = infoboxFields(block);
   const links = (v) => linkTargets((v || "").replace(/<!--[\s\S]*?-->/g, "").replace(/<ref\b[^>]*\/>/gi, "").replace(/<ref\b[^>]*>[\s\S]*?<\/ref>/gi, ""));
   return { origins: links(fields.stylistic_origins), derivatives: links(fields.derivatives) };
 }
@@ -124,7 +137,7 @@ export function buildResolver(vocab, sources) {
   const one = (m, k) => { const s = m.get(k); return s?.size === 1 ? [...s][0] : undefined; };
   const hit = (m, k) => m.has(k);
   const byLabel = (label) => {
-    for (const k of new Set([normalise(label), normalise(label.replace(/\s*\((?:music|genre|music genre|musical genre)\)\s*$/i, ""))])) {
+    for (const k of new Set([normalise(label), normalise(label.replace(/\((?:music|genre|music genre|musical genre)\)\s*$/i, ""))])) {
       for (const m of [byTitle, byName, bySyn]) if (hit(m, k)) return one(m, k) ?? null;
     }
     return null;
@@ -145,6 +158,19 @@ export function ancestorsOf(key, parentsOf) {
   return seen;
 }
 
+const keysOf = (list, key) => new Set((list || []).map((x) => x.key).filter((k) => k && k !== key));
+
+function additionOf(p, wd, lead, orig) {
+  const via = [wd.has(p) && "wikidata", lead.has(p) && "lead", orig.has(p) && "origins"].filter(Boolean);
+  return { key: p, strength: grade(wd.has(p), lead.has(p)), via };
+}
+
+function unsupportedParents(parents, all, parentsOf) {
+  const supported = new Set(all);
+  for (const q of all) for (const a of ancestorsOf(q, parentsOf)) supported.add(a);
+  return parents.filter((p) => !supported.has(p));
+}
+
 /**
  * Compares the evidence of one genre with its parents (vocabulary keys).
  * Returns {additions: [{key, strength, via}], removals: [{key, strength}], contradictions: [{key}], noEvidence}.
@@ -152,9 +178,9 @@ export function ancestorsOf(key, parentsOf) {
  * Removals are our parents named by no evidence and not an ancestor of an evidence parent; strength = how many parent sources had data.
  */
 export function diffGenre(key, ev, parents, parentsOf) {
-  const wd = new Set([...(ev.subclass_of || []), ...(ev.instance_of || [])].map((x) => x.key).filter((k) => k && k !== key));
-  const lead = new Set((ev.lead_parents || []).map((x) => x.key).filter((k) => k && k !== key));
-  const orig = new Set((ev.origins || []).map((x) => x.key).filter((k) => k && k !== key));
+  const wd = keysOf([...(ev.subclass_of || []), ...(ev.instance_of || [])], key);
+  const lead = keysOf(ev.lead_parents, key);
+  const orig = keysOf(ev.origins, key);
   const wdAny = (ev.subclass_of || []).length > 0;
   const leadAny = (ev.lead_parents || []).length > 0;
   const own = new Set(parents);
@@ -164,20 +190,11 @@ export function diffGenre(key, ev, parents, parentsOf) {
   const contradictions = [];
   for (const p of all) {
     if (own.has(p) || anc.has(p)) continue;
-    if (ancestorsOf(p, parentsOf).has(key)) { contradictions.push({ key: p }); continue; }
-    const via = [wd.has(p) && "wikidata", lead.has(p) && "lead", orig.has(p) && "origins"].filter(Boolean);
-    const strength = grade(wd.has(p), lead.has(p));
-    additions.push({ key: p, strength, via });
+    if (ancestorsOf(p, parentsOf).has(key)) contradictions.push({ key: p });
+    else additions.push(additionOf(p, wd, lead, orig));
   }
-  const removals = [];
   const noEvidence = !wdAny && !leadAny && !orig.size;
-  if (!noEvidence) {
-    const supported = new Set(all);
-    for (const q of all) for (const a of ancestorsOf(q, parentsOf)) supported.add(a);
-    for (const p of parents) {
-      if (supported.has(p)) continue;
-      removals.push({ key: p, strength: grade(wdAny, leadAny) });
-    }
-  }
+  const strength = grade(wdAny, leadAny);
+  const removals = noEvidence ? [] : unsupportedParents(parents, all, parentsOf).map((p) => ({ key: p, strength }));
   return { additions, removals, contradictions, noEvidence };
 }
