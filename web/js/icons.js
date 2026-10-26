@@ -58,6 +58,7 @@ export const ICONS = {
   music: { d: '<path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>' },
   crosshair: { d: '<circle cx="12" cy="12" r="10"/><line x1="22" x2="18" y1="12" y2="12"/><line x1="6" x2="2" y1="12" y2="12"/><line x1="12" x2="12" y1="6" y2="2"/><line x1="12" x2="12" y1="22" y2="18"/>' },
   maximize: { d: '<path d="M8 3H5a2 2 0 0 0-2 2v3"/><path d="M21 8V5a2 2 0 0 0-2-2h-3"/><path d="M3 16v3a2 2 0 0 0 2 2h3"/><path d="M16 21h3a2 2 0 0 0 2-2v-3"/>' },
+  unlink: { d: '<rect x="3.2" y="5.1" width="8" height="4.2" rx="2.1" transform="rotate(45 7.2 7.2)"/><rect x="12.8" y="14.7" width="8" height="4.2" rx="2.1" transform="rotate(45 16.8 16.8)"/><g style="stroke: var(--accent-ink, currentColor)" opacity=".75" stroke-width="1.6"><path d="M14.8 9.2l1.4-1.4"/><path d="M9.2 14.8l-1.4 1.4"/><path d="M13.2 6.6v1.9"/><path d="M10.8 17.4v-1.9"/></g>' },
   externalLink: { d: '<path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>' },
   playOutline: { d: '<path d="M5 5a2 2 0 0 1 3.008-1.728l11.997 6.998a2 2 0 0 1 .003 3.458l-12 7A2 2 0 0 1 5 19z"/>' },
   chevronUp: { d: '<path d="m18 15-6-6-6 6"/>' },

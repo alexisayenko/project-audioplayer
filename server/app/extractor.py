@@ -246,7 +246,7 @@ def playlist(list_id: str, limit: int) -> dict[str, Any]:
     entries = [e for e in info.get("entries") or [] if isinstance(e, dict)]
     count = info.get("playlist_count")
     total = count if isinstance(count, int) and not isinstance(count, bool) and count >= len(entries) else len(entries)
-    return {"title": info.get("title") or "", "uploader": info.get("uploader") or info.get("channel") or "", "total": total, "entries": entries}
+    return {"title": info.get("title") or "", "uploader": info.get("uploader") or info.get("channel") or "", "description": info.get("description") or "", "total": total, "entries": entries}
 
 
 def _file_seconds(path: Path) -> float | None:

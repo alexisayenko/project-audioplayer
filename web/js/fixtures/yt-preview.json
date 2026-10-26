@@ -1,0 +1,186 @@
+{
+  "playlist": {
+    "title": "Hallucinogen - Twisted (1995) [Dragonfly Records]",
+    "uploader": "Hallucinogen - Topic",
+    "count": 11,
+    "url": "https://www.youtube.com/playlist?list=OLAK5uy_abcdefghijklmnop"
+  },
+  "guess": {
+    "artist": "Hallucinogen",
+    "album": "Twisted",
+    "year": 1995
+  },
+  "tracks": [
+    {
+      "position": 1,
+      "videoId": "hhhhhhhhh01",
+      "title": "LSD",
+      "durationS": 450,
+      "url": "https://www.youtube.com/watch?v=hhhhhhhhh01",
+      "songId": null
+    },
+    {
+      "position": 2,
+      "videoId": "hhhhhhhhh02",
+      "title": "Orphic Thrench",
+      "durationS": 500,
+      "url": "https://www.youtube.com/watch?v=hhhhhhhhh02",
+      "songId": null
+    },
+    {
+      "position": 3,
+      "videoId": "hhhhhhhhh03",
+      "title": "Alpha Centauri",
+      "durationS": 420,
+      "url": "https://www.youtube.com/watch?v=hhhhhhhhh03",
+      "songId": null
+    },
+    {
+      "position": 4,
+      "videoId": "hhhhhhhhh04",
+      "title": "Dark Magus",
+      "durationS": 430,
+      "url": "https://www.youtube.com/watch?v=hhhhhhhhh04",
+      "songId": null
+    },
+    {
+      "position": 5,
+      "videoId": "hhhhhhhhh05",
+      "title": "Shamanix",
+      "durationS": 440,
+      "url": "https://www.youtube.com/watch?v=hhhhhhhhh05",
+      "songId": null
+    },
+    {
+      "position": 6,
+      "videoId": "hhhhhhhhh06",
+      "title": "Snarling Black Mabel",
+      "durationS": 460,
+      "url": "https://www.youtube.com/watch?v=hhhhhhhhh06",
+      "songId": null
+    },
+    {
+      "position": 7,
+      "videoId": "hhhhhhhhh07",
+      "title": "Fluoro Neuro Sponge",
+      "durationS": 470,
+      "url": "https://www.youtube.com/watch?v=hhhhhhhhh07",
+      "songId": null
+    },
+    {
+      "position": 8,
+      "videoId": "hhhhhhhhh08",
+      "title": "Solstice",
+      "durationS": 480,
+      "url": "https://www.youtube.com/watch?v=hhhhhhhhh08",
+      "songId": null
+    },
+    {
+      "position": 9,
+      "videoId": "hhhhhhhhh09",
+      "title": "Angelic Particles RMX",
+      "durationS": 490,
+      "url": "https://www.youtube.com/watch?v=hhhhhhhhh09",
+      "songId": null
+    },
+    {
+      "position": 10,
+      "videoId": "hhhhhhhhh10",
+      "title": "Orphic Thrench",
+      "durationS": 501,
+      "url": "https://www.youtube.com/watch?v=hhhhhhhhh10",
+      "songId": null
+    },
+    {
+      "position": 11,
+      "videoId": "hhhhhhhhh11",
+      "title": "Snarling Black Mabel",
+      "durationS": 461,
+      "url": "https://www.youtube.com/watch?v=hhhhhhhhh11",
+      "songId": null
+    }
+  ],
+  "candidates": [
+    {
+      "url": "https://www.discogs.com/release/77001",
+      "discogsId": 77001,
+      "title": "Twisted",
+      "artist": "Hallucinogen",
+      "year": 1995,
+      "trackCount": 9,
+      "score": 0.944,
+      "best": true,
+      "formats": [
+        "CD",
+        "Album"
+      ],
+      "labels": [
+        "Dragonfly Records"
+      ],
+      "country": "UK",
+      "catno": "DRAGON 1",
+      "thumb": "https://i.discogs.com/t.jpg",
+      "tracks": [
+        {
+          "no": 1,
+          "title": "LSD",
+          "durationS": 450
+        },
+        {
+          "no": 2,
+          "title": "Orphic Thrench",
+          "durationS": 500
+        },
+        {
+          "no": 3,
+          "title": "Alpha Centauri",
+          "durationS": 420
+        },
+        {
+          "no": 4,
+          "title": "Dark Magus",
+          "durationS": 430
+        },
+        {
+          "no": 5,
+          "title": "Shamanix",
+          "durationS": 440
+        },
+        {
+          "no": 6,
+          "title": "Snarling Black Mabel",
+          "durationS": 460
+        },
+        {
+          "no": 7,
+          "title": "Fluoro Neuro Sponge",
+          "durationS": 470
+        },
+        {
+          "no": 8,
+          "title": "Solstice",
+          "durationS": 480
+        },
+        {
+          "no": 9,
+          "title": "Angelic Particles RMX",
+          "durationS": 490
+        }
+      ],
+      "matches": {
+        "1": 1,
+        "2": 2,
+        "3": 3,
+        "4": 4,
+        "5": 5,
+        "6": 6,
+        "7": 7,
+        "8": 8,
+        "9": 9,
+        "10": null,
+        "11": null
+      }
+    }
+  ],
+  "searchError": null
+}

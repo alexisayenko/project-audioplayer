@@ -184,7 +184,7 @@ def listing(list_id: str, songs: list[dict[str, Any]]) -> dict[str, Any]:
             entries.append(view(video_id, extractor.meta_from_info(video_id, info), owned, detailed=False))
     total = max(found["total"], len(entries))
     return {
-        "playlist": {"id": list_id, "url": urlclean.playlist_url(list_id), "title": found["title"], "uploader": found["uploader"],
+        "playlist": {"id": list_id, "url": urlclean.playlist_url(list_id), "title": found["title"], "uploader": found["uploader"], "description": found.get("description") or "",
                      "total": total, "shown": len(entries), "limit": MAX_ENTRIES, "truncated": total > len(entries) and total > MAX_ENTRIES},
         "entries": entries,
     }

@@ -33,8 +33,24 @@ def yt(monkeypatch):
     return state
 
 
-def start(client, url=PL_URL, headers=H):
-    return client.post("/albums/youtube/start", json={"url": url}, headers=headers)
+def pv(client, url=PL_URL, headers=H):
+    return client.post("/albums/youtube/preview", json={"url": url}, headers=headers)
+
+
+def sel(*entries):
+    return [{"position": p, "videoId": v, "title": t, "durationS": d, "url": f"https://www.youtube.com/watch?v={v}"} for p, v, t, d in entries]
+
+
+def commit_body(selected, **extra):
+    return {"playlistUrl": PL_URL, "selected": selected, **extra}
+
+
+def seed(client, headers=H):
+    """Metadata-only songs for the four playable fixture videos (an album from the videos themselves)."""
+    selected = sel((1, A, "Intro", 60), (2, B, "Tumult Part I", 245), (4, D, "Suite (Live)", 3723), (5, E, "Unrelated Bonus", 100))
+    r = client.post("/albums/youtube/commit", json=commit_body(selected, fallback={"title": "Seed"}), headers=headers)
+    assert r.status_code == 201, r.text
+    return r.json()
 
 
 def library_ids(client):
@@ -48,66 +64,24 @@ def library_ids(client):
     ("Tumult (Album)", "Derango - Topic", ("Derango", "Tumult")),
     ("Tumult", "Some Channel", (None, "Tumult")),
     ("", "", (None, None)),
+    ("Hallucinogen - Twisted (1995) [Dragonfly Records]", "Hallucinogen - Topic", ("Hallucinogen", "Twisted")),
+    ("Hallucinogen - Twisted [Dragonfly] (Full Album)", None, ("Hallucinogen", "Twisted")),
+    ("Hallucinogen - Twisted 1995", None, ("Hallucinogen", "Twisted")),
+    ("Prince - 1999", None, ("Prince", "1999")),
+    ("Twisted (1995)", "Hallucinogen - Topic", ("Hallucinogen", "Twisted")),
+    ("Artist - Album (Part 2)", None, ("Artist", "Album (Part 2)")),
 ])
 def test_guess(title, uploader, expected):
-    assert tuple(album_youtube.guess(title, uploader).values()) == expected
+    got = album_youtube.guess(title, uploader)
+    assert (got["artist"], got["album"]) == expected
 
 
-def test_start_creates_metadata_only_songs_and_reports_the_rest(client, yt):
-    r = start(client)
-    assert r.status_code == 200
-    body = r.json()
-    assert body["playlist"] == {"title": "Derango - Tumult (Full Album)", "uploader": "Derango - Topic", "count": 4}
-    assert body["guess"] == {"artist": "Derango", "album": "Tumult"}
-    assert [(s["songId"], s["durationS"], s["position"]) for s in body["songs"]] == [(A, 60, 1), (B, 245, 2), (D, 3723, 4), (E, 100, 5)]
-    assert body["skipped"] == [{"title": "[Private video]", "reason": "Private"}]
-    lib = library_ids(client)
-    assert set(lib) == {A, B, D, E} and all(s["file"] is None for s in lib.values())
-    assert lib[A]["title"] == "Intro" and lib[A]["mainArtists"] == ["Derango"]
-    again = start(client)
-    assert again.status_code == 200 and set(library_ids(client)) == {A, B, D, E}
-
-
-def test_start_reuses_songs_already_in_the_library(client, yt):
-    start(client)
-    before = library_ids(client)
-    r = start(client)
-    assert [s["songId"] for s in r.json()["songs"]] == [A, B, D, E]
-    assert {k: v["added_at"] for k, v in library_ids(client).items()} == {k: v["added_at"] for k, v in before.items()}
-
-
-@pytest.mark.parametrize("url", ["https://example.com/playlist?list=PLabcdef", "https://www.youtube.com/watch?v=aaaaaaaaaaa", "http://www.youtube.com/playlist?list=PLabcdef", "https://www.youtube.com/playlist?list=RDabcdef", "nope"])
-def test_start_bad_urls(client, yt, url):
-    r = start(client, url)
-    assert (r.status_code, r.json()["detail"]) == (400, "bad_url")
-    assert yt["calls"] == []
-
-
-def test_start_accepts_watch_and_youtube_com_playlist_links(client, yt):
-    for url in (f"https://www.youtube.com/playlist?list={LIST}", f"https://www.youtube.com/watch?v={A}&list={LIST}"):
-        assert start(client, url).status_code == 200
-
-
-def test_start_not_found_and_failures(client, yt):
-    yt["data"] = RuntimeError("ERROR: [youtube:tab] x: The playlist does not exist.")
-    assert (start(client).status_code, start(client).json()["detail"]) == (404, "not_found")
-    yt["data"] = RuntimeError("ERROR: HTTP Error 500")
-    r = start(client)
-    assert (r.status_code, r.json()["detail"]) == (502, "youtube_failed")
-    yt["data"] = {"title": "t", "uploader": "u", "entries": []}
-    assert start(client).status_code == 404
-    yt["data"] = {"title": "t", "uploader": "u", "entries": [PLAYLIST["entries"][2]]}
-    assert start(client).json()["detail"] == "not_found"
-    assert start(client, "https://www.youtube.com/playlist?list=WL").json()["detail"] == "not_found"
-
-
-def test_start_over_the_cap_creates_nothing(multi, yt, monkeypatch):
-    monkeypatch.setenv("USER_MAX_SONGS", "3")
-    c, a = multi, who(multi, ALICE)
-    r = c.post("/albums/youtube/start", json={"url": PL_URL}, headers=a)
-    assert (r.status_code, r.json()["detail"]) == (409, "library_full_songs")
-    assert c.get("/library", headers=a).json()["songs"] == []
-    assert c.post("/albums/youtube/start", json={"url": PL_URL}).status_code == 401
+@pytest.mark.parametrize("title,desc,expected", [
+    ("Hallucinogen - Twisted (1995)", None, 1995), ("Twisted [2001 reissue]", "", 2001), ("Twisted", "Released 1995 on Dragonfly", 1995),
+    ("Twisted", "uploaded in 2020 for fun", None), ("Twisted 19955", None, None), ("", None, None),
+])
+def test_guess_year(title, desc, expected):
+    assert album_youtube.guess(title, "x", desc)["year"] == expected
 
 
 def test_discogs_search_ranks_candidates(client, discogs):
@@ -121,6 +95,7 @@ def test_discogs_search_ranks_candidates(client, discogs):
     top = got[0]
     assert (top["url"], top["title"], top["artist"], top["year"], top["trackCount"]) == ("https://www.discogs.com/release/545650", "Tumult", "Derango", 2004, 5)
     assert top["score"] > got[1]["score"] > got[2]["score"] and 0 < top["score"] <= 1
+    assert [t["title"] for t in top["tracks"]][:2] == ["Intro", "Tumult Part I"] and "matches" not in top
 
 
 def test_discogs_search_edges(client, discogs, monkeypatch):
@@ -138,7 +113,7 @@ def test_discogs_search_edges(client, discogs, monkeypatch):
 
 
 def test_create_auto_links_imported_songs(client, discogs, yt):
-    start(client)
+    seed(client)
     payload = preview(client).json()
     r = client.post("/albums", json={**payload, "songIds": [A, B, D, E, "zzzzzzzzzzz", A]}, headers=H)
     assert r.status_code == 201
@@ -175,7 +150,7 @@ def test_each_song_and_track_is_used_once():
 def test_auto_link_only_uses_the_callers_songs(multi, discogs, yt):
     c = multi
     a, b = who(c, ALICE), who(c, BOB)
-    c.post("/albums/youtube/start", json={"url": PL_URL}, headers=a)
+    seed(c, a)
     payload = c.post("/albums/preview", json={"url": DISCOGS_URL}, headers=b).json()
     body = c.post("/albums", json={**payload, "songIds": [A, B]}, headers=b).json()
     assert (body["linked"], body["unlinked"]) == (0, 5)

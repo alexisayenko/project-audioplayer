@@ -91,10 +91,11 @@ def clean_link(key: str, value: Any) -> str | None:
     if host == "youtu.be" and len(parts.path) > 1:
         return f"https://youtu.be{parts.path}"
     if host in _YT_HOSTS and parts.path in ("/watch", "/playlist"):
-        wanted = "v" if parts.path == "/watch" else "list"
-        values = [v for k, v in parse_qsl(parts.query) if k == wanted and v]
-        if values:
-            return f"https://{host}{parts.path}?{urlencode({wanted: values[0]})}"
+        query = {k: v for k, v in reversed(parse_qsl(parts.query)) if k in ("v", "list") and v}
+        needed = "list" if parts.path == "/playlist" else None
+        if (needed and needed in query) or (not needed and ("v" in query or "list" in query)):
+            ordered = {k: query[k] for k in ("v", "list") if k in query}
+            return f"https://{host}{parts.path}?{urlencode(ordered)}"
     raise _bad(key)
 
 

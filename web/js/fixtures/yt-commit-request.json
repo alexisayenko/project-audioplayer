@@ -1,0 +1,133 @@
+{
+  "playlistUrl": "https://www.youtube.com/playlist?list=OLAK5uy_abcdefghijklmnop",
+  "selected": [
+    {
+      "position": 1,
+      "videoId": "hhhhhhhhh01",
+      "title": "LSD",
+      "durationS": 450
+    },
+    {
+      "position": 2,
+      "videoId": "hhhhhhhhh02",
+      "title": "Orphic Thrench",
+      "durationS": 500
+    },
+    {
+      "position": 3,
+      "videoId": "hhhhhhhhh03",
+      "title": "Alpha Centauri",
+      "durationS": 420
+    },
+    {
+      "position": 4,
+      "videoId": "hhhhhhhhh04",
+      "title": "Dark Magus",
+      "durationS": 430
+    },
+    {
+      "position": 5,
+      "videoId": "hhhhhhhhh05",
+      "title": "Shamanix",
+      "durationS": 440
+    },
+    {
+      "position": 6,
+      "videoId": "hhhhhhhhh06",
+      "title": "Snarling Black Mabel",
+      "durationS": 460
+    },
+    {
+      "position": 7,
+      "videoId": "hhhhhhhhh07",
+      "title": "Fluoro Neuro Sponge",
+      "durationS": 470
+    },
+    {
+      "position": 8,
+      "videoId": "hhhhhhhhh08",
+      "title": "Solstice",
+      "durationS": 480
+    },
+    {
+      "position": 9,
+      "videoId": "hhhhhhhhh09",
+      "title": "Angelic Particles RMX",
+      "durationS": 490
+    }
+  ],
+  "candidate": {
+    "title": "Twisted",
+    "artist": "Hallucinogen",
+    "year": 1995,
+    "genres": [],
+    "discogsId": 77001,
+    "tracks": [
+      {
+        "no": 1,
+        "title": "LSD",
+        "durationS": 450
+      },
+      {
+        "no": 2,
+        "title": "Orphic Thrench",
+        "durationS": 500
+      },
+      {
+        "no": 3,
+        "title": "Alpha Centauri",
+        "durationS": 420
+      },
+      {
+        "no": 4,
+        "title": "Dark Magus",
+        "durationS": 430
+      },
+      {
+        "no": 5,
+        "title": "Shamanix",
+        "durationS": 440
+      },
+      {
+        "no": 6,
+        "title": "Snarling Black Mabel",
+        "durationS": 460
+      },
+      {
+        "no": 7,
+        "title": "Fluoro Neuro Sponge",
+        "durationS": 470
+      },
+      {
+        "no": 8,
+        "title": "Solstice",
+        "durationS": 480
+      },
+      {
+        "no": 9,
+        "title": "Angelic Particles RMX",
+        "durationS": 490
+      }
+    ],
+    "links": {
+      "discogs": "https://www.discogs.com/release/77001",
+      "youtube": "https://www.youtube.com/playlist?list=OLAK5uy_abcdefghijklmnop"
+    }
+  },
+  "mapping": {
+    "1": 1,
+    "2": 2,
+    "3": 3,
+    "4": 4,
+    "5": 5,
+    "6": 6,
+    "7": 7,
+    "8": 8,
+    "9": 9
+  },
+  "fallback": {
+    "title": "Twisted",
+    "artist": "Hallucinogen",
+    "year": 1995
+  }
+}

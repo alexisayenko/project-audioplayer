@@ -39,6 +39,14 @@ class AlbumPatchRequest(BaseModel):
     genres: Any = None
 
 
+class AlbumPlaylistTrack(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+
+    position: int = Field(ge=1)
+    title: str = Field(default="", max_length=500)
+    durationS: float | None = None
+
+
 class AlbumLinkRequest(BaseModel):
     songId: str = Field(min_length=1, max_length=64)
 
@@ -275,3 +283,4 @@ class AlbumSearchRequest(BaseModel):
     album: str | None = Field(default=None, max_length=300)
     trackCount: int | None = Field(default=None, ge=0, le=1000)
     durationsS: list[float | None] | None = Field(default=None, max_length=1000)
+    playlistTracks: list[AlbumPlaylistTrack] | None = Field(default=None, max_length=500)

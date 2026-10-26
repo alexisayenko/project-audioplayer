@@ -1,0 +1,19 @@
+{
+  "id": 77001,
+  "title": "Twisted",
+  "year": 1995,
+  "genres": ["Electronic"],
+  "styles": ["Psy-Trance"],
+  "artists": [{"name": "Hallucinogen", "id": 5}],
+  "tracklist": [
+    {"position": "1", "type_": "track", "title": "LSD", "duration": "7:30"},
+    {"position": "2", "type_": "track", "title": "Orphic Thrench", "duration": "8:20"},
+    {"position": "3", "type_": "track", "title": "Alpha Centauri", "duration": "7:00"},
+    {"position": "4", "type_": "track", "title": "Dark Magus", "duration": "7:10"},
+    {"position": "5", "type_": "track", "title": "Shamanix", "duration": "7:20"},
+    {"position": "6", "type_": "track", "title": "Snarling Black Mabel", "duration": "7:40"},
+    {"position": "7", "type_": "track", "title": "Fluoro Neuro Sponge", "duration": "7:50"},
+    {"position": "8", "type_": "track", "title": "Solstice", "duration": "8:00"},
+    {"position": "9", "type_": "track", "title": "Angelic Particles RMX", "duration": "8:10"}
+  ]
+}

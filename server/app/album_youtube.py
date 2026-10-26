@@ -1,4 +1,4 @@
-"""Albums from a YouTube playlist (task-0120, API-255..API-257): metadata-only catalog songs from the playlist import, a title guess, Discogs candidates and auto-linking of imported songs to tracks."""
+"""Albums from a YouTube playlist (task-0120, API-255..API-257): a preview that creates nothing (playlist tracks, a title guess, Discogs candidates with a track matching), a commit that creates the marked songs and the album, Discogs search and auto-linking of imported songs to tracks."""
 
 from __future__ import annotations
 
@@ -10,30 +10,59 @@ from typing import Any
 
 from fastapi import HTTPException
 
-from . import albums, credit_title, credits_split, discogs_lookup, downloads, extractor, limits, playlist_import, timeutil, urlclean
+from . import albums, credit_title, credits_split, deps, discogs_lookup, downloads, extractor, limits, playlist_import, timeutil, urlclean, users
 from .links import Resolved
 
 MAX_CANDIDATES = 8
 MAX_LABELS = 3
 BEST_MIN_SCORE = 0.7
 BEST_MARGIN = 0.1
+SUBSTRING_SCORE = 0.6
+MAX_SELECTED = 200
 _NOISE_GROUP = re.compile(r"\s*[\(\[]\s*(?:(?:full|complete|entire|whole)\s+)?(?:album|lp|ep)(?:\s+(?:stream|version|playlist))?\s*[\)\]]", re.I)
 _NOISE_TAIL = re.compile(r"[\s\-–—:|]+(?:full|complete|entire|whole)\s+(?:album|lp|ep)(?:\s+stream)?\s*$", re.I)
 _SEP = re.compile(r"\s+[-–—]\s+")
 _TOPIC = re.compile(r"\s+-\s+topic$", re.I)
 _BRACKETS = re.compile(r"\s*[\(\[]([^\)\]]*)[\)\]]")
 _IGNORED_BRACKET = re.compile(r"^\s*(?:mono|stereo|bonus track|\d{4}\s+(?:mix|version))\s*$", re.I)
+_YEAR = re.compile(r"(?<![\w])((?:19|20)\d{2})(?![\w])")
+_DESC_YEAR = re.compile(r"(?:released?|release date|℗|©|year)\D{0,15}((?:19|20)\d{2})(?!\d)", re.I)
+_TRAIL_SQUARE = re.compile(r"\s*\[[^\]]*\]\s*$")
+_TRAIL_ROUND = re.compile(r"\s*\(\s*((?:19|20)\d{2}|(?:\d{4}\s+)?re-?master(?:ed)?(?:\s+\d{4})?)\s*\)\s*$", re.I)
+_TRAIL_YEAR = re.compile(r"[\s,\-–—]+(?:19|20)\d{2}$")
 
 
-def guess(title: Any, uploader: Any) -> dict[str, str | None]:
+def guess_year(title: Any, description: Any = None) -> int | None:
+    found = _YEAR.search(str(title or ""))
+    if not found and description:
+        found = _DESC_YEAR.search(str(description)[:3000])
+    return timeutil.valid_year(int(found.group(1))) if found else None
+
+
+def _clean_album(text: str) -> str:
+    previous = None
+    while previous != text and text:
+        previous = text
+        text = _TRAIL_SQUARE.sub("", text)
+        text = _TRAIL_ROUND.sub("", text)
+        if not re.fullmatch(r"(?:19|20)\d{2}", text.strip()):
+            text = _TRAIL_YEAR.sub("", text)
+        text = text.strip()
+    return text
+
+
+def guess(title: Any, uploader: Any, description: Any = None) -> dict[str, Any]:
+    year = guess_year(title, description)
     text = _NOISE_TAIL.sub("", _NOISE_GROUP.sub("", str(title or ""))).strip(" -–—|:")
     channel = str(uploader or "").strip()
     parts = _SEP.split(text, maxsplit=1)
     if len(parts) == 2 and all(p.strip() for p in parts):
-        return {"artist": parts[0].strip(), "album": parts[1].strip()}
-    if _TOPIC.search(channel) and text:
-        return {"artist": _TOPIC.sub("", channel).strip() or None, "album": text}
-    return {"artist": None, "album": text or None}
+        artist, album = parts[0].strip(), _clean_album(parts[1].strip())
+    elif _TOPIC.search(channel) and text:
+        artist, album = (_TOPIC.sub("", channel).strip() or None), _clean_album(text)
+    else:
+        artist, album = None, _clean_album(text)
+    return {"artist": artist, "album": album or None, "year": year}
 
 
 def _http(exc: Exception) -> HTTPException:
@@ -42,39 +71,198 @@ def _http(exc: Exception) -> HTTPException:
     return HTTPException(status_code=502, detail="youtube_failed")
 
 
-def start(uid: str, owner: bool, url: str, songs: list[dict[str, Any]]) -> dict[str, Any]:
-    ref = urlclean.parse_playlist(url) if url.strip().lower().startswith("https://") else None
+def _playlist_ref(url: Any) -> str:
+    text = url if isinstance(url, str) else ""
+    ref = urlclean.parse_playlist(text) if text.strip().lower().startswith("https://") else None
     if ref is None or ref[0] == "mix":
         raise HTTPException(status_code=400, detail="bad_url")
     if ref[0] == "private":
         raise HTTPException(status_code=404, detail="not_found")
+    return ref[1]
+
+
+def _song_ids(songs: list[dict[str, Any]]) -> dict[str, str]:
+    """Video id -> library song id (a song's own id and its youtube sources)."""
+    from .library import sources_of
+
+    found: dict[str, str] = {}
+    for song in songs:
+        sid = str(song.get("id") or "")
+        found.setdefault(sid, sid)
+        for src in sources_of(song):
+            if src.get("source") == "youtube":
+                found.setdefault(str(src.get("id") or ""), sid)
+    return found
+
+
+def _listing(uid: str, owner: bool, list_id: str, songs: list[dict[str, Any]]) -> dict[str, Any]:
     playlist_import.charge_listing(uid, owner)
     try:
-        found = playlist_import.listing(ref[1], songs)
+        return playlist_import.listing(list_id, songs)
     except Exception as exc:
         raise _http(exc) from exc
-    entries = found["entries"]
-    usable = [(i, e) for i, e in enumerate(entries, 1) if e["state"] == "ok"]
-    skipped = [{"title": e["title"], "reason": e["reason"]} for e in entries if e["state"] != "ok"]
-    if not usable:
-        raise HTTPException(status_code=404, detail="not_found")
-    owned = playlist_import.Owned(songs)
-    fresh = [e for _, e in usable if e["id"] not in owned.ids]
-    if not owner and len(songs) + len(fresh) > limits.max_songs():
-        raise HTTPException(status_code=409, detail="library_full_songs")
-    for entry in fresh:
-        _create(uid, entry)
-    meta = found["playlist"]
-    return {
-        "playlist": {"title": meta["title"] or "", "uploader": meta["uploader"] or None, "count": len(usable)},
-        "guess": guess(meta["title"], meta["uploader"]),
-        "songs": [{"songId": e["id"], "title": e["title"], "durationS": _seconds(e["duration"]), "position": i} for i, e in usable],
-        "skipped": skipped,
-    }
 
 
 def _seconds(value: Any) -> int | None:
     return int(value) if isinstance(value, (int, float)) and not isinstance(value, bool) and value > 0 else None
+
+
+def preview(uid: str, owner: bool, url: str, songs: list[dict[str, Any]]) -> dict[str, Any]:
+    """Playlist tracks, a guess and Discogs candidates with matches; nothing is created."""
+    list_id = _playlist_ref(url)
+    found = _listing(uid, owner, list_id, songs)
+    usable = [(i, e) for i, e in enumerate(found["entries"], 1) if e["state"] == "ok"]
+    if not usable:
+        raise HTTPException(status_code=404, detail="not_found")
+    have = _song_ids(songs)
+    tracks = [{"position": i, "videoId": e["id"], "title": e["title"], "durationS": _seconds(e["duration"]), "url": e["url"], "songId": have.get(e["id"])} for i, e in usable]
+    meta = found["playlist"]
+    hint = guess(meta["title"], meta["uploader"], meta.get("description"))
+    candidates: list[dict[str, Any]] = []
+    error = None
+    if hint["artist"] or hint["album"]:
+        try:
+            candidates = search(hint["artist"], hint["album"], len(tracks), [t["durationS"] for t in tracks], tracks)["candidates"]
+        except HTTPException as exc:
+            error = exc.detail if exc.detail in ("discogs_unavailable", "discogs_failed") else "discogs_failed"
+    return {
+        "playlist": {"title": meta["title"] or "", "uploader": meta["uploader"] or None, "count": len(tracks), "url": meta["url"]},
+        "guess": hint,
+        "tracks": tracks,
+        "candidates": candidates,
+        "searchError": error,
+    }
+
+
+# --- commit --------------------------------------------------------------------------------------
+
+def _bad(code: str) -> HTTPException:
+    return HTTPException(status_code=422, detail=code)
+
+
+def _selected(raw: Any) -> list[dict[str, Any]]:
+    if not isinstance(raw, list) or not raw or len(raw) > MAX_SELECTED:
+        raise _bad("bad_selection")
+    out, seen_pos, seen_vid = [], set(), set()
+    for item in raw:
+        pos = item.get("position") if isinstance(item, dict) else None
+        vid = str(item.get("videoId") or "") if isinstance(item, dict) else ""
+        title = str(item.get("title") or "").strip()[: albums.MAX_TEXT] if isinstance(item, dict) else ""
+        if isinstance(pos, bool) or not isinstance(pos, int) or pos < 1 or pos in seen_pos or not urlclean.VIDEO_ID_RE.fullmatch(vid) or vid in seen_vid or not title:
+            raise _bad("bad_selection")
+        seen_pos.add(pos)
+        seen_vid.add(vid)
+        out.append({"position": pos, "videoId": vid, "title": title, "durationS": _seconds(item.get("durationS"))})
+    return sorted(out, key=lambda s: s["position"])
+
+
+def _mapping(raw: Any, selected: list[dict[str, Any]], track_numbers: set[int]) -> dict[int, int]:
+    if raw is None:
+        return {}
+    if not isinstance(raw, dict):
+        raise _bad("bad_mapping")
+    positions = {s["position"] for s in selected}
+    out: dict[int, int] = {}
+    used: set[int] = set()
+    for key, no in raw.items():
+        try:
+            pos = int(key)
+        except (TypeError, ValueError):
+            raise _bad("bad_mapping") from None
+        if pos not in positions:
+            raise _bad("bad_mapping")
+        if no is None:
+            continue
+        if isinstance(no, bool) or not isinstance(no, int) or no not in track_numbers or no in used:
+            raise _bad("bad_mapping")
+        used.add(no)
+        out[pos] = no
+    return out
+
+
+def _fallback_payload(raw: Any, selected: list[dict[str, Any]], list_id: str) -> dict[str, Any]:
+    data = raw if isinstance(raw, dict) else {}
+    title = str(data.get("title") or "").strip()[: albums.MAX_TEXT]
+    if not title:
+        raise _bad("bad_album")
+    year = data.get("year")
+    return {
+        "title": title,
+        "artist": str(data.get("artist") or "").strip()[: albums.MAX_TEXT],
+        "year": timeutil.valid_year(year) if isinstance(year, int) and not isinstance(year, bool) else None,
+        "genres": [],
+        "rymUrl": None,
+        "links": {"discogs": None, "rateyourmusic": None, "youtube": None, "wikipedia": None},
+        "source": {"type": "youtube", "id": list_id, "url": urlclean.playlist_url(list_id)},
+        "tracks": [{"no": i, "title": s["title"], "durationS": s["durationS"]} for i, s in enumerate(selected, 1)],
+    }
+
+
+def commit(uid: str, owner: bool, body: dict[str, Any], songs: list[dict[str, Any]]) -> dict[str, Any]:
+    list_id = _playlist_ref(body.get("playlistUrl"))
+    playlist_link = albums._stored_link("youtube", body.get("playlistUrl")) or urlclean.playlist_url(list_id)
+    selected = _selected(body.get("selected"))
+    try:
+        if body.get("candidate") is None:
+            payload = _fallback_payload(body.get("fallback"), selected, list_id)
+            numbers = {t["no"] for t in payload["tracks"]}
+            mapping = {s["position"]: i for i, s in enumerate(selected, 1)}
+        else:
+            candidate = body["candidate"]
+            if isinstance(candidate, dict) and "source" not in candidate and isinstance(candidate.get("discogsId"), int):
+                candidate = {**candidate, "source": {"type": "discogs", "id": str(candidate["discogsId"])}}
+            payload = albums.validate(candidate)
+            numbers = {t["no"] for t in payload["tracks"]}
+            mapping = _mapping(body.get("mapping"), selected, numbers)
+    except albums.AlbumError as exc:
+        raise HTTPException(status_code=exc.status, detail={"code": exc.code, "key": exc.key} if exc.key else exc.code) from exc
+    payload["links"] = {**payload["links"], "youtube": playlist_link}
+    have = _song_ids(songs)
+    fresh = [s for s in selected if s["videoId"] not in have]
+    with users.user_lock(uid):
+        existing = albums.find_source(albums.load(deps.albums_path(uid)), payload["source"])
+    if existing:
+        raise HTTPException(status_code=409, detail={"code": "already_exists", "id": existing["id"]})
+    if not owner and len(songs) + len(fresh) > limits.max_songs():
+        raise HTTPException(status_code=409, detail="library_full_songs")
+    views = _views(uid, owner, list_id, songs, fresh)
+    for s in fresh:
+        _create(uid, views.get(s["videoId"]) or _minimal(s))
+    ids = {s["position"]: have.get(s["videoId"], s["videoId"]) for s in selected}
+    with deps.tx(uid, "albums commit"):
+        items = albums.load(deps.albums_path(uid))
+        dup = albums.find_source(items, payload["source"])
+        if dup:
+            raise HTTPException(status_code=409, detail={"code": "already_exists", "id": dup["id"]})
+        if len(items) >= albums.MAX_ALBUMS:
+            raise HTTPException(status_code=409, detail="album_limit")
+        album = albums.build(payload, {a["id"] for a in items})
+        by_no = {t["no"]: t for t in album["tracks"]}
+        for pos, no in mapping.items():
+            by_no[no]["songId"] = ids[pos]
+        albums.save(deps.albums_path(uid), [album, *items])
+    return {
+        "album": album,
+        "songs": [{"position": s["position"], "songId": ids[s["position"]]} for s in selected],
+        "linked": len(mapping),
+        "unlinked": len(album["tracks"]) - len(mapping),
+    }
+
+
+def _views(uid: str, owner: bool, list_id: str, songs: list[dict[str, Any]], fresh: list[dict[str, Any]]) -> dict[str, dict[str, Any]]:
+    if not fresh:
+        return {}
+    try:
+        playlist_import.charge_listing(uid, owner)
+        found = playlist_import.listing(list_id, songs)
+    except Exception:
+        return {}
+    return {e["id"]: e for e in found["entries"] if e["state"] == "ok"}
+
+
+def _minimal(selected: dict[str, Any]) -> dict[str, Any]:
+    return {"id": selected["videoId"], "title": selected["title"], "mainArtists": [], "featuredArtists": [], "withArtists": [], "version": None,
+            "duration": selected["durationS"], "thumbnail": None}
 
 
 def _create(uid: str, entry: dict[str, Any]) -> None:
@@ -101,21 +289,22 @@ def _sim(wanted: str, found: str) -> float:
     if w == f:
         return 1.0
     if w in f or f in w:
-        return 0.85
-    return difflib.SequenceMatcher(None, w, f).ratio()
+        return SUBSTRING_SCORE
+    return min(difflib.SequenceMatcher(None, w, f).ratio(), SUBSTRING_SCORE + 0.2)
 
 
 def _closeness(a: float, b: float) -> float:
     return max(0.0, 1 - abs(a - b) / max(a, b, 1))
 
 
-def search(artist: Any, album: Any, track_count: Any, durations: Any) -> dict[str, Any]:
+def search(artist: Any, album: Any, track_count: Any, durations: Any, playlist_tracks: Any = None) -> dict[str, Any]:
     if not os.environ.get("DISCOGS_TOKEN", "").strip():
         raise HTTPException(status_code=503, detail="discogs_unavailable")
     artist, album = str(artist or "").strip(), str(album or "").strip()
     count = track_count if isinstance(track_count, int) and not isinstance(track_count, bool) and track_count > 0 else None
     lengths = [d for d in durations if isinstance(d, (int, float)) and not isinstance(d, bool) and d > 0] if isinstance(durations, list) else []
     total = sum(lengths) or None
+    plist = _playlist_tracks(playlist_tracks)
     if not artist and not album:
         return {"candidates": []}
     params = {"type": "release", "per_page": "20", **({"artist": artist} if artist else {}), **({"release_title": album} if album else {})}
@@ -134,11 +323,22 @@ def search(artist: Any, album: Any, track_count: Any, durations: Any) -> dict[st
         if isinstance(ident, int) and ident not in seen and item.get("type") in (None, "release"):
             seen.add(ident)
             picks.append(item)
-    candidates = [_candidate(item, artist, album, count, total) for item in picks[:MAX_CANDIDATES]]
+    candidates = [_candidate(item, artist, album, count, total, plist) for item in picks[:MAX_CANDIDATES]]
     candidates.sort(key=lambda c: (-c["score"], c["discogsId"]))
     if candidates and candidates[0]["score"] >= BEST_MIN_SCORE and (len(candidates) == 1 or candidates[0]["score"] - candidates[1]["score"] >= BEST_MARGIN):
         candidates[0]["best"] = True
     return {"candidates": candidates}
+
+
+def _playlist_tracks(raw: Any) -> list[dict[str, Any]] | None:
+    if not isinstance(raw, list):
+        return None
+    out = []
+    for item in raw:
+        pos = item.get("position") if isinstance(item, dict) else None
+        if isinstance(pos, int) and not isinstance(pos, bool):
+            out.append({"position": pos, "title": str(item.get("title") or "")})
+    return out
 
 
 def _texts(value: Any, limit: int | None = None) -> list[str]:
@@ -151,7 +351,7 @@ def _text(value: Any) -> str | None:
     return value.strip() or None if isinstance(value, str) else None
 
 
-def _candidate(item: dict[str, Any], artist: str, album: str, count: int | None, total: float | None) -> dict[str, Any]:
+def _candidate(item: dict[str, Any], artist: str, album: str, count: int | None, total: float | None, plist: list[dict[str, Any]] | None = None) -> dict[str, Any]:
     ident = int(item["id"])
     head, _, tail = str(item.get("title") or "").partition(" - ")
     title, who, year, tracks = tail or head, (head if tail else ""), item.get("year"), None
@@ -175,17 +375,21 @@ def _candidate(item: dict[str, Any], artist: str, album: str, count: int | None,
         parts.append((0.15, _closeness(total, sum(known))))
     weight = sum(w for w, _ in parts)
     score = round(sum(w * v for w, v in parts) / weight, 3) if weight else 0.0
-    return {
+    out = {
         "url": f"https://www.discogs.com/release/{ident}", "discogsId": ident, "title": title,
         "artist": discogs_lookup._DISAMBIG.sub("", who).rstrip(), "year": timeutil.valid_year(year) if year else None,
         "trackCount": len(tracks) if tracks is not None else None, "score": score, "best": False,
         "formats": _texts(item.get("format")), "labels": _texts(item.get("label"), MAX_LABELS),
         "country": _text(item.get("country")), "catno": _text(item.get("catno")),
         "thumb": _text(item.get("thumb")) if str(item.get("thumb") or "").startswith("https://") else None,
+        "tracks": tracks or [],
     }
+    if plist is not None:
+        out["matches"] = match_tracks(plist, tracks or [])
+    return out
 
 
-# --- auto-link -----------------------------------------------------------------------------------
+# --- title matching ------------------------------------------------------------------------------
 
 def _strip_brackets(text: str) -> str:
     def drop(m: re.Match[str]) -> str:
@@ -198,6 +402,26 @@ def _strip_brackets(text: str) -> str:
 def track_key(title: Any) -> str:
     base = credit_title.parse(None, str(title or ""))["title"]
     return playlist_import._fold(_strip_brackets(base))
+
+
+def _is_plain(title: Any) -> bool:
+    """True when no ignorable bracket (a remaster) had to be dropped to reach the key."""
+    return playlist_import._fold(credit_title.parse(None, str(title or ""))["title"]) == track_key(title)
+
+
+def match_tracks(playlist_tracks: list[dict[str, Any]], disc_tracks: list[dict[str, Any]]) -> dict[str, int | None]:
+    """For each playlist track (`position`, `title`) the number of the Discogs track with the same folded base title, each Discogs track used once; an exact title beats a remaster, then the earlier position wins."""
+    keys = [(t["no"], track_key(t["title"])) for t in disc_tracks]
+    used: set[int] = set()
+    result: dict[str, int | None] = {str(p["position"]): None for p in sorted(playlist_tracks, key=lambda p: p["position"])}
+    for track in sorted(playlist_tracks, key=lambda p: (not _is_plain(p["title"]), p["position"])):
+        key = track_key(track["title"])
+        for no, wanted in keys:
+            if no not in used and key and key == wanted:
+                used.add(no)
+                result[str(track["position"])] = no
+                break
+    return result
 
 
 def song_keys(song: dict[str, Any]) -> set[str]:

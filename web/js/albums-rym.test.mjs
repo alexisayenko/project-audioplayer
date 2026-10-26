@@ -151,3 +151,57 @@ test('regression: link inputs are real text inputs and the sheet button rule can
   assert.match(css, /\.album-link-field input \{[^}]*width: 100%/);
   v.dlg.close();
 });
+
+test('YouTube link: prefilled, kept after saving another key, merged when the reply omits it, and typed text survives a repaint', async () => {
+  const YT = 'https://www.youtube.com/playlist?list=PLabc123';
+  const withYt = { ...ALBUM, links: { ...NO_LINKS, youtube: YT }, tracks: [{ no: 1, title: 'Intro', durationS: 65, songId: 'u1' }] };
+  const afterRym = { ...withYt, links: { discogs: null, rateyourmusic: RYM, wikipedia: null } };
+  const unlinked = { ...withYt, tracks: [{ no: 1, title: 'Intro', durationS: 65, songId: null }] };
+  const v = await open((u, o) => {
+    if (o.method === 'PATCH') return ok(afterRym);
+    if (o.method === 'DELETE') return ok(unlinked);
+    return ok(withYt);
+  });
+  assert.equal(v.dlg.querySelector('.svc-youtube').getAttribute('href'), YT);
+  fire(editBtn(v.dlg), 'click');
+  assert.equal(input(v.dlg, 'youtube').value, YT);
+
+  input(v.dlg, 'discogs').value = 'https://www.discogs.com/release/9';
+  fire(input(v.dlg, 'discogs'), 'input');
+  fire(v.dlg.querySelector('.album-row-btn'), 'click');
+  fire(v.dlg.querySelector('.album-unlink'), 'click');
+  for (let i = 0; i < 5; i++) await flush();
+  assert.equal(input(v.dlg, 'discogs').value, 'https://www.discogs.com/release/9', 'typed but unsaved text survives an unrelated repaint');
+  assert.equal(input(v.dlg, 'youtube').value, YT);
+
+  input(v.dlg, 'discogs').value = '';
+  fire(input(v.dlg, 'discogs'), 'input');
+  input(v.dlg, 'rateyourmusic').value = RYM;
+  await submit(v.dlg.querySelector('.album-links-form'));
+  assert.deepEqual(JSON.parse(v.calls.find((c) => c.opts.method === 'PATCH').opts.body), { links: { rateyourmusic: RYM } });
+  assert.equal(v.dlg.querySelector('.album-links .svc-youtube').getAttribute('href'), YT, 'a reply that omits the key does not drop it');
+
+  fire(editBtn(v.dlg), 'click');
+  assert.equal(input(v.dlg, 'youtube').value, YT);
+  assert.equal(input(v.dlg, 'rateyourmusic').value, RYM);
+  fire([...v.dlg.querySelectorAll('.album-links-form button')][0], 'click');
+  fire(editBtn(v.dlg), 'click');
+  assert.equal(input(v.dlg, 'discogs').value, '', 'Cancel throws the typed text away');
+  v.dlg.close();
+});
+
+test('the unlink button uses the new unlink icon (two links, four sparks, no image file)', async () => {
+  const { ICONS, icon } = await import('./icons.js');
+  assert.ok(ICONS.unlink);
+  assert.equal((ICONS.unlink.d.match(/<rect/g) || []).length, 2);
+  assert.equal((ICONS.unlink.d.match(/<path/g) || []).length, 4);
+  assert.equal(ICONS.unlink.d.includes('<image'), false);
+  assert.equal(icon('unlink', 'inline').getAttribute('viewBox'), '0 0 24 24');
+  const album = { ...ALBUM, tracks: [{ no: 1, title: 'Intro', durationS: 65, songId: 'u2' }] };
+  const v = await open(() => ok(album));
+  const btn = v.dlg.querySelector('.album-unlink');
+  assert.equal(btn.getAttribute('title'), 'Unlink song');
+  assert.match(btn.getAttribute('aria-label'), /Unlink song/);
+  assert.ok(btn.querySelector('svg'));
+  v.dlg.close();
+});

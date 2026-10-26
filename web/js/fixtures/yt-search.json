@@ -1,0 +1,84 @@
+{
+  "candidates": [
+    {
+      "url": "https://www.discogs.com/release/77001",
+      "discogsId": 77001,
+      "title": "Twisted",
+      "artist": "Hallucinogen",
+      "year": 1995,
+      "trackCount": 9,
+      "score": 0.968,
+      "best": true,
+      "formats": [
+        "CD",
+        "Album"
+      ],
+      "labels": [
+        "Dragonfly Records"
+      ],
+      "country": "UK",
+      "catno": "DRAGON 1",
+      "thumb": "https://i.discogs.com/t.jpg",
+      "tracks": [
+        {
+          "no": 1,
+          "title": "LSD",
+          "durationS": 450
+        },
+        {
+          "no": 2,
+          "title": "Orphic Thrench",
+          "durationS": 500
+        },
+        {
+          "no": 3,
+          "title": "Alpha Centauri",
+          "durationS": 420
+        },
+        {
+          "no": 4,
+          "title": "Dark Magus",
+          "durationS": 430
+        },
+        {
+          "no": 5,
+          "title": "Shamanix",
+          "durationS": 440
+        },
+        {
+          "no": 6,
+          "title": "Snarling Black Mabel",
+          "durationS": 460
+        },
+        {
+          "no": 7,
+          "title": "Fluoro Neuro Sponge",
+          "durationS": 470
+        },
+        {
+          "no": 8,
+          "title": "Solstice",
+          "durationS": 480
+        },
+        {
+          "no": 9,
+          "title": "Angelic Particles RMX",
+          "durationS": 490
+        }
+      ],
+      "matches": {
+        "1": 1,
+        "2": 2,
+        "3": 3,
+        "4": 4,
+        "5": 5,
+        "6": 6,
+        "7": 7,
+        "8": 8,
+        "9": 9,
+        "10": null,
+        "11": null
+      }
+    }
+  ]
+}

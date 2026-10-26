@@ -58,15 +58,21 @@ async def add_album(body: dict[str, Any], user: User):
     return await run_in_threadpool(_create, user["uid"], payload, body.get("songIds"))
 
 
-@router.post("/albums/youtube/start", responses=deps.responses(400, 404, 409, 429, 502))
-async def youtube_start(req: AlbumPreviewRequest, user: User):
+@router.post("/albums/youtube/preview", responses=deps.responses(400, 404, 429, 502))
+async def youtube_preview(req: AlbumPreviewRequest, user: User):
     songs = await run_in_threadpool(deps.load_songs, user["uid"])
-    return await run_in_threadpool(album_youtube.start, user["uid"], user["owner"], req.url, songs)
+    return await run_in_threadpool(album_youtube.preview, user["uid"], user["owner"], req.url, songs)
+
+
+@router.post("/albums/youtube/commit", status_code=201, responses=deps.responses(400, 404, 409, 422, 429))
+async def youtube_commit(body: dict[str, Any], user: User):
+    songs = await run_in_threadpool(deps.load_songs, user["uid"])
+    return await run_in_threadpool(album_youtube.commit, user["uid"], user["owner"], body, songs)
 
 
 @router.post("/albums/discogs-search", responses=deps.responses(502, 503))
 async def discogs_search(req: AlbumSearchRequest, user: User):
-    return await run_in_threadpool(album_youtube.search, req.artist, req.album, req.trackCount, req.durationsS)
+    return await run_in_threadpool(album_youtube.search, req.artist, req.album, req.trackCount, req.durationsS, [t.model_dump() for t in req.playlistTracks] if req.playlistTracks is not None else None)
 
 
 @router.get("/albums")

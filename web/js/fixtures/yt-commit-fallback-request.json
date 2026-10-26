@@ -1,0 +1,78 @@
+{
+  "playlistUrl": "https://www.youtube.com/playlist?list=OLAK5uy_abcdefghijklmnop",
+  "selected": [
+    {
+      "position": 1,
+      "videoId": "hhhhhhhhh01",
+      "title": "LSD",
+      "durationS": 450
+    },
+    {
+      "position": 2,
+      "videoId": "hhhhhhhhh02",
+      "title": "Orphic Thrench",
+      "durationS": 500
+    },
+    {
+      "position": 3,
+      "videoId": "hhhhhhhhh03",
+      "title": "Alpha Centauri",
+      "durationS": 420
+    },
+    {
+      "position": 4,
+      "videoId": "hhhhhhhhh04",
+      "title": "Dark Magus",
+      "durationS": 430
+    },
+    {
+      "position": 5,
+      "videoId": "hhhhhhhhh05",
+      "title": "Shamanix",
+      "durationS": 440
+    },
+    {
+      "position": 6,
+      "videoId": "hhhhhhhhh06",
+      "title": "Snarling Black Mabel",
+      "durationS": 460
+    },
+    {
+      "position": 7,
+      "videoId": "hhhhhhhhh07",
+      "title": "Fluoro Neuro Sponge",
+      "durationS": 470
+    },
+    {
+      "position": 8,
+      "videoId": "hhhhhhhhh08",
+      "title": "Solstice",
+      "durationS": 480
+    },
+    {
+      "position": 9,
+      "videoId": "hhhhhhhhh09",
+      "title": "Angelic Particles RMX",
+      "durationS": 490
+    },
+    {
+      "position": 10,
+      "videoId": "hhhhhhhhh10",
+      "title": "Orphic Thrench",
+      "durationS": 501
+    },
+    {
+      "position": 11,
+      "videoId": "hhhhhhhhh11",
+      "title": "Snarling Black Mabel",
+      "durationS": 461
+    }
+  ],
+  "candidate": null,
+  "mapping": {},
+  "fallback": {
+    "title": "Twisted",
+    "artist": "Hallucinogen",
+    "year": 1995
+  }
+}

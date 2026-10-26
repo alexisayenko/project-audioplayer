@@ -73,3 +73,19 @@
 .album-edit-deletes { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-top: var(--space-4); }
 .album-edit-deletes .btn { width: auto; flex: 1 1 14rem; }
 .album-edit .field { margin-top: var(--space-3); }
+.album-yt-head { display: grid; gap: var(--space-1); }
+.album-picker { display: grid; gap: var(--space-2); }
+.album-picked { display: grid; gap: var(--space-1); }
+.album-cand-radio { display: flex; align-items: center; gap: var(--space-3); cursor: pointer; }
+.album-cand-radio input[type=radio] { flex: none; width: auto; min-height: 0; }
+.album-picker-actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3); }
+.album-open-discogs { width: auto; text-decoration: none; }
+.album-fallback { display: grid; gap: var(--space-2); }
+.album-yt-bar { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); }
+.album-yt-tracks { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--space-1); }
+.album-yt-row { display: grid; grid-template-columns: auto 2.5ch minmax(0, 1fr) auto auto; align-items: baseline; column-gap: var(--space-2); row-gap: var(--space-1); cursor: pointer; }
+.album-yt-row input[type=checkbox] { width: auto; min-height: 0; }
+.album-yt-row .album-match { grid-column: 3 / -1; }
+.album-nomatch { font-style: italic; }
+.album-in-library { white-space: nowrap; }
+.album-quota { margin: 0; }
