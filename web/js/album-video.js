@@ -256,7 +256,7 @@ export function createVideoFlow({ body, say, genreEditor, isLive, setBusy, hideF
         return;
       }
       if (!isLive()) return;
-      const finish = () => { toast(`Added "${data.album.title}"`); onCreated(made.albumId); };
+      const finish = (job) => { toast(job?.message || `Added "${data.album.title}"`); onCreated(made.albumId); };
       body.replaceChildren();
       stopProgress = mountSplitProgress({
         host: body, jobId: made.jobId, pollMs,

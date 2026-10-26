@@ -144,5 +144,8 @@ test('error texts', () => {
   assert.equal(previewErrorText({ status: 418, message: 'teapot' }), 'teapot');
   assert.match(createErrorText({ status: 400, code: 'library_full_songs' }), /library is full/);
   assert.match(createErrorText({ status: 429 }), /Hourly/);
-  assert.equal(createErrorText({ status: 422, data: { detail: 'start must be before end' } }), 'start must be before end');
+  assert.match(createErrorText({ status: 422, data: { detail: 'bad_times' } }), /wrong times/);
+  assert.match(createErrorText({ status: 422, data: { detail: 'start must be before end' } }), /could not be saved/);
+  assert.match(createErrorText({ status: 409, data: { detail: { code: 'already_exists', id: 'a1' } } }), /already exists/);
+  assert.match(createErrorText({ status: 409, data: { detail: 'album_limit' } }), /album limit/);
 });

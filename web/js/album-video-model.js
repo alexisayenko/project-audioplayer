@@ -214,6 +214,13 @@ export function previewErrorText(ex) {
   return ex?.message || 'The video could not be read.';
 }
 
+const CREATE_422 = {
+  bad_times: 'A track has wrong times. Check that each one starts before it ends and the tracks do not overlap.',
+  bad_tracks: 'A track has an empty title or a wrong value. Check the titles, artists and track numbers.',
+  no_tracks: 'Tick at least one track.',
+  bad_album: 'The album title, artist, type or year is not valid.',
+};
+
 export function createErrorText(ex) {
   const detail = ex?.data?.detail;
   const code = ex?.code || (typeof detail === 'string' ? detail : detail?.code) || '';
@@ -221,6 +228,8 @@ export function createErrorText(ex) {
   if (code === 'library_full_bytes') return 'Your storage is full. Remove some songs and try again.';
   if (ex?.status === 429) return 'Hourly limit reached. Try again later.';
   if (ex?.status === 413) return previewErrorText(ex);
-  if (ex?.status === 422) return typeof detail === 'string' && detail ? detail : 'The track list could not be saved. Check the times and titles.';
+  if (ex?.status === 409) return code === 'album_limit' ? 'You have reached the album limit. Remove an album and try again.' : 'An album from this video already exists in your library.';
+  if (ex?.status === 404 || code === 'unknown_song') return 'A song marked Use existing is no longer in your library. Reload and try again.';
+  if (ex?.status === 422) return CREATE_422[code] || 'The track list could not be saved. Check the times and titles.';
   return ex?.message || 'The album could not be created.';
 }
