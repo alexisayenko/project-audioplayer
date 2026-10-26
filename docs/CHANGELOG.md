@@ -2,6 +2,10 @@
 
 What shipped, newest first. One line each; the web UI and server are live at https://electrophone.cc. Everything listed here is deployed except the sections marked "built, not deployed" (the 2026-10-14 release went out once the SSH access in [task-0027](tasks/task-0027.md) was restored; the live visualizer files match `origin/main` as of 2026-10-15). Why: [tech/decisions.md](tech/decisions.md); runbook: [tech/deploy.md](tech/deploy.md).
 
+## 2026-10-26 (Task note written: add an album from a time-coded YouTube video; docs only, nothing built or deployed)
+
+- Docs: [task-0038](tasks/task-0038.md) gains "Phase 1B: add an album from a time-coded YouTube video" (tracklist parser with the pasted example as the reference fixture, editable preview table, one download split into per-track files with ffmpeg as decided by the owner, split job, API, phases, open questions JM to JQ) and planned spec rows ADD-193 to ADD-197, CAT-059, CAT-060, LIB-252, API-264 to API-267, IOS-103.
+
 ## 2026-10-25 (Task note written: complete albums; docs only, nothing built or deployed)
 
 - Docs: [task-0120](tasks/task-0120.md) "Complete albums: browse and download full albums" (Album as a new, light, derived entity; Library sub-navigation Songs, Albums, Artists, Drafts; completeness from MusicBrainz or Discogs; iOS album download within the quotas; phases 0 to 7; open questions JA to JL), [ADR-0050](tech/decisions.md) (proposed; narrows ADR-0039), and planned spec rows LIB-220 to LIB-229, CAT-050 to CAT-057, DATA-202 to DATA-204, API-241 to API-247, IOS-098 to IOS-102.
