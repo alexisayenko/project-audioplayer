@@ -11,7 +11,7 @@ import { paintRing } from './dl-ring.js';
 import { fetchControl } from './dl-control.js';
 import {
   roleLabel, sourceTypeLabel, entrySources, addPrefillFor, entryLine,
-  loadReferences, genreReferenceData, onReferencesChange, sortEntries,
+  loadReferences, genreReferenceData, onReferencesChange, sortEras, sortEntries,
 } from './references.js';
 
 export const EMPTY_REFERENCES = 'No reference tracks yet.';
