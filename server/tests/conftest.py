@@ -1,6 +1,9 @@
+import subprocess
+
 import pytest
 
 from datetime import UTC, datetime
+from pathlib import Path
 
 from app import album_covers, deps, features, readiness as readiness_mod, genre_lookup, guest, httpjson, limits, previewcache, timeutil, wiki_lookup
 
@@ -15,8 +18,38 @@ def _no_network(*args, **kwargs):
     raise OSError("network disabled in tests")
 
 
+REPO = Path(__file__).resolve().parents[2]
+
+
+def _porcelain() -> set[str] | None:
+    try:
+        out = subprocess.run(
+            ["git", "-C", str(REPO), "status", "--porcelain", "--untracked-files=all"],
+            capture_output=True, text=True, timeout=30, check=True,
+        ).stdout
+    except (OSError, subprocess.SubprocessError):
+        return None
+    return set(out.splitlines())
+
+
+def pytest_configure(config):
+    config._repo_status_before = _porcelain()
+
+
+def pytest_terminal_summary(terminalreporter):
+    before = getattr(terminalreporter.config, "_repo_status_before", None)
+    after = _porcelain()
+    if before is None or after is None or before == after:
+        return
+    terminalreporter.write_sep("=", "WARNING: the test run changed the repository tree", yellow=True)
+    for line in sorted(after ^ before):
+        terminalreporter.write_line(line)
+
+
 @pytest.fixture(autouse=True)
-def _hermetic(monkeypatch):
+def _hermetic(monkeypatch, tmp_path_factory):
+    monkeypatch.setattr(deps, "DATA_DIR", tmp_path_factory.mktemp("data-dir"))
+    monkeypatch.setattr(deps, "DOWNLOAD_DIR", tmp_path_factory.mktemp("download-dir"))
     monkeypatch.setattr(httpjson.urllib.request, "urlopen", _no_network)
     monkeypatch.setattr(album_covers, "fetch_jpeg", _no_network)
     monkeypatch.setattr(features, "record_startup", lambda: None)
