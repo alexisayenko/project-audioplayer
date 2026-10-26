@@ -22,8 +22,8 @@ struct AnonJobStatus: Decodable, Equatable {
 
     private enum Keys: String, CodingKey { case status, progress, error_code, meta, size, sha256, expires_at }
 
-    init(status: String, progress: Double? = nil, error_code errorCode: String? = nil, meta: AnonMeta? = nil,
-         size: Int64? = nil, sha256: String? = nil, expires_at expiresAt: Date? = nil) {
+    init(status: String, progress: Double? = nil, errorCode: String? = nil, meta: AnonMeta? = nil,
+         size: Int64? = nil, sha256: String? = nil, expiresAt: Date? = nil) {
         self.status = status
         self.progress = progress
         self.error_code = errorCode
