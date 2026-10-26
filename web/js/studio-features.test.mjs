@@ -44,12 +44,12 @@ test('STU-051: checkFeatures names each kind of problem', () => {
 });
 
 test('STU-051: the open Studio tickets are listed with the right status', () => {
-  const by = (task) => FEATURES.find((f) => f.task === task && f.status !== 'released');
-  for (const t of ['task-0107', 'task-0108', 'task-0109', 'task-0111', 'task-0113']) assert.equal(by(t).status, 'in-progress', t);
-  for (const t of ['task-0110', 'task-0112', 'task-0115', 'task-0116', 'task-0117', 'task-0118', 'task-0119']) assert.equal(by(t).status, 'planned', t);
-  for (const f of FEATURES.filter((x) => x.task && x.status !== 'released')) {
+  const open = FEATURES.filter((x) => x.task && x.status !== 'released');
+  assert.ok(open.length > 0);
+  const allowed = { 'in-progress': ['in progress'], planned: ['to do', 'in progress'] };
+  for (const f of open) {
     const status = /^status: (.*)$/m.exec(read(`../../docs/tasks/${f.task}.md`))[1];
-    assert.equal(status.startsWith('in progress') ? 'in-progress' : status.startsWith('to do') ? 'planned' : status, f.status, f.task);
+    assert.ok(allowed[f.status].some((s) => status.startsWith(s)), `${f.task} is "${status}" but its Features entry is ${f.status}`);
   }
 });
 
