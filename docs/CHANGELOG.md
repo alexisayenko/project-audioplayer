@@ -6,6 +6,13 @@ What shipped, newest first. One line each; the web UI and server are live at htt
 
 - Docs: [task-0038](tasks/task-0038.md) gains "Phase 1B: add an album from a time-coded YouTube video" (tracklist parser with the pasted example as the reference fixture, editable preview table, one download split into per-track files with ffmpeg as decided by the owner, split job, API, phases, open questions JM to JQ) and planned spec rows ADD-193 to ADD-197, CAT-059, CAT-060, LIB-252, API-264 to API-267, IOS-103.
 
+## 2026-10-26 (Server test pruning; tests and docs only, nothing deployed)
+
+- Tests (owner decision, "prune tests"): pruned server tests: 4 files, a net 91 functions removed or merged (117 to 113 files, 2054 to 1963 functions, 337 KB of fixtures removed); server line coverage unchanged at 95% (14723 statements, 730 missed before, 732 after); the full suite has 3 failures, all failing before (`test_genre_sources` committed counts, `test_route_auth` draft routes, `test_web_preload` tier 2), and no new ones.
+- Tests (one-off): the per-format case tables and live-library fixtures of the retired data model 2 and 3, removals, sources and renames migrations are gone, each migrator keeps dry run, backup, idempotence, abort, CLI and startup tests; the comparisons against pasted pre-refactor regexes are gone, the adversarial speed checks stay.
+- Tests (counts): genre tests derive counts, levels, families and subfamilies from the data instead of pinning 537, 582, 165, 204, 420 and 123; the parents snapshot test and its fixture are removed; `test_genre_payload_agrees` keeps the web fixture guard (`web/js/genre-payload.test.mjs` reads that fixture) and regenerates it with `UPDATE_WEB_FIXTURES=1`.
+- Tests (duplicates): `test_route_auth` also checks wrong, garbage and basic credentials on every data route, and the per-file "needs a token" tests are gone; session, cookie and quota tests that repeated `test_oauth`, `test_session_security`, `test_users` and `test_limits_boundaries` are gone; `test_urlclean`, `test_credits_api` and `test_wiki_suggest_characterisation` are merged into their sibling files.
+
 ## 2026-10-25 (Task note written: complete albums; docs only, nothing built or deployed)
 
 - Docs: [task-0120](tasks/task-0120.md) "Complete albums: browse and download full albums" (Album as a new, light, derived entity; Library sub-navigation Songs, Albums, Artists, Drafts; completeness from MusicBrainz or Discogs; iOS album download within the quotas; phases 0 to 7; open questions JA to JL), [ADR-0050](tech/decisions.md) (proposed; narrows ADR-0039), and planned spec rows LIB-220 to LIB-229, CAT-050 to CAT-057, DATA-202 to DATA-204, API-241 to API-247, IOS-098 to IOS-102.
