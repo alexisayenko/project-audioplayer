@@ -2,7 +2,7 @@
 
 What shipped, newest first. One line each; the web UI and server are live at https://electrophone.cc. Everything listed here is deployed except the sections marked "built, not deployed" (the 2026-10-14 release went out once the SSH access in [task-0027](tasks/task-0027.md) was restored; the live visualizer files match `origin/main` as of 2026-10-15). Why: [tech/decisions.md](tech/decisions.md); runbook: [tech/deploy.md](tech/deploy.md).
 
-## 2026-10-26 (Reliability phase of the architecture audit; in source, not deployed, not on TestFlight)
+## 2026-10-26 (Reliability phase of the architecture audit; server deployed 2026-10-27, iOS in source, not on TestFlight)
 
 - Server (task-0122 F2, DATA-208, API-296; `test_userjson` and the neighbouring suites pass): a corrupt `drafts.json`, `playlists.json`, `albums.json` or `genre_layout.json` is no longer read as empty and then overwritten by the next save; it is copied to `<name>.corrupt-<stamp>`, logged, listed in the owner `/health` as `corrupt_files`, and its routes answer 500 `data_corrupt` without writing. The server still starts.
 - iOS and tests (task-0122 F3, IOS-108; both schemes build, `AudioPlayerTests` pass, web and server parity tests pass): shared case files `url_clean_cases.json` and `tag_cases.json` join `token_cases.json` in `server/tests/fixtures` and are checked by the server, the web and, as resources of `AudioPlayerTests`, the Swift ports of tokens, url-clean and tags. The first run found the Swift tokenizer still split on commas, semicolons, periods and bullets and on an unspaced `|`, against ADD-071 and the web; `Tokens.swift` now follows the web rules (iOS Add form and song sheet only, not run on a device). The two `#if DEBUG` self-checks became XCTest.
