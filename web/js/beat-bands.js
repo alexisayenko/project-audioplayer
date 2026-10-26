@@ -1,3 +1,4 @@
+import { gt, gte } from './cmp.js';
 import { estimateIntervals, MIN_PERIODS } from './live-bpm.js';
 import { liveBpmLabel } from './bpm-label.js';
 
@@ -96,14 +97,14 @@ export const LANE_RATIOS = Object.freeze([
 const near = (bpm, target) => Math.abs(bpm / target - 1) <= LANE_RATIO_TOLERANCE;
 
 export function laneRelation(main, bpm) {
-  if (!(main > 0) || !(bpm > 0)) return { kind: 'none', chip: '', tip: '' };
+  if (!gt(main, 0) || !gt(bpm, 0)) return { kind: 'none', chip: '', tip: '' };
   if (near(bpm, main)) return { kind: 'same', chip: '', tip: 'the main beat' };
   for (const r of LANE_RATIOS) if (near(bpm, main * r.ratio)) return { kind: 'multiple', chip: r.chip, tip: r.tip };
   return { kind: 'other', chip: '', tip: 'not a simple multiple of the main beat' };
 }
 
 export function estimateLane(onsets, now, start, windowS = LANE_WINDOW_DEFAULT_S) {
-  if (!(now - start >= windowS - LANE_START_SLACK_S)) return null;
+  if (!gte(now - start, windowS - LANE_START_SLACK_S)) return null;
   const from = now - windowS;
   let first = onsets.length;
   while (first > 0 && onsets[first - 1].t >= from) first -= 1;

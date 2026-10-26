@@ -355,30 +355,38 @@ export function modifierCount(tree, key) {
   return tree?.modifiers.get(key)?.songs.size || 0;
 }
 
+function searchScope(tree, hits) {
+  const keep = new Set();
+  const open = new Set();
+  for (const id of hits.keys()) {
+    keep.add(id);
+    for (const a of ancestorIds(tree, id)) {
+      keep.add(a);
+      if (a !== id) open.add(a);
+    }
+  }
+  return { keep, open };
+}
+
+const rowFilter = ({ keep, byStatus, only, onlyWithSongs }) => (n) => (!keep || keep.has(n.id)) && (!byStatus || byStatus.has(n.id)) && (!only || only.has(n.id)) && (!onlyWithSongs || n.all.size);
+
 export function visibleRows(tree, { expanded = new Set(), query = '', onlyWithSongs = false, status = 'all', modifiers = [], only = null } = {}) {
   const hits = searchMatches(tree, query, { populatedOnly: onlyWithSongs });
   const byStatus = filterIds(tree, { status, modifiers });
-  const searching = !!vkey(query);
   const open = new Set();
-  const keep = new Set();
+  let keep = null;
   if (byStatus) for (const id of byStatus) for (const p of tree.byId.get(id).parents) open.add(p);
-  if (searching) {
-    for (const id of hits.keys()) {
-      keep.add(id);
-      for (const a of ancestorIds(tree, id)) {
-        keep.add(a);
-        if (a !== id) open.add(a);
-      }
-    }
+  if (vkey(query)) {
+    const scope = searchScope(tree, hits);
+    keep = scope.keep;
+    for (const a of scope.open) open.add(a);
   }
+  const passes = rowFilter({ keep, byStatus, only, onlyWithSongs });
   const rows = [];
   const seen = new Set();
   const walk = (n, parentKey = null, parentId = null, depth = 1) => {
-    if (searching && !keep.has(n.id)) return;
-    if (byStatus && !byStatus.has(n.id)) return;
-    if (only && !only.has(n.id)) return;
-    if (onlyWithSongs && !n.all.size) return;
-    const kids = n.children.filter((c) => (!searching || keep.has(c.id)) && (!byStatus || byStatus.has(c.id)) && (!only || only.has(c.id)) && (!onlyWithSongs || c.all.size));
+    if (!passes(n)) return;
+    const kids = n.children.filter(passes);
     const isOpen = kids.length > 0 && (expanded.has(n.id) || open.has(n.id));
     const key = seen.has(n.id) ? `${parentKey}|${n.id}` : n.id;
     seen.add(n.id);

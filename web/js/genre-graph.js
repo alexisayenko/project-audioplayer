@@ -210,7 +210,7 @@ export function createGraphView(canvas, { onSelect, onHover, reducedMotion = fal
 
   function drawNode(n, alpha, k) {
     ctx.globalAlpha = alpha;
-    if (n.fis.length > 1 && n.mix >= 1) fillDisc(ctx, n.x, n.y, n.r, colors.fam, n.fis, colors.label);
+    if (n.fis.length > 1 && n.mix >= 1) fillDisc(ctx, n, colors.fam, n.fis, colors.label);
     else {
       ctx.beginPath();
       ctx.arc(n.x, n.y, n.r, 0, Math.PI * 2);

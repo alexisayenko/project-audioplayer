@@ -53,8 +53,7 @@ function insert(cell, n, w, depth = 0) {
   insert(cell.kids[i], n, w, depth + 1);
 }
 
-export function createSim({ nodes, links = [], seed = 1, breathing = true, charge = 70, linkDistance = 56, gravity = 0.035, home = 0, velocityDecay = VELOCITY_DECAY, parentStrength = 0, linkFloor = 0, parentReaction = null }) {
-  const rng = mulberry32(seed);
+function initNodes(nodes, rng) {
   const byId = new Map();
   nodes.forEach((n, i) => {
     if (!Number.isFinite(n.x) || !Number.isFinite(n.y)) {
@@ -71,6 +70,10 @@ export function createSim({ nodes, links = [], seed = 1, breathing = true, charg
     n.phase = rng() * Math.PI * 2;
     byId.set(n.id, n);
   });
+  return byId;
+}
+
+function buildLinks(nodes, links, byId) {
   const ls = [];
   const deg = new Map(nodes.map((n) => [n.id, 0]));
   for (const l of links) {
@@ -83,34 +86,46 @@ export function createSim({ nodes, links = [], seed = 1, breathing = true, charg
     deg.set(s.id, deg.get(s.id) + 1);
     deg.set(t.id, deg.get(t.id) + 1);
   }
+  return { ls, deg };
+}
+
+function kindFactors(l) {
+  if (l.assoc) return { strength: ASSOC_STRENGTH, dist: 2.5 };
+  if (l.related) return { strength: 0.15, dist: 1.6 };
+  return { strength: 1, dist: 1 };
+}
+
+function setLinkParams(ls, deg, parentStrength, linkDistance) {
   for (const l of ls) {
     const ds = Math.max(1, deg.get(l.s.id));
     const dt = Math.max(1, deg.get(l.t.id));
     const m = Math.min(ds, dt);
-    let kindStrength = 1;
-    let kindDist = 1;
-    if (l.assoc) {
-      kindStrength = ASSOC_STRENGTH;
-      kindDist = 2.5;
-    } else if (l.related) {
-      kindStrength = 0.15;
-      kindDist = 1.6;
-    }
-    l.strength = l.tree && parentStrength ? parentStrength / Math.sqrt(m) : kindStrength / m;
-    l.dist = kindDist * linkDistance + l.s.r + l.t.r;
+    const kind = kindFactors(l);
+    l.strength = l.tree && parentStrength ? parentStrength / Math.sqrt(m) : kind.strength / m;
+    l.dist = kind.dist * linkDistance + l.s.r + l.t.r;
     l.bias = dt / (ds + dt);
   }
-  const leash = parentReaction !== null;
+}
+
+function treePairs(ls) {
   const pairLink = new Map();
-  if (leash) {
-    for (const l of ls) {
-      if (!l.tree) continue;
-      if (!pairLink.has(l.s)) pairLink.set(l.s, new Map());
-      if (!pairLink.has(l.t)) pairLink.set(l.t, new Map());
-      pairLink.get(l.s).set(l.t, l);
-      pairLink.get(l.t).set(l.s, l);
-    }
+  for (const l of ls) {
+    if (!l.tree) continue;
+    if (!pairLink.has(l.s)) pairLink.set(l.s, new Map());
+    if (!pairLink.has(l.t)) pairLink.set(l.t, new Map());
+    pairLink.get(l.s).set(l.t, l);
+    pairLink.get(l.t).set(l.s, l);
   }
+  return pairLink;
+}
+
+export function createSim({ nodes, links = [], seed = 1, breathing = true, charge = 70, linkDistance = 56, gravity = 0.035, home = 0, velocityDecay = VELOCITY_DECAY, parentStrength = 0, linkFloor = 0, parentReaction = null }) {
+  const rng = mulberry32(seed);
+  const byId = initNodes(nodes, rng);
+  const { ls, deg } = buildLinks(nodes, links, byId);
+  setLinkParams(ls, deg, parentStrength, linkDistance);
+  const leash = parentReaction !== null;
+  const pairLink = leash ? treePairs(ls) : new Map();
   function slackPair(a, b, d2) {
     const l = pairLink.get(a)?.get(b);
     return l !== undefined && (l.mute || ((a.fx != null || b.fx != null) && d2 < l.dist * l.dist));

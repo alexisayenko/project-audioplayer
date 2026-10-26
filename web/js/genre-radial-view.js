@@ -90,21 +90,26 @@ export function createRadialView(canvas, { onSelect, onHover, reducedMotion = fa
     return a;
   };
 
+  const lit = (id) => hl.chain.has(id) || hl.kids.has(id);
+
+  function edgeLook(e) {
+    const on = !!sel && lit(e.from) && lit(e.to);
+    let alpha = 0.3;
+    if (sel) alpha = on ? 0.95 : 0.1;
+    let width = e.dotted ? 0.7 : 1;
+    if (on) width = 2;
+    return { on, width, alpha: e.dotted && !on ? alpha * 0.7 : alpha };
+  }
+
   function drawEdges(k) {
-    const lit = (id) => hl.chain.has(id) || hl.kids.has(id);
     for (const e of layout.edges) {
       const a = layout.byId.get(e.from);
       const b = layout.byId.get(e.to);
-      const on = sel && lit(e.from) && lit(e.to);
-      let alpha = 0.3;
-      if (sel) alpha = on ? 0.95 : 0.1;
-      ctx.globalAlpha = alpha;
-      ctx.strokeStyle = on ? colors.accent : colors.edge;
-      let lw = e.dotted ? 0.7 : 1;
-      if (on) lw = 2;
-      ctx.lineWidth = lw / k;
+      const look = edgeLook(e);
+      ctx.globalAlpha = look.alpha;
+      ctx.strokeStyle = look.on ? colors.accent : colors.edge;
+      ctx.lineWidth = look.width / k;
       ctx.setLineDash(e.dotted ? [1 / k, 3 / k] : []);
-      if (e.dotted && !on) ctx.globalAlpha = alpha * 0.7;
       ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
       ctx.setLineDash([]);
       const h = e.dotted ? null : arrowHead(a.x, a.y, a.r, b.x, b.y, b.r, k);
@@ -130,8 +135,8 @@ export function createRadialView(canvas, { onSelect, onHover, reducedMotion = fa
   function drawNode(n, k) {
     ctx.globalAlpha = alphaOf(n);
     const sub = n.subOrder && layout.subIdx >= 0 ? layout.subIdx : -1;
-    fillDisc(ctx, n.x, n.y, n.r, colors.fam, n.hues || [n.hue], colors.ink, sub, sub >= 0 ? shades()[n.subOrder] : null);
-    outlineDisc(ctx, n.x, n.y, n.r, n.hues || [n.hue], isOutlinedSlot, colors.rim, k);
+    fillDisc(ctx, n, colors.fam, n.hues || [n.hue], colors.ink, sub, sub >= 0 ? shades()[n.subOrder] : null);
+    outlineDisc(ctx, n, n.hues || [n.hue], isOutlinedSlot, colors.rim, k);
     if (!n.node.discogs) {
       ctx.strokeStyle = colors.ink;
       ctx.lineWidth = 1.5 / k;

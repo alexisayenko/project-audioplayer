@@ -1,3 +1,4 @@
+import { gt } from './cmp.js';
 export const MIN_BPM = 30;
 export const MAX_BPM = 1200;
 export const WINDOW_S = 6;
@@ -93,8 +94,7 @@ export function createOnsetExtractor(sampleRate) {
   return {
     rate,
     push(samples, out) {
-      for (let i = 0; i < samples.length; i += 1) {
-        const x = samples[i];
+      for (const x of samples) {
         l1 += aLow * (x - l1);
         l2 += aLow * (l1 - l2);
         m1 += aMid * (x - m1);
@@ -315,32 +315,44 @@ function listCandidates(peaks, bpmOf) {
   return out;
 }
 
-function pick(r, wc, minLag, maxLag, rate, hint, sigmaS, trace) {
+function lowestNearTop(peaks, top) {
+  let chosen = null;
+  for (const p of peaks) if (p.h >= (1 - FUNDAMENTAL_TIE) * top && (chosen === null || p.lag < chosen.lag)) chosen = p;
+  return chosen;
+}
+
+function preferFaster(peaks, start, minLag, bpmOf) {
+  let chosen = start;
+  for (;;) {
+    const faster = nearest(peaks, chosen.lag / 2);
+    if (!faster || faster.lag < minLag || bpmOf(chosen.lag) >= USUAL_MIN_BPM || bpmOf(faster.lag) > USUAL_MAX_BPM || faster.hc < (1 - TIE_MARGIN) * chosen.hc) return chosen;
+    chosen = faster;
+  }
+}
+
+function followHint(peaks, chosen, hint, bpmOf) {
+  if (!gt(hint, 0)) return chosen;
+  const f = bpmOf(chosen.lag);
+  if (f > USUAL_MAX_BPM || Math.abs(f - hint) / hint <= HINT_TOLERANCE) return chosen;
+  for (const factor of [2, 0.5]) {
+    const c = f * factor;
+    if (c < MIN_BPM || c > USUAL_MAX_BPM || Math.abs(c - hint) / hint > HINT_TOLERANCE) continue;
+    const match = nearest(peaks, chosen.lag / factor);
+    if (match && match.hc >= (1 - TIE_MARGIN) * chosen.hc) return match;
+  }
+  return chosen;
+}
+
+function pick(spec, sigmaS, trace) {
+  const { r, wc, minLag, maxLag, rate, hint } = spec;
   const peaks = findPeaks(smoothed(r, minLag, maxLag, sigmaS * rate), minLag, maxLag, wc);
   if (trace) trace.candidates = listCandidates(peaks, (lag) => (60 * rate) / lag);
   if (!peaks.length) return null;
   let top = 0;
   for (const p of peaks) if (p.h > top) top = p.h;
   if (top < LOCK_MIN) return null;
-  let chosen = null;
-  for (const p of peaks) if (p.h >= (1 - FUNDAMENTAL_TIE) * top && (chosen === null || p.lag < chosen.lag)) chosen = p;
   const bpmOf = (lag) => (60 * rate) / lag;
-  for (;;) {
-    const faster = nearest(peaks, chosen.lag / 2);
-    if (!faster || faster.lag < minLag || bpmOf(chosen.lag) >= USUAL_MIN_BPM || bpmOf(faster.lag) > USUAL_MAX_BPM || faster.hc < (1 - TIE_MARGIN) * chosen.hc) break;
-    chosen = faster;
-  }
-  if (hint > 0) {
-    const f = bpmOf(chosen.lag);
-    if (f <= USUAL_MAX_BPM && Math.abs(f - hint) / hint > HINT_TOLERANCE) {
-      for (const factor of [2, 0.5]) {
-        const c = f * factor;
-        if (c < MIN_BPM || c > USUAL_MAX_BPM || Math.abs(c - hint) / hint > HINT_TOLERANCE) continue;
-        const match = nearest(peaks, chosen.lag / factor);
-        if (match && match.hc >= (1 - TIE_MARGIN) * chosen.hc) { chosen = match; break; }
-      }
-    }
-  }
+  const chosen = followHint(peaks, preferFaster(peaks, lowestNearTop(peaks, top), minLag, bpmOf), hint, bpmOf);
   const bpm = bpmOf(refine(peaks, chosen, maxLag));
   return bpm >= MIN_BPM * 0.97 && bpm <= MAX_BPM * 1.03 ? { bpm, top } : null;
 }
@@ -355,6 +367,22 @@ function crest(env) {
   return total > 0 ? top / count / (total / sorted.length) : 0;
 }
 
+function hoarePartition(a, lo, hi) {
+  const pivot = a[(lo + hi) >> 1];
+  let i = lo;
+  let j = hi;
+  while (i <= j) {
+    while (a[i] < pivot) i += 1;
+    while (a[j] > pivot) j -= 1;
+    if (i <= j) {
+      const t = a[i]; a[i] = a[j]; a[j] = t;
+      i += 1;
+      j -= 1;
+    }
+  }
+  return [i, j];
+}
+
 function crestSelect(env) {
   const n = env.length;
   let total = 0;
@@ -365,18 +393,7 @@ function crestSelect(env) {
   let lo = 0;
   let hi = n - 1;
   while (lo < hi) {
-    const pivot = a[(lo + hi) >> 1];
-    let i = lo;
-    let j = hi;
-    while (i <= j) {
-      while (a[i] < pivot) i += 1;
-      while (a[j] > pivot) j -= 1;
-      if (i <= j) {
-        const t = a[i]; a[i] = a[j]; a[j] = t;
-        i += 1;
-        j -= 1;
-      }
-    }
+    const [i, j] = hoarePartition(a, lo, hi);
     if (k <= j) hi = j;
     else if (k >= i) lo = i;
     else break;
@@ -386,19 +403,38 @@ function crestSelect(env) {
   return total > 0 ? top / count / (total / n) : 0;
 }
 
-export function estimateFromEnvelope(env, rate, hint = null, minSpanS = MIN_SPAN_S, trace = null, opts = null) {
+function centredSignal(env, w) {
   const n = env.length;
-  if (n < minSpanS * rate) return null;
-  const peakiness = opts?.fast === true ? crestSelect(env) : crest(env);
-  if (peakiness < CREST_FAST_MIN) return null;
-  const accept = (res) => res !== null && (peakiness >= CREST_MIN || (res.bpm > FAST_BPM && res.top >= FAST_LOCK)) ? res.bpm : null;
-  const w = taperWindow(n, rate);
   let weight = 0;
   let total = 0;
   for (let i = 0; i < n; i += 1) { weight += w[i]; total += w[i] * env[i]; }
   const mean = total / weight;
   const x = new Float64Array(n);
   for (let i = 0; i < n; i += 1) x[i] = (env[i] - mean) * w[i];
+  return x;
+}
+
+function climbLadder(spec, peakiness, trace) {
+  const accept = (res) => res !== null && (peakiness >= CREST_MIN || (res.bpm > FAST_BPM && res.top >= FAST_LOCK)) ? res.bpm : null;
+  let found = null;
+  let foundTop = 0;
+  for (const [sigma, limit] of SMOOTHING_LADDER) {
+    const res = pick(spec, sigma, trace);
+    const bpm = accept(res);
+    if (bpm !== null) { found = bpm; foundTop = res.top; }
+    if (bpm !== null && bpm <= limit) break;
+  }
+  if (trace) trace.top = foundTop;
+  return found;
+}
+
+export function estimateFromEnvelope(env, rate, hint = null, minSpanS = MIN_SPAN_S, trace = null, opts = null) {
+  const n = env.length;
+  if (n < minSpanS * rate) return null;
+  const peakiness = opts?.fast === true ? crestSelect(env) : crest(env);
+  if (peakiness < CREST_FAST_MIN) return null;
+  const w = taperWindow(n, rate);
+  const x = centredSignal(env, w);
   const half = kernelHalf(rate);
   const minLag = Math.max(2, Math.floor((60 * rate) / MAX_BPM) - 2);
   const maxLag = Math.min(Math.ceil((60 * rate) / MIN_BPM) + 2, Math.floor(n * 0.6));
@@ -407,16 +443,7 @@ export function estimateFromEnvelope(env, rate, hint = null, minSpanS = MIN_SPAN
   const { r, power } = ac;
   if (power === 0) return null;
   const wc = viaFft ? (lag) => ac.wc[lag] : (lag) => windowedCorrelation(w, lag);
-  let found = null;
-  let foundTop = 0;
-  for (const [sigma, limit] of SMOOTHING_LADDER) {
-    const res = pick(r, wc, minLag, maxLag, rate, hint, sigma, trace);
-    const bpm = accept(res);
-    if (bpm !== null) { found = bpm; foundTop = res.top; }
-    if (bpm !== null && bpm <= limit) break;
-  }
-  if (trace) trace.top = foundTop;
-  return found;
+  return climbLadder({ r, wc, minLag, maxLag, rate, hint }, peakiness, trace);
 }
 
 function sameTempo(a, b) {
@@ -429,17 +456,17 @@ export const windowFrames = (seconds, rate) => Math.round(seconds * rate);
 export const historyFrames = (historyS, rate) => (historyS > 0 ? Math.ceil(historyS * rate) : 0);
 
 export function estimateWindowFromEnvelope(env, rate, seconds, hint = null) {
-  if (!(seconds > 0) || env.length < windowFrames(seconds, rate) * 0.98) return null;
+  if (!gt(seconds, 0) || env.length < windowFrames(seconds, rate) * 0.98) return null;
   const trace = {};
   const bpm = estimateFromEnvelope(env, rate, hint, seconds * 0.98, trace, { fast: true });
   if (bpm === null) return null;
   const beatsInWindow = (bpm * seconds) / 60;
-  if (!(beatsInWindow > MIN_PERIODS * PERIODS_MARGIN)) return null;
+  if (!gt(beatsInWindow, MIN_PERIODS * PERIODS_MARGIN)) return null;
   return { bpm, confidence: Math.min(1, Math.max(0, trace.top ?? 0)), beatsInWindow };
 }
 
 export function estimateEnvelope(env, rate, windowSeconds = LANE_WINDOW_S) {
-  if (!(rate > 0) || !(windowSeconds > 0)) return null;
+  if (!gt(rate, 0) || !gt(windowSeconds, 0)) return null;
   const n = windowFrames(windowSeconds, rate);
   if (env.length < n) return null;
   return estimateWindowFromEnvelope(env.length === n ? env : env.subarray(env.length - n), rate, windowSeconds, null);
@@ -481,21 +508,26 @@ function ioiPeaks(s) {
   return peaks.slice(0, IOI_PEAKS);
 }
 
+function ioiRefinePass(t, p) {
+  let num = 0;
+  let den = 0;
+  for (let i = 0; i < t.length; i += 1) {
+    for (let j = i + 1; j < t.length; j += 1) {
+      const d = t[j] - t[i];
+      if (d > IOI_MAX_S || d > 3.5 * p) break;
+      const k = Math.round(d / p);
+      if (k < 1 || Math.abs(d - k * p) > ioiTol(p)) continue;
+      num += k * d;
+      den += k * k;
+    }
+  }
+  return { num, den };
+}
+
 function ioiRefine(t, first) {
   let p = first;
   for (let pass = 0; pass < 3; pass += 1) {
-    let num = 0;
-    let den = 0;
-    for (let i = 0; i < t.length; i += 1) {
-      for (let j = i + 1; j < t.length; j += 1) {
-        const d = t[j] - t[i];
-        if (d > IOI_MAX_S || d > 3.5 * p) break;
-        const k = Math.round(d / p);
-        if (k < 1 || Math.abs(d - k * p) > ioiTol(p)) continue;
-        num += k * d;
-        den += k * k;
-      }
-    }
+    const { num, den } = ioiRefinePass(t, p);
     if (den === 0) break;
     p = num / den;
   }
@@ -547,29 +579,43 @@ function ioiConfidence(t, p) {
   return fit / (t.length - 1);
 }
 
-export function estimateIntervals(times, strengths, windowSeconds) {
-  const n = times.length;
-  if (!(windowSeconds > 0) || n <= MIN_PERIODS) return null;
+function ioiWeights(strengths, n) {
   let mean = 0;
   for (let i = 0; i < n; i += 1) mean += strengths[i];
   mean /= n;
   const w = new Float64Array(n);
   for (let i = 0; i < n; i += 1) w[i] = mean > 0 ? Math.min(IOI_WEIGHT_MAX, Math.max(1 / IOI_WEIGHT_MAX, strengths[i] / mean)) : 1;
-  const fits = [];
-  for (const peak of ioiPeaks(ioiHistogram(times, w))) {
-    const period = ioiRefine(times, peak.lag);
-    if (!(period > 0) || windowSeconds / period <= MIN_PERIODS * PERIODS_MARGIN) continue;
-    if (fits.some((f) => Math.abs(f.period / period - 1) < IOI_TOLERANCE / 2)) continue;
-    const { share, pairs } = ioiExplained(times, period);
-    if (share < IOI_MIN_EXPLAINED || pairs < MIN_PERIODS) continue;
-    const confidence = ioiConfidence(times, period);
-    if (confidence < IOI_MIN_CONFIDENCE || ioiSignificance(times, period, windowSeconds) < IOI_MIN_Z) continue;
-    fits.push({ period, explained: share, confidence });
-  }
+  return w;
+}
+
+function ioiFit(times, period, windowSeconds, fits) {
+  if (!gt(period, 0) || windowSeconds / period <= MIN_PERIODS * PERIODS_MARGIN) return null;
+  if (fits.some((f) => Math.abs(f.period / period - 1) < IOI_TOLERANCE / 2)) return null;
+  const { share, pairs } = ioiExplained(times, period);
+  if (share < IOI_MIN_EXPLAINED || pairs < MIN_PERIODS) return null;
+  const confidence = ioiConfidence(times, period);
+  if (confidence < IOI_MIN_CONFIDENCE || ioiSignificance(times, period, windowSeconds) < IOI_MIN_Z) return null;
+  return { period, explained: share, confidence };
+}
+
+function shortestBest(fits) {
   let best = 0;
   for (const f of fits) if (f.explained > best) best = f.explained;
   let chosen = null;
   for (const f of fits) if (f.explained >= best - IOI_TIE && (chosen === null || f.period < chosen.period)) chosen = f;
+  return chosen;
+}
+
+export function estimateIntervals(times, strengths, windowSeconds) {
+  const n = times.length;
+  if (!gt(windowSeconds, 0) || n <= MIN_PERIODS) return null;
+  const w = ioiWeights(strengths, n);
+  const fits = [];
+  for (const peak of ioiPeaks(ioiHistogram(times, w))) {
+    const fit = ioiFit(times, ioiRefine(times, peak.lag), windowSeconds, fits);
+    if (fit) fits.push(fit);
+  }
+  const chosen = shortestBest(fits);
   if (chosen === null) return null;
   return { bpm: 60 / chosen.period, confidence: chosen.confidence, explained: chosen.explained, period: chosen.period, beatsInWindow: windowSeconds / chosen.period };
 }

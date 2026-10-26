@@ -76,23 +76,49 @@ export function createAnnealer({ xs, ys, radii, segs, fixed = null, seed = 5, te
   };
   refreshHot();
 
+  function pickNode() {
+    const i = hot.length && rng() < 0.8 ? hot[Math.floor(rng() * hot.length)] : Math.floor(rng() * N);
+    if (!fixed?.[i]) return i;
+    return free.length ? free[Math.floor(rng() * free.length)] : -1;
+  }
+
+  function buildGroup(i, mode) {
+    const group = [i];
+    if (mode < 0.7) return group;
+    for (const k of inc[i]) {
+      const c = segs[k][0] === i ? segs[k][1] : -1;
+      if (c >= 0 && inc[c].length === 1 && !fixed?.[c] && group.length < 40) group.push(c);
+    }
+    return group;
+  }
+
+  function target(i, nb, mode, groupSize) {
+    const x0 = xs[i];
+    const y0 = ys[i];
+    if (mode < 0.3 && nb.length >= 2) {
+      const a = nb[Math.floor(rng() * nb.length)];
+      const b = nb[Math.floor(rng() * nb.length)];
+      const t = 0.2 + 0.6 * rng();
+      return [xs[a] + (xs[b] - xs[a]) * t + (rng() - 0.5) * 10, ys[a] + (ys[b] - ys[a]) * t + (rng() - 0.5) * 10];
+    }
+    if (mode < 0.5 && nb.length >= 1) {
+      const a = nb[Math.floor(rng() * nb.length)];
+      const ang = rng() * 2 * Math.PI;
+      const d = radii[a] + radii[i] + 6 + 40 * rng();
+      return [xs[a] + Math.cos(ang) * d, ys[a] + Math.sin(ang) * d];
+    }
+    const sigma = mode < 0.7 || groupSize === 1 ? 15 + 60 * rng() : 20 + 90 * rng();
+    return [x0 + (rng() - 0.5) * 2 * sigma, y0 + (rng() - 0.5) * 2 * sigma];
+  }
+
   function move() {
     if (moves % 400 === 0) refreshHot();
     moves++;
-    let i = hot.length && rng() < 0.8 ? hot[Math.floor(rng() * hot.length)] : Math.floor(rng() * N);
-    if (fixed?.[i]) {
-      if (!free.length) return false;
-      i = free[Math.floor(rng() * free.length)];
-    }
+    const i = pickNode();
+    if (i < 0) return false;
     const nb = nbrs[i];
     const mode = rng();
-    const group = [i];
-    if (mode >= 0.7) {
-      for (const k of inc[i]) {
-        const c = segs[k][0] === i ? segs[k][1] : -1;
-        if (c >= 0 && inc[c].length === 1 && !fixed?.[c] && group.length < 40) group.push(c);
-      }
-    }
+    const group = buildGroup(i, mode);
     for (const g of group) inGroup[g] = 1;
     const touched = [];
     for (const g of group) for (const k of inc[g]) if (!segMark[k]) { segMark[k] = 1; touched.push(k); }
@@ -100,35 +126,9 @@ export function createAnnealer({ xs, ys, radii, segs, fixed = null, seed = 5, te
     const oy = group.map((g) => ys[g]);
     const before = cost(group, touched);
     const anchorBefore = anchor(group);
-    let dx = 0;
-    let dy = 0;
-    const x0 = xs[i];
-    const y0 = ys[i];
-    let tx;
-    let ty;
-    if (mode < 0.3 && nb.length >= 2) {
-      const a = nb[Math.floor(rng() * nb.length)];
-      const b = nb[Math.floor(rng() * nb.length)];
-      const t = 0.2 + 0.6 * rng();
-      tx = xs[a] + (xs[b] - xs[a]) * t + (rng() - 0.5) * 10;
-      ty = ys[a] + (ys[b] - ys[a]) * t + (rng() - 0.5) * 10;
-    } else if (mode < 0.5 && nb.length >= 1) {
-      const a = nb[Math.floor(rng() * nb.length)];
-      const ang = rng() * 2 * Math.PI;
-      const d = radii[a] + radii[i] + 6 + 40 * rng();
-      tx = xs[a] + Math.cos(ang) * d;
-      ty = ys[a] + Math.sin(ang) * d;
-    } else if (mode < 0.7 || group.length === 1) {
-      const sigma = 15 + 60 * rng();
-      tx = x0 + (rng() - 0.5) * 2 * sigma;
-      ty = y0 + (rng() - 0.5) * 2 * sigma;
-    } else {
-      const sigma = 20 + 90 * rng();
-      tx = x0 + (rng() - 0.5) * 2 * sigma;
-      ty = y0 + (rng() - 0.5) * 2 * sigma;
-    }
-    dx = tx - x0;
-    dy = ty - y0;
+    const [tx, ty] = target(i, nb, mode, group.length);
+    const dx = tx - xs[i];
+    const dy = ty - ys[i];
     group.forEach((g, n) => { xs[g] = ox[n] + dx; ys[g] = oy[n] + dy; });
     for (const k of touched) box(k);
     const after = cost(group, touched);

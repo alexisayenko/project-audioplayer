@@ -1,4 +1,5 @@
 import { canonicalCountry } from './countries.js';
+import { gt } from './cmp.js';
 export const GENRE_CAP = 12;
 const COUNTRY_CAP = 1;
 const CAPS = { genre: GENRE_CAP, country: COUNTRY_CAP };
@@ -82,7 +83,7 @@ export function discogsNote(state) {
 }
 
 const suggestedNote = (n) => {
-  if (!(n > 0)) return '';
+  if (!gt(n, 0)) return '';
   return `${n} suggested genre${n === 1 ? '' : 's'}`;
 };
 

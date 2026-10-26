@@ -1,3 +1,4 @@
+import { gt } from './cmp.js';
 import { el } from './dom.js';
 import { segmented } from './segmented.js';
 import { liveBpmLabel } from './bpm-label.js';
@@ -54,10 +55,9 @@ export function createHistory(keepS = HISTORY_KEEP_S) {
   };
 }
 
-export function plotRange(list, endT, spanS, visible) {
+function visibleExtent(list, from, visible) {
   let lo = Infinity;
   let hi = -Infinity;
-  const from = endT - spanS * 1000;
   for (const s of list) {
     if (s.t < from) continue;
     for (let k = 0; k < s.v.length; k += 1) {
@@ -67,7 +67,12 @@ export function plotRange(list, endT, spanS, visible) {
       if (v > hi) hi = v;
     }
   }
-  if (!(hi > 0)) return null;
+  return { lo, hi };
+}
+
+export function plotRange(list, endT, spanS, visible) {
+  const { lo, hi } = visibleExtent(list, endT - spanS * 1000, visible);
+  if (!gt(hi, 0)) return null;
   if (hi / lo > LOG_RATIO) {
     const pad = Math.log(hi / lo) * RANGE_PAD;
     return { lo: lo * Math.exp(-pad), hi: hi * Math.exp(pad), log: true };
@@ -141,14 +146,19 @@ export function graphGeo(w, h) {
 
 export const timeX = (t, endT, spanS, geo) => geo.left + geo.plotW * (1 - (endT - t) / (spanS * 1000));
 
+function hoverRows(hit, visible) {
+  const rows = [];
+  for (let k = 0; k < hit.v.length; k += 1) if (visible[k] && hit.v[k] !== null) rows.push({ k, text: liveBpmLabel(hit.v[k]) });
+  return rows;
+}
+
 export function graphHover(px, list, endT, spanS, geo, visible) {
   if (!(px >= geo.left && px <= geo.left + geo.plotW)) return null;
   const t = endT - (1 - (px - geo.left) / geo.plotW) * spanS * 1000;
   let near = null;
   for (const s of list) if (!near || Math.abs(s.t - t) < Math.abs(near.t - t)) near = s;
   const hit = near && Math.abs(near.t - t) <= HOVER_MAX_S * 1000 ? near : null;
-  const rows = [];
-  if (hit) for (let k = 0; k < hit.v.length; k += 1) if (visible[k] && hit.v[k] !== null) rows.push({ k, text: liveBpmLabel(hit.v[k]) });
+  const rows = hit ? hoverRows(hit, visible) : [];
   const at = hit ? hit.t : t;
   return { x: hit ? timeX(hit.t, endT, spanS, geo) : px, title: agoText(endT - at), rows, empty: !rows.length };
 }
@@ -186,46 +196,56 @@ function drawAxes(g, pal, geo, range, spanS) {
   }
 }
 
+function startRun(ctx, geo, model, range, prevT, prevV) {
+  ctx.beginPath();
+  ctx.moveTo(timeX(prevT, model.endT, model.spanS, geo), geo.top + geo.plotH * (1 - yFraction(prevV, range)));
+}
+
+function isAlone(list, i, k) {
+  const next = list[i + 1];
+  return !next || next.v[k] === null || (next.t - list[i].t) / 1000 > GAP_S;
+}
+
+function drawLine(ctx, pal, geo, model, range, k) {
+  const { list, endT, spanS } = model;
+  const from = endT - (spanS + GAP_S) * 1000;
+  ctx.strokeStyle = css(pal.series[k], LINE_ALPHA);
+  ctx.fillStyle = css(pal.series[k], LINE_ALPHA);
+  ctx.lineWidth = THICK_WINDOWS.includes(WINDOWS_S[k]) ? 2 : 1.2;
+  let prev = null;
+  let open = false;
+  for (let i = 0; i < list.length; i += 1) {
+    const s = list[i];
+    if (s.t < from) continue;
+    const v = s.v[k];
+    if (v === null) { prev = null; continue; }
+    const x = timeX(s.t, endT, spanS, geo);
+    const y = geo.top + geo.plotH * (1 - yFraction(v, range));
+    if (prev !== null && (s.t - prev) / 1000 <= GAP_S) {
+      if (!open) { startRun(ctx, geo, model, range, prev, list[i - 1].v[k]); open = true; }
+      ctx.lineTo(x, y);
+    } else {
+      if (open) { ctx.stroke(); open = false; }
+      if (isAlone(list, i, k)) { ctx.beginPath(); ctx.arc(x, y, 1.6, 0, Math.PI * 2); ctx.fill(); }
+    }
+    prev = s.t;
+  }
+  if (open) ctx.stroke();
+}
+
 function drawSeries(g, pal, geo, model, range) {
   const { ctx } = g;
-  const { list, endT, spanS, visible } = model;
-  const from = endT - (spanS + GAP_S) * 1000;
   ctx.save();
   ctx.beginPath();
   ctx.rect(geo.left, geo.top - 2, geo.plotW, geo.plotH + 4);
   ctx.clip();
   ctx.lineJoin = 'round';
-  for (let k = 0; k < WINDOWS_S.length; k += 1) {
-    if (!visible[k]) continue;
-    ctx.strokeStyle = css(pal.series[k], LINE_ALPHA);
-    ctx.fillStyle = css(pal.series[k], LINE_ALPHA);
-    ctx.lineWidth = THICK_WINDOWS.includes(WINDOWS_S[k]) ? 2 : 1.2;
-    let prev = null;
-    let open = false;
-    for (let i = 0; i < list.length; i += 1) {
-      const s = list[i];
-      if (s.t < from) continue;
-      const v = s.v[k];
-      if (v === null) { prev = null; continue; }
-      const x = timeX(s.t, endT, spanS, geo);
-      const y = geo.top + geo.plotH * (1 - yFraction(v, range));
-      const joined = prev !== null && (s.t - prev) / 1000 <= GAP_S;
-      if (joined) {
-        if (!open) { ctx.beginPath(); ctx.moveTo(timeX(prev, endT, spanS, geo), geo.top + geo.plotH * (1 - yFraction(list[i - 1].v[k], range))); open = true; }
-        ctx.lineTo(x, y);
-      } else {
-        if (open) { ctx.stroke(); open = false; }
-        const alone = i + 1 >= list.length || list[i + 1].v[k] === null || (list[i + 1].t - s.t) / 1000 > GAP_S;
-        if (alone) { ctx.beginPath(); ctx.arc(x, y, 1.6, 0, Math.PI * 2); ctx.fill(); }
-      }
-      prev = s.t;
-    }
-    if (open) ctx.stroke();
-  }
+  for (let k = 0; k < WINDOWS_S.length; k += 1) if (model.visible[k]) drawLine(ctx, pal, geo, model, range, k);
   ctx.restore();
 }
 
-function drawHover(g, pal, geo, hover, list, endT, spanS, range, visible) {
+function drawHover(g, pal, geo, hover, model, range) {
+  const { list, endT, spanS } = model;
   const { ctx, w } = g;
   const x = Math.round(hover.x) + 0.5;
   ctx.save();
@@ -283,7 +303,7 @@ export function drawBpmGraph(g, pal, model) {
   }
   drawSeries(g, pal, geo, model, range);
   const hover = model.hoverX === null ? null : graphHover(model.hoverX, model.list, model.endT, model.spanS, geo, model.visible);
-  if (hover) drawHover(g, pal, geo, hover, model.list, model.endT, model.spanS, range, model.visible);
+  if (hover) drawHover(g, pal, geo, hover, model, range);
   return { geo, range, hover };
 }
 

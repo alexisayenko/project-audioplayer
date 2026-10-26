@@ -15,7 +15,7 @@ export const draftStore = {
   get visible() { return this.items.filter((d) => !this.hidden.has(d.id)); },
   get count() { return this.visible.length; },
   subscribe(fn) { this.subs.add(fn); return () => this.subs.delete(fn); },
-  emit() { for (const fn of [...this.subs]) fn(); },
+  emit() { Array.from(this.subs, (fn) => fn()); },
   reset() {
     for (const t of this.timers.values()) clearTimeout(t);
     Object.assign(this, { items: [], loaded: false, limit: 500, error: '', hidden: new Set(), timers: new Map(), pending: null });

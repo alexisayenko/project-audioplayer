@@ -198,12 +198,19 @@ export function cleanEras(rows) {
   return { eras: out, error: '' };
 }
 
+function positiveYear(year) {
+  const y = Number.parseInt(year, 10);
+  return Number.isInteger(y) && y > 0 ? y : null;
+}
+
+const sameSources = (sources, entry) => JSON.stringify(sources) === JSON.stringify(entrySources(entry).map((s) => ({ type: s.type, url: s.url, ...(s.note ? { note: s.note } : {}) })));
+
 export function buildBody({
   artist, title, year, role, note, sources, era,
 }) {
   const body = { artist: String(artist || '').trim(), title: String(title || '').trim(), role };
-  const y = Number.parseInt(year, 10);
-  if (Number.isInteger(y) && y > 0) body.year = y;
+  const y = positiveYear(year);
+  if (y !== null) body.year = y;
   const n = String(note || '').trim();
   if (n) body.note = n;
   body.sources = sources || [];
@@ -219,10 +226,9 @@ export function patchBodyFor(entry, {
   if (role !== entry.role) body.role = role;
   const n = String(note || '').trim();
   if (n !== (entry.note || '')) body.note = n;
-  const y = Number.parseInt(year, 10);
-  const nextYear = Number.isInteger(y) && y > 0 ? y : null;
+  const nextYear = positiveYear(year);
   if (nextYear !== (entry.year ?? null)) body.year = nextYear;
-  if (JSON.stringify(sources) !== JSON.stringify(entrySources(entry).map((s) => ({ type: s.type, url: s.url, ...(s.note ? { note: s.note } : {}) })))) body.sources = sources;
+  if (!sameSources(sources, entry)) body.sources = sources;
   return body;
 }
 

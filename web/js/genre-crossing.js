@@ -1,6 +1,6 @@
-const cross = (ax, ay, bx, by, cx, cy) => (bx - ax) * (cy - ay) - (by - ay) * (cx - ax);
+const cross = (px, py, qx, qy, rx, ry) => (qx - px) * (ry - py) - (qy - py) * (rx - px);
 
-export function segmentsCross(ax, ay, bx, by, cx, cy, dx, dy) {
+export function segmentsCross(...[ax, ay, bx, by, cx, cy, dx, dy]) {
   const d1 = cross(ax, ay, bx, by, cx, cy);
   const d2 = cross(ax, ay, bx, by, dx, dy);
   const d3 = cross(cx, cy, dx, dy, ax, ay);
@@ -8,10 +8,9 @@ export function segmentsCross(ax, ay, bx, by, cx, cy, dx, dy) {
   return ((d1 > 0 && d2 < 0) || (d1 < 0 && d2 > 0)) && ((d3 > 0 && d4 < 0) || (d3 < 0 && d4 > 0));
 }
 
-export function countCrossingsXY(xs, ys, segs, cell = 90) {
+function buildGrid(xs, ys, segs, cell) {
   const grid = new Map();
-  const n = segs.length;
-  for (let s = 0; s < n; s++) {
+  for (let s = 0; s < segs.length; s++) {
     const a = segs[s][0];
     const b = segs[s][1];
     const x0 = Math.floor(Math.min(xs[a], xs[b]) / cell);
@@ -26,18 +25,22 @@ export function countCrossingsXY(xs, ys, segs, cell = 90) {
       }
     }
   }
+  return grid;
+}
+
+export function countCrossingsXY(xs, ys, segs, cell = 90) {
+  const grid = buildGrid(xs, ys, segs, cell);
+  const n = segs.length;
   const seen = new Set();
   let count = 0;
   for (const list of grid.values()) {
     for (let i = 0; i < list.length; i++) {
       for (let j = i + 1; j < list.length; j++) {
-        const p = list[i];
-        const q = list[j];
-        const key = p * n + q;
+        const key = list[i] * n + list[j];
         if (seen.has(key)) continue;
         seen.add(key);
-        const [a, b] = segs[p];
-        const [c, d] = segs[q];
+        const [a, b] = segs[list[i]];
+        const [c, d] = segs[list[j]];
         if (a === c || a === d || b === c || b === d) continue;
         if (segmentsCross(xs[a], ys[a], xs[b], ys[b], xs[c], ys[c], xs[d], ys[d])) count++;
       }

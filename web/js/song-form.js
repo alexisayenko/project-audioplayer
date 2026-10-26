@@ -32,6 +32,34 @@ function applyPlan(plan, { f, editor, wiki }) {
   if (plan.wikipedia_album) wiki.set({ album: plan.wikipedia_album });
 }
 
+const httpsOrNull = (u) => (/^https:\/\/\S+$/i.test(u || '') ? u : null);
+
+function wikiEntry(wv) {
+  return wikipediaLink(wv) || (httpsOrNull(wv.wikipedia_album) ? { url: wv.wikipedia_album, label: 'Wikipedia (album)' } : null);
+}
+
+function mergeLiveStates(out, base, lastStates) {
+  for (const [k, v] of Object.entries(lastStates)) {
+    if (v.on) out[k] = { ...base[k], ...v, url: v.url ?? base[k]?.url ?? null };
+  }
+}
+
+function versionedStates(states, versioned) {
+  if (!versioned) return states;
+  return { ...states, musicbrainz: { on: false, url: null }, discogs: { on: false, url: null } };
+}
+
+function applyTitleAlbum(f, p) {
+  if (p.title !== undefined) f.title.value = p.title ?? '';
+  if (p.albums !== undefined) f.album.value = p.albums?.[0] ?? '';
+  else if (p.album !== undefined) f.album.value = p.album ?? '';
+}
+
+function firstSource(initial) {
+  const s = initial.sources?.[0];
+  return s && typeof s === 'object' ? s : {};
+}
+
 export function songForm({ mode = 'add', song = {}, source = null, onChange = null } = {}) {
   const isAdd = mode === 'add';
   const initial = { ...song };
@@ -96,10 +124,6 @@ export function songForm({ mode = 'add', song = {}, source = null, onChange = nu
   const setUnlessFocused = (inp, value) => {
     if (globalThis.document?.activeElement !== inp) inp.value = value || '';
   };
-  const wikiEntry = (wv) => {
-    const https = (u) => (/^https:\/\/\S+$/i.test(u || '') ? u : null);
-    return wikipediaLink(wv) || (https(wv.wikipedia_album) ? { url: wv.wikipedia_album, label: 'Wikipedia (album)' } : null);
-  };
   const applyLinkVals = (out) => {
     for (const k of Object.keys(linkVals)) {
       if (isAdd && k !== 'spotify') continue;
@@ -111,7 +135,7 @@ export function songForm({ mode = 'add', song = {}, source = null, onChange = nu
   const paintIcons = () => {
     const base = stored();
     const out = { ...base };
-    for (const [k, v] of Object.entries(lastStates)) if (v.on) out[k] = { ...base[k], ...v, url: v.url ?? base[k]?.url ?? null };
+    mergeLiveStates(out, base, lastStates);
     const wv = wiki.values();
     const wl = wikiEntry(wv);
     if (wl) out.wikipedia = { on: true, url: wl.url, label: wl.label };
@@ -198,11 +222,7 @@ export function songForm({ mode = 'add', song = {}, source = null, onChange = nu
       const resp = await api.metadata(body, req.signal);
       if (!req.live()) return;
       icons.setBusy(false);
-      const states = serviceState(resp?.services);
-      if (credits.hasVersion()) {
-        states.musicbrainz = { on: false, url: null };
-        states.discogs = { on: false, url: null };
-      }
+      const states = versionedStates(serviceState(resp?.services), credits.hasVersion());
       if (states.musicbrainz.url) mbUrl = states.musicbrainz.url;
       if (states.discogs.url && !discogsUrl) discogsUrl = states.discogs.url;
       discogsState = states.discogs;
@@ -239,7 +259,7 @@ export function songForm({ mode = 'add', song = {}, source = null, onChange = nu
   const ident = identifyBlock({ id: isAdd ? null : initial.id, audio: !isAdd && hasAudio(initial), editor, getReleased: () => f.released.value, setReleased, applyLinks });
 
   const bpmEl = bpmRow({ isAdd, initial });
-  const src0 = isAdd || !initial.sources?.[0] || typeof initial.sources[0] !== 'object' ? {} : initial.sources[0];
+  const src0 = isAdd ? {} : firstSource(initial);
   const trim = trimBlock({
     start: isAdd ? null : src0.trim_start ?? null,
     end: isAdd ? null : src0.trim_end ?? null,
@@ -293,9 +313,7 @@ export function songForm({ mode = 'add', song = {}, source = null, onChange = nu
     return Object.values(errors)[0] || null;
   };
   const setValues = (p = {}) => {
-    if (p.title !== undefined) f.title.value = p.title ?? '';
-    if (p.albums !== undefined) f.album.value = p.albums?.[0] ?? '';
-    else if (p.album !== undefined) f.album.value = p.album ?? '';
+    applyTitleAlbum(f, p);
     credits.set(p);
     wiki.set({ song: p.wikipedia_song, artist: p.wikipedia_artist, album: p.wikipedia_album });
     paintIcons();

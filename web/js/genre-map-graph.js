@@ -16,15 +16,34 @@ export function emphasis(own, all) {
   return all > 0 ? 1 : 0;
 }
 
+function mapNode(tree, n) {
+  return {
+    id: n.id, name: n.name, label: n.label || n.name, level: n.level, family: n.family, fi: familyIndex(n.family), sub: n.subfamily, subOrder: n.subfamily ? subfamilyOrder(tree, n.subfamily) : 0, fis: n.fams.length ? pieIndices(n.fams) : [familyIndex(n.family)],
+    own: n.own.size, all: n.all.size, em: emphasis(n.own.size, n.all.size), r: mapRadius(n.level, n.all.size), node: n,
+  };
+}
+
+function assocLinks(tree, byId) {
+  const links = [];
+  const assoc = new Set();
+  for (const n of tree.byId.values()) {
+    for (const r of n.related) {
+      const t = tree.byId.get(`g:${r}`) || tree.byId.get(`s:${r}`);
+      const key = t && pairKey(n.id, t.id);
+      if (!t || t.id === n.id || assoc.has(key) || !byId.has(n.id) || !byId.has(t.id)) continue;
+      assoc.add(key);
+      links.push({ source: n.id, target: t.id, kind: 'assoc' });
+    }
+  }
+  return links;
+}
+
 export function buildMapGraph(tree) {
   if (!tree) return { nodes: [], links: [], byId: new Map() };
   const nodes = [];
   for (const n of tree.byId.values()) {
     if (n.level === 1 && isHiddenFamily(n.name)) continue;
-    nodes.push({
-      id: n.id, name: n.name, label: n.label || n.name, level: n.level, family: n.family, fi: familyIndex(n.family), sub: n.subfamily, subOrder: n.subfamily ? subfamilyOrder(tree, n.subfamily) : 0, fis: n.fams.length ? pieIndices(n.fams) : [familyIndex(n.family)],
-      own: n.own.size, all: n.all.size, em: emphasis(n.own.size, n.all.size), r: mapRadius(n.level, n.all.size), node: n,
-    });
+    nodes.push(mapNode(tree, n));
   }
   const byId = new Map(nodes.map((n) => [n.id, n]));
   const links = [];
@@ -39,18 +58,30 @@ export function buildMapGraph(tree) {
   for (const n of tree.byId.values()) {
     for (const p of n.parents) add(p, n.id, 'parent');
   }
-  const assoc = new Set();
-  for (const n of tree.byId.values()) {
-    for (const r of n.related) {
-      const t = tree.byId.get(`g:${r}`) || tree.byId.get(`s:${r}`);
-      const key = t && pairKey(n.id, t.id);
-      if (!t || t.id === n.id || assoc.has(key) || !byId.has(n.id) || !byId.has(t.id)) continue;
-      assoc.add(key);
-      links.push({ source: n.id, target: t.id, kind: 'assoc' });
-    }
-  }
+  links.push(...assocLinks(tree, byId));
   const subIdx = tree.subfamilies?.length ? familyIndex(tree.subfamilies[0].family) : -1;
   return { nodes, links, byId, subIdx };
+}
+
+function childMap(graph) {
+  const parentOf = new Map();
+  const kids = new Map();
+  for (const l of graph.links) {
+    if (l.kind !== 'parent' || parentOf.has(l.target)) continue;
+    parentOf.set(l.target, l.source);
+    if (!kids.has(l.source)) kids.set(l.source, []);
+    kids.get(l.source).push(l.target);
+  }
+  return kids;
+}
+
+function scatterUnplaced(graph, rng, ring) {
+  let k = 0;
+  for (const n of graph.nodes) {
+    if (Number.isFinite(n.x) && Number.isFinite(n.y)) continue;
+    const a = k++ * 2.399963 + rng();
+    n.x = Math.cos(a) * ring * 1.4; n.y = Math.sin(a) * ring * 1.4;
+  }
 }
 
 export function seedPositions(graph, seed = 1, { ring = 240 } = {}) {
@@ -64,14 +95,7 @@ export function seedPositions(graph, seed = 1, { ring = 240 } = {}) {
     f.x = Math.cos(a) * ring; f.y = Math.sin(a) * ring;
     out.set(f.id, a);
   });
-  const parentOf = new Map();
-  const kids = new Map();
-  for (const l of graph.links) {
-    if (l.kind !== 'parent' || parentOf.has(l.target)) continue;
-    parentOf.set(l.target, l.source);
-    if (!kids.has(l.source)) kids.set(l.source, []);
-    kids.get(l.source).push(l.target);
-  }
+  const kids = childMap(graph);
   const place = (id, depth) => {
     const list = kids.get(id) || [];
     const p = graph.byId.get(id);
@@ -88,12 +112,7 @@ export function seedPositions(graph, seed = 1, { ring = 240 } = {}) {
     });
   };
   for (const f of fams) place(f.id, 0);
-  let k = 0;
-  for (const n of graph.nodes) {
-    if (Number.isFinite(n.x) && Number.isFinite(n.y)) continue;
-    const a = k++ * 2.399963 + rng();
-    n.x = Math.cos(a) * ring * 1.4; n.y = Math.sin(a) * ring * 1.4;
-  }
+  scatterUnplaced(graph, rng, ring);
   return graph;
 }
 

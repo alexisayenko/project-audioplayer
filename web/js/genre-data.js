@@ -1,3 +1,4 @@
+import { gte } from './cmp.js';
 export const FAMILIES = [
   'Electronic', 'Rock', 'Pop', 'Hip Hop', 'Jazz', 'Funk / Soul', 'Classical', 'Reggae', 'Blues', 'Other',
 ];
@@ -86,7 +87,7 @@ export function clipLink(sx, sy, sr, tx, ty, tr) {
 }
 
 export function arrowHead(px, py, pr, cx, cy, cr, k) {
-  if (!(k >= ARROW_MIN_K)) return null;
+  if (!gte(k, ARROW_MIN_K)) return null;
   const dx = cx - px;
   const dy = cy - py;
   const len = Math.hypot(dx, dy);

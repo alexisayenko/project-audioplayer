@@ -98,11 +98,11 @@ test('segmentsFor gives one full circle for a single colour and equal contiguous
 test('fillDisc paints a flat disc once and a split disc as fixed wedges, then leaves the full circle path for the outline', () => {
   const calls = [];
   const ctx = new Proxy({}, { get: (t, k) => (...a) => calls.push([k, ...a]), set: (t, k, v) => { calls.push(['set', k, v]); return true; } });
-  fillDisc(ctx, 0, 0, 5, ['#a', '#b', '#c'], [1], '#f');
+  fillDisc(ctx, { x: 0, y: 0, r: 5 }, ['#a', '#b', '#c'], [1], '#f');
   assert.equal(calls.filter((c) => c[0] === 'fill').length, 1);
   assert.deepEqual(calls.find((c) => c[0] === 'set'), ['set', 'fillStyle', '#b']);
   calls.length = 0;
-  fillDisc(ctx, 0, 0, 5, ['#a', '#b', '#c'], [0, 2], '#f');
+  fillDisc(ctx, { x: 0, y: 0, r: 5 }, ['#a', '#b', '#c'], [0, 2], '#f');
   const arcs = calls.filter((c) => c[0] === 'arc');
   assert.equal(calls.filter((c) => c[0] === 'fill').length, 2);
   assert.deepEqual(calls.filter((c) => c[0] === 'set').map((c) => c[2]), ['#a', '#c']);
@@ -110,7 +110,7 @@ test('fillDisc paints a flat disc once and a split disc as fixed wedges, then le
   assert.ok(Math.abs(arcs[0][5] - Math.PI / 2) < 1e-9, 'half circle, vertical split line');
   assert.deepEqual(arcs.at(-1).slice(4), [0, 2 * Math.PI]);
   calls.length = 0;
-  fillDisc(ctx, 0, 0, 5, [], [9], '#f');
+  fillDisc(ctx, { x: 0, y: 0, r: 5 }, [], [9], '#f');
   assert.deepEqual(calls.find((c) => c[0] === 'set'), ['set', 'fillStyle', '#f']);
 });
 

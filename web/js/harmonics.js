@@ -1,3 +1,4 @@
+import { gt } from './cmp.js';
 import { el } from './dom.js';
 import { icon } from './icons.js';
 import { segmented } from './segmented.js';
@@ -219,7 +220,7 @@ export function centsRatio(cents) {
 }
 
 export function beatRate(freq, strings, detune) {
-  if (strings < 2 || !(detune > 0)) return 0;
+  if (strings < 2 || !gt(detune, 0)) return 0;
   return freq * (centsRatio((2 * detune) / (strings - 1)) - 1);
 }
 
@@ -341,7 +342,7 @@ function noBeatText(strings) {
 }
 
 export function beatingWindow(period) {
-  if (!(period > 0)) return BEATING_MIN_S;
+  if (!gt(period, 0)) return BEATING_MIN_S;
   return clamp(Math.ceil(period * 2) / 2, BEATING_MIN_S, BEATING_MAX_S);
 }
 
@@ -372,6 +373,16 @@ export function beatingH1(rows, offsets, windowS, cols, idx = 0) {
   return out;
 }
 
+function mixAt(played, w, ratios, t) {
+  let s = 0;
+  for (let k = 0; k < played.length; k += 1) {
+    let v = 0;
+    for (const r of ratios) v += Math.sin(w[k] * r * t);
+    s += v * played[k].gain;
+  }
+  return s / ratios.length;
+}
+
 export function beatingEnvelope(rows, offsets, windowS, cols) {
   const lo = new Float32Array(cols);
   const hi = new Float32Array(cols);
@@ -388,13 +399,7 @@ export function beatingEnvelope(rows, offsets, windowS, cols) {
     let bottom = Infinity;
     for (let j = 0; j < n; j += 1) {
       const t = tc - half + (j / (n - 1)) * 2 * half;
-      let s = 0;
-      for (let k = 0; k < played.length; k += 1) {
-        let v = 0;
-        for (const r of ratios) v += Math.sin(w[k] * r * t);
-        s += v * played[k].gain;
-      }
-      s /= ratios.length;
+      const s = mixAt(played, w, ratios, t);
       if (s > top) top = s;
       if (s < bottom) bottom = s;
     }
@@ -406,7 +411,7 @@ export function beatingEnvelope(rows, offsets, windowS, cols) {
 
 export function fundamentalOffset(samples, period) {
   const len = samples.length;
-  if (!(period > 2) || len < period * 2) return -1;
+  if (!gt(period, 2) || len < period * 2) return -1;
   const cyc = Math.floor(len / period);
   const m = Math.floor(cyc * period);
   const start = len - m;
@@ -486,6 +491,17 @@ function release(v) {
   v.gain2.disconnect();
 }
 
+function retire(s, t) {
+  const g = s.trim.gain;
+  g.cancelScheduledValues(t);
+  g.setValueAtTime(g.value, t);
+  g.linearRampToValueAtTime(0, t + FADE_S);
+  setTimeout(() => {
+    for (const v of s.voices) release(v);
+    s.trim.disconnect();
+  }, FADE_S * 1000 + 40);
+}
+
 function hold(param, t) {
   const held = param.value;
   param.cancelScheduledValues(t);
@@ -532,17 +548,6 @@ export function createSynth(env = {}) {
     const voices = [];
     for (let n = 1; n <= harmonics; n += 1) voices.push(buildVoice(trim, t));
     return { trim, voices, fresh: true };
-  }
-
-  function retire(s, t) {
-    const g = s.trim.gain;
-    g.cancelScheduledValues(t);
-    g.setValueAtTime(g.value, t);
-    g.linearRampToValueAtTime(0, t + FADE_S);
-    setTimeout(() => {
-      for (const v of s.voices) release(v);
-      s.trim.disconnect();
-    }, FADE_S * 1000 + 40);
   }
 
   function thump(at, level) {
@@ -852,17 +857,14 @@ function stringAlpha(n) {
   return clamp(1.6 / n, 0.22, 0.6);
 }
 
-function drawBeatingView(g, colors, data) {
-  const { ctx, w, h } = g;
-  const left = 36;
-  const bottom = 18;
-  const pad = 8;
-  const plotW = Math.max(1, w - left - pad);
-  const mid = (h - bottom) / 2;
-  const amp = mid - pad;
-  const xOf = (i, n) => left + (i / (n - 1)) * plotW;
-  const yOf = (v) => mid - clamp(v / TOTAL_GAIN, -1.2, 1.2) * amp;
-  ctx.clearRect(0, 0, w, h);
+function beatPath(geo, n, valueAt) {
+  const { ctx, xOf, yOf } = geo;
+  for (let i = 0; i < n; i += 1) { const x = xOf(i, n); if (i === 0) ctx.moveTo(x, yOf(valueAt(i))); else ctx.lineTo(x, yOf(valueAt(i))); }
+}
+
+function beatLevelLines(geo, colors) {
+  const { ctx, left, pad, w, yOf } = geo;
+  ctx.clearRect(0, 0, w, geo.h);
   ctx.font = `10px ${colors.font}`;
   ctx.textBaseline = 'middle';
   ctx.textAlign = 'right';
@@ -874,32 +876,49 @@ function drawBeatingView(g, colors, data) {
     ctx.beginPath(); ctx.moveTo(left, y); ctx.lineTo(w - pad, y); ctx.stroke();
     ctx.fillText(text, left - 4, y);
   }
+}
+
+function tickAlign(t, windowS) {
+  if (t === 0) return 'left';
+  return t >= windowS ? 'right' : 'center';
+}
+
+function beatTimeTicks(geo, data) {
+  const { ctx, left, bottom, plotW, mid, amp, h } = geo;
   ctx.textBaseline = 'top';
   for (const t of linearTicks(data.windowS, Math.floor(plotW / 70))) {
     const x = left + (t / data.windowS) * plotW;
     ctx.beginPath(); ctx.moveTo(x, mid - amp); ctx.lineTo(x, mid + amp); ctx.stroke();
-    ctx.textAlign = 'center';
-    if (t === 0) ctx.textAlign = 'left';
-    else if (t >= data.windowS) ctx.textAlign = 'right';
+    ctx.textAlign = tickAlign(t, data.windowS);
     ctx.fillText(`${+t.toFixed(2)} s`, x, h - bottom + 3);
   }
-  const n = data.hi.length;
-  if (data.period > 0) {
-    ctx.save();
-    ctx.setLineDash([2, 3]);
-    ctx.strokeStyle = css(colors.muted, 0.7);
-    for (let k = 1; k * data.period < data.windowS * (1 - 1e-9); k += 1) {
-      const x = left + ((k * data.period) / data.windowS) * plotW;
-      ctx.beginPath(); ctx.moveTo(x, mid - amp); ctx.lineTo(x, mid + amp); ctx.stroke();
-    }
-    ctx.restore();
+}
+
+function beatPeriodMarks(geo, colors, data) {
+  if (!gt(data.period, 0)) return;
+  const { ctx, left, plotW, mid, amp } = geo;
+  ctx.save();
+  ctx.setLineDash([2, 3]);
+  ctx.strokeStyle = css(colors.muted, 0.7);
+  for (let k = 1; k * data.period < data.windowS * (1 - 1e-9); k += 1) {
+    const x = left + ((k * data.period) / data.windowS) * plotW;
+    ctx.beginPath(); ctx.moveTo(x, mid - amp); ctx.lineTo(x, mid + amp); ctx.stroke();
   }
+  ctx.restore();
+}
+
+function beatBand(geo, colors, data, n) {
+  const { ctx, xOf, yOf } = geo;
   ctx.beginPath();
-  for (let i = 0; i < n; i += 1) { const x = xOf(i, n); if (i === 0) ctx.moveTo(x, yOf(data.hi[i])); else ctx.lineTo(x, yOf(data.hi[i])); }
+  beatPath(geo, n, (i) => data.hi[i]);
   for (let i = n - 1; i >= 0; i -= 1) ctx.lineTo(xOf(i, n), yOf(data.lo[i]));
   ctx.closePath();
   ctx.fillStyle = css(colors.fill, 0.22);
   ctx.fill();
+}
+
+function beatStringLines(geo, colors, data, n) {
+  const { ctx, left, plotW, yOf } = geo;
   ctx.lineJoin = 'round';
   ctx.lineWidth = 1;
   for (let k = 0; k < data.strings; k += 1) {
@@ -912,7 +931,7 @@ function drawBeatingView(g, colors, data) {
     ctx.strokeStyle = css(colors.ink, 0.45);
     for (const sign of [1, -1]) {
       ctx.beginPath();
-      for (let i = 0; i < n; i += 1) { const x = xOf(i, n); if (i === 0) ctx.moveTo(x, yOf(sign * data.h1[i])); else ctx.lineTo(x, yOf(sign * data.h1[i])); }
+      beatPath(geo, n, (i) => sign * data.h1[i]);
       ctx.stroke();
     }
   }
@@ -920,54 +939,63 @@ function drawBeatingView(g, colors, data) {
   ctx.lineWidth = 2;
   for (const series of [data.hi, data.lo]) {
     ctx.beginPath();
-    for (let i = 0; i < n; i += 1) { const x = xOf(i, n); if (i === 0) ctx.moveTo(x, yOf(series[i])); else ctx.lineTo(x, yOf(series[i])); }
+    beatPath(geo, n, (i) => series[i]);
     ctx.stroke();
-  }
-  if (data.message) {
-    ctx.font = `600 12px ${colors.font}`;
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    const lines = data.message.split(/(?<=\.) /);
-    const tw = Math.min(plotW - 8, Math.max(...lines.map((s) => ctx.measureText(s).width)));
-    const bx = left + plotW / 2;
-    const boxH = 8 + lines.length * 16;
-    ctx.fillStyle = css(colors.sunken, 0.85);
-    ctx.fillRect(bx - tw / 2 - 6, mid - boxH / 2, tw + 12, boxH);
-    ctx.fillStyle = css(colors.ink);
-    lines.forEach((s, i) => ctx.fillText(s, bx, mid - boxH / 2 + 4 + 8 + i * 16, plotW - 8));
   }
 }
 
-function drawSpectrumView(g, colors, rows, levels, range, hoverX = null, ghost = null) {
+function beatMessage(geo, colors, data) {
+  const { ctx, left, plotW, mid } = geo;
+  ctx.font = `600 12px ${colors.font}`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  const lines = data.message.split(/(?<=\.) /);
+  const tw = Math.min(plotW - 8, Math.max(...lines.map((s) => ctx.measureText(s).width)));
+  const bx = left + plotW / 2;
+  const boxH = 8 + lines.length * 16;
+  ctx.fillStyle = css(colors.sunken, 0.85);
+  ctx.fillRect(bx - tw / 2 - 6, mid - boxH / 2, tw + 12, boxH);
+  ctx.fillStyle = css(colors.ink);
+  lines.forEach((s, i) => ctx.fillText(s, bx, mid - boxH / 2 + 4 + 8 + i * 16, plotW - 8));
+}
+
+function drawBeatingView(g, colors, data) {
+  const { ctx, w, h } = g;
+  const left = 36;
+  const bottom = 18;
+  const pad = 8;
+  const plotW = Math.max(1, w - left - pad);
+  const mid = (h - bottom) / 2;
+  const amp = mid - pad;
+  const geo = {
+    ctx, w, h, left, bottom, pad, plotW, mid, amp,
+    xOf: (i, n) => left + (i / (n - 1)) * plotW,
+    yOf: (v) => mid - clamp(v / TOTAL_GAIN, -1.2, 1.2) * amp,
+  };
+  beatLevelLines(geo, colors);
+  beatTimeTicks(geo, data);
+  const n = data.hi.length;
+  beatPeriodMarks(geo, colors, data);
+  beatBand(geo, colors, data, n);
+  beatStringLines(geo, colors, data, n);
+  if (data.message) beatMessage(geo, colors, data);
+}
+
+function drawGhostBars(ctx, colors, geo, rows, ghost, bw, base) {
+  const { xOf, yOf } = geo;
+  const shown = [];
+  for (let i = 0; i < rows.length; i += 1) if (rows[i].played && gt(ghost[i], DB_MIN)) shown.push(i);
+  ctx.fillStyle = css(colors.fill, TRAIL_FILL_ALPHA + 0.1);
+  for (const i of shown) {
+    const y = yOf(ghost[i]);
+    ctx.fillRect(xOf(rows[i].freq) - bw / 2, y, bw, Math.max(1, base - y));
+  }
+  ctx.fillStyle = css(colors.fill, TRAIL_LINE_ALPHA);
+  for (const i of shown) ctx.fillRect(xOf(rows[i].freq) - bw / 2, yOf(ghost[i]), bw, 1.5);
+}
+
+function drawBarLabels(g, colors, bars, yOf) {
   const { ctx, w } = g;
-  const geo = drawSpecGrid(g, colors, range);
-  const { yOf, xOf } = geo;
-  const bars = [];
-  rows.forEach((r, i) => {
-    if (r.played && levels[i] > DB_MIN) bars.push({ r, db: levels[i], x: xOf(r.freq) });
-  });
-  let gap = Infinity;
-  for (let i = 1; i < bars.length; i += 1) gap = Math.min(gap, bars[i].x - bars[i - 1].x);
-  const bw = clamp(Number.isFinite(gap) ? gap * 0.6 : 6, 1.5, 6);
-  const base = yOf(DB_MIN);
-  if (ghost) {
-    ctx.fillStyle = css(colors.fill, TRAIL_FILL_ALPHA + 0.1);
-    for (let i = 0; i < rows.length; i += 1) {
-      if (!rows[i].played || !(ghost[i] > DB_MIN)) continue;
-      const y = yOf(ghost[i]);
-      ctx.fillRect(xOf(rows[i].freq) - bw / 2, y, bw, Math.max(1, base - y));
-    }
-    ctx.fillStyle = css(colors.fill, TRAIL_LINE_ALPHA);
-    for (let i = 0; i < rows.length; i += 1) {
-      if (!rows[i].played || !(ghost[i] > DB_MIN)) continue;
-      ctx.fillRect(xOf(rows[i].freq) - bw / 2, yOf(ghost[i]), bw, 1.5);
-    }
-  }
-  ctx.fillStyle = css(colors.fill);
-  for (const b of bars) {
-    const y = yOf(b.db);
-    ctx.fillRect(b.x - bw / 2, y, bw, Math.max(1, base - y));
-  }
   ctx.font = `10px ${colors.font}`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'alphabetic';
@@ -982,6 +1010,27 @@ function drawSpectrumView(g, colors, rows, levels, range, hoverX = null, ghost =
     ctx.fillText(it.hz, it.x, y);
     ctx.fillText(it.name, it.x, y - 11);
   }
+}
+
+function drawSpectrumView(g, colors, rows, levels, range, hoverX = null, ghost = null) {
+  const { ctx } = g;
+  const geo = drawSpecGrid(g, colors, range);
+  const { yOf, xOf } = geo;
+  const bars = [];
+  rows.forEach((r, i) => {
+    if (r.played && levels[i] > DB_MIN) bars.push({ r, db: levels[i], x: xOf(r.freq) });
+  });
+  let gap = Infinity;
+  for (let i = 1; i < bars.length; i += 1) gap = Math.min(gap, bars[i].x - bars[i - 1].x);
+  const bw = clamp(Number.isFinite(gap) ? gap * 0.6 : 6, 1.5, 6);
+  const base = yOf(DB_MIN);
+  if (ghost) drawGhostBars(ctx, colors, geo, rows, ghost, bw, base);
+  ctx.fillStyle = css(colors.fill);
+  for (const b of bars) {
+    const y = yOf(b.db);
+    ctx.fillRect(b.x - bw / 2, y, bw, Math.max(1, base - y));
+  }
+  drawBarLabels(g, colors, bars, yOf);
   for (const r of rows) if (r.played && r.muted) drawMutedMark(g, colors, r, xOf(r.freq), base);
   if (hoverX !== null) {
     const hits = bars.map((b) => ({ x: b.x, freq: b.r.freq, name: `H${b.r.n}`, db: b.db }));
@@ -1234,7 +1283,8 @@ export function createHarmonicsCard(env = {}) {
     bands.describe('the synthesized tone');
     const own = eachShown() ? ' The faint coloured lines are single strings played alone.' : '';
     waveCap.textContent = `${VIEW_NAMES.wave} Window: ${shown}; the bright line is the sum.${own}`;
-    specCap.textContent = `${VIEW_NAMES.spectrum} Frequency axis ${axisCaption(rangeNow())}, level in dBFS, one bar per harmonic.${trails.on ? ` The faint ghost bars show where each harmonic recently was; they fade out in about ${trailLengthText(trails.length)}.` : ''}`;
+    const ghostNote = trails.on ? ` The faint ghost bars show where each harmonic recently was; they fade out in about ${trailLengthText(trails.length)}.` : '';
+    specCap.textContent = `${VIEW_NAMES.spectrum} Frequency axis ${axisCaption(rangeNow())}, level in dBFS, one bar per harmonic.${ghostNote}`;
     gram.caption.textContent = `${VIEW_NAMES.gram} The last 10 seconds, frequency axis ${axisCaption(rangeNow())}. It fills while the tone plays and clears when the axis changes.`;
     const lead = leadN(params);
     const beat = beatRate(params.freq * lead, params.strings, params.detune);
@@ -1300,9 +1350,9 @@ export function createHarmonicsCard(env = {}) {
     const lead = leadN(params);
     const beat = beatRate(params.freq * lead, params.strings, params.detune);
     detuneField.hidden = params.strings < 2;
-    beatOut.hidden = !(beat > 0);
+    beatOut.hidden = !gt(beat, 0);
     beatOut.textContent = beat > 0 ? beatText(beat, lead) : '';
-    beatHint.hidden = !(beat > 0);
+    beatHint.hidden = !gt(beat, 0);
     fill(stringsRange, params.strings, 1, MAX_STRINGS);
     stringsOut.textContent = String(params.strings);
     const capped = capText(params.strings, params.count);
@@ -1312,7 +1362,7 @@ export function createHarmonicsCard(env = {}) {
     cyclesSeg.paint();
     eachField.hidden = params.strings < 2;
     stringsHint.hidden = !eachShown();
-    beatingOut.hidden = !(beat > 0);
+    beatingOut.hidden = !gt(beat, 0);
     beatingOut.textContent = beat > 0 ? swellText(beat, lead) : '';
     describe();
     paintList();

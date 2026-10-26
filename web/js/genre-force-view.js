@@ -296,13 +296,13 @@ export function createForceView(canvas, { onSelect, onHover, onMoved, reducedMot
     const r = n.r * (0.4 + 0.6 * n.vis);
     const a = nodeAlpha(n);
     ctx.globalAlpha = a;
-    fillDisc(ctx, n.x, n.y, r, colors.fam, n.fis, colors.ink, n.subOrder ? shadeIdx : -1, n.subOrder ? colors.shades[n.subOrder] : null);
+    fillDisc(ctx, { x: n.x, y: n.y, r }, colors.fam, n.fis, colors.ink, n.subOrder ? shadeIdx : -1, n.subOrder ? colors.shades[n.subOrder] : null);
     if (n.em === 2 || n.level === 1) {
       ctx.strokeStyle = colors.halo;
       ctx.lineWidth = 1.5 / k;
       ctx.stroke();
     }
-    outlineDisc(ctx, n.x, n.y, r, n.fis, isOutlinedSlot, colors.rim, k);
+    outlineDisc(ctx, { x: n.x, y: n.y, r }, n.fis, isOutlinedSlot, colors.rim, k);
     if (n.vis < 0.99) return;
     drawAdornments(n, r, a, k);
   }

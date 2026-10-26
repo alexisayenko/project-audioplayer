@@ -1,7 +1,10 @@
 import { el } from './dom.js';
 
-const TEMPO = /^tempo\s*:\s*(.+)$/i;
-const BPM_VALUE = /^(about|around|approx\.?|approximately|circa|roughly|~)?\s*(\d+(?:\s*[-\u2013]\s*\d+)?)\s*(?:bpm)?$/i;
+const TEMPO = /^tempo\s*:\s*(\S.*)$/i;
+const BPM_LEAD = String.raw`(about|around|approx\.?|approximately|circa|roughly|~)?`;
+const BPM_NUMBER = String.raw`(\d+(?:\s*[-\u2013]\s*\d+)?)`;
+const BPM_VALUE = new RegExp(String.raw`^${BPM_LEAD}\s*${BPM_NUMBER}\s*(?:bpm)?$`, 'i');
+const SENTENCE_END = '.!?\u2026';
 
 export function parseDescription(text) {
   const lines = String(text || '').split('\n').map((s) => s.trim()).filter(Boolean);
@@ -24,7 +27,10 @@ function sentence(text) {
 
 function tempoMain(value) {
   const cut = value.indexOf(',');
-  return (cut > 0 ? value.slice(0, cut) : value).trim().replace(/[.!?\u2026]+$/, '').trim();
+  const head = (cut > 0 ? value.slice(0, cut) : value).trim();
+  let end = head.length;
+  while (end > 0 && SENTENCE_END.includes(head[end - 1])) end -= 1;
+  return head.slice(0, end).trim();
 }
 
 function tempoMainOf(text) {

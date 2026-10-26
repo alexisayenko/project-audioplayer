@@ -43,6 +43,11 @@ export function drillVisible(tree, graph, state, allow = null) {
     if (!graph.byId.has(a)) continue;
     for (const x of ancestorIds(tree, a)) if (graph.byId.has(x) && allowed(allow, x)) out.add(x);
   }
+  expandOpen(graph, allow, state, out);
+  return out;
+}
+
+function expandOpen(graph, allow, state, out) {
   const seen = new Set();
   const stack = [...out];
   while (stack.length) {
@@ -52,7 +57,6 @@ export function drillVisible(tree, graph, state, allow = null) {
     if (!state.open.has(id)) continue;
     for (const c of shownKids(graph, allow, id)) { out.add(c); stack.push(c); }
   }
-  return out;
 }
 
 function descendants(graph, id) {

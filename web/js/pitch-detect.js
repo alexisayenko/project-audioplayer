@@ -1,3 +1,4 @@
+import { gt, gte } from './cmp.js';
 export const PITCH_MIN_HZ = 60;
 export const PITCH_MAX_HZ = 2000;
 export const PITCH_GATE_DB = -55;
@@ -49,6 +50,15 @@ function centeredFrame(samples, dec, have) {
   return x;
 }
 
+function lowestLag(d, tauMin, tauMax) {
+  let low = Infinity;
+  let best = -1;
+  for (let t = tauMin; t <= tauMax; t += 1) {
+    if (d[t] < low) { low = d[t]; best = t; }
+  }
+  return best;
+}
+
 function yinLag(x, win, tauMin, tauMax, threshold) {
   const d = new Float32Array(tauMax + 2);
   let running = 0;
@@ -71,15 +81,14 @@ function yinLag(x, win, tauMin, tauMax, threshold) {
     if (best > tauMax) best = tauMax;
   } else {
     step(tauMax + 1);
-    let low = Infinity;
-    for (let t = tauMin; t <= tauMax; t += 1) if (d[t] < low) { low = d[t]; best = t; }
+    best = lowestLag(d, tauMin, tauMax);
   }
   return { d, best };
 }
 
 export function detectPitch(samples, sampleRate, opts = {}) {
   const { minHz = PITCH_MIN_HZ, maxHz = PITCH_MAX_HZ, threshold = YIN_THRESHOLD, gateDb = PITCH_GATE_DB } = opts;
-  if (!samples?.length || !(sampleRate > 0)) return null;
+  if (!samples?.length || !gt(sampleRate, 0)) return null;
   const dec = Math.max(1, Math.floor(sampleRate / PITCH_TARGET_RATE));
   const sr = sampleRate / dec;
   const tauMin = Math.max(2, Math.floor(sr / (maxHz * 1.02)));
@@ -89,7 +98,7 @@ export function detectPitch(samples, sampleRate, opts = {}) {
   const win = have - tauMax - 1;
   if (win < tauMax) return null;
   const x = centeredFrame(samples, dec, have);
-  if (!(sineRmsDb(x) >= gateDb)) return null;
+  if (!gte(sineRmsDb(x), gateDb)) return null;
 
   const { d, best } = yinLag(x, win, tauMin, tauMax, threshold);
   if (best < 2) return null;
@@ -116,7 +125,7 @@ function isPeakFound(freqData, k, gap, { riseDb, floorDb, offsetDb }) {
 export function harmonicMarks(freqData, sampleRate, f0, opts = {}) {
   const { offsetDb = 0, maxHz = Infinity, floorDb = HARMONIC_FLOOR_DB, riseDb = HARMONIC_RISE_DB, tolerance = HARMONIC_TOLERANCE, maxN = HARMONIC_MAX } = opts;
   const bins = freqData?.length ?? 0;
-  if (bins < 16 || !(sampleRate > 0) || !(f0 > 0)) return [];
+  if (bins < 16 || !gt(sampleRate, 0) || !gt(f0, 0)) return [];
   const bw = sampleRate / (2 * bins);
   const gap = clamp(Math.round(f0 / bw / 3), 4, 12);
   const out = [];
@@ -141,7 +150,7 @@ export function foundList(marks) {
 
 export function spectrumFloorDb(freqData, sampleRate, { offsetDb = 0, minHz = OCTAVE_FLOOR_MIN_HZ, maxHz = OCTAVE_FLOOR_MAX_HZ } = {}) {
   const bins = freqData?.length ?? 0;
-  if (bins < 16 || !(sampleRate > 0)) return -Infinity;
+  if (bins < 16 || !gt(sampleRate, 0)) return -Infinity;
   const bw = sampleRate / (2 * bins);
   const lo = clamp(Math.ceil(minHz / bw), 1, bins - 2);
   const hi = clamp(Math.floor(Math.min(maxHz, sampleRate * 0.49) / bw), lo, bins - 2);
@@ -168,7 +177,7 @@ export function subharmonicSupport(freqData, sampleRate, c, div, opts = {}) {
 export function lowerPitch(freqData, sampleRate, f0, opts = {}) {
   const { minHz = PITCH_MIN_HZ, maxDiv = OCTAVE_MAX_DIV, h1RiseDb = OCTAVE_H1_RISE_DB, offsetDb = 0 } = opts;
   const none = { freq: f0, div: 1 };
-  if (!(f0 > 0) || (freqData?.length ?? 0) < 16) return none;
+  if (!gt(f0, 0) || (freqData?.length ?? 0) < 16) return none;
   let floor = null;
   for (let div = maxDiv; div >= 2; div -= 1) {
     const c = f0 / div;
@@ -183,7 +192,7 @@ export function lowerPitch(freqData, sampleRate, f0, opts = {}) {
 }
 
 export function correctOctave(est, freqData, sampleRate, opts = {}) {
-  if (!est || !(est.freq > 0)) return est;
+  if (!est || !gt(est.freq, 0)) return est;
   const low = lowerPitch(freqData, sampleRate, est.freq, opts);
   return { ...est, freq: low.freq, raw: est.freq, div: low.div };
 }
@@ -220,7 +229,7 @@ export function createPitchTracker({ minConf = PITCH_MIN_CONF, fadeMs = PITCH_FA
   return {
     update(est, t) {
       if (est && est.confidence >= minConf) {
-        if (!hist.length || !(freq > 0) || near(est.freq, freq) || !isOctaveFlip(est.freq, freq)) {
+        if (!hist.length || !gt(freq, 0) || near(est.freq, freq) || !isOctaveFlip(est.freq, freq)) {
           accept(est);
         } else {
           pending = nextPending(pending, est);
@@ -239,7 +248,7 @@ export function createPitchTracker({ minConf = PITCH_MIN_CONF, fadeMs = PITCH_FA
       return this.state(t);
     },
     state(t) {
-      if (!(freq > 0)) return { freq: 0, confidence: 0, locked: false, alpha: 0 };
+      if (!gt(freq, 0)) return { freq: 0, confidence: 0, locked: false, alpha: 0 };
       const lower = raw / freq > 1.5 ? { raw } : {};
       if (lostAt === null) return { freq, confidence, locked: true, alpha: 1, ...lower };
       return { freq, confidence, locked: false, alpha: clamp(1 - (t - lostAt) / fadeMs, 0, 1), ...lower };

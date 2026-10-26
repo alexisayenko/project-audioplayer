@@ -176,19 +176,22 @@ export function chipField(ns, editor, { cap } = {}) {
     input.setAttribute('aria-invalid', String(bad));
   }
 
-  input.addEventListener('keydown', (e) => {
-    if (suggesting && shown.length) {
-      if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
-        e.preventDefault();
-        const n = shown.length;
-        active = e.key === 'ArrowDown' ? (active + 1) % n : (active - 1 + n) % n;
-        paintActive();
-        return;
-      }
-      if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); closeList(); return; }
-      if ((e.key === 'Enter' || e.key === 'Tab') && active >= 0) { e.preventDefault(); accept(shown[active].name); return; }
-      if (e.key === 'Enter' && !e.isComposing && shown.length === 1 && !resolveGenre(input.value, vocab())) { e.preventDefault(); accept(shown[0].name); input.focus(); return; }
+  function suggestKey(e) {
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      const n = shown.length;
+      active = e.key === 'ArrowDown' ? (active + 1) % n : (active - 1 + n) % n;
+      paintActive();
+      return true;
     }
+    if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); closeList(); return true; }
+    if ((e.key === 'Enter' || e.key === 'Tab') && active >= 0) { e.preventDefault(); accept(shown[active].name); return true; }
+    if (e.key === 'Enter' && !e.isComposing && shown.length === 1 && !resolveGenre(input.value, vocab())) { e.preventDefault(); accept(shown[0].name); input.focus(); return true; }
+    return false;
+  }
+
+  input.addEventListener('keydown', (e) => {
+    if (suggesting && shown.length && suggestKey(e)) return;
     if (e.key === 'Enter' || e.key === ',' || e.key === '/') { e.preventDefault(); commit(); }
   });
   input.addEventListener('blur', () => { closeList(); commit(); });

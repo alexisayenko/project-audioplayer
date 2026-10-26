@@ -9,6 +9,7 @@ import {
 } from './custom-wave.js';
 import { createHarmonicEditor, TITLE as EDITOR_TITLE, TIP as EDITOR_TIP } from './harmonic-editor.js';
 import { createStackCard, shapeHarmonics, barHarmonics } from './harmonics-stack.js';
+import { gt } from './cmp.js';
 
 export const TITLE = 'Primitive';
 export const INTRO = 'A primitive sound: a single repeating shape (sine, triangle, square or sawtooth) at one frequency. Sine is one pure frequency (H1 only); the other shapes add harmonics. It models a speaker cone driven by an electrical signal. Pick a standard shape or build your own from harmonics. Set the four numbers, press Play.';
@@ -124,7 +125,7 @@ export function hzToSlider(f) {
 }
 
 export function noteInfo(freq) {
-  if (!(freq > 0)) return { name: '-', cents: 0, text: '-' };
+  if (!gt(freq, 0)) return { name: '-', cents: 0, text: '-' };
   const exact = 69 + 12 * Math.log2(freq / 440);
   const midi = Math.round(exact);
   const cents = Math.round((exact - midi) * 100);
@@ -530,7 +531,7 @@ export function createSimpleCard(env = {}) {
     const out = [];
     if (aboveLimit(params.freq, soundBars(), PLAY_LIMIT_HZ)) out.push(LIMIT_HZ_NOTE);
     if (custom.count < MAX_HARMONICS && custom.bars.slice(custom.count).some((v) => v !== 0)) out.push(HIDDEN_NOTE);
-    if (!(sound.rms > 0)) out.push(SILENT_NOTE);
+    if (!gt(sound.rms, 0)) out.push(SILENT_NOTE);
     return out;
   }
 

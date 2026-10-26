@@ -10,6 +10,7 @@ import { fmtClock, parseClock, validRegion } from './loop-engine.js';
 import { fmtRemainingClock, paintElapsed, fitElapsed, elapsedButton, onTimeLeftChange } from './time-left.js';
 import { loadPeaks, drawPeaks, sizeCanvas, xToTime, timeToX } from './peaks.js';
 import { loopsOf, addLoop, renameLoop, removeLoop, sameRegion, MAX_LOOPS, MAX_NAME } from './loops-model.js';
+import { gt } from './cmp.js';
 
 export const TAGLINE = 'Work on a track: loop a section, mark it, keep it.';
 export const EMPTY_TEXT = 'Play a song to open it in the Studio.';
@@ -121,7 +122,7 @@ export function renderStudio(root, env = {}) {
     for (const side of ['start', 'end']) {
       const h = parts.handles[side];
       const v = s[side];
-      h.hidden = v == null || !(dur > 0);
+      h.hidden = v == null || !gt(dur, 0);
       if (h.hidden) continue;
       const label = `${SIDES[side].text} ${fmtClock(v)}`;
       h.style.left = `${(timeToX(v, dur, 1) * 100).toFixed(3)}%`;
@@ -308,7 +309,7 @@ export function renderStudio(root, env = {}) {
     let drag = null;
     const at = (e) => { const r = wave.getBoundingClientRect(); return xToTime(e.clientX - r.left, r.width || FALLBACK_WIDTH, duration()); };
     canvas.addEventListener('pointerdown', (e) => {
-      if (!(duration() > 0)) return;
+      if (!gt(duration(), 0)) return;
       drag = e.pointerId;
       canvas.setPointerCapture?.(e.pointerId);
       dragTime = at(e);

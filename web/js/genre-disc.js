@@ -15,7 +15,7 @@ export function segmentsFor(idx, start = -Math.PI / 2) {
   return idx.map((i, n) => ({ idx: i, a0: start + n * step, a1: start + (n + 1) * step }));
 }
 
-export function fillDisc(ctx, x, y, r, palette, idx, fallback, shadeIdx = -1, shade = null) {
+export function fillDisc(ctx, { x, y, r }, palette, idx, fallback, shadeIdx = -1, shade = null) {
   const single = idx.length < 2;
   const col = (i) => (single && i === shadeIdx && shade ? shade : palette[i] || fallback);
   if (single) {
@@ -32,7 +32,7 @@ export function fillDisc(ctx, x, y, r, palette, idx, fallback, shadeIdx = -1, sh
 
 export const OUTLINE_WIDTH = 1.25;
 
-export function outlineDisc(ctx, x, y, r, idx, isOutlined, color, k = 1) {
+export function outlineDisc(ctx, { x, y, r }, idx, isOutlined, color, k = 1) {
   if (!color || !idx.some(isOutlined)) return;
   ctx.strokeStyle = color;
   ctx.lineWidth = OUTLINE_WIDTH / k;

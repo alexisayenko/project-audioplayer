@@ -1,3 +1,4 @@
+import { gte } from './cmp.js';
 export const MIN_LOCAL_PLAY_S = 5;
 export const WINDOW_MS = 30 * 86400000;
 
@@ -13,7 +14,7 @@ export function countsFromListening(songs) {
 export function localPlayCounts(plays, nowMs = Date.now(), open = null) {
   const out = {};
   const add = (p) => {
-    if (!p || typeof p.song_id !== 'string' || !(Number(p.listened_s) >= MIN_LOCAL_PLAY_S)) return;
+    if (!p || typeof p.song_id !== 'string' || !gte(Number(p.listened_s), MIN_LOCAL_PLAY_S)) return;
     const t = Date.parse(p.timestamp);
     if (Number.isFinite(t) && nowMs - t > WINDOW_MS) return;
     out[p.song_id] = (out[p.song_id] || 0) + 1;

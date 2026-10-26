@@ -2,10 +2,8 @@ import { readFileSync } from 'node:fs';
 
 export function realVocab() {
   const file = JSON.parse(readFileSync(new URL('../../server/data/genre_levels.json', import.meta.url), 'utf8'));
-  const { _meta, families, modifiers, subfamilies, hex, ...levels } = file;
-  void _meta;
-  void subfamilies;
-  void hex;
+  const { families, modifiers } = file;
+  const levels = Object.fromEntries(Object.entries(file).filter(([k]) => !['_meta', 'families', 'modifiers', 'subfamilies', 'hex'].includes(k)));
   const entries = Object.entries(families);
   return {
     families: Object.keys(families), genres: [], aliases: {}, levels, modifiers,

@@ -11,12 +11,15 @@ const DEEP_STEP = 140;
 const BASE_WEIGHT = [20, 3, 1];
 const ROOT = '\u0000root';
 
-export function createTreeLayout(graph, { seed = 1, sweeps = 4 } = {}) {
-  const rng = mulberry32(seed);
+function primaryParent(nodes, index, b) {
+  const node = nodes[b].node;
+  const primaryId = node?.parent || (node?.parents || []).find((id) => nodes[index.get(id)]?.level === nodes[b].level - 1);
+  return primaryId ? index.get(primaryId) : undefined;
+}
+
+function classifyLinks(graph, index) {
   const nodes = graph.nodes;
-  const index = new Map(nodes.map((n, i) => [n.id, i]));
-  const N = nodes.length;
-  const parentOf = new Array(N).fill(-1);
+  const parentOf = new Array(nodes.length).fill(-1);
   const kids = new Map();
   const segs = [];
   const crossLinks = [];
@@ -24,24 +27,27 @@ export function createTreeLayout(graph, { seed = 1, sweeps = 4 } = {}) {
     const a = index.get(l.source);
     const b = index.get(l.target);
     if (a === undefined || b === undefined) continue;
-    if (l.kind === 'parent') {
-      const node = nodes[b].node;
-      const primaryId = node?.parent || (node?.parents || []).find((id) => nodes[index.get(id)]?.level === nodes[b].level - 1);
-      const primary = primaryId ? index.get(primaryId) : undefined;
-      if (primary === a) {
-        parentOf[b] = a;
-        if (!kids.has(a)) kids.set(a, []);
-        kids.get(a).push(b);
-        segs.push([a, b]);
-      } else {
-        crossLinks.push([a, b]);
-        segs.push([a, b]);
-      }
-    } else if (l.kind === 'related') {
+    if (l.kind !== 'parent' && l.kind !== 'related') continue;
+    segs.push([a, b]);
+    if (l.kind === 'parent' && primaryParent(nodes, index, b) === a) {
+      parentOf[b] = a;
+      if (!kids.has(a)) kids.set(a, []);
+      kids.get(a).push(b);
+    } else {
       crossLinks.push([a, b]);
-      segs.push([a, b]);
     }
   }
+  return { parentOf, kids, segs, crossLinks };
+}
+
+const sharesEndpoint = (a, b, p, q) => a === p || a === q || b === p || b === q;
+
+export function createTreeLayout(graph, { seed = 1, sweeps = 4 } = {}) {
+  const rng = mulberry32(seed);
+  const nodes = graph.nodes;
+  const index = new Map(nodes.map((n, i) => [n.id, i]));
+  const N = nodes.length;
+  const { parentOf, kids, segs, crossLinks } = classifyLinks(graph, index);
   const labelOf = (i) => nodes[i].label || nodes[i].name || nodes[i].id;
   const byLabel = (a, b) => labelOf(a).localeCompare(labelOf(b));
   const rootRank = (i) => { const r = FAMILY_ORDER.indexOf(nodes[i].name); return r < 0 ? FAMILY_ORDER.length : r; };
@@ -144,15 +150,16 @@ export function createTreeLayout(graph, { seed = 1, sweeps = 4 } = {}) {
     segsOf.set(key, out);
     return out;
   };
+  const boxesApart = (t, s) => sx1[t] < sx0[s] || sx0[t] > sx1[s] || sy1[t] < sy0[s] || sy0[t] > sy1[s];
   const touching = ({ list, mask }) => {
     let c = 0;
     for (const s of list) {
       const [a, b] = segs[s];
       for (let t = 0; t < nSeg; t++) {
         if (t === s || (mask[t] && t < s)) continue;
-        if (sx1[t] < sx0[s] || sx0[t] > sx1[s] || sy1[t] < sy0[s] || sy0[t] > sy1[s]) continue;
+        if (boxesApart(t, s)) continue;
         const [p, q] = segs[t];
-        if (a === p || a === q || b === p || b === q) continue;
+        if (sharesEndpoint(a, b, p, q)) continue;
         if (segmentsCross(xs[a], ys[a], xs[b], ys[b], xs[p], ys[p], xs[q], ys[q])) c++;
       }
     }

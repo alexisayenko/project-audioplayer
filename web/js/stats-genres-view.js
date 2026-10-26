@@ -12,11 +12,15 @@ export function renderGenres(songs, listening, { sort, query, onSort, onOpen }) 
   const num = (c) => (c.key === 'genre' ? '' : ' st-num');
   const edge = (c) => (c.listening && c.key === 'listened' ? ' st-edge' : '');
 
+  const ariaSort = (on, asc) => {
+    if (!on) return 'none';
+    return asc ? 'ascending' : 'descending';
+  };
   const head = el('tr', {}, cols.map((c) => {
     const on = sort.key === c.key;
     const asc = sort.dir > 0;
     const arrow = el('span', { class: 'st-sort', 'aria-hidden': 'true' }, icon(asc ? 'chevronUp' : 'chevron', 14));
-    return el('th', { scope: 'col', class: `${num(c)}${edge(c)}`.trim(), 'aria-sort': on ? (asc ? 'ascending' : 'descending') : 'none' },
+    return el('th', { scope: 'col', class: `${num(c)}${edge(c)}`.trim(), 'aria-sort': ariaSort(on, asc) },
       el('button', { class: 'st-th', type: 'button', onclick: () => onSort(nextSort(sort, c.key)) }, c.label, on ? arrow : null));
   }));
 
@@ -34,17 +38,17 @@ export function renderGenres(songs, listening, { sort, query, onSort, onOpen }) 
   const t = totalsOf(songs, listening);
   const foot = el('tr', { class: 'st-total' }, cols.map((c) => {
     if (c.key === 'genre') return el('th', { scope: 'row' }, 'All songs');
-    const text = c.key === 'songs' ? String(t.songs) : (c.key === 'listened' ? formatListened(t.listened) : formatPlays(t.plays));
-    return el('td', { class: `${num(c)}${edge(c)}`.trim() }, text);
+    return el('td', { class: `${num(c)}${edge(c)}`.trim() }, textOf(c, t));
   }));
 
+  const noMatch = rows.length ? null : el('p', { class: 'muted t-caption st-gnone' }, 'No genres match.');
   const body = all.length
     ? el('div', { class: 'st-gscroll' },
       el('table', { class: 'st-table st-gtable t-caption' }, el('caption', { class: 'st-sr' }, 'Genres in the library'),
         el('thead', {}, head),
         el('tbody', {}, rows.map((r) => el('tr', { 'data-genre': r.key }, cols.map((c) => cell(c, r))))),
         el('tfoot', {}, foot)),
-      rows.length ? null : el('p', { class: 'muted t-caption st-gnone' }, 'No genres match.'))
+      noMatch)
     : el('p', { class: 'st-empty-inline t-subhead muted' }, EMPTY_GENRES);
 
   return {

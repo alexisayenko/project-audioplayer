@@ -144,25 +144,32 @@ export function createGapless({ audio, graph = realGraph, fetchBytes: load = fet
     }
     syncVolume();
     if (pendingUser) {
-      pendingUser = false;
-      if (e >= lo && e < hi - EDGE) startAt(e);
-      else disengage(false);
+      resolvePendingUser(e);
       if (!node) return;
     }
-    if (lo !== r.start || hi !== r.end) {
-      const q = position();
-      lo = r.start;
-      hi = r.end;
-      if (q >= lo && q < hi) {
-        o0 = q;
-        t0 = ctx().currentTime;
-        node.loopStart = lo;
-        node.loopEnd = hi;
-      } else {
-        startAt(lo);
-      }
-    }
+    followRange(r);
     correctElement(audio.currentTime);
+  }
+
+  function resolvePendingUser(e) {
+    pendingUser = false;
+    if (e >= lo && e < hi - EDGE) startAt(e);
+    else disengage(false);
+  }
+
+  function followRange(r) {
+    if (lo === r.start && hi === r.end) return;
+    const q = position();
+    lo = r.start;
+    hi = r.end;
+    if (q >= lo && q < hi) {
+      o0 = q;
+      t0 = ctx().currentTime;
+      node.loopStart = lo;
+      node.loopEnd = hi;
+    } else {
+      startAt(lo);
+    }
   }
 
   async function ready() {

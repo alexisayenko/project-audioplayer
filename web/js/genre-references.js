@@ -28,7 +28,10 @@ export function linkText(url) {
   }
 }
 
-const DATE_PREFIX = /^\s*(?:c\.?\s*|circa\s+|from\s+|since\s+)?\d{4}s?(?:\s*(?:-|–|—|to|until)\s*(?:(?:early|late|mid)\s+)?(?:\d{2,4}s?|present|now)|\s+onward)?\s*[.:;,–—-]*\s*/i;
+const DATE_LEAD = String.raw`(?:c\.?\s*|circa\s+|from\s+|since\s+)?`;
+const DATE_END = String.raw`(?:(?:early|late|mid)\s+)?(?:\d{2,4}s?|present|now)`;
+const DATE_RANGE = String.raw`(?:\s*(?:-|–|—|to|until)\s*${DATE_END}|\s+onward)?`;
+const DATE_PREFIX = new RegExp(String.raw`^\s*${DATE_LEAD}\d{4}s?${DATE_RANGE}\s*[.:;,–—-]*\s*`, 'i');
 
 export function eraNoteText(note) {
   const text = typeof note === 'string' ? note.trim() : '';
@@ -222,8 +225,8 @@ export function createReferencesPanel({ compact = false } = {}) {
 
   return {
     node,
-    show(name) {
-      const next = name || null;
+    show(name = null) {
+      const next = name === '' ? null : name;
       if (next !== genre) { entries = []; eras = []; }
       genre = next;
       seq += 1;

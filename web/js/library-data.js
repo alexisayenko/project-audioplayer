@@ -1,3 +1,4 @@
+import { gt } from './cmp.js';
 import { store } from './store.js';
 import { storeGet, storeSet } from './storage.js';
 import { sortKey, compareKeys, displayYear } from './credits.js';
@@ -81,7 +82,7 @@ export const SORTS = {
   year: ['Year', (a, b) => (displayYear(b) || 0) - (displayYear(a) || 0), (s) => !displayYear(s)],
   listened: ['Last listened', (a, b) => lastListened(b).localeCompare(lastListened(a)), (s) => !lastListened(s)],
   bpm: ['BPM', (a, b) => (a.bpm == null) - (b.bpm == null) || (a.bpm || 0) - (b.bpm || 0), (s) => s.bpm == null],
-  length: ['Length', (a, b) => (!(a.duration > 0)) - (!(b.duration > 0)) || (a.duration || 0) - (b.duration || 0) || compareKeys(sortKey(a, 'title'), sortKey(b, 'title')), (s) => !(s.duration > 0)],
+  length: ['Length', (a, b) => (!gt(a.duration, 0)) - (!gt(b.duration, 0)) || (a.duration || 0) - (b.duration || 0) || compareKeys(sortKey(a, 'title'), sortKey(b, 'title')), (s) => !gt(s.duration, 0)],
 };
 
 function matchesSelection(song, sel) {

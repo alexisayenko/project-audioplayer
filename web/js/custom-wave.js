@@ -1,3 +1,4 @@
+import { gt } from './cmp.js';
 export const CUSTOM = 'custom';
 export const MAX_HARMONICS = 32;
 export const VISIBLE_HARMONICS = 16;
@@ -102,7 +103,7 @@ export function analyzeBars(bars) {
     if (a > peak) peak = a;
     sum += raw[i] * raw[i];
   }
-  if (!(peak > 1e-9)) return { table: new Float64Array(TABLE_N), peak: 0, rms: 0, scale: 0 };
+  if (!gt(peak, 1e-9)) return { table: new Float64Array(TABLE_N), peak: 0, rms: 0, scale: 0 };
   const scale = 1 / peak;
   const table = raw.map((v) => v * scale);
   return { table, peak, rms: Math.sqrt(sum / TABLE_N) * scale, scale };

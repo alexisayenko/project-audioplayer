@@ -1,4 +1,5 @@
 import { createLiveBpm, WINDOWS_S, HISTORY_S } from './live-bpm.js';
+import { gt } from './cmp.js';
 
 export const MAX_RUN_MS = 10 * 60 * 1000;
 export const PUBLISH_MS = 500;
@@ -18,7 +19,7 @@ export function rmsOf(samples) {
 }
 
 export function levelFraction(rms) {
-  if (!(rms > 0)) return 0;
+  if (!gt(rms, 0)) return 0;
   const db = 20 * Math.log10(rms);
   return Math.min(1, Math.max(0, (db - METER_FLOOR_DB) / (METER_CEIL_DB - METER_FLOOR_DB)));
 }
@@ -35,7 +36,7 @@ export function createMicBpm({ create = createLiveBpm, windows = false } = {}) {
     get silent() { return silent; },
     get exact() { return exact; },
     push(samples, sampleRate) {
-      if (!samples.length || !(sampleRate > 0)) return;
+      if (!samples.length || !gt(sampleRate, 0)) return;
       const rms = rmsOf(samples);
       levelDb = rms > 0 ? 20 * Math.log10(rms) : -Infinity;
       quietS = rms < SILENT_RMS ? quietS + samples.length / sampleRate : 0;

@@ -162,7 +162,8 @@ export function createListenCard(env = {}) {
     if (playing && !playerIn.analyser && t - ensureAt >= ENSURE_EVERY_MS) { ensureAt = t; playerIn.ensure(); }
     const live = playing && playerIn.analyser !== null;
     let key = 'nothing';
-    if (playing) key = live ? 'player' : (playerIn.failed ? 'playerFailed' : 'playerWait');
+    const waitKey = playerIn.failed ? 'playerFailed' : 'playerWait';
+    if (playing) key = live ? 'player' : waitKey;
     if (key !== playerKey) {
       playerKey = key;
       say(key);

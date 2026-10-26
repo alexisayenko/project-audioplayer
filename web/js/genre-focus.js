@@ -17,7 +17,7 @@ export function onGenreFocus(fn) {
 export function showGenreOnMap(name, loc = globalThis.location) {
   pending = name;
   if (onMapRoute(loc?.hash)) {
-    for (const fn of [...listeners]) fn();
+    Array.from(listeners, (fn) => fn());
     return;
   }
   if (loc) loc.hash = '#/genres';

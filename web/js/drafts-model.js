@@ -10,7 +10,10 @@ export const EMPTY_TEXT = 'No drafts yet. Paste "Artist - Title" or links above 
 export const LINK_NOTE = 'Kept as plain link text: only YouTube and SoundCloud links are looked up.';
 export const CREDIT_KEYS = ['title', 'mainArtists', 'featuredArtists', 'withArtists', 'version'];
 
-const URL_RE = /https?:\/\/[^\s<>"']+|(?:(?:www\.|m\.|music\.)?youtu(?:\.be|be\.com)|(?:www\.|m\.|on\.)?soundcloud\.com)\/[^\s<>"']+/i;
+const URL_BODY = String.raw`[^\s<>"']+`;
+const FULL_URL = String.raw`https?:\/\/${URL_BODY}`;
+const BARE_URL = String.raw`(?:(?:www\.|m\.|music\.)?youtu(?:\.be|be\.com)|(?:www\.|m\.|on\.)?soundcloud\.com)\/${URL_BODY}`;
+const URL_RE = new RegExp(`${FULL_URL}|${BARE_URL}`, 'i');
 const URL_TAIL = ').],;!?';
 const EDGE = ' \t-–—|:,;.';
 const EMPTY_PAIRS = /\[\s*\]|\(\s*\)|<\s*>|\{\s*\}/g;

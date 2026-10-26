@@ -68,25 +68,11 @@ function showLogin() {
 let firstRoute = true;
 let currentNav = '';
 
-function route() {
-  const studioSite = studioSiteUrl(location.hash);
-  if (studioSite) {
-    location.replace(studioSite);
-    return;
-  }
-  document.body.classList.remove('auth-pending');
-  if (!isSignedIn() && !isGuest()) {
-    showLogin();
-    return;
-  }
+function resolveRoute() {
   let name = location.hash.replace(/^#\/?/, '') || 'library';
   const wantsAdd = name === 'add';
   const shared = isShareHash(location.hash) ? location.hash : null;
-  if (shared) {
-    name = 'library';
-    history.replaceState(null, '', '#/library');
-  }
-  if (wantsAdd) {
+  if (shared || wantsAdd) {
     name = 'library';
     history.replaceState(null, '', '#/library');
   }
@@ -106,6 +92,29 @@ function route() {
     history.replaceState(null, '', '#/genres');
   }
   if (!routes[name]) name = 'library';
+  return { name, navName, wantsAdd, shared };
+}
+
+function markActiveNav(navName) {
+  for (const a of document.querySelectorAll('#nav a')) {
+    const on = a.dataset.route === navName;
+    a.classList.toggle('active', on);
+    if (on) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current');
+  }
+}
+
+function route() {
+  const studioSite = studioSiteUrl(location.hash);
+  if (studioSite) {
+    location.replace(studioSite);
+    return;
+  }
+  document.body.classList.remove('auth-pending');
+  if (!isSignedIn() && !isGuest()) {
+    showLogin();
+    return;
+  }
+  const { name, navName, wantsAdd, shared } = resolveRoute();
   if (name === 'library') saveLibraryView(navName);
   currentNav = navName;
   document.body.classList.remove('signed-out');
@@ -115,11 +124,7 @@ function route() {
   syncLegal(legalEl, legalCtx());
   cleanup = routes[name](view) || null;
   if (name === 'playback') void viz.ensure().catch(() => {});
-  for (const a of document.querySelectorAll('#nav a')) {
-    const on = a.dataset.route === navName;
-    a.classList.toggle('active', on);
-    if (on) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current');
-  }
+  markActiveNav(navName);
   help?.sync(navName);
   libNav?.sync(navName);
   syncLibraryMenu(draftStore);
@@ -216,8 +221,7 @@ window.addEventListener('server-starting', () => {
 });
 
 const early = { me: api.me(), library: store.refresh() };
-early.me.catch(() => {});
-early.library.catch(() => {});
+void Promise.allSettled([early.me, early.library]);
 try {
   await session.restore();
   if (isSignedIn()) {
@@ -229,8 +233,19 @@ try {
 syncGuestUi();
 route();
 void loadLegal(legalEl, legalCtx);
-void startBackgroundLoad().catch(() => {});
-void import('./update-check.js').then((m) => m.startUpdateCheck()).catch(() => {});
+async function startUpdates() {
+  try {
+    const m = await import('./update-check.js');
+    m.startUpdateCheck();
+  } catch { /* update checks are optional */ }
+}
+
+async function runBackgroundLoad() {
+  try { await startBackgroundLoad(); } catch { /* background load is best effort */ }
+}
+
+void runBackgroundLoad();
+void startUpdates();
 
 const warn = document.getElementById('sync-warn');
 const led = document.getElementById('server-led');

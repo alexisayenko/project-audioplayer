@@ -49,27 +49,33 @@ export function createCrossingLayout(graph, { seed = 1, saved = null, budget = M
   return api;
 }
 
+function placeAround(ctx, n, p, k) {
+  const { graph, index, xs, ys } = ctx;
+  const i = index.get(n.id);
+  const pi = p !== undefined ? index.get(p) : undefined;
+  const ang = k * 2.399963 + (i % 7) * 0.31;
+  const dist = (pi !== undefined ? graph.nodes[pi].r : 0) + n.r + 14 + 9 * Math.sqrt(k);
+  const cx = pi !== undefined ? xs[pi] : 0;
+  const cy = pi !== undefined ? ys[pi] : 0;
+  xs[i] = cx + Math.cos(ang) * dist;
+  ys[i] = cy + Math.sin(ang) * dist;
+}
+
 function seedMissing(graph, xs, ys, placed) {
   const index = new Map(graph.nodes.map((n, i) => [n.id, i]));
   const parentOf = new Map();
   for (const l of graph.links) if (l.kind === 'parent') parentOf.set(l.target, l.source);
   const slot = new Map();
+  const ctx = { graph, index, xs, ys };
   let pending = graph.nodes.filter((n) => !placed.has(n.id));
   for (let pass = 0; pass < 6 && pending.length; pass++) {
     const next = [];
     for (const n of pending) {
       const p = parentOf.get(n.id);
       if (p !== undefined && !placed.has(p) && pass < 5) { next.push(n); continue; }
-      const i = index.get(n.id);
-      const pi = p !== undefined ? index.get(p) : undefined;
       const k = slot.get(p) || 0;
       slot.set(p, k + 1);
-      const ang = k * 2.399963 + (i % 7) * 0.31;
-      const dist = (pi !== undefined ? graph.nodes[pi].r : 0) + n.r + 14 + 9 * Math.sqrt(k);
-      const cx = pi !== undefined ? xs[pi] : 0;
-      const cy = pi !== undefined ? ys[pi] : 0;
-      xs[i] = cx + Math.cos(ang) * dist;
-      ys[i] = cy + Math.sin(ang) * dist;
+      placeAround(ctx, n, p, k);
       placed.add(n.id);
     }
     pending = next;

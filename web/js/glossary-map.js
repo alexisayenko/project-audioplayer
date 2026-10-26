@@ -319,7 +319,7 @@ export function domainGrid(sizes, maxCols = BOX.maxCols, lo = BOX.lo) {
   return { cols, rows, colW, rowGap, top, side, w: Math.ceil(w), h: Math.ceil(h) };
 }
 
-function placeBoxes(boxes, shape, edges, domainOf) {
+function domainWeights(edges, domainOf) {
   const weight = new Map();
   for (const e of edges) {
     const a = domainOf.get(e.from);
@@ -328,16 +328,61 @@ function placeBoxes(boxes, shape, edges, domainOf) {
     const k = a < b ? `${a}|${b}` : `${b}|${a}`;
     weight.set(k, (weight.get(k) ?? 0) + 1);
   }
+  return weight;
+}
+
+function stackTall(byId) {
+  let y = 0;
+  for (const id of TALL_ORDER.filter((x) => byId.has(x))) {
+    const b = byId.get(id);
+    b.cx = 0;
+    b.cy = y + b.h / 2;
+    y += b.h + BOX.gap;
+  }
+}
+
+function pushApart(p, q) {
+  const dx = q.cx - p.cx;
+  const dy = q.cy - p.cy;
+  const ox = (p.w + q.w) / 2 + BOX.gap - Math.abs(dx);
+  const oy = (p.h + q.h) / 2 + BOX.gap - Math.abs(dy);
+  if (ox <= 0 || oy <= 0) return;
+  if (oy < ox) {
+    const s = ((dy >= 0 ? 1 : -1) * oy) / 2;
+    p.cy -= s;
+    q.cy += s;
+  } else {
+    const s = ((dx >= 0 ? 1 : -1) * ox) / 2;
+    p.cx -= s;
+    q.cx += s;
+  }
+}
+
+function separateBoxes(boxes) {
+  for (let i = 0; i < boxes.length; i++) {
+    for (let j = i + 1; j < boxes.length; j++) pushApart(boxes[i], boxes[j]);
+  }
+}
+
+function attract(weight, byId, alpha) {
+  for (const [k, wgt] of weight) {
+    const [a, c] = k.split('|').map((id) => byId.get(id));
+    if (!a || !c) continue;
+    const dx = c.cx - a.cx;
+    const dy = c.cy - a.cy;
+    const f = 0.012 * wgt * alpha;
+    a.cx += dx * f * 0.5;
+    a.cy += dy * f;
+    c.cx -= dx * f * 0.5;
+    c.cy -= dy * f;
+  }
+}
+
+function placeBoxes(boxes, shape, edges, domainOf) {
+  const weight = domainWeights(edges, domainOf);
   const byId = new Map(boxes.map((b) => [b.id, b]));
   if (shape === 'tall') {
-    const order = TALL_ORDER.filter((id) => byId.has(id));
-    let y = 0;
-    for (const id of order) {
-      const b = byId.get(id);
-      b.cx = 0;
-      b.cy = y + b.h / 2;
-      y += b.h + BOX.gap;
-    }
+    stackTall(byId);
     return;
   }
   for (const b of boxes) {
@@ -345,49 +390,16 @@ function placeBoxes(boxes, shape, edges, domainOf) {
     b.cx = s.x;
     b.cy = s.y;
   }
-  const separate = () => {
-    for (let i = 0; i < boxes.length; i++) {
-      for (let j = i + 1; j < boxes.length; j++) {
-        const p = boxes[i];
-        const q = boxes[j];
-        const dx = q.cx - p.cx;
-        const dy = q.cy - p.cy;
-        const ox = (p.w + q.w) / 2 + BOX.gap - Math.abs(dx);
-        const oy = (p.h + q.h) / 2 + BOX.gap - Math.abs(dy);
-        if (ox <= 0 || oy <= 0) continue;
-        if (oy < ox) {
-          const s = ((dy >= 0 ? 1 : -1) * oy) / 2;
-          p.cy -= s;
-          q.cy += s;
-        } else {
-          const s = ((dx >= 0 ? 1 : -1) * ox) / 2;
-          p.cx -= s;
-          q.cx += s;
-        }
-      }
-    }
-  };
   const iterations = 400;
   for (let it = 0; it < iterations; it++) {
-    const alpha = 1 - it / iterations;
     for (const b of boxes) {
       b.cx -= b.cx * 0.002;
       b.cy -= b.cy * 0.03;
     }
-    for (const [k, wgt] of weight) {
-      const [a, c] = k.split('|').map((id) => byId.get(id));
-      if (!a || !c) continue;
-      const dx = c.cx - a.cx;
-      const dy = c.cy - a.cy;
-      const f = 0.012 * wgt * alpha;
-      a.cx += dx * f * 0.5;
-      a.cy += dy * f;
-      c.cx -= dx * f * 0.5;
-      c.cy -= dy * f;
-    }
-    separate();
+    attract(weight, byId, 1 - it / iterations);
+    separateBoxes(boxes);
   }
-  for (let it = 0; it < 200; it++) separate();
+  for (let it = 0; it < 200; it++) separateBoxes(boxes);
 }
 
 export function layoutDomains(nodes, edges, shape = 'wide') {

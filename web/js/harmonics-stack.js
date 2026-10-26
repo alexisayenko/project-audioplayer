@@ -1,3 +1,4 @@
+import { gt } from './cmp.js';
 import { el } from './dom.js';
 import { segmented } from './segmented.js';
 
@@ -78,7 +79,7 @@ export function sumPeak(list, points = PEAK_POINTS) {
 export function sumSeries(list, points, { cycles = 1, phase = 0, peak = 0 } = {}) {
   const top = peak > 0 ? peak : sumPeak(list);
   const out = new Float64Array(points);
-  if (!(top > 0)) return out;
+  if (!gt(top, 0)) return out;
   for (let i = 0; i < points; i += 1) out[i] = sumAt(list, (cycles * i) / (points - 1), phase) / top;
   return out;
 }
@@ -143,7 +144,7 @@ export function sumLabels(model, narrow = false) {
 
 export function sumNote(model) {
   if (!model.total) return 'There are no harmonics: all amplitudes are zero, which is silence.';
-  const zeros = model.shown.filter((h) => !(h.amp > EPS)).length;
+  const zeros = model.shown.filter((h) => !gt(h.amp, EPS)).length;
   const flat = zeros ? `; the ${zeros} at 0 % are flat lines` : '';
   const head = `Showing H1 to H${model.shown.length}${flat}.`;
   if (model.truncated) return `${head} The bold Sum adds the ${model.active.length} rows shown; the faint line is the sum of all ${model.pool.length} harmonics.`;
@@ -188,6 +189,105 @@ function fitStack(canvas, rows, width) {
   return { ctx, w, h, narrow };
 }
 
+function labelColumnWidth(ctx, w, labels, sum, fonts) {
+  const measure = (text, font) => {
+    ctx.font = font;
+    return ctx.measureText?.(text)?.width ?? text.length * 6;
+  };
+  let labelW = Math.max(measure(sum.title, fonts.bold), sum.note ? measure(sum.note, fonts.small) : 0);
+  for (const text of labels) labelW = Math.max(labelW, measure(text, fonts.small));
+  return Math.min(Math.ceil(labelW) + 4, Math.round(w * 0.5));
+}
+
+function traceLine(f, data, cy, half) {
+  const { ctx, points, x0, plotW } = f;
+  ctx.beginPath();
+  for (let i = 0; i < points; i += 1) {
+    const y = cy - clamp(data[i], -1.3, 1.3) * half;
+    const x = x0 + (i / (points - 1)) * plotW;
+    if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+  }
+  ctx.stroke();
+}
+
+function drawStackGrid(f) {
+  const { ctx, w, c, n, rh, sh, top, sumTop, bottom, x0, x1, plotW, model, fonts } = f;
+  ctx.lineWidth = 1;
+  ctx.strokeStyle = c.line;
+  for (let i = 1; i <= n; i += 1) {
+    const y = Math.round(top + i * rh) + 0.5;
+    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke();
+  }
+  ctx.save();
+  ctx.setLineDash?.([1, 3]);
+  for (const g of GUIDES) {
+    const x = Math.round(x0 + g * plotW) + 0.5;
+    ctx.beginPath(); ctx.moveTo(x, top); ctx.lineTo(x, bottom); ctx.stroke();
+  }
+  ctx.setLineDash?.([3, 3]);
+  const zeroLines = [...model.shown.map((_, i) => top + i * rh + rh / 2), sumTop + sh / 2];
+  for (const cy of zeroLines) {
+    ctx.beginPath(); ctx.moveTo(x0, cy); ctx.lineTo(x1, cy); ctx.stroke();
+  }
+  ctx.restore();
+
+  if (!model.shown.length) {
+    ctx.font = fonts.small;
+    ctx.fillStyle = c.muted;
+    ctx.textAlign = 'center';
+    ctx.fillText('No harmonics: all amplitudes are zero', (x0 + x1) / 2, top + rh / 2);
+    ctx.textAlign = 'left';
+  }
+}
+
+function drawStackRows(f) {
+  const { ctx, c, rh, top, model, labels, fonts, cycles, phase, points } = f;
+  ctx.lineJoin = 'round';
+  model.shown.forEach((hm, i) => {
+    const cy = top + i * rh + rh / 2;
+    const fade = 1 - 0.55 * (model.shown.length > 1 ? i / (model.shown.length - 1) : 0);
+    const alpha = hm.n > model.highlightN ? 0.22 : fade;
+    ctx.globalAlpha = alpha;
+    ctx.strokeStyle = c.fill;
+    ctx.lineWidth = 1.5;
+    traceLine(f, rowSeries(hm, model.scale, points, { cycles, phase }), cy, rh / 2 - 3);
+    ctx.fillStyle = c.muted;
+    ctx.font = fonts.small;
+    ctx.globalAlpha = hm.n > model.highlightN ? 0.45 : 1;
+    ctx.fillText(labels[i], 6, cy);
+  });
+  ctx.globalAlpha = 1;
+}
+
+function drawStackSum(f) {
+  const { ctx, w, c, sh, sumTop, model, sum, fonts, cycles, phase, points } = f;
+  const sumCy = sumTop + sh / 2;
+  const half = sh / 2 - 5;
+  ctx.strokeStyle = c.line;
+  ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(0, sumTop + 0.5); ctx.lineTo(w, sumTop + 0.5); ctx.stroke();
+  if (model.truncated && model.fullPeak > 0) {
+    ctx.globalAlpha = 0.4;
+    ctx.strokeStyle = c.fill;
+    ctx.lineWidth = 1.5;
+    traceLine(f, sumSeries(model.pool, points, { cycles, phase, peak: model.fullPeak }), sumCy, half);
+    ctx.globalAlpha = 1;
+  }
+  if (model.peak > 0) {
+    ctx.strokeStyle = c.fill;
+    ctx.lineWidth = 2.5;
+    traceLine(f, sumSeries(model.active, points, { cycles, phase, peak: model.peak }), sumCy, half);
+  }
+  ctx.fillStyle = c.ink;
+  ctx.font = fonts.bold;
+  ctx.fillText(sum.title, 6, sumCy - (sum.note ? 7 : 0));
+  if (sum.note) {
+    ctx.fillStyle = c.muted;
+    ctx.font = fonts.small;
+    ctx.fillText(sum.note, 6, sumCy + 8);
+  }
+}
+
 export function drawHarmonicsStack(canvas, opts = {}) {
   const model = opts.model ?? stackModel(opts.harmonics ?? [], opts);
   const cycles = opts.cycles ?? 1;
@@ -201,104 +301,22 @@ export function drawHarmonicsStack(canvas, opts = {}) {
   const n = Math.max(model.shown.length, 1);
   const top = PAD_Y;
   const sumTop = top + n * rh;
-  const bottom = sumTop + sh;
   ctx.clearRect(0, 0, w, h);
   ctx.textBaseline = 'middle';
   ctx.textAlign = 'left';
-  const small = `${narrow ? 10 : 11}px ${c.font}`;
-  const bold = `600 ${narrow ? 11 : 12}px ${c.font}`;
-  const measure = (text, font) => {
-    ctx.font = font;
-    return ctx.measureText?.(text)?.width ?? text.length * 6;
-  };
+  const fonts = { small: `${narrow ? 10 : 11}px ${c.font}`, bold: `600 ${narrow ? 11 : 12}px ${c.font}` };
   const labels = model.shown.map((hm) => rowLabel(hm, narrow));
   const sum = sumLabels(model, narrow);
-  let labelW = Math.max(measure(sum.title, bold), sum.note ? measure(sum.note, small) : 0);
-  for (const text of labels) labelW = Math.max(labelW, measure(text, small));
-  labelW = Math.min(Math.ceil(labelW) + 4, Math.round(w * 0.5));
+  const labelW = labelColumnWidth(ctx, w, labels, sum, fonts);
   const x0 = 6 + labelW + 6;
   const x1 = w - 8;
   const plotW = Math.max(40, x1 - x0);
   const maxCycles = model.shown.reduce((m, hm) => Math.max(m, hm.cycles), 1);
   const points = clamp(Math.round(Math.max(plotW, maxCycles * cycles * 8)), 64, MAX_POINTS);
-  const xAt = (i) => x0 + (i / (points - 1)) * plotW;
-  const trace = (data, cy, half) => {
-    ctx.beginPath();
-    for (let i = 0; i < points; i += 1) {
-      const y = cy - clamp(data[i], -1.3, 1.3) * half;
-      if (i === 0) ctx.moveTo(xAt(i), y); else ctx.lineTo(xAt(i), y);
-    }
-    ctx.stroke();
-  };
-
-  ctx.lineWidth = 1;
-  ctx.strokeStyle = c.line;
-  for (let i = 1; i <= n; i += 1) {
-    const y = Math.round(top + i * rh) + 0.5;
-    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke();
-  }
-  ctx.save();
-  ctx.setLineDash?.([1, 3]);
-  for (const f of GUIDES) {
-    const x = Math.round(x0 + f * plotW) + 0.5;
-    ctx.beginPath(); ctx.moveTo(x, top); ctx.lineTo(x, bottom); ctx.stroke();
-  }
-  ctx.setLineDash?.([3, 3]);
-  const zeroLines = [...model.shown.map((_, i) => top + i * rh + rh / 2), sumTop + sh / 2];
-  for (const cy of zeroLines) {
-    ctx.beginPath(); ctx.moveTo(x0, cy); ctx.lineTo(x1, cy); ctx.stroke();
-  }
-  ctx.restore();
-
-  if (!model.shown.length) {
-    ctx.font = small;
-    ctx.fillStyle = c.muted;
-    ctx.textAlign = 'center';
-    ctx.fillText('No harmonics: all amplitudes are zero', (x0 + x1) / 2, top + rh / 2);
-    ctx.textAlign = 'left';
-  }
-
-  ctx.lineJoin = 'round';
-  model.shown.forEach((hm, i) => {
-    const cy = top + i * rh + rh / 2;
-    const fade = 1 - 0.55 * (model.shown.length > 1 ? i / (model.shown.length - 1) : 0);
-    const alpha = hm.n > model.highlightN ? 0.22 : fade;
-    ctx.globalAlpha = alpha;
-    ctx.strokeStyle = c.fill;
-    ctx.lineWidth = 1.5;
-    trace(rowSeries(hm, model.scale, points, { cycles, phase }), cy, rh / 2 - 3);
-    ctx.fillStyle = c.muted;
-    ctx.font = small;
-    ctx.globalAlpha = hm.n > model.highlightN ? 0.45 : 1;
-    ctx.fillText(labels[i], 6, cy);
-  });
-  ctx.globalAlpha = 1;
-
-  const sumCy = sumTop + sh / 2;
-  const half = sh / 2 - 5;
-  ctx.strokeStyle = c.line;
-  ctx.lineWidth = 1;
-  ctx.beginPath(); ctx.moveTo(0, sumTop + 0.5); ctx.lineTo(w, sumTop + 0.5); ctx.stroke();
-  if (model.truncated && model.fullPeak > 0) {
-    ctx.globalAlpha = 0.4;
-    ctx.strokeStyle = c.fill;
-    ctx.lineWidth = 1.5;
-    trace(sumSeries(model.pool, points, { cycles, phase, peak: model.fullPeak }), sumCy, half);
-    ctx.globalAlpha = 1;
-  }
-  if (model.peak > 0) {
-    ctx.strokeStyle = c.fill;
-    ctx.lineWidth = 2.5;
-    trace(sumSeries(model.active, points, { cycles, phase, peak: model.peak }), sumCy, half);
-  }
-  ctx.fillStyle = c.ink;
-  ctx.font = bold;
-  ctx.fillText(sum.title, 6, sumCy - (sum.note ? 7 : 0));
-  if (sum.note) {
-    ctx.fillStyle = c.muted;
-    ctx.font = small;
-    ctx.fillText(sum.note, 6, sumCy + 8);
-  }
+  const frame = { ctx, w, c, n, rh, sh, top, sumTop, bottom: sumTop + sh, x0, x1, plotW, model, labels, sum, fonts, cycles, phase, points };
+  drawStackGrid(frame);
+  drawStackRows(frame);
+  drawStackSum(frame);
   return { model, width: w, height: h, narrow, labelW, points, x0, x1 };
 }
 

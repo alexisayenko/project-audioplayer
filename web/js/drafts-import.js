@@ -9,8 +9,7 @@ export const MSG_BAD_LINK = 'That does not look like a YouTube playlist link.';
 
 const YT_LINK = /https?:\/\/(?:www\.|m\.|music\.)?(?:youtube\.com|youtu\.be)\/[^\s<>"']+/gi;
 const VIDEO_ID = /^[A-Za-z0-9_-]{11}$/;
-const NOISE = String.raw`(?:official\s+)?(?:(?:music|lyric|hd|4k)\s+)?(?:video|audio|visuali[sz]er|lyrics?)|official|hd|hq|4k|audio|video|lyrics?`;
-const BRACKETED_NOISE = new RegExp(String.raw`\s*[\(\[]\s*(?:${NOISE})\s*[\)\]]`, 'gi');
+const BRACKETED_NOISE = /\s?[([] ?(?:(?:official )?(?:(?:music|lyric|hd|4k) )?(?:video|audio|visuali[sz]er|lyrics?)|official|hd|hq|4k) ?[)\]]/gi;
 const TRAILING_NOISE = /\s*[|\-–—:]?\s*(?:official\s+(?:music\s+)?(?:video|audio)|lyrics?(?:\s+video)?|hd|hq|4k)\s*$/i;
 const EDGE = ' \t-–—|:,;.';
 
@@ -34,8 +33,19 @@ export function stripNoise(text) {
   return trimEdges(squash(out));
 }
 
+function dropSuffix(s, word, dashed) {
+  if (s.slice(-word.length).toUpperCase() !== word.toUpperCase()) return s;
+  let head = s.slice(0, s.length - word.length).trimEnd();
+  if (dashed) {
+    if (!head.endsWith('-')) return s;
+    head = head.slice(0, -1).trimEnd();
+  }
+  return head;
+}
+
 export function cleanChannel(channel) {
-  return trimEdges(squash(String(channel ?? '').replace(/\s*-\s*Topic$/i, '').replace(/\s*VEVO$/i, '')));
+  const text = dropSuffix(dropSuffix(String(channel ?? ''), 'topic', true), 'vevo', false);
+  return trimEdges(squash(text));
 }
 
 /** `{artist, title}` of a video: the first " - " splits "Artist - Title"; without one the channel is the artist. Noise words are removed, version words stay. */
@@ -66,11 +76,19 @@ export function videoIdOf(url) {
   }
 }
 
+const LINK_TAIL = ').],;!?';
+
+function trimTrailingPunctuation(url) {
+  let end = url.length;
+  while (end > 0 && LINK_TAIL.includes(url[end - 1])) end -= 1;
+  return url.slice(0, end);
+}
+
 /** The playlist link in a line, or null. A video link of an auto-generated mix (list=RD...) stays a plain video link. */
 export function playlistLinkOf(line) {
   for (const found of String(line ?? '').match(YT_LINK) ?? []) {
     let u;
-    try { u = new URL(found.replace(/[).\],;!?]+$/, '')); } catch { continue; }
+    try { u = new URL(trimTrailingPunctuation(found)); } catch { continue; }
     const list = u.searchParams.get('list');
     if (!list) continue;
     if (list.startsWith('RD') && u.searchParams.get('v')) continue;
@@ -121,6 +139,50 @@ export function playlistError(ex) {
   return MSG_FAILED;
 }
 
+async function readPlaylist(item, fetchPlaylist, r) {
+  try {
+    return { list: await fetchPlaylist(item.url) };
+  } catch (ex) {
+    r.errors.push(playlistError(ex));
+    return null;
+  }
+}
+
+function queuePlaylist(list, item, taken, queue, r) {
+  if (list?.truncated) r.truncated += 1;
+  r.unavailable += Number(list?.skipped) || 0;
+  const title = squash(list?.title);
+  for (const [position, e] of (list?.entries ?? []).entries()) {
+    if (!e.available || !e.id) { r.unavailable += 1; continue; }
+    if (taken.has(e.id)) { r.duplicates += 1; continue; }
+    taken.add(e.id);
+    queue.push({ line: entryLine(e), origin: { id: item.id, title, position } });
+  }
+}
+
+function countChunk(resp, r) {
+  const c = resp?.counts ?? {};
+  r.inLibrary += (resp?.created ?? []).filter((d) => d.playlist && d.inLibrary).length;
+  r.added += c.created ?? 0;
+  r.duplicates += c.duplicates ?? 0;
+  r.overCap += c.overCap ?? 0;
+  r.unfetched += c.unfetched ?? 0;
+  r.rateLimited ||= !!c.rateLimited;
+}
+
+async function buildQueue(lines, { fetchPlaylist, ids, onProgress, isCancelled }, r) {
+  const queue = [];
+  const taken = new Set(ids);
+  for (const item of classify(lines)) {
+    if (isCancelled()) { r.cancelled = true; return null; }
+    if (item.kind === 'line') { queue.push({ line: item.line, origin: null }); continue; }
+    onProgress({ phase: 'reading', done: 0, total: 0 });
+    const got = await readPlaylist(item, fetchPlaylist, r);
+    if (got) queuePlaylist(got.list, item, taken, queue, r);
+  }
+  return queue;
+}
+
 /**
  * Resolves the playlists, then adds every line in chunks (one save per chunk), so an interrupted import keeps what was added.
  * A playlist entry travels with its origin `{id, title, position}` (position = index in the playlist) so the draft remembers the playlist.
@@ -128,43 +190,15 @@ export function playlistError(ex) {
  */
 export async function runImport({ lines, fetchPlaylist, addLines, ids = new Set(), onProgress = () => {}, isCancelled = () => false, chunk = CHUNK }) {
   const r = { added: 0, duplicates: 0, unavailable: 0, truncated: 0, overCap: 0, unfetched: 0, inLibrary: 0, rateLimited: false, errors: [], cancelled: false, total: 0, done: 0, failed: '' };
-  const queue = [];
-  const taken = new Set(ids);
-  for (const item of classify(lines)) {
-    if (isCancelled()) { r.cancelled = true; return r; }
-    if (item.kind === 'line') { queue.push({ line: item.line, origin: null }); continue; }
-    onProgress({ phase: 'reading', done: 0, total: 0 });
-    let list;
-    try {
-      list = await fetchPlaylist(item.url);
-    } catch (ex) {
-      r.errors.push(playlistError(ex));
-      continue;
-    }
-    if (list?.truncated) r.truncated += 1;
-    r.unavailable += Number(list?.skipped) || 0;
-    const title = squash(list?.title);
-    for (const [position, e] of (list?.entries ?? []).entries()) {
-      if (!e.available || !e.id) { r.unavailable += 1; continue; }
-      if (taken.has(e.id)) { r.duplicates += 1; continue; }
-      taken.add(e.id);
-      queue.push({ line: entryLine(e), origin: { id: item.id, title, position } });
-    }
-  }
+  const queue = await buildQueue(lines, { fetchPlaylist, ids, onProgress, isCancelled }, r);
+  if (!queue) return r;
   r.total = queue.length;
   onProgress({ phase: 'adding', done: 0, total: r.total });
   for (let i = 0; i < queue.length; i += chunk) {
     if (isCancelled()) { r.cancelled = true; break; }
     const part = queue.slice(i, i + chunk);
     try {
-      const resp = await addLines(part.map((q) => q.line), part.some((q) => q.origin) ? part.map((q) => q.origin) : undefined);
-      const c = resp?.counts ?? {};
-      r.inLibrary += (resp?.created ?? []).filter((d) => d.playlist && d.inLibrary).length;
-      r.added += c.created ?? 0;
-      r.duplicates += c.duplicates ?? 0;
-      r.overCap += c.overCap ?? 0;
-      r.unfetched += c.unfetched ?? 0;
-      r.rateLimited ||= !!c.rateLimited;
+      countChunk(await addLines(part.map((q) => q.line), part.some((q) => q.origin) ? part.map((q) => q.origin) : undefined), r);
     } catch (ex) {
       r.failed = ex.message;
       break;

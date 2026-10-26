@@ -222,7 +222,8 @@ export function mountDrafts(host) {
     const addBtn = joinOnly
       ? el('button', { class: 'btn fill small', type: 'button', disabled: working, 'aria-label': `Add to playlist ${d.playlist.title}: ${name}`, onclick: () => { void addToPlaylist(d); } }, icon('plus', 'inline'), 'Add to playlist')
       : el('button', { class: 'btn fill small', type: 'button', 'aria-label': `Add to Library: ${name}`, onclick: () => addToLibrary(d) }, icon('plus', 'inline'), 'Add to Library');
-    const refreshBtn = canRefresh(d) ? el('button', { class: 'link-btn', type: 'button', disabled: working, 'aria-label': `Refresh: ${name}`, onclick: () => { void refresh(d); } }, working ? 'Fetching...' : 'Refresh') : null;
+    const refreshLabel = working ? 'Fetching...' : 'Refresh';
+    const refreshBtn = canRefresh(d) ? el('button', { class: 'link-btn', type: 'button', disabled: working, 'aria-label': `Refresh: ${name}`, onclick: () => { void refresh(d); } }, refreshLabel) : null;
     return el('div', { class: 'draft-actions' },
       srcLink(d),
       addBtn,

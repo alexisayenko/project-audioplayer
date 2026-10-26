@@ -336,11 +336,11 @@ test('STU-033: drawBandsView strokes one path of grid lines inside the plot and 
   const colors = { ink: [0, 0, 0], muted: [90, 90, 90], line: [200, 200, 200], fill: [30, 150, 180], stops: [[0, 0, 0], [0, 0, 0], [0, 0, 0], [210, 96, 26], [0, 0, 0]], font: 'sans-serif' };
   const { lanes, nowT } = kickLanes();
   const g = { ctx, w: 600, h: 240 };
-  v.drawBandsView(g, colors, lanes, nowT, true, null);
+  v.drawBandsView(g, colors, lanes, nowT, true);
   const plain = calls.filter(([k]) => k === 'stroke').length;
   calls.length = 0;
   const grid = v.tempoGrid(lanes, 120, nowT, v.bandsPlotW(600));
-  v.drawBandsView(g, colors, lanes, nowT, true, grid);
+  v.drawBandsView(g, colors, lanes, nowT, true, { grid });
   assert.equal(calls.filter(([k]) => k === 'stroke').length, plain + 1);
   assert.ok(calls.some(([k, a, b]) => k === 'set' && a === 'strokeStyle' && b === `rgba(0,0,0,${v.GRID_ALPHA})`));
   const xs = calls.filter(([k, x, y]) => k === 'moveTo' && y === 0).map(([, x]) => x);

@@ -32,6 +32,7 @@ import { createGapless } from './gapless-loop.js';
 import { initLoopChip } from './loop-chip.js';
 import { createFader } from './fade-control.js';
 import { fadeSettings } from './fade-settings.js';
+import { gt } from './cmp.js';
 
 const audio = document.getElementById('audio');
 const loop = createLoop(audio, undefined, createGapless({ audio }));
@@ -67,7 +68,7 @@ let resumeGuard = false;
 const resume = createResumePosition({ storage: { get: storeGet, set: storeSet, remove: storeRemove } });
 
 function saveResume(force) {
-  if (resumeGuard || !audio.src || !(audio.readyState > 0)) return;
+  if (resumeGuard || !audio.src || !gt(audio.readyState, 0)) return;
   const id = player.currentId;
   if (!id) return;
   if (force) resume.save(id, audio.currentTime); else resume.tick(id, audio.currentTime);

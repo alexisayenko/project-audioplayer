@@ -88,22 +88,31 @@ export const LINK_KEYS = [
   { key: 'wikipedia', label: 'Wikipedia', placeholder: 'https://en.wikipedia.org/wiki/...' },
 ];
 
+const DISCOGS_HOST = /^https?:\/\/([a-z0-9-]+\.)*discogs\.com\//i;
+
+function legacyDiscogsLink(a) {
+  const src = a?.source;
+  const raw = typeof src === 'string' ? src : src?.url;
+  let url = httpUrl(raw);
+  if (!url && typeof raw === 'string') {
+    const m = /^discogs:(\d+)$/.exec(raw);
+    if (m) url = `https://www.discogs.com/release/${m[1]}`;
+  }
+  return url && DISCOGS_HOST.test(url) ? url : null;
+}
+
+function fallbackLink(key, stored, a) {
+  if (key in stored) return null;
+  if (key === 'discogs') return legacyDiscogsLink(a);
+  if (key === 'rateyourmusic') return httpUrl(a?.rymUrl);
+  return null;
+}
+
 export function albumLinks(a) {
   const stored = a?.links && typeof a.links === 'object' ? a.links : {};
   const out = {};
   for (const { key } of LINK_KEYS) {
-    let url = httpUrl(stored[key]);
-    if (!url && key === 'discogs' && !('discogs' in stored)) {
-      const src = a?.source;
-      const raw = typeof src === 'string' ? src : src?.url;
-      url = httpUrl(raw);
-      if (!url && typeof raw === 'string') {
-        const m = /^discogs:(\d+)$/.exec(raw);
-        if (m) url = `https://www.discogs.com/release/${m[1]}`;
-      }
-      if (url && !/^https?:\/\/([a-z0-9-]+\.)*discogs\.com\//i.test(url)) url = null;
-    }
-    if (!url && key === 'rateyourmusic' && !('rateyourmusic' in stored)) url = httpUrl(a?.rymUrl);
+    const url = httpUrl(stored[key]) || fallbackLink(key, stored, a);
     if (url) out[key] = url;
   }
   return out;
@@ -472,6 +481,27 @@ function deleteStep(album, dlg, onDone) {
 
 export const EDIT_LABELS = { title: 'Title', artist: 'Artist', year: 'Year', genres: 'Genres' };
 
+function albumPatch(album, inputs, nextGenres, links) {
+  const body = {};
+  const title = inputs.title.value.trim();
+  if (!title) return { error: { key: 'title', text: 'Title is required.' } };
+  if (title !== (album.title || '')) body.title = title;
+  const artist = inputs.artist.value.trim();
+  if (artist !== (album.artist || '')) body.artist = artist;
+  const yearText = inputs.year.value.trim();
+  if (yearText && !/^\d{1,4}$/.test(yearText)) return { error: { key: 'year', text: 'Year must be a whole number.' } };
+  const year = yearText ? Number(yearText) : null;
+  if (year !== (album.year || null)) body.year = year;
+  if (JSON.stringify(nextGenres) !== JSON.stringify(album.genres || [])) body.genres = nextGenres;
+  const changed = {};
+  for (const f of links) {
+    const v = f.input.value.trim();
+    if (v !== f.have) changed[f.key] = v || null;
+  }
+  if (Object.keys(changed).length) body.links = changed;
+  return { body };
+}
+
 export function openAlbumEdit(album, onSaved, closeCard = () => {}) {
   const dlg = document.getElementById('edit-dialog');
   const close = () => dlg.close();
@@ -502,29 +532,21 @@ export function openAlbumEdit(album, onSaved, closeCard = () => {}) {
     el('div', { class: 'row end' },
       el('button', { type: 'button', class: 'btn danger del-left', onclick: () => deleteStep(album, dlg, closeCard) }, 'Delete album'),
       save));
+  const reportSaveError = (ex) => {
+    const key = ex.data?.key ?? ex.data?.detail?.key;
+    const bad = links.find((f) => f.key === key);
+    if ((ex.status === 422 || ex.code === 'bad_link') && bad) { bad.err.textContent = linkErrorText(bad.label); bad.err.hidden = false; }
+    else if ((ex.status === 422 || ex.code === 'bad_field') && EDIT_LABELS[key]) showErr(key, `This ${EDIT_LABELS[key].toLowerCase()} is not valid.`);
+    else showErr('', ex.message);
+  };
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
     genres.commit();
     for (const x of [...Object.values(errs), ...links.map((f) => f.err)]) x.hidden = true;
     general.hidden = true;
-    const body = {};
-    const title = inputs.title.value.trim();
-    if (!title) { showErr('title', 'Title is required.'); return; }
-    if (title !== (album.title || '')) body.title = title;
-    const artist = inputs.artist.value.trim();
-    if (artist !== (album.artist || '')) body.artist = artist;
-    const yearText = inputs.year.value.trim();
-    if (yearText && !/^\d{1,4}$/.test(yearText)) { showErr('year', 'Year must be a whole number.'); return; }
-    const year = yearText ? Number(yearText) : null;
-    if (year !== (album.year || null)) body.year = year;
-    const next = genres.get();
-    if (JSON.stringify(next) !== JSON.stringify(album.genres || [])) body.genres = next;
-    const changed = {};
-    for (const f of links) {
-      const v = f.input.value.trim();
-      if (v !== f.have) changed[f.key] = v || null;
-    }
-    if (Object.keys(changed).length) body.links = changed;
+    const patch = albumPatch(album, inputs, genres.get(), links);
+    if (patch.error) { showErr(patch.error.key, patch.error.text); return; }
+    const { body } = patch;
     if (!Object.keys(body).length) { close(); return; }
     save.disabled = true;
     try {
@@ -533,11 +555,7 @@ export function openAlbumEdit(album, onSaved, closeCard = () => {}) {
       toast('Saved');
       onSaved(full);
     } catch (ex) {
-      const key = ex.data?.key ?? ex.data?.detail?.key;
-      const bad = links.find((f) => f.key === key);
-      if ((ex.status === 422 || ex.code === 'bad_link') && bad) { bad.err.textContent = linkErrorText(bad.label); bad.err.hidden = false; }
-      else if ((ex.status === 422 || ex.code === 'bad_field') && EDIT_LABELS[key]) showErr(key, `This ${EDIT_LABELS[key].toLowerCase()} is not valid.`);
-      else showErr('', ex.message);
+      reportSaveError(ex);
       save.disabled = false;
     }
   });
@@ -679,7 +697,8 @@ export function candidateLines(c) {
   const sub = [c.year, tracks].filter(Boolean).join(' · ');
   const labels = list(c.labels).join(', ');
   const catnoText = c.catno ? String(c.catno) : '';
-  const label = labels ? `${labels}${catnoText ? ` (${c.catno})` : ''}` : catnoText;
+  const catnoSuffix = catnoText ? ` (${c.catno})` : '';
+  const label = labels ? `${labels}${catnoSuffix}` : catnoText;
   const meta = [list(c.formats).join(', '), label, c.country].filter(Boolean).join(' · ');
   return { head, sub, meta };
 }
@@ -889,17 +908,7 @@ export function openAddAlbum(opener = null) {
     say('');
     create.disabled = true;
     try {
-      let candidate = null;
-      const mapping = {};
-      if (c) {
-        candidate = candidatePayload(c, yt.url);
-        if (!candidate.tracks.length) {
-          const pv = await api.albumPreview(c.url);
-          candidate = { ...candidate, tracks: pv.tracks || [], genres: candidate.genres.length ? candidate.genres : list(pv.genres), source: candidate.source || pv.source };
-        }
-        const mp = matchMap(c);
-        for (const pos of positions) if (mp.has(pos)) mapping[pos] = mp.get(pos).no;
-      }
+      const { candidate, mapping } = await candidateWithMapping(c, positions);
       const selected = yt.tracks.filter((t) => yt.checked[t.position]).map(({ position, videoId, title, durationS }) => ({ position, videoId, title, durationS: durationS ?? null }));
       const r = await api.albumYoutubeCommit({ playlistUrl: yt.url, selected, candidate, mapping, fallback });
       dlg.close();
@@ -911,11 +920,27 @@ export function openAddAlbum(opener = null) {
       toast(`Album created, ${linked} ${plural(linked, 'song', 'songs')} linked, ${unlinked} not matched; downloading ${k} ${plural(k, 'track', 'tracks')}`);
     } catch (ex) {
       create.disabled = false;
-      if (ex.status === 409 && errorCode(ex) === 'already_exists') {
-        const existing = ex.data?.id ?? ex.data?.detail?.id;
-        say('This album already exists.', existing ? el('button', { class: 'link-btn t-caption', type: 'button', onclick: () => { void api.album(existing).then((full) => { dlg.close(); openAlbumCard(full); }, (error_) => say(error_.message)); } }, 'Open it') : null);
-      } else say(youtubeErrorText(ex));
+      sayCommitError(ex);
     }
+  }
+
+  async function candidateWithMapping(c, positions) {
+    if (!c) return { candidate: null, mapping: {} };
+    let candidate = candidatePayload(c, yt.url);
+    if (!candidate.tracks.length) {
+      const pv = await api.albumPreview(c.url);
+      candidate = { ...candidate, tracks: pv.tracks || [], genres: candidate.genres.length ? candidate.genres : list(pv.genres), source: candidate.source || pv.source };
+    }
+    const mapping = {};
+    const mp = matchMap(c);
+    for (const pos of positions) if (mp.has(pos)) mapping[pos] = mp.get(pos).no;
+    return { candidate, mapping };
+  }
+
+  function sayCommitError(ex) {
+    if (ex.status !== 409 || errorCode(ex) !== 'already_exists') { say(youtubeErrorText(ex)); return; }
+    const existing = ex.data?.id ?? ex.data?.detail?.id;
+    say('This album already exists.', existing ? el('button', { class: 'link-btn t-caption', type: 'button', onclick: () => { void api.album(existing).then((full) => { dlg.close(); openAlbumCard(full); }, (error_) => say(error_.message)); } }, 'Open it') : null);
   }
 
   function candidateRadio(c, i, on) {
@@ -1154,27 +1179,38 @@ export function mountAlbums(pane, id = albumIdOf(location.hash)) {
       paintAll();
     }
 
+    function pruneSelections() {
+      for (const f of FACETS) {
+        const present = new Set(facetValues(all, f).map((x) => x.value));
+        for (const v of sel[f.id]) if (!present.has(v)) sel[f.id].delete(v);
+      }
+    }
+
+    const filterSummary = (picked, total) => `${total} in your albums · ${picked} selected · ${visible().length} ${plural(visible().length, 'album', 'albums')}`;
+
+    function facetChip(f) {
+      const values = facetValues(all, f);
+      const n = sel[f.id].size;
+      const b = el('button', {
+        class: `cat-chip${n ? ' on' : ''}`, type: 'button', disabled: !values.length, 'aria-haspopup': 'dialog', 'data-cat': f.id,
+        onclick: () => openFilterSheet({ id: f.id, name: f.name }, b, paintAll, {
+          values: values.map((v) => ({ tag: v.value, count: v.count })),
+          sel: sel[f.id],
+          summary: filterSummary,
+        }),
+      }, f.name, el('small', { class: 't-caption' }, n || values.length));
+      b.setAttribute('aria-label', n ? `${f.name}, ${n} selected` : `${f.name}, ${values.length}`);
+      return b;
+    }
+
     function paintAll() {
-      for (const f of FACETS) for (const v of sel[f.id]) if (!facetValues(all, f).some((x) => x.value === v)) sel[f.id].delete(v);
+      pruneSelections();
       saveAlbumPrefs();
       shown = visible();
       toolbar.hidden = !all.length;
       sortbar.hidden = !all.length;
       window.dispatchEvent(new CustomEvent('albums-total', { detail: { text: all.length ? `${all.length} ${plural(all.length, 'album', 'albums')}` : '' } }));
-      cats.replaceChildren(...FACETS.map((f) => {
-        const values = facetValues(all, f);
-        const n = sel[f.id].size;
-        const b = el('button', {
-          class: `cat-chip${n ? ' on' : ''}`, type: 'button', disabled: !values.length, 'aria-haspopup': 'dialog', 'data-cat': f.id,
-          onclick: () => openFilterSheet({ id: f.id, name: f.name }, b, paintAll, {
-            values: values.map((v) => ({ tag: v.value, count: v.count })),
-            sel: sel[f.id],
-            summary: (picked, total) => `${total} in your albums · ${picked} selected · ${visible().length} ${plural(visible().length, 'album', 'albums')}`,
-          }),
-        }, f.name, el('small', { class: 't-caption' }, n || values.length));
-        b.setAttribute('aria-label', n ? `${f.name}, ${n} selected` : `${f.name}, ${values.length}`);
-        return b;
-      }));
+      cats.replaceChildren(...FACETS.map((f) => facetChip(f)));
       const songs = songsOf();
       const picked = [...sel.genres, ...sel.years].slice(0, 3);
       const pickedText = picked.length ? ` · ${picked.join(', ')}` : '';

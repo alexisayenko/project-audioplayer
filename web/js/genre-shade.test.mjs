@@ -65,16 +65,16 @@ test('the shade falls back to nothing (the plain family colour is used) when the
 test('fillDisc paints the shade on a single-family disc only; split discs keep the plain family colours', () => {
   const sets = [];
   const ctx = new Proxy({}, { get: () => () => {}, set: (t, k, v) => { if (k === 'fillStyle') sets.push(v); return true; } });
-  fillDisc(ctx, 0, 0, 5, ['#e0', '#a1', '#a2'], [0], '#f', 0, '#shade');
+  fillDisc(ctx, { x: 0, y: 0, r: 5 }, ['#e0', '#a1', '#a2'], [0], '#f', 0, '#shade');
   assert.deepEqual(sets, ['#shade']);
   sets.length = 0;
-  fillDisc(ctx, 0, 0, 5, ['#e0', '#a1', '#a2'], [1, 0], '#f', 0, '#shade');
+  fillDisc(ctx, { x: 0, y: 0, r: 5 }, ['#e0', '#a1', '#a2'], [1, 0], '#f', 0, '#shade');
   assert.deepEqual(sets, ['#a1', '#e0'], 'a split disc never takes the shade');
   sets.length = 0;
-  fillDisc(ctx, 0, 0, 5, ['#e0', '#a1'], [0], '#f', 0, null);
+  fillDisc(ctx, { x: 0, y: 0, r: 5 }, ['#e0', '#a1'], [0], '#f', 0, null);
   assert.deepEqual(sets, ['#e0'], 'no shade means the family colour');
   sets.length = 0;
-  fillDisc(ctx, 0, 0, 5, ['#e0', '#a1'], [1], '#f', 0, '#shade');
+  fillDisc(ctx, { x: 0, y: 0, r: 5 }, ['#e0', '#a1'], [1], '#f', 0, '#shade');
   assert.deepEqual(sets, ['#a1']);
 });
 
