@@ -848,24 +848,33 @@ def check_inbound_json(rel: str, text: str) -> str | None:
     except ValueError:
         return "not valid JSON"
     if rel.endswith("library.json"):
-        from . import library
-
-        if not isinstance(raw, (dict, list)) or (isinstance(raw, dict) and not isinstance(raw.get("songs", []), list)):
-            return "not a library"
-        try:
-            library.normalize(raw)
-        except Exception as exc:
-            return f"library schema: {type(exc).__name__}"
-    elif not isinstance(raw, dict):
+        return _library_fault(raw)
+    if not isinstance(raw, dict):
         return "not an object"
-    elif rel.endswith("drafts.json") and not isinstance(raw.get("drafts", []), list):
-        return "not a draft list"
-    elif rel.endswith("genre_layout.json") and not all(isinstance(raw.get(k, {}), dict) for k in ("positions", "families")):
-        return "not a genre layout"
-    elif rel.endswith("albums.json") and not isinstance(raw.get("albums", []), list):
-        return "not an album list"
-    elif rel.endswith("playlists.json") and not isinstance(raw.get("playlists", []), list):
-        return "not a playlist list"
+    if rel.endswith("genre_layout.json"):
+        return None if all(isinstance(raw.get(k, {}), dict) for k in ("positions", "families")) else "not a genre layout"
+    for suffix, (key, fault) in _INBOUND_LISTS.items():
+        if rel.endswith(suffix) and not isinstance(raw.get(key, []), list):
+            return fault
+    return None
+
+
+_INBOUND_LISTS = {
+    "drafts.json": ("drafts", "not a draft list"),
+    "albums.json": ("albums", "not an album list"),
+    "playlists.json": ("playlists", "not a playlist list"),
+}
+
+
+def _library_fault(raw: Any) -> str | None:
+    from . import library
+
+    if not isinstance(raw, (dict, list)) or (isinstance(raw, dict) and not isinstance(raw.get("songs", []), list)):
+        return "not a library"
+    try:
+        library.normalize(raw)
+    except Exception as exc:
+        return f"library schema: {type(exc).__name__}"
     return None
 
 

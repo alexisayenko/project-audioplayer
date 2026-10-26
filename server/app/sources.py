@@ -30,6 +30,11 @@ _SC_PREFIX = "https://soundcloud.com/"
 _START_KEYS = ("t", "start")
 
 
+def _clock_seconds(m: re.Match[str]) -> int | None:
+    hours, minutes, seconds = int(m.group(1) or 0), int(m.group(2)), int(m.group(3))
+    return None if seconds > 59 or (m.group(1) and minutes > 59) else hours * 3600 + minutes * 60 + seconds
+
+
 def parse_time(text: Any) -> int | None:
     """Seconds from `85`, `85s`, `1m25s`, `1h2m3s`, `1:25` or `1:02:03`; None when it is not a time or is negative nonsense."""
     if isinstance(text, bool):
@@ -43,8 +48,7 @@ def parse_time(text: Any) -> int | None:
         return None
     m = _CLOCK_RE.fullmatch(s)
     if m:
-        hours, minutes, seconds = int(m.group(1) or 0), int(m.group(2)), int(m.group(3))
-        return None if seconds > 59 or (m.group(1) and minutes > 59) else hours * 3600 + minutes * 60 + seconds
+        return _clock_seconds(m)
     m = _TIME_RE.fullmatch(s)
     if not m or not any(m.groups()):
         return None
@@ -198,19 +202,19 @@ def public_entry(entry: dict[str, Any], song_id: str) -> dict[str, Any]:
     return {**entry, "url": source_url(entry["type"], entry["ref"]), "platform": kind, "source": kind, "id": legacy_id(entry, song_id)}
 
 
+def _trim_bound(name: str, value: Any) -> int | float | None:
+    if value is None:
+        return None
+    if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(value):
+        raise ValueError(f"trim {name} must be a number of seconds")
+    if value < 0:
+        raise ValueError(f"trim {name} must not be negative")
+    return _seconds(value)
+
+
 def validate_trim(start: Any, end: Any, duration: Any = None) -> tuple[int | float | None, int | float | None]:
     """Checked `(start, end)` in seconds: each optional, 0 <= start < end, and within `duration` when it is known. ValueError with the message for the first fault."""
-    out: list[int | float | None] = []
-    for name, value in (("start", start), ("end", end)):
-        if value is None:
-            out.append(None)
-            continue
-        if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(value):
-            raise ValueError(f"trim {name} must be a number of seconds")
-        if value < 0:
-            raise ValueError(f"trim {name} must not be negative")
-        out.append(_seconds(value))
-    s, e = out
+    s, e = _trim_bound("start", start), _trim_bound("end", end)
     known = _seconds(duration)
     if e is not None and e <= (s or 0):
         raise ValueError("trim start must be before trim end")

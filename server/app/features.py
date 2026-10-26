@@ -124,22 +124,31 @@ def task_of(commit: dict[str, Any], tasks: dict[str, dict[str, Any]], release_fi
             return tid
     subject = commit["subject"].lower()
     for key, tid in rmap.items():
-        if key in MAP_KEYS:
-            continue
-        if commit["sha"].startswith(key) or key.lower() in subject:
+        if key not in MAP_KEYS and (commit["sha"].startswith(key) or key.lower() in subject):
             return tid or None
     sw = words(commit["subject"])
+    return _best_task(commit["files"], 1, sw, tasks) or _best_task(release_files, 2, sw, tasks)
 
-    def best(files: list[str], need: int) -> str | None:
-        scored = []
-        for f in files:
-            m = TASK_FILE.match(f)
-            if m and m.group(1) in tasks:
-                scored.append((len(sw & words(tasks[m.group(1)]["title"])), m.group(1)))
-        scored = [s for s in scored if s[0] >= need]
-        return max(scored)[1] if scored else None
 
-    return best(commit["files"], 1) or best(release_files, 2)
+def _best_task(files: list[str], need: int, sw: set[str], tasks: dict[str, dict[str, Any]]) -> str | None:
+    scored = []
+    for f in files:
+        m = TASK_FILE.match(f)
+        if m and m.group(1) in tasks:
+            scored.append((len(sw & words(tasks[m.group(1)]["title"])), m.group(1)))
+    scored = [s for s in scored if s[0] >= need]
+    return max(scored)[1] if scored else None
+
+
+def _valid_entry(e: Any) -> bool:
+    return isinstance(e, dict) and isinstance(e.get("text"), str) and bool(e["text"].strip())
+
+
+def _clean_entry(e: dict[str, Any]) -> dict[str, Any]:
+    task = e.get("task")
+    if task is not None and not (isinstance(task, str) and TASK_ID.match(task)):
+        task = None
+    return {"text": e["text"].strip(), "task": task}
 
 
 def curated_items(rmap: dict[str, Any]) -> dict[str, list[dict[str, Any]]]:
@@ -151,14 +160,7 @@ def curated_items(rmap: dict[str, Any]) -> dict[str, list[dict[str, Any]]]:
     for key, entries in table.items():
         if not isinstance(key, str) or not HASH_KEY.match(key.lower()) or not isinstance(entries, list):
             continue
-        good = []
-        for e in entries:
-            if not isinstance(e, dict) or not isinstance(e.get("text"), str) or not e["text"].strip():
-                continue
-            task = e.get("task")
-            if task is not None and not (isinstance(task, str) and TASK_ID.match(task)):
-                task = None
-            good.append({"text": e["text"].strip(), "task": task})
+        good = [_clean_entry(e) for e in entries if _valid_entry(e)]
         if good or not entries:
             out[key.lower()] = good
     return out

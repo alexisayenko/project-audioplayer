@@ -149,6 +149,42 @@ def _seen_keys(folder: Path) -> list[str]:
     return [k for k in data if isinstance(k, str)] if isinstance(data, list) else []
 
 
+def _merge_plays(items: list[Any], stored: list[Any] | None, songs: dict[str, dict[str, Any]]) -> tuple[list[list[Any]], int, bool]:
+    stored_edited = False
+    rows: list[list[Any]] = []
+    accepted = 0
+    for when, song_id, seconds, cont in items:
+        prev = rows[-1] if rows else stored
+        if cont and prev is not None and _continues(prev, when, song_id):
+            prev[2] = round(min(prev[2] + seconds, _limit(songs[song_id])), 1)
+            stored_edited = stored_edited or not rows
+            accepted += 1
+        elif seconds >= MIN_PLAY_S:
+            rows.append([when, song_id, seconds])
+            accepted += 1
+    return rows, accepted, stored_edited
+
+
+def _write_plays(uid: str, path: Path, text: str, fresh: bool, stored: list[Any] | None, stored_edited: bool, rows: list[list[Any]]) -> None:
+    lines = [[stamp(w), sid, sec] for w, sid, sec in rows]
+    buffer = io.StringIO()
+    writer = csv.writer(buffer, lineterminator="\n")
+    if stored_edited:
+        head = text.rstrip("\n").rsplit("\n", 1)[0]
+        writer.writerow([stamp(stored[0]), stored[1], stored[2]])
+        writer.writerows(lines)
+        write_bytes_atomic(path, (head + "\n" + buffer.getvalue()).encode("utf-8"))
+        _cache.pop(uid, None)
+    elif lines or fresh:
+        if fresh:
+            writer.writerow(HEADER)
+        writer.writerows(lines)
+        with open(path, "a", encoding="utf-8", newline="") as f:
+            f.write(buffer.getvalue())
+            f.flush()
+            os.fsync(f.fileno())
+
+
 def append(uid: str, batch_key: str, plays: list[Any]) -> dict[str, Any]:
     """`{ok, appended, duplicate, ignored}`; a repeated batch key appends nothing. A `cont` play joins the previous record of the same song (merged in place) when it starts within 15 minutes of that record's end; a merged play counts as appended."""
     songs = {s["id"]: s for s in deps.load_songs(uid)}
@@ -163,35 +199,8 @@ def append(uid: str, batch_key: str, plays: list[Any]) -> dict[str, Any]:
         fresh = not path.exists() or path.stat().st_size == 0
         text = "" if fresh else path.read_text(encoding="utf-8")
         stored = _last_record(text)
-        stored_edited = False
-        rows: list[list[Any]] = []
-        accepted = 0
-        for when, song_id, seconds, cont in items:
-            prev = rows[-1] if rows else stored
-            if cont and prev is not None and _continues(prev, when, song_id):
-                prev[2] = round(min(prev[2] + seconds, _limit(songs[song_id])), 1)
-                stored_edited = stored_edited or not rows
-                accepted += 1
-            elif seconds >= MIN_PLAY_S:
-                rows.append([when, song_id, seconds])
-                accepted += 1
-        lines = [[stamp(w), sid, sec] for w, sid, sec in rows]
-        buffer = io.StringIO()
-        writer = csv.writer(buffer, lineterminator="\n")
-        if stored_edited:
-            head = text.rstrip("\n").rsplit("\n", 1)[0]
-            writer.writerow([stamp(stored[0]), stored[1], stored[2]])
-            writer.writerows(lines)
-            write_bytes_atomic(path, (head + "\n" + buffer.getvalue()).encode("utf-8"))
-            _cache.pop(uid, None)
-        elif lines or fresh:
-            if fresh:
-                writer.writerow(HEADER)
-            writer.writerows(lines)
-            with open(path, "a", encoding="utf-8", newline="") as f:
-                f.write(buffer.getvalue())
-                f.flush()
-                os.fsync(f.fileno())
+        rows, accepted, stored_edited = _merge_plays(items, stored, songs)
+        _write_plays(uid, path, text, fresh, stored, stored_edited, rows)
         write_json_atomic(folder / KEYS_FILE, [*keys, batch_key][-KEEP_KEYS:], compact=True)
     return {"ok": True, "appended": accepted, "duplicate": False, "ignored": len(plays) - accepted}
 
@@ -232,6 +241,25 @@ def _blank() -> dict[str, Any]:
     }
 
 
+def _positive(value: Any) -> bool:
+    return isinstance(value, (int, float)) and not isinstance(value, bool) and value > 0
+
+
+def _tally(entry: dict[str, Any], outcome: str, when: datetime, seconds: float, today: Any, edges: dict[str, datetime]) -> None:
+    counts = entry[outcome]
+    counts["all"] += 1
+    if when.date() == today:
+        counts["today"] += 1
+    for name, edge in edges.items():
+        if when >= edge:
+            counts[name] += 1
+    entry["total_listened_s"] += seconds
+    if outcome == "listened":
+        day = when.date().isoformat()
+        if entry["last_listened"] is None or day > entry["last_listened"]:
+            entry["last_listened"] = day
+
+
 def listening(uid: str, now: datetime | None = None) -> dict[str, Any]:
     """Per-song counts of `listened` (listened_s >= LISTENED_THRESHOLD x duration) and `skipped` per window; a song without a known duration counts every play as skipped."""
     now = now or datetime.now(UTC)
@@ -239,31 +267,14 @@ def listening(uid: str, now: datetime | None = None) -> dict[str, Any]:
     edges = {"d7": now - timedelta(days=7), "d30": now - timedelta(days=30)}
     songs = {s["id"]: s for s in deps.load_songs(uid)}
     out: dict[str, dict[str, Any]] = {}
-    durations = {
-        i: float(s["duration"])
-        for i, s in songs.items()
-        if isinstance(s.get("duration"), (int, float)) and not isinstance(s.get("duration"), bool) and s["duration"] > 0
-    }
+    durations = {i: float(s["duration"]) for i, s in songs.items() if _positive(s.get("duration"))}
     for when, song_id, seconds in merge_fragments(_rows(uid), durations):
         song = songs.get(song_id)
         if song is None or when > now:
             continue
         duration = song.get("duration")
-        known = isinstance(duration, (int, float)) and not isinstance(duration, bool) and duration > 0
-        outcome = "listened" if known and seconds >= LISTENED_THRESHOLD * duration else "skipped"
-        entry = out.setdefault(song_id, _blank())
-        counts = entry[outcome]
-        counts["all"] += 1
-        if when.date() == today:
-            counts["today"] += 1
-        for name, edge in edges.items():
-            if when >= edge:
-                counts[name] += 1
-        entry["total_listened_s"] += seconds
-        if outcome == "listened":
-            day = when.date().isoformat()
-            if entry["last_listened"] is None or day > entry["last_listened"]:
-                entry["last_listened"] = day
+        outcome = "listened" if _positive(duration) and seconds >= LISTENED_THRESHOLD * duration else "skipped"
+        _tally(out.setdefault(song_id, _blank()), outcome, when, seconds, today, edges)
     for entry in out.values():
         entry["total_listened_s"] = round(entry["total_listened_s"], 1)
     return {"songs": out, "generated": stamp(now)}

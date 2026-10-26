@@ -759,7 +759,7 @@ def _suggest_into(out: dict[str, Any], artist: str, title: str, mb: dict[str, An
     out["year"] = found["year"] or mb["year"]
     _with_infobox(out, song_link, artist_link)
     if not out["wikipedia_album"] and names:
-        out["wikipedia_album"] = _search_album(artist, names, (out["infobox_album"], mb.get("album")))
+        out["wikipedia_album"] = _search_album(names, (out["infobox_album"], mb.get("album")))
 
 
 def _credits_other_artist(song_link: str, names: list[str]) -> bool:
@@ -767,7 +767,7 @@ def _credits_other_artist(song_link: str, names: list[str]) -> bool:
     return bool(box_artist) and not any(genre_lookup._artist_match(c, box_artist) for c in names)
 
 
-def _search_album(artist: str, names: list[str], candidates: tuple[str | None, str | None]) -> str | None:
+def _search_album(names: list[str], candidates: tuple[str | None, str | None]) -> str | None:
     for album in dict.fromkeys(a for a in candidates if a):
         found = find_album(album, names)
         if found:
@@ -873,25 +873,29 @@ def _first_page(data: dict[str, Any]) -> dict[str, Any]:
     return pages[0] if pages and isinstance(pages[0], dict) else {}
 
 
+def _summary_image(thumb: dict[str, Any], orig: dict[str, Any]) -> tuple[str | None, Any, Any]:
+    thumb_src, orig_src = _https(thumb.get("source")), _https(orig.get("source"))
+    if orig_src and orig_src.lower().split("?")[0].endswith(".svg"):
+        orig_src = None
+    orig_w, orig_h = _int(orig.get("width")), _int(orig.get("height"))
+    if orig_src and (orig_w is None or orig_w <= COVER_SIZE):
+        return orig_src, orig_w, orig_h
+    if thumb_src and _THUMB_PX.search(thumb_src) and orig_w:
+        return _THUMB_PX.sub(f"/{COVER_SIZE}px-", thumb_src, count=1), COVER_SIZE, round(orig_h * COVER_SIZE / orig_w) if orig_h else None
+    if orig_src:
+        return orig_src, orig_w, orig_h
+    if thumb_src:
+        return thumb_src, _int(thumb.get("width")), _int(thumb.get("height"))
+    return None, None, None
+
+
 def _from_summary(host: str, title: str, page_url: str) -> dict[str, Any] | None:
     """The lead image from the REST summary, which also has the non-free (fair use) infobox images that pageimages leaves out."""
     data = _fetch_json(f"https://{host}/api/rest_v1/page/summary/" + urllib.parse.quote(title.replace(" ", "_"), safe=""))
     thumb = data.get("thumbnail") if isinstance(data.get("thumbnail"), dict) else {}
     orig = data.get("originalimage") if isinstance(data.get("originalimage"), dict) else {}
-    thumb_src, orig_src = _https(thumb.get("source")), _https(orig.get("source"))
-    if orig_src and orig_src.lower().split("?")[0].endswith(".svg"):
-        orig_src = None
-    orig_w, orig_h = _int(orig.get("width")), _int(orig.get("height"))
-    url, width, height = None, None, None
-    if orig_src and (orig_w is None or orig_w <= COVER_SIZE):
-        url, width, height = orig_src, orig_w, orig_h
-    elif thumb_src and _THUMB_PX.search(thumb_src) and orig_w:
-        url = _THUMB_PX.sub(f"/{COVER_SIZE}px-", thumb_src, count=1)
-        width, height = COVER_SIZE, round(orig_h * COVER_SIZE / orig_w) if orig_h else None
-    elif orig_src:
-        url, width, height = orig_src, orig_w, orig_h
-    elif thumb_src:
-        url, width, height = thumb_src, _int(thumb.get("width")), _int(thumb.get("height"))
+    thumb_src = _https(thumb.get("source"))
+    url, width, height = _summary_image(thumb, orig)
     if not url:
         return None
     desktop = (data.get("content_urls") or {}).get("desktop") or {}

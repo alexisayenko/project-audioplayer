@@ -57,40 +57,43 @@ def parse_tag(tag: Any) -> str | None:
     return rest or None
 
 
+def _convert_tag(song: dict[str, Any], tag: Any, doc: dict[str, list[dict[str, Any]]]) -> str:
+    """"plain" (not a reference tag), "left" (kept as it is), "existing" (already a reference) or "converted"; the last two drop the tag."""
+    rest = parse_tag(tag)
+    if rest is None:
+        return "plain"
+    genre = refs.resolve_genre(rest)
+    if genre is None:
+        _log.info("reference tag left untouched (no such genre): %r on %s", str(tag), song.get("id"))
+        return "left"
+    facts = refs.song_facts(song)
+    try:
+        entry = refs.make_entry(doc, genre, {**facts, "role": "archetype", "song_id": str(song.get("id"))}, reviewed=False)
+    except Problem as exc:
+        if exc.status != 409:
+            _log.info("reference tag left untouched (%s): %r on %s", exc.code, str(tag), song.get("id"))
+            return "left"
+        return "existing"
+    doc.setdefault(genre, []).append(entry)
+    return "converted"
+
+
 def convert(songs: list[dict[str, Any]], doc: dict[str, list[dict[str, Any]]]) -> tuple[int, int, int]:
     """Convert in place: returns (converted tags, tags already a reference, left unresolved). Songs get the tag removed; `doc` gets the entries."""
-    converted = existing = left = 0
+    counts = {"converted": 0, "existing": 0, "left": 0}
     for song in songs:
         tags = song.get("tags") or []
         keep: list[Any] = []
         for tag in tags:
-            rest = parse_tag(tag)
-            genre = refs.resolve_genre(rest) if rest else None
-            if rest is None:
+            outcome = _convert_tag(song, tag, doc)
+            if outcome in counts:
+                counts[outcome] += 1
+            if outcome in ("plain", "left"):
                 keep.append(tag)
-                continue
-            if genre is None:
-                _log.info("reference tag left untouched (no such genre): %r on %s", str(tag), song.get("id"))
-                left += 1
-                keep.append(tag)
-                continue
-            facts = refs.song_facts(song)
-            try:
-                entry = refs.make_entry(doc, genre, {**facts, "role": "archetype", "song_id": str(song.get("id"))}, reviewed=False)
-            except Problem as exc:
-                if exc.status != 409:
-                    _log.info("reference tag left untouched (%s): %r on %s", exc.code, str(tag), song.get("id"))
-                    left += 1
-                    keep.append(tag)
-                    continue
-                existing += 1
-            else:
-                doc.setdefault(genre, []).append(entry)
-                converted += 1
         if len(keep) != len(tags):
             song["tags"] = keep
             song["updated_at"] = library.now_utc()
-    return converted, existing, left
+    return counts["converted"], counts["existing"], counts["left"]
 
 
 def _apply(uid: str, lib: Path) -> tuple[int, int, int]:

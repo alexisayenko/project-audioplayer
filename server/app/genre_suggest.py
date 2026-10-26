@@ -148,30 +148,39 @@ def decide(groups: dict[str, list[str]], *, weights: dict[str, float] | None = N
     direct: dict[str, set[str]] = {}
     support: dict[str, float] = {}
     for g, names in listed.items():
-        reach: set[str] = set()
-        for n in names:
-            direct.setdefault(n, set()).add(g)
-            reach.add(n)
-            reach.update(ancestors(n, tree))
-        for n in reach:
-            support[n] = support.get(n, 0.0) + weight.get(g, 1.0)
+        _add_group(g, names, weight.get(g, 1.0), direct, support, tree)
     if versioned:
         return _versioned(listed, direct, support, tree, origin or {})
     consensus = [n for n in direct if support[n] >= APPLY_WEIGHT]
+    eligible, declined = _wikipedia_extras(consensus, direct, tree)
+    return _finish(eligible, direct, support, tree, declined)
+
+
+def _add_group(g: str, names: list[str], weight: float, direct: dict[str, set[str]], support: dict[str, float], tree: Tree) -> None:
+    reach: set[str] = set()
+    for n in names:
+        direct.setdefault(n, set()).add(g)
+        reach.add(n)
+        reach.update(ancestors(n, tree))
+    for n in reach:
+        support[n] = support.get(n, 0.0) + weight
+
+
+def _wikipedia_extras(consensus: list[str], direct: dict[str, set[str]], tree: Tree) -> tuple[list[str], dict[str, str]]:
+    """The consensus genres plus the Wikipedia-only ones that share a family with them; the others are declined with a reason."""
     consensus_families = set().union(*(tree.family.get(n, frozenset()) for n in consensus)) if consensus else set()
     eligible = list(consensus)
     declined: dict[str, str] = {}
     for n in direct:
-        if n in consensus:
+        if n in consensus or WIKIPEDIA_SONG not in direct[n]:
             continue
-        if WIKIPEDIA_SONG in direct[n]:
-            if n in AMBIGUOUS:
-                declined[n] = AMBIGUOUS_NAME
-            elif tree.family.get(n, frozenset()) & consensus_families:
-                eligible.append(n)
-            else:
-                declined[n] = NO_FAMILY
-    return _finish(eligible, direct, support, tree, declined)
+        if n in AMBIGUOUS:
+            declined[n] = AMBIGUOUS_NAME
+        elif tree.family.get(n, frozenset()) & consensus_families:
+            eligible.append(n)
+        else:
+            declined[n] = NO_FAMILY
+    return eligible, declined
 
 
 def _versioned(listed: dict[str, list[str]], direct: dict[str, set[str]], support: dict[str, float], tree: Tree, origin: dict[str, str]) -> Decision:

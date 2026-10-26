@@ -72,6 +72,15 @@ def genre_source_links(key: str, sources: dict[str, dict[str, Any]]) -> list[dic
     return out
 
 
+def _check_spec(key: str, src: str, fields: tuple[str, ...], spec: Any) -> None:
+    if spec is None:
+        return
+    if isinstance(spec, dict) and src == "wikipedia" and spec.get("match") == "manual":
+        fields = ("title",)
+    if not isinstance(spec, dict) or any(not isinstance(spec.get(f), str) or not spec[f] for f in fields) or spec.get("match") not in MATCH_KINDS:
+        raise ValueError(f"genre_sources.json: entry {key!r} {src} needs {', '.join(fields)} and a match of {'/'.join(MATCH_KINDS)}")
+
+
 def parse(doc: Any) -> tuple[dict[str, dict[str, Any]], dict[str, Any]]:
     """Validate the file shape: returns (rows per genre key, `_meta`). Raises ValueError naming the bad entry."""
     if not isinstance(doc, dict):
@@ -84,13 +93,7 @@ def parse(doc: Any) -> tuple[dict[str, dict[str, Any]], dict[str, Any]]:
         if not isinstance(v, dict) or not isinstance(v.get("discogs"), (bool, type(None))):
             raise ValueError(f"genre_sources.json: entry {k!r} needs a 'discogs' of true, false or null")
         for src, fields in (("musicbrainz", ("id", "name")), ("wikipedia", ("title", "wikidata")), ("apple_music", ("id", "name"))):
-            spec = v.get(src)
-            if spec is None:
-                continue
-            if isinstance(spec, dict) and src == "wikipedia" and spec.get("match") == "manual":
-                fields = ("title",)
-            if not isinstance(spec, dict) or any(not isinstance(spec.get(f), str) or not spec[f] for f in fields) or spec.get("match") not in MATCH_KINDS:
-                raise ValueError(f"genre_sources.json: entry {k!r} {src} needs {', '.join(fields)} and a match of {'/'.join(MATCH_KINDS)}")
+            _check_spec(k, src, fields, v.get(src))
         rows[k] = v
     return rows, meta
 

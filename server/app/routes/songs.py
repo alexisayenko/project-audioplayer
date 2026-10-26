@@ -232,6 +232,22 @@ def _checked_trim(start: Any, end: Any, duration: Any) -> tuple[Any, Any]:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
 
 
+def _replaced_sources(items: Any, entries: list[dict[str, Any]], own: str) -> list[dict[str, Any]]:
+    result = sources.dedupe(_source_from_request(item, entries) for item in items)
+    if not any(sources.platform(e) == own for e in result):
+        raise HTTPException(status_code=422, detail="sources must keep the link this song's audio comes from")
+    return result
+
+
+def _apply_trim_change(entries: list[dict[str, Any]], updated: dict[str, Any], trim: Any) -> None:
+    first = entries[0]
+    fallback = updated.get("duration") if first.get("trim_start") is None and first.get("trim_end") is None else None
+    try:
+        sources.apply_trim(entries, trim, 0, fallback)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+
 def _apply_source_links(updated: dict[str, Any], changes: dict[str, Any]) -> None:
     """Edit `sources` (DATA-193): the YouTube / SoundCloud link fields, a whole `sources` list, one more `url`, and the `trim` of the primary source. The song id never changes; the source of the id's own platform cannot be removed."""
     if not any(k in changes for k in ("youtube_url", "soundcloud_url", "sources", "url", "trim")):
@@ -243,18 +259,11 @@ def _apply_source_links(updated: dict[str, Any], changes: dict[str, Any]) -> Non
         if field in changes:
             entries = _with_source(entries, field, kind, _source_link(field, changes[field], clean, what), kind == own)
     if changes.get("sources") is not None:
-        entries = sources.dedupe(_source_from_request(item, entries) for item in changes["sources"])
-        if not any(sources.platform(e) == own for e in entries):
-            raise HTTPException(status_code=422, detail="sources must keep the link this song's audio comes from")
+        entries = _replaced_sources(changes["sources"], entries, own)
     if isinstance(changes.get("url"), str) and changes["url"].strip():
         entries = sources.dedupe([*entries, _source_from_request({"url": changes["url"]}, entries)])
     if changes.get("trim") is not None and entries:
-        first = entries[0]
-        fallback = updated.get("duration") if first.get("trim_start") is None and first.get("trim_end") is None else None
-        try:
-            sources.apply_trim(entries, changes["trim"], 0, fallback)
-        except ValueError as exc:
-            raise HTTPException(status_code=422, detail=str(exc)) from exc
+        _apply_trim_change(entries, updated, changes["trim"])
     updated["sources"] = entries
     updated.pop("source_url", None)
 

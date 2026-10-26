@@ -99,11 +99,7 @@ def _resolve_families(name: str, parents: dict[str, tuple[str, ...]], families: 
     return tuple(f for f in families if f in found)
 
 
-def build(discogs_doc: dict[str, Any], extras_doc: dict[str, Any], tree_families: dict[str, list[str]] | None = None, tree_parents: dict[str, list[str]] | None = None, forms: Iterable[str] = (), groups: dict[str, dict[str, Any]] | None = None, colours: dict[str, str] | None = None, family_order: Iterable[str] | None = None) -> Vocabulary:
-    """Entries by canonical name: the families (level "family"), the Discogs genres and the extras (level "genre", `extra` true for the extras). `families` of a genre are every family it descends from (the tree's `families` when `tree_families` has the name, else the Discogs families or the descent through the extras' parents); `family` is the first of them in the fixed family order, kept for old clients only. `parents` are the full unordered parent set of the tree (`tree_parents` when it has the name, else the Discogs/extras parents). `family_order` (the families block of the levels file when it is valid) is the fixed family order, else the Discogs `families`. A name in `groups` is a level 1 name of the tree but no entry (a group is never a genre). `forms` are the promoted genres (lowercase): their entry is a family whose `parents` and `families` come from the tree and whose `family` is itself. `colours` maps a level 1 name to its legacy colour family."""
-    families = tuple(g for g in (family_order if family_order is not None else discogs_doc.get("families") or []) if isinstance(g, str))
-    form_set = frozenset(forms)
-    group_set = frozenset(groups or {})
+def _family_entries(families: tuple[str, ...], group_set: frozenset[str], form_set: frozenset[str], tree_families: dict[str, list[str]] | None, tree_parents: dict[str, list[str]] | None) -> dict[str, Entry]:
     entries: dict[str, Entry] = {}
     for g in families:
         n = g.lower()
@@ -113,6 +109,10 @@ def build(discogs_doc: dict[str, Any], extras_doc: dict[str, Any], tree_families
             entries[n] = Entry(n, g, "family", tuple((tree_parents or {}).get(n) or ()), False, tuple((tree_families or {}).get(n) or (g,)), True)
         else:
             entries[n] = Entry(n, g, "family", (), False, (g,))
+    return entries
+
+
+def _genre_parents(discogs_doc: dict[str, Any], extras_doc: dict[str, Any], entries: dict[str, Entry], families: tuple[str, ...]) -> tuple[dict[str, tuple[str, ...]], dict[str, tuple[str, ...]], dict[str, Any]]:
     parents: dict[str, tuple[str, ...]] = {}
     own: dict[str, tuple[str, ...]] = {}
     for name, plist in (discogs_doc.get("genres") or {}).items():
@@ -125,6 +125,16 @@ def build(discogs_doc: dict[str, Any], extras_doc: dict[str, Any], tree_families
         parents[n] = _parent_list(spec["parents"])
     for n in extras:
         own[n] = _resolve_families(n, parents, families)
+    return parents, own, extras
+
+
+def build(discogs_doc: dict[str, Any], extras_doc: dict[str, Any], tree_families: dict[str, list[str]] | None = None, tree_parents: dict[str, list[str]] | None = None, forms: Iterable[str] = (), groups: dict[str, dict[str, Any]] | None = None, colours: dict[str, str] | None = None, family_order: Iterable[str] | None = None) -> Vocabulary:
+    """Entries by canonical name: the families (level "family"), the Discogs genres and the extras (level "genre", `extra` true for the extras). `families` of a genre are every family it descends from (the tree's `families` when `tree_families` has the name, else the Discogs families or the descent through the extras' parents); `family` is the first of them in the fixed family order, kept for old clients only. `parents` are the full unordered parent set of the tree (`tree_parents` when it has the name, else the Discogs/extras parents). `family_order` (the families block of the levels file when it is valid) is the fixed family order, else the Discogs `families`. A name in `groups` is a level 1 name of the tree but no entry (a group is never a genre). `forms` are the promoted genres (lowercase): their entry is a family whose `parents` and `families` come from the tree and whose `family` is itself. `colours` maps a level 1 name to its legacy colour family."""
+    families = tuple(g for g in (family_order if family_order is not None else discogs_doc.get("families") or []) if isinstance(g, str))
+    form_set = frozenset(forms)
+    group_set = frozenset(groups or {})
+    entries = _family_entries(families, group_set, form_set, tree_families, tree_parents)
+    parents, own, extras = _genre_parents(discogs_doc, extras_doc, entries, families)
     for n, fams in own.items():
         fams = tuple((tree_families or {}).get(n) or fams)
         if fams:
@@ -329,62 +339,83 @@ def _parse_synonyms(doc: Any, name: str) -> dict[str, list[str]]:
     return synonyms
 
 
+def _parse_group(gk: str, spec: dict[str, Any], i: int, name: str) -> dict[str, Any]:
+    if spec["group"] is not True or "discogs" in spec or "parents" in spec:
+        raise ValueError(f"{name}: group {gk!r} needs group true and no discogs or parents")
+    temporary = spec.get("temporary", False)
+    colour = spec.get("colour")
+    if not isinstance(temporary, bool) or (colour is not None and (not isinstance(colour, str) or not colour)):
+        raise ValueError(f"{name}: group {gk!r} temporary must be a boolean and colour a name")
+    return {"name": gk, "kind": "organisational", "temporary": temporary, "order": i + 1, "synonyms": _strings(spec.get("synonyms", []), f"group {gk!r} synonyms"), "note": spec.get("note", ""), **({"colour": colour} if colour else {})}
+
+
 def parse_groups(doc: Any) -> dict[str, dict[str, Any]]:
     """The groups of `genre_levels.json`: the `families` block entries with `group: true` (name to `{kind organisational, temporary, order, synonyms, colour, note}`), in family order. A group is a level 1 node that is never an entry, a genre or assignable; it cannot carry `discogs` or `parents`."""
     name = LEVELS_FILE.name
     families = doc.get("families") if isinstance(doc, dict) and isinstance(doc.get("families"), dict) else {}
     out: dict[str, dict[str, Any]] = {}
     for i, (gk, spec) in enumerate(families.items()):
-        if not isinstance(spec, dict) or "group" not in spec:
-            continue
-        if spec["group"] is not True or "discogs" in spec or "parents" in spec:
-            raise ValueError(f"{name}: group {gk!r} needs group true and no discogs or parents")
-        temporary = spec.get("temporary", False)
-        colour = spec.get("colour")
-        if not isinstance(temporary, bool) or (colour is not None and (not isinstance(colour, str) or not colour)):
-            raise ValueError(f"{name}: group {gk!r} temporary must be a boolean and colour a name")
-        out[gk] = {"name": gk, "kind": "organisational", "temporary": temporary, "order": i + 1, "synonyms": _strings(spec.get("synonyms", []), f"group {gk!r} synonyms"), "note": spec.get("note", ""), **({"colour": colour} if colour else {})}
+        if isinstance(spec, dict) and "group" in spec:
+            out[gk] = _parse_group(gk, spec, i, name)
     return out
+
+
+def _display_of(spec: dict[str, Any], name: str, who: str) -> Any:
+    display = spec.get("display")
+    if display is not None and (not isinstance(display, str) or not display.strip()):
+        raise ValueError(f"{name}: {who} display must be a non-empty string")
+    return display
+
+
+def _related_of(spec: dict[str, Any], key: str, parents: list[str], name: str, who: str, itself: str) -> list[str]:
+    related = _strings(spec["related"], f"{who} related")
+    if len(set(related)) != len(related) or key in related or any(r in parents for r in related):
+        raise ValueError(f"{name}: {who} related {related!r} must be unique names other than {itself} and its parents")
+    return related
+
+
+def _check_modifiers(node: dict[str, Any], modifiers: dict[str, dict[str, str]], name: str, who: str) -> None:
+    unknown = [f for f in node["modifiers"] if f not in modifiers]
+    if unknown:
+        raise ValueError(f"{name}: {who} has unknown modifiers {unknown!r}")
+
+
+def _parse_form(member: str, spec: dict[str, Any], modifiers: dict[str, dict[str, str]], name: str) -> dict[str, Any]:
+    who = f"promoted genre {member!r}"
+    if "group" in spec:
+        raise ValueError(f"{name}: {member!r} is a group and cannot carry discogs")
+    if member != member.lower():
+        raise ValueError(f"{name}: promoted genre {member!r} must use its lowercase vocabulary key as name")
+    parents = _strings(spec.get("parents", []), f"{who} parents")
+    if len(set(parents)) != len(parents) or member in parents:
+        raise ValueError(f"{name}: promoted genre {member!r} parents {parents!r} must be unique names other than itself")
+    if not isinstance(spec["discogs"], bool):
+        raise ValueError(f"{name}: promoted genre {member!r} needs a boolean 'discogs'")
+    display = _display_of(spec, name, who)
+    node: dict[str, Any] = {
+        "parents": parents, "discogs": spec["discogs"], "synonyms": _strings(spec.get("synonyms", []), f"{who} synonyms"),
+        "provisional": False, "status": None, "display": display, "modifiers": _strings(spec.get("modifiers", []), f"{who} modifiers"), "form": True,
+    }
+    if spec.get("colour") is not None:
+        node["colour"] = spec["colour"]
+    if spec.get("fusion") is True:
+        node["fusion"] = True
+    if spec.get("subfamily") is not None:
+        node["subfamily"] = spec["subfamily"]
+    if "related" in spec:
+        related = _related_of(spec, member, parents, name, who, "itself")
+        if related:
+            node["related"] = related
+    _check_modifiers(node, modifiers, name, who)
+    return node
 
 
 def _parse_forms(doc: dict[str, Any], modifiers: dict[str, dict[str, str]], name: str) -> dict[str, dict[str, Any]]:
     """The promoted genres (families-block entries with `discogs`) as level 1 nodes keyed by their lowercase name: `parents` (optional: a promoted genre may also sit under other nodes), `related`, `synonyms`, `modifiers`, `discogs`, `display`, `fusion`, `colour`, `subfamily`. A promoted genre is level 1 whether or not it lists parents."""
     forms: dict[str, dict[str, Any]] = {}
     for member, spec in doc["families"].items():
-        if not isinstance(spec, dict) or "discogs" not in spec:
-            continue
-        if "group" in spec:
-            raise ValueError(f"{name}: {member!r} is a group and cannot carry discogs")
-        if member != member.lower():
-            raise ValueError(f"{name}: promoted genre {member!r} must use its lowercase vocabulary key as name")
-        parents = _strings(spec.get("parents", []), f"promoted genre {member!r} parents")
-        if len(set(parents)) != len(parents) or member in parents:
-            raise ValueError(f"{name}: promoted genre {member!r} parents {parents!r} must be unique names other than itself")
-        if not isinstance(spec["discogs"], bool):
-            raise ValueError(f"{name}: promoted genre {member!r} needs a boolean 'discogs'")
-        display = spec.get("display")
-        if display is not None and (not isinstance(display, str) or not display.strip()):
-            raise ValueError(f"{name}: promoted genre {member!r} display must be a non-empty string")
-        node: dict[str, Any] = {
-            "parents": parents, "discogs": spec["discogs"], "synonyms": _strings(spec.get("synonyms", []), f"promoted genre {member!r} synonyms"),
-            "provisional": False, "status": None, "display": display, "modifiers": _strings(spec.get("modifiers", []), f"promoted genre {member!r} modifiers"), "form": True,
-        }
-        if spec.get("colour") is not None:
-            node["colour"] = spec["colour"]
-        if spec.get("fusion") is True:
-            node["fusion"] = True
-        if spec.get("subfamily") is not None:
-            node["subfamily"] = spec["subfamily"]
-        if "related" in spec:
-            related = _strings(spec["related"], f"promoted genre {member!r} related")
-            if len(set(related)) != len(related) or member in related or any(r in parents for r in related):
-                raise ValueError(f"{name}: promoted genre {member!r} related {related!r} must be unique names other than itself and its parents")
-            if related:
-                node["related"] = related
-        unknown = [f for f in node["modifiers"] if f not in modifiers]
-        if unknown:
-            raise ValueError(f"{name}: promoted genre {member!r} has unknown modifiers {unknown!r}")
-        forms[member] = node
+        if isinstance(spec, dict) and "discogs" in spec:
+            forms[member] = _parse_form(member, spec, modifiers, name)
     return forms
 
 
@@ -403,9 +434,7 @@ def _parse_modifiers(doc: dict[str, Any], name: str) -> dict[str, dict[str, str]
     return modifiers
 
 
-def _parse_entry(k: str, v: Any, name: str, families: dict[str, list[str]], modifiers: dict[str, dict[str, str]], subfamilies: dict[str, dict[str, Any]]) -> dict[str, Any]:
-    if not isinstance(v, dict):
-        raise ValueError(f"{name}: entry {k!r} is not an object")
+def _entry_parents(k: str, v: dict[str, Any], name: str) -> list[str]:
     parents = _strings(v.get("parents"), f"entry {k!r} parents")
     if not parents or len(set(parents)) != len(parents) or k in parents:
         raise ValueError(f"{name}: entry {k!r} parents {parents!r} must be a non-empty list of unique names other than the entry")
@@ -413,41 +442,62 @@ def _parse_entry(k: str, v: Any, name: str, families: dict[str, list[str]], modi
         raise ValueError(f"{name}: entry {k!r} has a 'family' override; families are derived from all parents")
     if not isinstance(v.get("discogs"), bool):
         raise ValueError(f"{name}: entry {k!r} needs a boolean 'discogs'")
+    return parents
+
+
+def _entry_flags(k: str, v: dict[str, Any], name: str, subfamilies: dict[str, dict[str, Any]]) -> tuple[Any, Any, Any]:
     status = v.get("status")
     if status not in (None, "approved", "question"):
         raise ValueError(f"{name}: entry {k!r} has an invalid status {status!r} (approved, question or absent)")
     fusion = v.get("fusion")
     if fusion is not None and not isinstance(fusion, bool):
         raise ValueError(f"{name}: entry {k!r} fusion must be a boolean")
-    display = v.get("display")
-    if display is not None and (not isinstance(display, str) or not display.strip()):
-        raise ValueError(f"{name}: entry {k!r} display must be a non-empty string")
+    display = _display_of(v, name, f"entry {k!r}")
     subfamily = v.get("subfamily")
     if subfamily is not None and subfamily not in subfamilies:
         raise ValueError(f"{name}: entry {k!r} has an unknown subfamily {subfamily!r}")
+    return status, fusion, display
+
+
+def _parse_entry(k: str, v: Any, name: str, families: dict[str, list[str]], modifiers: dict[str, dict[str, str]], subfamilies: dict[str, dict[str, Any]]) -> dict[str, Any]:
+    if not isinstance(v, dict):
+        raise ValueError(f"{name}: entry {k!r} is not an object")
+    who = f"entry {k!r}"
+    parents = _entry_parents(k, v, name)
+    status, fusion, display = _entry_flags(k, v, name, subfamilies)
+    subfamily = v.get("subfamily")
     entry = {
         "parents": parents,
         "discogs": v["discogs"],
-        "synonyms": _strings(v.get("synonyms", []), f"entry {k!r} synonyms"),
+        "synonyms": _strings(v.get("synonyms", []), f"{who} synonyms"),
         "provisional": v.get("provisional") is True,
         "status": status,
         "display": display,
-        "modifiers": _strings(v.get("modifiers", []), f"entry {k!r} modifiers"),
+        "modifiers": _strings(v.get("modifiers", []), f"{who} modifiers"),
     }
     if fusion:
         entry["fusion"] = True
     if subfamily is not None:
         entry["subfamily"] = subfamily
     if "related" in v:
-        related = _strings(v["related"], f"entry {k!r} related")
-        if len(set(related)) != len(related) or k in related or any(r in parents for r in related):
-            raise ValueError(f"{name}: entry {k!r} related {related!r} must be unique names other than the entry and its parents")
+        related = _related_of(v, k, parents, name, who, "the entry")
         if related:
             entry["related"] = related
-    unknown = [f for f in entry["modifiers"] if f not in modifiers]
-    if unknown:
-        raise ValueError(f"{name}: entry {k!r} has unknown modifiers {unknown!r}")
+    _check_modifiers(entry, modifiers, name, who)
     return entry
+
+
+def _visit_parents(k: str, levels: dict[str, dict[str, Any]], refs: dict[str, str], state: dict[str, int], name: str) -> None:
+    if state.get(k) == 2:
+        return
+    if state.get(k) == 1:
+        raise ValueError(f"{name}: entry {k!r} is its own ancestor through its parents")
+    state[k] = 1
+    for p in levels[k]["parents"]:
+        target = refs.get(p, p)
+        if target in levels:
+            _visit_parents(target, levels, refs, state, name)
+    state[k] = 2
 
 
 def _check_parents(levels: dict[str, dict[str, Any]], families: dict[str, list[str]], name: str, refs: dict[str, str] | None = None) -> None:
@@ -458,21 +508,8 @@ def _check_parents(levels: dict[str, dict[str, Any]], families: dict[str, list[s
             if p not in families and p not in levels:
                 raise ValueError(f"{name}: entry {k!r} parent {p!r} is not a family or an entry")
     state: dict[str, int] = {}
-
-    def visit(k: str) -> None:
-        if state.get(k) == 2:
-            return
-        if state.get(k) == 1:
-            raise ValueError(f"{name}: entry {k!r} is its own ancestor through its parents")
-        state[k] = 1
-        for p in levels[k]["parents"]:
-            target = refs.get(p, p)
-            if target in levels:
-                visit(target)
-        state[k] = 2
-
     for k in levels:
-        visit(k)
+        _visit_parents(k, levels, refs, state, name)
 
 
 def parse_hex(doc: dict[str, Any]) -> dict[str, str]:
@@ -514,21 +551,22 @@ def _resolve_subfamilies(levels: dict[str, dict[str, Any]], families: dict[str, 
         if own is not None and subfamilies[own]["family"] not in v["families"] and subfamilies[own]["family"] not in groups:
             raise ValueError(f"{name}: entry {k!r} subfamily {own!r} belongs to {subfamilies[own]['family']!r}, which is not one of the families of the entry")
     done: set[str] = set()
-
-    def fill(k: str) -> str | None:
-        v = levels[k]
-        if k not in done:
-            done.add(k)
-            if v.get("subfamily") is None:
-                for p in v["parents"]:
-                    got = fill(p) if p in levels else None
-                    if got is not None and (subfamilies[got]["family"] in v["families"] or subfamilies[got]["family"] in groups):
-                        v["subfamily"] = got
-                        break
-        return v.get("subfamily")
-
     for k in levels:
-        fill(k)
+        _fill_subfamily(k, levels, subfamilies, groups, done)
+
+
+def _fill_subfamily(k: str, levels: dict[str, dict[str, Any]], subfamilies: dict[str, dict[str, Any]], groups: Iterable[str], done: set[str]) -> str | None:
+    v = levels[k]
+    if k in done:
+        return v.get("subfamily")
+    done.add(k)
+    if v.get("subfamily") is None:
+        for p in v["parents"]:
+            got = _fill_subfamily(p, levels, subfamilies, groups, done) if p in levels else None
+            if got is not None and (subfamilies[got]["family"] in v["families"] or subfamilies[got]["family"] in groups):
+                v["subfamily"] = got
+                break
+    return v.get("subfamily")
 
 
 def _check_related(levels: dict[str, dict[str, Any]], families: dict[str, list[str]], name: str, refs: dict[str, str] | None = None) -> None:
@@ -545,17 +583,22 @@ def _check_related(levels: dict[str, dict[str, Any]], families: dict[str, list[s
         for r in v["related"]:
             if r not in families and r not in levels:
                 raise ValueError(f"{name}: entry {k!r} related {r!r} is not a family or an entry")
-        seen: set[str] = set()
-        stack = [label.get(k, k)]
-        while stack:
-            for c in children.get(stack.pop(), []):
-                if c not in seen:
-                    seen.add(c)
-                    seen.add(label.get(c, c))
-                    stack.append(label.get(c, c))
+        seen = _descendants(label.get(k, k), children, label)
         bad = [r for r in v["related"] if r in seen]
         if bad:
             raise ValueError(f"{name}: entry {k!r} related {bad!r} is a descendant of the entry")
+
+
+def _descendants(start: str, children: dict[str, list[str]], label: dict[str, str]) -> set[str]:
+    seen: set[str] = set()
+    stack = [start]
+    while stack:
+        for c in children.get(stack.pop(), []):
+            if c not in seen:
+                seen.add(c)
+                seen.add(label.get(c, c))
+                stack.append(label.get(c, c))
+    return seen
 
 
 MAX_LEVEL = 12
@@ -563,39 +606,50 @@ MAX_LEVEL = 12
 
 def _resolve(levels: dict[str, dict[str, Any]], families: dict[str, list[str]], name: str, refs: dict[str, str] | None = None) -> None:
     """Fill `level` (the shortest path depth to a family root: 2 under a family, else 1 + the smallest level among the parents; no depth cap, only the sanity bound `MAX_LEVEL`) and `families` (every family the genre descends from, in the fixed family order); `family` is the first of them, kept for old clients. A `fusion` genre needs at least two families."""
-    done: set[str] = set()
-    order = list(families)
-    refs = refs or {}
-    own_name = {key_: ref for ref, key_ in refs.items()}
+    resolver = _Resolver(levels, families, name, refs or {})
+    for k in levels:
+        resolver.fill(k)
 
-    def fill(k: str) -> None:
-        if k in done:
-            return
-        v = levels[k]
+
+class _Resolver:
+    def __init__(self, levels: dict[str, dict[str, Any]], families: dict[str, list[str]], name: str, refs: dict[str, str]) -> None:
+        self.levels = levels
+        self.families = families
+        self.name = name
+        self.refs = refs
+        self.order = list(families)
+        self.own_name = {key_: ref for ref, key_ in refs.items()}
+        self.done: set[str] = set()
+
+    def _from_parents(self, v: dict[str, Any]) -> tuple[int, set[str]]:
         level = 99
         found: set[str] = set()
         for p in v["parents"]:
-            if p in refs:
-                fill(refs[p])
-                level, found = min(level, 2), found | set(levels[refs[p]]["families"])
-            elif p in families:
+            if p in self.refs:
+                self.fill(self.refs[p])
+                level, found = min(level, 2), found | set(self.levels[self.refs[p]]["families"])
+            elif p in self.families:
                 level, found = min(level, 2), found | {p}
             else:
-                fill(p)
-                level, found = min(level, 1 + levels[p]["level"]), found | set(levels[p]["families"])
-        if v.get("form"):
-            level, found = 1, found | {own_name[k]}
-        if level > MAX_LEVEL:
-            raise ValueError(f"{name}: entry {k!r} would be level {level} (sanity bound {MAX_LEVEL} levels)")
-        v["level"] = level
-        v["families"] = [f for f in order if f in found]
-        v["family"] = own_name[k] if v.get("form") else v["families"][0]
-        if v.get("fusion") and len(v["families"]) < 2:
-            raise ValueError(f"{name}: entry {k!r} has 'fusion' but fewer than two families")
-        done.add(k)
+                self.fill(p)
+                level, found = min(level, 1 + self.levels[p]["level"]), found | set(self.levels[p]["families"])
+        return level, found
 
-    for k in levels:
-        fill(k)
+    def fill(self, k: str) -> None:
+        if k in self.done:
+            return
+        v = self.levels[k]
+        level, found = self._from_parents(v)
+        if v.get("form"):
+            level, found = 1, found | {self.own_name[k]}
+        if level > MAX_LEVEL:
+            raise ValueError(f"{self.name}: entry {k!r} would be level {level} (sanity bound {MAX_LEVEL} levels)")
+        v["level"] = level
+        v["families"] = [f for f in self.order if f in found]
+        v["family"] = self.own_name[k] if v.get("form") else v["families"][0]
+        if v.get("fusion") and len(v["families"]) < 2:
+            raise ValueError(f"{self.name}: entry {k!r} has 'fusion' but fewer than two families")
+        self.done.add(k)
 
 
 def parse_all(doc: Any) -> tuple[dict[str, dict[str, Any]], dict[str, dict[str, Any]], dict[str, list[str]], dict[str, dict[str, str]]]:

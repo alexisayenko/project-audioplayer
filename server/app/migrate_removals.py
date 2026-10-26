@@ -23,6 +23,17 @@ def enabled() -> bool:
     return os.environ.get("AUDIO_GENRE_REMOVALS", "1").strip() != "0"
 
 
+def _plan_row(sid: str, row: Any) -> list[str]:
+    if isinstance(row, dict) and row.get("clear") is True:
+        if "remove" in row or "add" in row:
+            raise ValueError(f"clear row for {sid} must not have remove or add")
+        return []
+    remove = row.get("remove") if isinstance(row, dict) else None
+    if not isinstance(remove, list) or not all(isinstance(g, str) and g.strip() for g in remove):
+        raise ValueError(f"bad removal row for {sid}")
+    return [g.strip().lower() for g in remove]
+
+
 def load_plan(path: Path = DATA_FILE) -> tuple[dict[str, list[str]], str]:
     """`({song id: [genre, ...]}, sha256 of the file)`; raises ValueError on a malformed file."""
     raw = path.read_bytes()
@@ -30,17 +41,7 @@ def load_plan(path: Path = DATA_FILE) -> tuple[dict[str, list[str]], str]:
     songs = doc.get("songs") if isinstance(doc, dict) else None
     if not isinstance(songs, dict):
         raise ValueError("removal file has no songs object")
-    plan: dict[str, list[str]] = {}
-    for sid, row in songs.items():
-        if isinstance(row, dict) and row.get("clear") is True:
-            if "remove" in row or "add" in row:
-                raise ValueError(f"clear row for {sid} must not have remove or add")
-            plan[str(sid)] = []
-            continue
-        remove = row.get("remove") if isinstance(row, dict) else None
-        if not isinstance(remove, list) or not all(isinstance(g, str) and g.strip() for g in remove):
-            raise ValueError(f"bad removal row for {sid}")
-        plan[str(sid)] = [g.strip().lower() for g in remove]
+    plan = {str(sid): _plan_row(sid, row) for sid, row in songs.items()}
     return plan, hashlib.sha256(raw).hexdigest()
 
 
@@ -80,6 +81,40 @@ def _add_genres(tags: list[str], wanted: list[str], unknown: list[str]) -> tuple
     return tags, added
 
 
+def _clear_genres(song: dict[str, Any], sid: str, cleared: dict[str, list[str]]) -> None:
+    gone = [t.partition(":")[2] for t in song["tags"] if namespace(t) == "genre"]
+    if gone:
+        cleared[sid] = list(dict.fromkeys(gone))
+        song["tags"] = [t for t in song["tags"] if namespace(t) != "genre"]
+
+
+def _apply_adds(song: dict[str, Any], sid: str, tags: list[str], wanted: list[str], added: dict[str, list[str]], unknown: dict[str, list[str]]) -> list[str]:
+    bad: list[str] = []
+    tags, new = _add_genres(tags, wanted, bad)
+    if new:
+        added[sid] = new
+        song["tags"] = tags
+    if bad:
+        unknown[sid] = bad
+    return tags
+
+
+def _apply_removals(song: dict[str, Any], sid: str, tags: list[str], wanted: list[str], removed: dict[str, list[str]], skipped: dict[str, list[str]]) -> None:
+    present = [t.partition(":")[2] for t in tags if namespace(t) == "genre"]
+    left = list(dict.fromkeys(present))
+    for genre in dict.fromkeys(wanted):
+        if genre not in left:
+            continue
+        if len(left) == 1:
+            skipped.setdefault(sid, []).append(genre)
+            continue
+        left.remove(genre)
+        removed.setdefault(sid, []).append(genre)
+    gone = set(removed.get(sid, []))
+    if gone:
+        song["tags"] = [t for t in tags if not (namespace(t) == "genre" and t.partition(":")[2] in gone)]
+
+
 def apply_plan(songs: list[dict[str, Any]], plan: dict[str, list[str]], adds: dict[str, list[str]] | None = None, clears: set[str] | None = None) -> dict[str, Any]:
     """Add the `adds` genres, then remove the planned genres, on working songs in place (`tags` holds `genre:` entries); only present genres are removed, never the last one, and an added genre is never removed; a song in `clears` loses every genre. Returns `{"removed", "added", "cleared", "skipped", "unknown"}`, each `{id: [...]}`."""
     adds = adds or {}
@@ -95,34 +130,13 @@ def apply_plan(songs: list[dict[str, Any]], plan: dict[str, list[str]], adds: di
         if not (wanted or adds.get(sid) or sid in clears) or not isinstance(song.get("tags"), list):
             continue
         if sid in clears:
-            gone = [t.partition(":")[2] for t in song["tags"] if namespace(t) == "genre"]
-            if gone:
-                cleared[sid] = list(dict.fromkeys(gone))
-                song["tags"] = [t for t in song["tags"] if namespace(t) != "genre"]
+            _clear_genres(song, sid, cleared)
             continue
         tags = [str(t) for t in song["tags"]]
         if adds.get(sid):
-            bad: list[str] = []
-            tags, new = _add_genres(tags, adds[sid], bad)
-            if new:
-                added[sid] = new
-                song["tags"] = tags
-            if bad:
-                unknown[sid] = bad
+            tags = _apply_adds(song, sid, tags, adds[sid], added, unknown)
         wanted = [g for g in wanted or [] if g not in added.get(sid, [])]
-        present = [t.partition(":")[2] for t in tags if namespace(t) == "genre"]
-        left = list(dict.fromkeys(present))
-        for genre in dict.fromkeys(wanted):
-            if genre not in left:
-                continue
-            if len(left) == 1:
-                skipped.setdefault(sid, []).append(genre)
-                continue
-            left.remove(genre)
-            removed.setdefault(sid, []).append(genre)
-        gone = set(removed.get(sid, []))
-        if gone:
-            song["tags"] = [t for t in tags if not (namespace(t) == "genre" and t.partition(":")[2] in gone)]
+        _apply_removals(song, sid, tags, wanted, removed, skipped)
     return {"removed": removed, "added": added, "cleared": cleared, "skipped": skipped, "unknown": unknown}
 
 

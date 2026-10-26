@@ -206,6 +206,21 @@ def run_download(uid: str, owner: bool, vid: str, meta: dict[str, Any], tags: li
         _fail_job(job, out, vid, exc)
 
 
+def _attach_audio(song: dict[str, Any], vid: str, info: dict[str, Any], cut: trimming.Trim | None, trim: trimming.Trim | None, value: float | None, cover_ok: bool) -> None:
+    song["file"] = f"{vid}.m4a"
+    if trimming.is_cut(cut):
+        song["duration"] = info.get("duration") or song.get("duration")
+    elif info.get("duration") and not song.get("duration"):
+        song["duration"] = info["duration"]
+    if trimming.is_cut(cut) or trim is not None:
+        trimming.persist(song, info.get("trim") or cut or trimming.NONE, info.get("source_duration"))
+    if song.get("bpm") is None and value is not None:
+        song["bpm"] = round(value)
+    if cover_ok and not song.get("cover") and not song.get("cover_off"):
+        song["cover"] = f"covers/{vid}.jpg"
+    song["updated_at"] = library.now_utc()
+
+
 def run_fetch_audio(uid: str, owner: bool, vid: str, source_url: str | None, trim: trimming.Trim | None = None) -> None:
     """Download audio for a song already in the catalog and attach it to the record. `trim` is a request override (persisted on the primary source); without one the stored trim applies."""
     job = deps.JOBS[(uid, vid)]
@@ -224,18 +239,7 @@ def run_fetch_audio(uid: str, owner: bool, vid: str, source_url: str | None, tri
             song = library.find_song(songs, vid)
             if song is None:
                 raise Problem(404, "unknown_song", deps.UNKNOWN_SONG)
-            song["file"] = f"{vid}.m4a"
-            if trimming.is_cut(cut):
-                song["duration"] = info.get("duration") or song.get("duration")
-            elif info.get("duration") and not song.get("duration"):
-                song["duration"] = info["duration"]
-            if trimming.is_cut(cut) or trim is not None:
-                trimming.persist(song, info.get("trim") or cut or trimming.NONE, info.get("source_duration"))
-            if song.get("bpm") is None and value is not None:
-                song["bpm"] = round(value)
-            if cover_ok and not song.get("cover") and not song.get("cover_off"):
-                song["cover"] = f"covers/{vid}.jpg"
-            song["updated_at"] = library.now_utc()
+            _attach_audio(song, vid, info, cut, trim, value, cover_ok)
             deps.save_songs(uid, songs)
         job.update(status="done", progress=1.0)
         auto_identify(uid, vid)

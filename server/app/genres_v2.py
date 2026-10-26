@@ -28,28 +28,40 @@ def _text(row: dict[str, Any], key: str, where: str, limit: int, required: bool 
     return v.strip()
 
 
+def _cluster(i: int, row: Any, seen: set[str]) -> dict[str, Any]:
+    where = f"{FILE.name}: cluster {i}"
+    if not isinstance(row, dict):
+        raise ValueError(f"{where}: not an object")
+    cid = _text(row, "id", where, NAME_MAX, True)
+    if not SLUG.match(cid):
+        raise ValueError(f"{where}: id {cid!r} is not a slug")
+    if cid in seen:
+        raise ValueError(f"{where}: duplicate id {cid!r}")
+    seen.add(cid)
+    note = _text(row, "note", where, TEXT_MAX)
+    colour = row.get("colour")
+    if colour is not None and not (isinstance(colour, str) and HEX.match(colour)):
+        raise ValueError(f"{where}: colour must be #RRGGBB in uppercase")
+    return {"id": cid, "name": _text(row, "name", where, NAME_MAX, True), **({"colour": colour} if colour else {}), **({"note": note} if note else {})}
+
+
 def _clusters(doc: dict[str, Any]) -> list[dict[str, Any]]:
     rows = doc.get("clusters", [])
     if not isinstance(rows, list):
         raise ValueError(f"{FILE.name}: clusters must be a list")
-    out: list[dict[str, Any]] = []
     seen: set[str] = set()
-    for i, row in enumerate(rows):
-        where = f"{FILE.name}: cluster {i}"
-        if not isinstance(row, dict):
-            raise ValueError(f"{where}: not an object")
-        cid = _text(row, "id", where, NAME_MAX, True)
-        if not SLUG.match(cid):
-            raise ValueError(f"{where}: id {cid!r} is not a slug")
-        if cid in seen:
-            raise ValueError(f"{where}: duplicate id {cid!r}")
-        seen.add(cid)
-        note = _text(row, "note", where, TEXT_MAX)
-        colour = row.get("colour")
-        if colour is not None and not (isinstance(colour, str) and HEX.match(colour)):
-            raise ValueError(f"{where}: colour must be #RRGGBB in uppercase")
-        out.append({"id": cid, "name": _text(row, "name", where, NAME_MAX, True), **({"colour": colour} if colour else {}), **({"note": note} if note else {})})
-    return out
+    return [_cluster(i, row, seen) for i, row in enumerate(rows)]
+
+
+def _visit(gid: str, rows: dict[str, dict[str, Any]], state: dict[str, int]) -> None:
+    if state.get(gid) == 2:
+        return
+    if state.get(gid) == 1:
+        raise ValueError(f"{FILE.name}: cycle through genre {gid!r}")
+    state[gid] = 1
+    for p in rows[gid]["parents"]:
+        _visit(p, rows, state)
+    state[gid] = 2
 
 
 def _check_parents(rows: dict[str, dict[str, Any]]) -> None:
@@ -60,22 +72,45 @@ def _check_parents(rows: dict[str, dict[str, Any]]) -> None:
             if p not in rows:
                 raise ValueError(f"{FILE.name}: genre {gid!r} has unknown parent {p!r}")
     state: dict[str, int] = {}
-
-    def visit(gid: str) -> None:
-        if state.get(gid) == 2:
-            return
-        if state.get(gid) == 1:
-            raise ValueError(f"{FILE.name}: cycle through genre {gid!r}")
-        state[gid] = 1
-        for p in rows[gid]["parents"]:
-            visit(p)
-        state[gid] = 2
-
     for gid in rows:
-        visit(gid)
+        _visit(gid, rows, state)
     for gid, row in rows.items():
-        if row["level"] != (1 if not row["parents"] else 1 + min(rows[p]["level"] for p in row["parents"])):
+        if row["level"] != _expected_level(row, rows):
             raise ValueError(f"{FILE.name}: genre {gid!r} has level {row['level']} that does not match its parents")
+
+
+def _expected_level(row: dict[str, Any], rows: dict[str, dict[str, Any]]) -> int:
+    return 1 + min(rows[p]["level"] for p in row["parents"]) if row["parents"] else 1
+
+
+def _genre(i: int, row: Any, known: set[str], rows: dict[str, dict[str, Any]], v1_names: set[str]) -> dict[str, Any]:
+    where = f"{FILE.name}: genre {i}"
+    if not isinstance(row, dict):
+        raise ValueError(f"{where}: not an object")
+    gid = _text(row, "id", where, NAME_MAX, True)
+    if not SLUG.match(gid):
+        raise ValueError(f"{where}: id {gid!r} is not a slug")
+    if gid in rows:
+        raise ValueError(f"{where}: duplicate id {gid!r}")
+    cluster = row.get("cluster")
+    if cluster not in known:
+        raise ValueError(f"{where}: unknown cluster {cluster!r}")
+    parents = row.get("parents", [])
+    if not isinstance(parents, list) or not all(isinstance(p, str) for p in parents) or len(set(parents)) != len(parents):
+        raise ValueError(f"{where}: parents must be a list of unique ids")
+    level = row.get("level")
+    if isinstance(level, bool) or not isinstance(level, int) or level < 1:
+        raise ValueError(f"{where}: level must be a whole number from 1")
+    v1 = _text(row, "v1", where, NAME_MAX)
+    if v1 is not None and v1 not in v1_names:
+        raise ValueError(f"{where}: v1 name {v1!r} is not in the v1 vocabulary")
+    syn = row.get("synonyms", [])
+    if not isinstance(syn, list) or not all(isinstance(x, str) and x.strip() and len(x.strip()) <= NAME_MAX for x in syn):
+        raise ValueError(f"{where}: synonyms must be a list of non-empty strings")
+    url = _text(row, "musicmap_url", where, 300)
+    if url is not None and not url.startswith("https://"):
+        raise ValueError(f"{where}: musicmap_url must be an https URL")
+    return {"id": gid, "name": _text(row, "name", where, NAME_MAX, True), "level": level, "cluster": cluster, "parents": list(parents), "v1": v1, "description": _text(row, "description", where, TEXT_MAX), "synonyms": [x.strip() for x in syn], "details": _text(row, "details", where, TEXT_MAX), "musicmap_url": url}
 
 
 def parse(doc: Any, v1_names: set[str]) -> dict[str, Any]:
@@ -91,33 +126,8 @@ def parse(doc: Any, v1_names: set[str]) -> dict[str, Any]:
         raise ValueError(f"{FILE.name}: genres must be a list")
     rows: dict[str, dict[str, Any]] = {}
     for i, row in enumerate(raw):
-        where = f"{FILE.name}: genre {i}"
-        if not isinstance(row, dict):
-            raise ValueError(f"{where}: not an object")
-        gid = _text(row, "id", where, NAME_MAX, True)
-        if not SLUG.match(gid):
-            raise ValueError(f"{where}: id {gid!r} is not a slug")
-        if gid in rows:
-            raise ValueError(f"{where}: duplicate id {gid!r}")
-        cluster = row.get("cluster")
-        if cluster not in known:
-            raise ValueError(f"{where}: unknown cluster {cluster!r}")
-        parents = row.get("parents", [])
-        if not isinstance(parents, list) or not all(isinstance(p, str) for p in parents) or len(set(parents)) != len(parents):
-            raise ValueError(f"{where}: parents must be a list of unique ids")
-        level = row.get("level")
-        if isinstance(level, bool) or not isinstance(level, int) or level < 1:
-            raise ValueError(f"{where}: level must be a whole number from 1")
-        v1 = _text(row, "v1", where, NAME_MAX)
-        if v1 is not None and v1 not in v1_names:
-            raise ValueError(f"{where}: v1 name {v1!r} is not in the v1 vocabulary")
-        syn = row.get("synonyms", [])
-        if not isinstance(syn, list) or not all(isinstance(x, str) and x.strip() and len(x.strip()) <= NAME_MAX for x in syn):
-            raise ValueError(f"{where}: synonyms must be a list of non-empty strings")
-        url = _text(row, "musicmap_url", where, 300)
-        if url is not None and not url.startswith("https://"):
-            raise ValueError(f"{where}: musicmap_url must be an https URL")
-        rows[gid] = {"id": gid, "name": _text(row, "name", where, NAME_MAX, True), "level": level, "cluster": cluster, "parents": list(parents), "v1": v1, "description": _text(row, "description", where, TEXT_MAX), "synonyms": [x.strip() for x in syn], "details": _text(row, "details", where, TEXT_MAX), "musicmap_url": url}
+        built = _genre(i, row, known, rows, v1_names)
+        rows[built["id"]] = built
     _check_parents(rows)
     return {"version": 2, "clusters": clusters, "genres": list(rows.values())}
 

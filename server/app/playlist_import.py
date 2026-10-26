@@ -213,47 +213,63 @@ def details(ids: list[str], songs: list[dict[str, Any]]) -> dict[str, Any]:
     return {"entries": entries, "failed": failed, "unavailable": unavailable, "rate_limited": limited}
 
 
-def _fetch_details(ids: list[str]) -> dict[str, tuple[dict[str, Any] | None, Exception | None]]:
-    halted = threading.Event()
-    pending = list(dict.fromkeys(ids))
-    lock = threading.Lock()
-    results: dict[str, tuple[dict[str, Any] | None, Exception | None]] = {}
+class _DetailFetcher:
+    def __init__(self, ids: list[str]) -> None:
+        self.halted = threading.Event()
+        self.pending = list(dict.fromkeys(ids))
+        self.lock = threading.Lock()
+        self.results: dict[str, tuple[dict[str, Any] | None, Exception | None]] = {}
 
-    def take() -> str | None:
-        with lock:
-            return pending.pop(0) if pending else None
+    def take(self) -> str | None:
+        with self.lock:
+            return self.pending.pop(0) if self.pending else None
 
-    def fetch_one(vid: str) -> None:
+    def fetch_one(self, vid: str) -> None:
         try:
-            results[vid] = (previewcache.youtube(vid), None)
+            self.results[vid] = (previewcache.youtube(vid), None)
         except Exception as exc:
-            results[vid] = (None, exc)
+            self.results[vid] = (None, exc)
             if _RATE_LIMITED.search(str(exc)):
-                halted.set()
+                self.halted.set()
 
-    def worker() -> None:
+    def worker(self) -> None:
         first = True
-        while not halted.is_set():
-            vid = take()
+        while not self.halted.is_set():
+            vid = self.take()
             if vid is None:
                 return
             if not first:
                 time.sleep(random.uniform(*DETAIL_DELAY_S))
             first = False
-            if halted.is_set():
+            if self.halted.is_set():
                 return
-            fetch_one(vid)
+            self.fetch_one(vid)
 
+
+def _fetch_details(ids: list[str]) -> dict[str, tuple[dict[str, Any] | None, Exception | None]]:
+    fetcher = _DetailFetcher(ids)
     pool = ThreadPoolExecutor(max_workers=DETAIL_WORKERS)
-    futures = [pool.submit(worker) for _ in range(min(DETAIL_WORKERS, len(pending)))]
+    futures = [pool.submit(fetcher.worker) for _ in range(min(DETAIL_WORKERS, len(fetcher.pending)))]
     wait(futures, timeout=DETAIL_TIMEOUT_S)
-    halted.set()
+    fetcher.halted.set()
     pool.shutdown(wait=False, cancel_futures=True)
-    return results
+    return fetcher.results
 
 
 DRAFT_MAX_ENTRIES = 500
 DRAFT_CACHE_S = 300.0
+
+
+def _draft_entry(video_id: str, info: dict[str, Any]) -> dict[str, Any]:
+    duration = info.get("duration")
+    return {
+        "id": video_id,
+        "title": str(info.get("title") or "").strip(),
+        "channel": info.get("channel") or info.get("uploader") or None,
+        "duration": duration if isinstance(duration, (int, float)) and not isinstance(duration, bool) else None,
+        "url": urlclean.watch_url(video_id),
+        "available": True,
+    }
 
 
 def draft_listing(list_id: str) -> dict[str, Any]:
@@ -274,15 +290,7 @@ def draft_listing(list_id: str) -> dict[str, Any]:
         if unavailable_reason(info):
             skipped += 1
             continue
-        duration = info.get("duration")
-        entries.append({
-            "id": video_id,
-            "title": str(info.get("title") or "").strip(),
-            "channel": info.get("channel") or info.get("uploader") or None,
-            "duration": duration if isinstance(duration, (int, float)) and not isinstance(duration, bool) else None,
-            "url": urlclean.watch_url(video_id),
-            "available": True,
-        })
+        entries.append(_draft_entry(video_id, info))
     truncated = len(entries) > DRAFT_MAX_ENTRIES or found["total"] > DRAFT_MAX_ENTRIES
     entries = entries[:DRAFT_MAX_ENTRIES]
     body = {

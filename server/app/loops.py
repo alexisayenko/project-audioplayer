@@ -26,22 +26,23 @@ def clean(raw: Any, duration: Any = None) -> list[dict[str, Any]]:
     if len(raw) > MAX_LOOPS:
         raise ValueError(f"a song can have at most {MAX_LOOPS} loops")
     limit = _number(duration)
-    out: list[dict[str, Any]] = []
-    for i, item in enumerate(raw, 1):
-        if not isinstance(item, dict):
-            raise ValueError(f"loop {i} must be an object")
-        start, end = _number(item.get("start")), _number(item.get("end"))
-        if start is None or end is None:
-            raise ValueError(f"loop {i} needs numeric start and end")
-        if start < 0 or end - start < MIN_LENGTH - 1e-9:
-            raise ValueError(f"loop {i} must start at 0 or later and last at least {MIN_LENGTH} s")
-        if limit and end > limit + DURATION_SLACK:
-            raise ValueError(f"loop {i} ends after the end of the song")
-        name = str(item.get("name") or "").strip()
-        if len(name) > MAX_NAME:
-            raise ValueError(f"loop names are at most {MAX_NAME} characters")
-        out.append({"name": name or f"Loop {i}", "start": round(start, 3), "end": round(end, 3)})
-    return out
+    return [_clean_loop(i, item, limit) for i, item in enumerate(raw, 1)]
+
+
+def _clean_loop(i: int, item: Any, limit: float | None) -> dict[str, Any]:
+    if not isinstance(item, dict):
+        raise ValueError(f"loop {i} must be an object")
+    start, end = _number(item.get("start")), _number(item.get("end"))
+    if start is None or end is None:
+        raise ValueError(f"loop {i} needs numeric start and end")
+    if start < 0 or end - start < MIN_LENGTH - 1e-9:
+        raise ValueError(f"loop {i} must start at 0 or later and last at least {MIN_LENGTH} s")
+    if limit and end > limit + DURATION_SLACK:
+        raise ValueError(f"loop {i} ends after the end of the song")
+    name = str(item.get("name") or "").strip()
+    if len(name) > MAX_NAME:
+        raise ValueError(f"loop names are at most {MAX_NAME} characters")
+    return {"name": name or f"Loop {i}", "start": round(start, 3), "end": round(end, 3)}
 
 
 def tolerant(raw: Any) -> list[dict[str, Any]]:

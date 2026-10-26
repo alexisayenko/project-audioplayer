@@ -142,16 +142,7 @@ def catalog_revision(songs: list[dict[str, Any]]) -> str:
     return hashlib.sha1(blob.encode("utf-8")).hexdigest()[:16]
 
 
-def normalize_song(song: dict[str, Any]) -> dict[str, Any]:
-    s = dict(song)
-    credits.ensure(s)
-    if "id" in s and (s.get("file") == "" or "file" not in s):
-        s["file"] = f"{s['id']}.m4a"
-    if "id" in s and ("sources" in s or "source_url" in s or "source" in s):
-        s["sources"] = sources.normalize_sources(s)
-        s.pop("source_url", None)
-    if isinstance(s.get("bpm"), (int, float)) and not isinstance(s["bpm"], bool):
-        s["bpm"] = round(s["bpm"])
+def _normalize_links(s: dict[str, Any]) -> None:
     for key in ("wikipedia_song", "wikipedia_artist"):
         s[key] = wiki_lookup.clean_link(s.get(key))
     if "wikipedia_album" in s:
@@ -162,6 +153,19 @@ def normalize_song(song: dict[str, Any]) -> dict[str, Any]:
         s["discogs_url"] = discogs_lookup.clean_url(s["discogs_url"])
     if "spotify_url" in s:
         s["spotify_url"] = urlclean.clean_spotify_url(s["spotify_url"])
+
+
+def normalize_song(song: dict[str, Any]) -> dict[str, Any]:
+    s = dict(song)
+    credits.ensure(s)
+    if "id" in s and (s.get("file") == "" or "file" not in s):
+        s["file"] = f"{s['id']}.m4a"
+    if "id" in s and ("sources" in s or "source_url" in s or "source" in s):
+        s["sources"] = sources.normalize_sources(s)
+        s.pop("source_url", None)
+    if isinstance(s.get("bpm"), (int, float)) and not isinstance(s["bpm"], bool):
+        s["bpm"] = round(s["bpm"])
+    _normalize_links(s)
     if "loops" in s:
         kept = loops.tolerant(s["loops"])
         if kept:

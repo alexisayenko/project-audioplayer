@@ -198,22 +198,23 @@ def _fallback_payload(raw: Any, selected: list[dict[str, Any]], list_id: str) ->
     }
 
 
+def _commit_payload(body: dict[str, Any], selected: list[dict[str, Any]], list_id: str) -> tuple[dict[str, Any], dict[int, int]]:
+    if body.get("candidate") is None:
+        payload = _fallback_payload(body.get("fallback"), selected, list_id)
+        return payload, {s["position"]: i for i, s in enumerate(selected, 1)}
+    candidate = body["candidate"]
+    if isinstance(candidate, dict) and "source" not in candidate and isinstance(candidate.get("discogsId"), int):
+        candidate = {**candidate, "source": {"type": "discogs", "id": str(candidate["discogsId"])}}
+    payload = albums.validate(candidate)
+    return payload, _mapping(body.get("mapping"), selected, {t["no"] for t in payload["tracks"]})
+
+
 def commit(uid: str, owner: bool, body: dict[str, Any], songs: list[dict[str, Any]]) -> dict[str, Any]:
     list_id = _playlist_ref(body.get("playlistUrl"))
     playlist_link = albums._stored_link("youtube", body.get("playlistUrl")) or urlclean.playlist_url(list_id)
     selected = _selected(body.get("selected"))
     try:
-        if body.get("candidate") is None:
-            payload = _fallback_payload(body.get("fallback"), selected, list_id)
-            numbers = {t["no"] for t in payload["tracks"]}
-            mapping = {s["position"]: i for i, s in enumerate(selected, 1)}
-        else:
-            candidate = body["candidate"]
-            if isinstance(candidate, dict) and "source" not in candidate and isinstance(candidate.get("discogsId"), int):
-                candidate = {**candidate, "source": {"type": "discogs", "id": str(candidate["discogsId"])}}
-            payload = albums.validate(candidate)
-            numbers = {t["no"] for t in payload["tracks"]}
-            mapping = _mapping(body.get("mapping"), selected, numbers)
+        payload, mapping = _commit_payload(body, selected, list_id)
     except albums.AlbumError as exc:
         raise HTTPException(status_code=exc.status, detail={"code": exc.code, "key": exc.key} if exc.key else exc.code) from exc
     payload["links"] = {**payload["links"], "youtube": playlist_link}
@@ -298,6 +299,35 @@ def _closeness(a: float, b: float) -> float:
     return max(0.0, 1 - abs(a - b) / max(a, b, 1))
 
 
+def _search_results(params: dict[str, str]) -> list[Any]:
+    try:
+        return discogs_lookup._get("database/search", params).get("results") or []
+    except urllib.error.HTTPError as exc:
+        if exc.code == 404:
+            return []
+        raise HTTPException(status_code=502, detail="discogs_failed") from exc
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail="discogs_failed") from exc
+
+
+def _release_picks(results: list[Any]) -> list[dict[str, Any]]:
+    seen: set[int] = set()
+    picks = []
+    for item in results:
+        ident = item.get("id") if isinstance(item, dict) else None
+        if isinstance(ident, int) and ident not in seen and item.get("type") in (None, "release"):
+            seen.add(ident)
+            picks.append(item)
+    return picks
+
+
+def _mark_best(candidates: list[dict[str, Any]]) -> None:
+    if not candidates or candidates[0]["score"] < BEST_MIN_SCORE:
+        return
+    if len(candidates) == 1 or candidates[0]["score"] - candidates[1]["score"] >= BEST_MARGIN:
+        candidates[0]["best"] = True
+
+
 def search(artist: Any, album: Any, track_count: Any, durations: Any, playlist_tracks: Any = None) -> dict[str, Any]:
     if not os.environ.get("DISCOGS_TOKEN", "").strip():
         raise HTTPException(status_code=503, detail="discogs_unavailable")
@@ -309,25 +339,10 @@ def search(artist: Any, album: Any, track_count: Any, durations: Any, playlist_t
     if not artist and not album:
         return {"candidates": []}
     params = {"type": "release", "per_page": "20", **({"artist": artist} if artist else {}), **({"release_title": album} if album else {})}
-    try:
-        results = discogs_lookup._get("database/search", params).get("results") or []
-    except urllib.error.HTTPError as exc:
-        if exc.code == 404:
-            return {"candidates": []}
-        raise HTTPException(status_code=502, detail="discogs_failed") from exc
-    except Exception as exc:
-        raise HTTPException(status_code=502, detail="discogs_failed") from exc
-    seen: set[int] = set()
-    picks = []
-    for item in results:
-        ident = item.get("id") if isinstance(item, dict) else None
-        if isinstance(ident, int) and ident not in seen and item.get("type") in (None, "release"):
-            seen.add(ident)
-            picks.append(item)
+    picks = _release_picks(_search_results(params))
     candidates = [_candidate(item, artist, album, count, total, plist) for item in picks[:MAX_CANDIDATES]]
     candidates.sort(key=lambda c: (-c["score"], c["discogsId"]))
-    if candidates and candidates[0]["score"] >= BEST_MIN_SCORE and (len(candidates) == 1 or candidates[0]["score"] - candidates[1]["score"] >= BEST_MARGIN):
-        candidates[0]["best"] = True
+    _mark_best(candidates)
     return {"candidates": candidates}
 
 
@@ -352,6 +367,21 @@ def _text(value: Any) -> str | None:
     return value.strip() or None if isinstance(value, str) else None
 
 
+def _score(album: str, artist: str, count: int | None, total: float | None, title: str, who: str, tracks: list[dict[str, Any]] | None) -> float:
+    parts: list[tuple[float, float]] = []
+    if album:
+        parts.append((0.4, _sim(album, title)))
+    if artist:
+        parts.append((0.3, _sim(artist, who)))
+    if count and tracks:
+        parts.append((0.15, _closeness(count, len(tracks))))
+    known = [t["durationS"] for t in tracks or [] if t["durationS"]]
+    if total and known:
+        parts.append((0.15, _closeness(total, sum(known))))
+    weight = sum(w for w, _ in parts)
+    return round(sum(w * v for w, v in parts) / weight, 3) if weight else 0.0
+
+
 def _candidate(item: dict[str, Any], artist: str, album: str, count: int | None, total: float | None, plist: list[dict[str, Any]] | None = None) -> dict[str, Any]:
     ident = int(item["id"])
     head, _, tail = str(item.get("title") or "").partition(" - ")
@@ -364,18 +394,7 @@ def _candidate(item: dict[str, Any], artist: str, album: str, count: int | None,
         year = detail.get("year") or year
     except Exception:
         pass
-    parts: list[tuple[float, float]] = []
-    if album:
-        parts.append((0.4, _sim(album, title)))
-    if artist:
-        parts.append((0.3, _sim(artist, who)))
-    if count and tracks:
-        parts.append((0.15, _closeness(count, len(tracks))))
-    known = [t["durationS"] for t in tracks or [] if t["durationS"]]
-    if total and known:
-        parts.append((0.15, _closeness(total, sum(known))))
-    weight = sum(w for w, _ in parts)
-    score = round(sum(w * v for w, v in parts) / weight, 3) if weight else 0.0
+    score = _score(album, artist, count, total, title, who, tracks)
     out = {
         "url": f"https://www.discogs.com/release/{ident}", "discogsId": ident, "title": title,
         "artist": discogs_lookup._DISAMBIG.sub("", who).rstrip(), "year": timeutil.valid_year(year) if year else None,

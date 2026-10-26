@@ -76,6 +76,25 @@ def _era_text(value: Any, label: str, limit: int, required: bool = False) -> str
     return text
 
 
+def _clean_era(item: Any, taken: set[str]) -> dict[str, Any]:
+    if not isinstance(item, dict):
+        raise Problem(422, "bad_era", "Each era is {name, start?, end?, note?, sources?}.")
+    given = item.get("id")
+    if given is not None and (not isinstance(given, str) or len(given) != 8 or any(c not in "0123456789abcdef" for c in given)):
+        raise Problem(422, "bad_era", "An era id is 8 hex characters.")
+    if given in taken:
+        raise Problem(422, "bad_era", "Era ids must be unique.")
+    era: dict[str, Any] = {"id": given or "", "name": _era_text(item.get("name"), "name", MAX_NAME, required=True)}
+    start = _year(item.get("start"), "start")
+    end = _year(item.get("end"), "end")
+    if start is not None and end is not None and end < start:
+        raise Problem(422, "bad_era", "end must not be before start.")
+    for key, value in (("start", start), ("end", end), ("note", _era_text(item.get("note"), "note", MAX_NOTE)), ("sources", refs.clean_sources(item.get("sources")) or None)):
+        if value is not None:
+            era[key] = value
+    return era
+
+
 def clean_all(values: Any) -> list[dict[str, Any]]:
     """Validate a whole eras list; ids kept when given (8 hex, unique), new ones generated."""
     if not isinstance(values, list):
@@ -85,23 +104,9 @@ def clean_all(values: Any) -> list[dict[str, Any]]:
     out: list[dict[str, Any]] = []
     taken: set[str] = set()
     for item in values:
-        if not isinstance(item, dict):
-            raise Problem(422, "bad_era", "Each era is {name, start?, end?, note?, sources?}.")
-        given = item.get("id")
-        if given is not None and (not isinstance(given, str) or len(given) != 8 or any(c not in "0123456789abcdef" for c in given)):
-            raise Problem(422, "bad_era", "An era id is 8 hex characters.")
-        if given in taken:
-            raise Problem(422, "bad_era", "Era ids must be unique.")
-        era: dict[str, Any] = {"id": given or "", "name": _era_text(item.get("name"), "name", MAX_NAME, required=True)}
-        start = _year(item.get("start"), "start")
-        end = _year(item.get("end"), "end")
-        if start is not None and end is not None and end < start:
-            raise Problem(422, "bad_era", "end must not be before start.")
-        for key, value in (("start", start), ("end", end), ("note", _era_text(item.get("note"), "note", MAX_NOTE)), ("sources", refs.clean_sources(item.get("sources")) or None)):
-            if value is not None:
-                era[key] = value
-        if given:
-            taken.add(given)
+        era = _clean_era(item, taken)
+        if era["id"]:
+            taken.add(era["id"])
         out.append(era)
     for era in out:
         if not era["id"]:

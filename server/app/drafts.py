@@ -185,49 +185,54 @@ def fetchable(draft: dict[str, Any]) -> bool:
     return draft.get("source") in FETCHABLE
 
 
-def _fetch_all(urls: dict[str, str]) -> tuple[dict[str, dict[str, Any] | None], bool, dict[str, str]]:
-    """Fetch the given `{key: url}` with FETCH_WORKERS workers and a random pause between one worker's fetches, within FETCH_TIMEOUT_S. Returns `{key: fields | None}` for the lookups that ended (None = failed), whether YouTube refused with a 429 or a bot check (the rest, and the refused one, are then left unfetched), and the short error of each failure."""
-    pending = list(urls)
-    lock = threading.Lock()
-    halted = threading.Event()
-    results: dict[str, dict[str, Any] | None] = {}
-    errors: dict[str, str] = {}
-    limited = threading.Event()
+class _Fetcher:
+    def __init__(self, urls: dict[str, str]) -> None:
+        self.urls = urls
+        self.pending = list(urls)
+        self.lock = threading.Lock()
+        self.halted = threading.Event()
+        self.limited = threading.Event()
+        self.results: dict[str, dict[str, Any] | None] = {}
+        self.errors: dict[str, str] = {}
 
-    def take() -> str | None:
-        with lock:
-            return pending.pop(0) if pending else None
+    def take(self) -> str | None:
+        with self.lock:
+            return self.pending.pop(0) if self.pending else None
 
-    def one(key: str) -> None:
+    def one(self, key: str) -> None:
         try:
-            results[key] = quick_fetch(urls[key])
+            self.results[key] = quick_fetch(self.urls[key])
         except Exception as exc:
-            errors[key] = links.short_error(exc)
+            self.errors[key] = links.short_error(exc)
             if RATE_LIMITED.search(str(exc)):
-                halted.set()
-                limited.set()
+                self.halted.set()
+                self.limited.set()
             else:
-                results[key] = None
+                self.results[key] = None
 
-    def worker() -> None:
+    def worker(self) -> None:
         first = True
-        while not halted.is_set():
-            key = take()
+        while not self.halted.is_set():
+            key = self.take()
             if key is None:
                 return
             if not first:
                 time.sleep(random.uniform(*FETCH_DELAY_S))
             first = False
-            if halted.is_set():
+            if self.halted.is_set():
                 return
-            one(key)
+            self.one(key)
 
+
+def _fetch_all(urls: dict[str, str]) -> tuple[dict[str, dict[str, Any] | None], bool, dict[str, str]]:
+    """Fetch the given `{key: url}` with FETCH_WORKERS workers and a random pause between one worker's fetches, within FETCH_TIMEOUT_S. Returns `{key: fields | None}` for the lookups that ended (None = failed), whether YouTube refused with a 429 or a bot check (the rest, and the refused one, are then left unfetched), and the short error of each failure."""
+    fetcher = _Fetcher(urls)
     pool = ThreadPoolExecutor(max_workers=FETCH_WORKERS)
-    futures = [pool.submit(worker) for _ in range(min(FETCH_WORKERS, len(pending)))]
+    futures = [pool.submit(fetcher.worker) for _ in range(min(FETCH_WORKERS, len(urls)))]
     wait(futures, timeout=FETCH_TIMEOUT_S)
-    halted.set()
+    fetcher.halted.set()
     pool.shutdown(wait=False, cancel_futures=True)
-    return dict(results), limited.is_set(), dict(errors)
+    return dict(fetcher.results), fetcher.limited.is_set(), dict(fetcher.errors)
 
 
 def fetch_many(drafts: list[dict[str, Any]]) -> tuple[dict[str, dict[str, Any] | None], bool, dict[str, str]]:
@@ -260,17 +265,20 @@ class Library:
         self.by_url: dict[str, str] = {}
         self.by_key: dict[tuple[str, tuple[str, ...], str], str] = {}
         for song in songs:
-            sid = str(song.get("id") or "")
-            self.by_id.setdefault(sid, sid)
-            for entry in sources_of(song):
-                if entry.get("source") == "youtube":
-                    self.by_id.setdefault(str(entry.get("id") or ""), sid)
-            for u in [song.get("source_url"), *(e.get("url") for e in sources_of(song))]:
-                if isinstance(u, str) and u:
-                    self.by_url.setdefault(urlclean.clean_url(u), sid)
-            key = playlist_import._key(song.get("title"), credits.main_artists(song), song.get("version"))
-            if key:
-                self.by_key.setdefault(key, sid)
+            self._index(song)
+
+    def _index(self, song: dict[str, Any]) -> None:
+        sid = str(song.get("id") or "")
+        self.by_id.setdefault(sid, sid)
+        for entry in sources_of(song):
+            if entry.get("source") == "youtube":
+                self.by_id.setdefault(str(entry.get("id") or ""), sid)
+        for u in [song.get("source_url"), *(e.get("url") for e in sources_of(song))]:
+            if isinstance(u, str) and u:
+                self.by_url.setdefault(urlclean.clean_url(u), sid)
+        key = playlist_import._key(song.get("title"), credits.main_artists(song), song.get("version"))
+        if key:
+            self.by_key.setdefault(key, sid)
 
     def link_song_id(self, draft: dict[str, Any]) -> str | None:
         url = draft.get("url") or ""
@@ -332,6 +340,30 @@ def pair_origins(raw: Any, origins: list[dict[str, Any] | None] | None) -> list[
     return out
 
 
+def _parsed_line(line: str, counts: dict[str, int]) -> tuple[str, str, str] | None:
+    if len(line) > MAX_LINE:
+        counts["tooLong"] += 1
+        return None
+    text, url = line_parts(line)
+    key = fold(text)
+    return None if not url and not key else (text, url, key)
+
+
+def _url_taken(url: str, text: str, by_url: dict[str, dict[str, Any]], seen_urls: set[str], counts: dict[str, int], updates: list[tuple[dict[str, Any], str]]) -> bool:
+    if url in seen_urls:
+        counts["duplicates"] += 1
+        return True
+    seen_urls.add(url)
+    match = by_url.get(url)
+    if match is None:
+        return False
+    if text and not match.get("text"):
+        updates.append((match, text))
+    else:
+        counts["duplicates"] += 1
+    return True
+
+
 def plan_lines(raw: Any, existing: list[dict[str, Any]], origins: list[dict[str, Any] | None] | None = None) -> dict[str, Any]:
     """Split a paste and drop what cannot be a draft: `lines` are the new `(text, url)` pairs in paste order (`origins` the playlist origin of each, or None), `updates` the existing drafts that get the text of a line with the same link; `counts` says what was left out and why."""
     pairs = pair_origins(raw, origins)
@@ -345,24 +377,12 @@ def plan_lines(raw: Any, existing: list[dict[str, Any]], origins: list[dict[str,
     fresh_origins: list[dict[str, Any] | None] = []
     updates: list[tuple[dict[str, Any], str]] = []
     for line, origin in pairs[:MAX_LINES]:
-        if len(line) > MAX_LINE:
-            counts["tooLong"] += 1
+        parsed = _parsed_line(line, counts)
+        if parsed is None:
             continue
-        text, url = line_parts(line)
-        key = fold(text)
-        if not url and not key:
-            continue
+        text, url, key = parsed
         if url:
-            if url in seen_urls:
-                counts["duplicates"] += 1
-                continue
-            seen_urls.add(url)
-            match = by_url.get(url)
-            if match is not None:
-                if text and not match.get("text"):
-                    updates.append((match, text))
-                else:
-                    counts["duplicates"] += 1
+            if _url_taken(url, text, by_url, seen_urls, counts, updates):
                 continue
         elif key in seen_texts or key in known_texts:
             counts["duplicates"] += 1

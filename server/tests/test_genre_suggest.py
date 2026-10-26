@@ -40,7 +40,7 @@ def test_owner_examples_as_recorded_evidence(case):
 
 def test_taylor_dayne_applies_the_owner_genres_and_never_soul_house_or_freestyle():
     d = decide(CASES["taylor_dayne_tell_it_to_my_heart"]["groups"])
-    assert {"dance pop", "pop", "synthpop"} == set(d.applied), "electronic is never applied; hi-nrg left Others (2026-10-20), so the agreed group no longer rescues it"
+    assert set(d.applied) == {"dance pop", "pop", "synthpop"}, "electronic is never applied; hi-nrg left Others (2026-10-20), so the agreed group no longer rescues it"
     assert not {"soul", "house", "freestyle", "hi-nrg"} & set(d.applied)
     assert by_name(d)["hi-nrg"]["reason"] == gs.NO_FAMILY
     assert by_name(d)["freestyle"]["reason"] == gs.AMBIGUOUS_NAME

@@ -74,24 +74,25 @@ def clean_link(key: str, value: Any) -> str | None:
             return clean_rym(text)
         except AlbumError:
             raise _bad(key) from None
-    if key == "discogs":
-        found = discogs_lookup.clean_url(text)
-        if not found:
-            raise _bad(key)
-        return found
+    found = discogs_lookup.clean_url(text) if key == "discogs" else _clean_hosted(key, text)
+    if not found:
+        raise _bad(key)
+    return found
+
+
+def _clean_hosted(key: str, text: str) -> str | None:
     try:
         parts = urlsplit(text)
         host = (parts.hostname or "").lower()
     except ValueError:
         raise _bad(key) from None
-    if key == "wikipedia":
-        if not _WP_HOST.fullmatch(host) or not parts.path.startswith("/wiki/") or len(parts.path) < 7:
-            raise _bad(key)
-        return f"https://{host}{parts.path}"
-    found = _clean_youtube(host, parts)
-    if found is None:
-        raise _bad(key)
-    return found
+    return _clean_wikipedia(host, parts) if key == "wikipedia" else _clean_youtube(host, parts)
+
+
+def _clean_wikipedia(host: str, parts: Any) -> str | None:
+    if not _WP_HOST.fullmatch(host) or not parts.path.startswith("/wiki/") or len(parts.path) < 7:
+        return None
+    return f"https://{host}{parts.path}"
 
 
 def _clean_youtube(host: str, parts: Any) -> str | None:
@@ -260,6 +261,15 @@ def _validated_tracks(raw: list[Any], bad: AlbumError) -> list[dict[str, Any]]:
     return tracks
 
 
+def _validated_links(body: dict[str, Any], ident: str) -> dict[str, str | None]:
+    given = body.get("links") if isinstance(body.get("links"), dict) else {}
+    links = {key: clean_link(key, given[key]) for key in given}
+    links.setdefault("discogs", f"https://www.discogs.com/release/{ident}")
+    if body.get("rymUrl") not in (None, ""):
+        links["rateyourmusic"] = clean_rym(body.get("rymUrl"))
+    return links
+
+
 def validate(body: Any) -> dict[str, Any]:
     """The preview payload re-checked; client extras are dropped. Raises AlbumError(422, ...)."""
     bad = AlbumError(422, "bad_album")
@@ -277,11 +287,7 @@ def validate(body: Any) -> dict[str, Any]:
     genres = _genres({"genres": body["genres"] if isinstance(body.get("genres"), list) else []})
     ident = str(int(src["id"]))
     thumb = body.get("thumb") or body.get("discogsThumb")
-    given = body.get("links") if isinstance(body.get("links"), dict) else {}
-    links = {key: clean_link(key, given[key]) for key in given}
-    links.setdefault("discogs", f"https://www.discogs.com/release/{ident}")
-    if body.get("rymUrl") not in (None, ""):
-        links["rateyourmusic"] = clean_rym(body.get("rymUrl"))
+    links = _validated_links(body, ident)
     return {
         "title": title,
         "artist": str(body.get("artist") or "").strip()[:MAX_TEXT],

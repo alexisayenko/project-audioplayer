@@ -26,17 +26,21 @@ def _number(value: Any, name: str) -> float | None:
     return float(value)
 
 
+def _fit_source(s: float | None, e: float | None, known: float | None) -> float | None:
+    if known is None:
+        return e
+    if s is not None and s >= known:
+        raise Problem(422, "invalid_trim", f"trim start ({s:g} s) is beyond the end of the source ({known:g} s)")
+    return float(known) if e is not None and e > known else e
+
+
 def check(start: Any, end: Any, duration: float | None = None) -> Trim:
     """A cleaned `(start, end)` in seconds, `(None, None)` for no cut; `end` is clamped to the known source duration. 422 `invalid_trim` / `trim_too_short`."""
     s, e = _number(start, "start"), _number(end, "end")
     if s == 0:
         s = None
     known = duration if isinstance(duration, (int, float)) and duration > 0 else None
-    if known is not None:
-        if s is not None and s >= known:
-            raise Problem(422, "invalid_trim", f"trim start ({s:g} s) is beyond the end of the source ({known:g} s)")
-        if e is not None and e > known:
-            e = float(known)
+    e = _fit_source(s, e, known)
     if e is not None and e <= (s or 0.0):
         raise Problem(422, "invalid_trim", "trim start must be before trim end")
     if s is None and e is None:
