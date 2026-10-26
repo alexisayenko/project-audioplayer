@@ -254,3 +254,17 @@ Owner plan "fix all sonar issues", `server/` (app and tests). Open code issues f
 | python:S5843 | the album noise pattern shares its album words through a named part |
 
 Marked "False positive" in SonarCloud with a comment: `python:S8786` x5 on the album title patterns `_NOISE_TAIL`, `_SEP`, `_TOPIC`, `_TRAIL_SQUARE`, `_TRAIL_YEAR` in `album_youtube.py`. Each starts with a single-character lookbehind, so a whitespace run is only tried from its first character; measured at 80000 characters in about 10 ms and guarded by `test_album_title_patterns_stay_linear`; Sonar does not model the lookbehind. New tests: playlist route 404s and create, list, read and export; the album title patterns stay linear; `_strip_brackets` cases. Full server suite: 4537 passed, 19 skipped, 0 failed.
+
+## Swift cleanup 2026-10-26
+
+Owner plan "fix all sonar issues", `ios/Sources` and `ios/MacSources`. Open Swift issues at the analysis of 2026-10-26 20:34 UTC: 62 (S3358 nested ternaries, S1186 empty closures, S1075 hardcoded URIs, S1172 unused parameters, S1659, S108, S117, S107, S1940, S3087, S3661). Refactor only, no behaviour change; the next analysis confirms the count.
+
+| Rule | Fix |
+|---|---|
+| swift:S1075 | route, theory-data and Wikipedia paths now come from `Endpoints` (`meUsage`, `genresGraph`, `songCover`, `theoryTerms`, `wikiArticles`, `anonPrefix`, ...) |
+| swift:S1186 | optional callbacks instead of `{ _ in }` defaults (`LibrarySearchField`, `MetronomeCard`, `StatChartModel`); the other empty bodies carry a comment |
+| swift:S3358 / S1659 / S1172 / S108 / S117 | plain statements, one declaration per line, unused parameters removed or `_`, empty catch bodies filled, snake_case init names kept as labels only |
+| swift:S107 / S3087 | `LibraryMatching.results` split into `filtered` and `sorted`; the nested closures of `CoverCache` moved into helpers |
+| swift:S3661 / S1940 | `try?` on the job id regex (fails closed); NaN-safe comparisons in `LiveBPM` |
+
+Checked: both schemes build (`AudioPlayer` for the iOS Simulator, `ElectrophoneMac` for macOS) and the 34 existing unit tests pass.
