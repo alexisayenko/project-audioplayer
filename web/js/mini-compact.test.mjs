@@ -51,7 +51,8 @@ test('markup: the dock handle, the sidebar footer expand button and the 480-719p
   assert.match(side, /<button class="sm-play" id="side-mini-play" type="button" aria-label="Play"/);
   assert.match(side, /<circle class="sm-prog" pathLength="100">/);
   assert.match(side, /<button class="sm-open" id="side-mini-open" type="button" aria-expanded="false" aria-label="Expand player"><span class="mini-text">/);
-  assert.ok(!side.includes('side-mini-cover') && !side.includes('sm-cover') && !side.includes('<img'));
+  const mini = side.slice(side.indexOf('id="side-mini"'));
+  assert.ok(!mini.includes('side-mini-cover') && !mini.includes('sm-cover') && !mini.includes('<img'));
   assert.ok(side.indexOf('id="side-mini-open"') < side.indexOf('id="side-mini-play"'));
   assert.ok(!html.includes('title="Collapse player"'));
   assert.match(side, /<span class="sm-line" aria-hidden="true"><\/span>/);
@@ -107,5 +108,5 @@ test('css: the handle is not displayed below 480px and is styled only inside the
   assert.match(block, /\.mini-handle::after \{\s*content: attr\(aria-label\);[^}]*border-radius: var\(--radius-sm\);\s*background: var\(--ink\); color: var\(--ground\)/);
   assert.match(block, /\.mini-handle:focus-visible \{ background-image/);
   assert.match(block, /\.mini-handle:active[^}]*--pressed-wash/);
-  assert.ok(!/\.mini-handle[^{]*\{[^}]*display: none/.test(block));
+  assert.ok(!/\.mini-handle(?![:\w-])[^{]*\{[^}]*display: none/.test(block), 'the handle itself is never display: none (only its touch-screen tooltip is)');
 });

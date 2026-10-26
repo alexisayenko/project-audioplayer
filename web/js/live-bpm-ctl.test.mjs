@@ -76,7 +76,7 @@ test('turning the toggle on while playing builds the audio graph', () => {
 });
 
 test('live value follows the audio, not the stored BPM, and is cleared by seek and song change', () => {
-  const r = rig({ stored: '1', bpm: 127, stream: kicks(141) });
+  const r = rig({ stored: '1', bpm: 127, stream: kicks(141, 30) });
   assert.equal(r.ctl.value, null);
   r.run(12);
   assert.ok(Math.abs(r.ctl.value - 141) <= 2, `got ${r.ctl.value}`);

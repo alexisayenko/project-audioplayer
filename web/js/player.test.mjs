@@ -289,6 +289,7 @@ test('a failed media request shows the play icon and the Reconnecting note, then
   globalThis.fetch = real;
   assert.equal($('mini-play').getAttribute('aria-label'), 'Play', 'not progressing: play icon');
   assert.equal($('mini-conn').hidden, false);
+  audio.error = null;
   audio.dispatchEvent(makeEvent('playing'));
   assert.equal($('mini-conn').hidden, true);
   assert.equal($('mini-play').getAttribute('aria-label'), 'Pause');

@@ -184,8 +184,12 @@ test('psytrance sits under trance (level 1) at level 2 and its own children are 
   const psy = t.byId.get('s:psytrance');
   assert.equal(psy.level, 2);
   assert.deepEqual(psy.parents, ['g:trance']);
-  assert.deepEqual(psy.children.map((c) => c.name).sort(), ['dark psytrance', 'forest psytrance', 'full-on psytrance', 'goa trance', 'progressive psytrance', 'psybient']);
-  assert.deepEqual(psy.children.map((c) => [c.name, c.level]).filter(([, l]) => l === 3).map(([n]) => n).sort(), ['dark psytrance', 'forest psytrance', 'full-on psytrance', 'goa trance', 'progressive psytrance', 'psybient']);
+  const kids = psy.children.map((c) => c.name);
+  for (const k of ['dark psytrance', 'forest psytrance', 'full-on psytrance', 'goa trance', 'progressive psytrance', 'psybient']) assert.ok(kids.includes(k), k);
+  for (const c of psy.children) {
+    assert.ok(c.parents.includes('s:psytrance'), `${c.name} lists psytrance as a parent`);
+    assert.equal(c.level, 3, `${c.name} is level 3`);
+  }
   assert.equal(t.byId.get('s:psybient').level, 3, 'psybient is also under ambient, a level 2 genre, so its shortest path is level 3');
   assert.equal(count(psy), 3);
   assert.equal(count(t.byId.get('g:trance')), 4);

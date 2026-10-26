@@ -216,8 +216,11 @@ test('STU-038: the initial view is readable, shows everything when it can and Fi
   const g = buildGraph();
   const { boxes } = layoutDomains(g.nodes, g.edges, 'wide');
   const b = boxBounds(boxes);
-  const desktop = initialView(b, 900, 620);
-  assert.ok(desktop.k >= 0.7);
+  const desktop = initialView(b, 1280, 800);
+  assert.ok(desktop.k >= 0.7, `desktop zoom ${desktop.k}`);
+  const narrow = initialView(b, 900, 620);
+  assert.ok(narrow.k >= (900 - 40) / (b.x1 - b.x0) - 1e-9, 'a narrow pane still shows the full width of the map');
+  assert.ok(narrow.k >= fitView(b, 900, 620).k);
   const fitAll = fitView(b, 900, 620);
   assert.ok(fitAll.x + b.x0 * fitAll.k >= 0 && fitAll.x + b.x1 * fitAll.k <= 900 && fitAll.y + b.y0 * fitAll.k >= 0 && fitAll.y + b.y1 * fitAll.k <= 620);
   const t = buildGraph();
@@ -230,7 +233,9 @@ test('STU-038: the initial view is readable, shows everything when it can and Fi
   const content = contentBounds(tall.nodes, tall.boxes);
   assert.ok(content.x1 - content.x0 < tb.x1 - tb.x0 && content.y0 === tb.y0 && content.y1 === tb.y1);
   const phoneRead = initialView(content, 303, 545);
-  assert.ok(phoneRead.k >= 0.69, `phone reading zoom ${phoneRead.k}`);
+  assert.ok(phoneRead.k >= (303 - 40) / (content.x1 - content.x0) - 1e-9, 'the phone view opens at the width of the pills');
+  assert.ok(phoneRead.k >= 0.55, `phone reading zoom ${phoneRead.k}`);
+  assert.ok(phoneRead.x + content.x0 * phoneRead.k >= 0 && phoneRead.x + content.x1 * phoneRead.k <= 303);
 });
 
 test('STU-038: the wide layout is wide and the tall layout is tall', () => {

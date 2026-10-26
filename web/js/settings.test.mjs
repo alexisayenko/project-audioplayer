@@ -3,6 +3,10 @@ import assert from 'node:assert/strict';
 import { installPage, stubFetch, flush } from './test-dom.mjs';
 
 const dom = await installPage();
+globalThis.requestIdleCallback = (fn) => setTimeout(fn, 0);
+const until = async (cond) => {
+  for (let i = 0; i < 50 && !cond(); i += 1) await flush();
+};
 globalThis.location = { hash: '', href: 'http://localhost/', host: 'music.example' };
 const { store } = await import('./store.js');
 const { auth } = await import('./api.js');
@@ -154,8 +158,7 @@ test('Google sign-in: script loads, initialises and a credential signs in then o
   globalThis.google = dom.window.google;
   Object.defineProperty(globalThis.window, 'google', { value: dom.window.google, configurable: true, writable: true });
   const { root, cleanup } = mount();
-  await flush();
-  await flush();
+  await until(() => rendered);
   assert.equal(init.client_id, 'gid');
   assert.equal(rendered, 1);
   await init.callback({ credential: 'jwt-token' });
@@ -174,8 +177,7 @@ test('a rejected credential shows the server message and stays signed out', asyn
   let init = null;
   window.google = { accounts: { id: { initialize: (o) => { init = o; }, renderButton() {} } } };
   const { root, cleanup } = mount();
-  await flush();
-  await flush();
+  await until(() => init);
   await init.callback({ credential: 'bad' });
   assert.match(root.textContent, /Sign-up is closed/);
   assert.equal(auth.email, '');

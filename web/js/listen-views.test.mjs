@@ -155,7 +155,8 @@ test('WEB-205: trailLevel falls from the stored peak at the current rate and hol
   assert.deepEqual([...peaks], [-20, -45, -90]);
   assert.deepEqual([...times], [0, 500, 0]);
   v.holdTrail(shown, peaks, times, new Float32Array(3).fill(-Infinity), 2500, 20);
-  assert.deepEqual([...shown], [-65, -85, -140]);
+  assert.deepEqual([...shown], [v.trailLevel(-20, 0, 2500, 20), v.trailLevel(-45, 500, 2500, 20), v.trailLevel(-90, 0, 2500, 20)]);
+  assert.deepEqual([...shown], [-70, -85, -140], 'each ghost falls from the time its own peak was stamped, not from the last frame');
   assert.equal(v.holdTrail(shown, peaks, times, shown, 2500, 20), shown);
 });
 

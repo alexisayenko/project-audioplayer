@@ -54,7 +54,7 @@ test('STU-017: the three placeholder pages name their physics and a new ticket',
 
 test('STU-005: the left menu is a nav named Studio with one group per route group, in route order, one link per route, and a link back to the main app', () => {
   const html = read('../../studio/index.html');
-  const nav = html.match(/<nav class="site-nav" aria-label="Studio">([\s\S]*?)<\/nav>/)[1];
+  const nav = html.match(/<nav class="site-nav"[^>]* aria-label="Studio">([\s\S]*?)<\/nav>/)[1];
   assert.deepEqual([...nav.matchAll(/<h2 [^>]*>([^<]*)<\/h2>/g)].map((m) => m[1]), [...new Set(PAGES.map((p) => p.group))]);
   assert.deepEqual([...nav.matchAll(/<a [^>]*href="([^"]*)"[^>]*data-page="([^"]*)"[^>]*>([^<]*)<\/a>/g)].map((m) => [m[1], m[2], m[3]]), PAGES.map((p) => [p.hash, p.id, p.label]));
   assert.ok(html.indexOf('class="site-nav"') < html.indexOf('class="site-home'));
@@ -94,7 +94,7 @@ test('STU-055: the Sound wave page has the animation, a How to read this block a
 test('STU-056: the Glossary has no animation, and the wave entries link to the Sound wave page with their shape', async () => {
   const { TERMS } = await import('./glossary-terms.js');
   const links = TERMS.filter((t) => t.demo?.type === 'link');
-  assert.deepEqual(links.map((t) => [t.id, t.demo.href]).sort(), [
+  assert.deepEqual(links.filter((t) => t.demo.href.startsWith('#/learn/sound-wave')).map((t) => [t.id, t.demo.href]).sort(), [
     ['compression-and-rarefaction', '#/learn/sound-wave'],
     ['sawtooth-wave', '#/learn/sound-wave?wave=sawtooth'],
     ['sine-wave', '#/learn/sound-wave?wave=sine'],
@@ -102,6 +102,7 @@ test('STU-056: the Glossary has no animation, and the wave entries link to the S
     ['square-wave', '#/learn/sound-wave?wave=square'],
     ['triangle-wave', '#/learn/sound-wave?wave=triangle'],
   ]);
+  for (const t of links) assert.ok(PAGES.some((p) => t.demo.href.startsWith(`#/${p.id}`)), `${t.id} links to a Studio page`);
   for (const f of ['glossary.js', 'glossary-map-view.js', 'glossary-demo.js']) assert.doesNotMatch(read(`../../studio/${f}`), /cone-animation/);
 });
 

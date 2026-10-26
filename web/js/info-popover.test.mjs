@@ -15,9 +15,12 @@ test('placePopover: centred below the button when there is room', () => {
 });
 
 test('placePopover: shifts left near the right edge and the arrow keeps pointing at the button', () => {
-  const at = placePopover({ anchor: box(1000, 100), size, viewport: view });
+  const at = placePopover({ anchor: box(970, 100), size, viewport: view });
   assert.equal(at.left, 1024 - 300 - INFO_EDGE);
-  assert.equal(at.left + at.arrow, 1010);
+  assert.equal(at.left + at.arrow, 980);
+  const edge = placePopover({ anchor: box(1000, 100), size, viewport: view });
+  assert.equal(edge.left, at.left);
+  assert.equal(edge.arrow, size.w - 12, 'a button past the bubble keeps the arrow inside it');
 });
 
 test('placePopover: shifts right near the left edge', () => {

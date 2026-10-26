@@ -58,7 +58,8 @@ test('inharmonicity makes partial n sharp: f_n = n f sqrt(1 + B n^2)', () => {
   assert.ok(Math.abs(h.partialFreq(10, 440, 0.0004) - 4400 * Math.sqrt(1.04)) < 1e-9);
   assert.ok(Math.abs(h.harmonicList({ freq: 440, count: 10, decay: true })[9].freq - 4487.14) < 0.01);
   assert.equal(h.harmonicList({ freq: 440, count: 10, decay: true, inharm: false })[9].freq, 4400);
-  assert.ok(h.linearMax(440, 32, 0.002) >= h.partialFreq(32, 440, 0.002));
+  assert.equal(h.linearMax(440, 32, 0.002), h.AUDIBLE_MAX_HZ, 'the axis stops at the audible limit');
+  assert.ok(h.linearMax(440, 8, 0.0004) >= h.partialFreq(8, 440, 0.0004));
 });
 
 test('the strike position weakens partials with a node at the hammer', () => {
@@ -144,8 +145,9 @@ test('strings keep the total wave amplitude and skip partials that detune past t
   const three = h.computedWave(rows, 64, 3.5, h.stringOffsets(3, 2));
   assert.ok(Math.max(...three.sum) <= h.TOTAL_GAIN + 1e-9);
   assert.ok(Math.abs(three.sum[10] - one.sum[10]) < 0.002);
-  assert.equal(h.harmonicList({ freq: 19990, count: 1, rolloff: 0, strings: 1 }, 48000)[0].played, true);
-  assert.equal(h.harmonicList({ freq: 19990, count: 1, rolloff: 0, strings: 3, detune: 5 }, 48000)[0].played, false);
+  const f = h.MAX_HZ - 10;
+  assert.equal(h.harmonicList({ freq: f, count: 5, rolloff: 0, strings: 1 }, 48000)[4].played, true);
+  assert.equal(h.harmonicList({ freq: f, count: 5, rolloff: 0, strings: 3, detune: 5 }, 48000)[4].played, false);
 });
 
 test('computedWave can return each string alone and their mean is the sum', () => {
@@ -342,9 +344,12 @@ test('bandLevels gives the mean power per band in dB, clamped to -90 .. 0', () =
   assert.deepEqual(h.bandLevels(d, [[10, 20]]), [h.DB_MIN]);
   d.fill(-30);
   assert.ok(Math.abs(h.bandLevels(d, [[10, 20]])[0] - (-30 + h.ANALYSER_DB_OFFSET)) < 1e-9);
-  d[10] = 0;
+  d[10] = -20;
   const mixed = h.bandLevels(d, [[10, 11]])[0];
-  assert.ok(Math.abs(mixed - (10 * Math.log10((10 ** 1.356 + 10 ** ((-30 + h.ANALYSER_DB_OFFSET) / 10)) / 2))) < 1e-9);
+  const power = (db) => 10 ** ((db + h.ANALYSER_DB_OFFSET) / 10);
+  assert.ok(Math.abs(mixed - 10 * Math.log10((power(-20) + power(-30)) / 2)) < 1e-9);
+  d[10] = 0;
+  assert.equal(h.bandLevels(d, [[10, 10]])[0], h.DB_MAX, 'a loud bin clamps at 0 dB');
   d.fill(40);
   assert.equal(h.bandLevels(d, [[1, 5]])[0], h.DB_MAX);
 });

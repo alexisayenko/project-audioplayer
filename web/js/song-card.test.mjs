@@ -346,7 +346,10 @@ test('the Genre row shows one line per inferred family, family chip first, then 
     assert.deepEqual(lineTexts(dlg), [['Electronic', 'house', 'deep house'], ['Rock', 'rock and roll'], ['zzz thing']]);
     assert.equal(dlg.querySelectorAll('.card-genre-line .group-name').length, 0, 'no Genre caption');
     assert.equal(dlg.querySelector('[aria-label="Genres"]').getAttribute('role'), 'group');
-    assert.ok(dlg.querySelectorAll('.card-genre-line .tag').every((t) => t.className === 'tag ns t-caption'), 'inferred and tagged chips share the chip style');
+    const chips = dlg.querySelectorAll('.card-genre-line .tag');
+    assert.ok(chips.every((t) => ['tag', 'ns', 't-caption'].every((c) => t.classList.contains(c))), 'inferred and tagged chips share the chip style');
+    assert.ok(chips.filter((t) => t.textContent !== 'zzz thing').every((t) => t.localName === 'button' && t.classList.contains('genre-chip-btn')), 'a genre of the vocabulary opens its card');
+    assert.equal(chips.find((t) => t.textContent === 'zzz thing').localName, 'span', 'a genre outside the vocabulary is plain text');
     dlg.querySelector('.card-close').click();
   } finally {
     resetGenreTree(null);
