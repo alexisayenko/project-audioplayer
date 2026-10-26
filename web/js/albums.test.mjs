@@ -60,7 +60,8 @@ test('list renders song-style rows: name and count over artist and year, total t
   assert.equal(v.q('ul.songs.album-list').parentNode.className.includes('group'), true);
   assert.equal(v.q('.album-time').textContent, '4:25');
   assert.equal(v.q('.row-cover .cover-mark') !== null, true);
-  assert.equal(card.querySelector('a').getAttribute('href'), '#/library/albums/alb_1');
+  assert.equal(card.querySelector('a'), null);
+  assert.equal(v.pane.textContent.includes('Album page'), false);
   assert.equal(card.querySelector('.album-tracks'), null);
 });
 
@@ -128,7 +129,8 @@ test('409 on create says it exists and links to it', async () => {
   await flush(); await flush();
   const e = dq('.msg.error');
   assert.match(e.textContent, /already exists/);
-  assert.equal(e.querySelector('a').getAttribute('href'), '#/library/albums/alb_9');
+  assert.equal(e.querySelector('a'), null);
+  assert.match(e.querySelector('button').textContent, /Open it/);
 });
 
 test('list load failure shows Retry', async () => {
@@ -337,4 +339,100 @@ test('cards show genre chips without remove buttons', async () => {
   await v.unmount.ready;
   assert.equal(v.pane.querySelectorAll('.album-genres .chip').length, 1);
   assert.equal(v.pane.querySelectorAll('.album-genres .x').length, 0);
+});
+
+test('info box carries the song-box action row with the list-row behaviour', async () => {
+  const { store } = await import('./store.js');
+  store.songs = [{ id: 'b1', title: 'One', artist: 'X', file: 'b1.mp3', duration: 60 }];
+  const dlg = document.getElementById('song-card');
+  const open = async (full) => {
+    const v = setup((u) => (u === '/albums' ? ok([ROW]) : ok(full)));
+    await v.unmount.ready;
+    fire(v.q('.album-name-btn'), 'click');
+    return v;
+  };
+  await open(ALBUM);
+  let btns = [...dlg.querySelectorAll('.card-actions .card-icons button')];
+  assert.ok(btns.length >= 3);
+  assert.ok(btns.every((b) => b.classList.contains('icon') && b.classList.contains('round') && b.disabled && b.title === 'No songs linked yet'));
+  dlg.close();
+
+  await open({ ...ALBUM, tracks: [{ no: 1, title: 'A', durationS: 1, songId: 'b1' }] });
+  btns = [...dlg.querySelectorAll('.card-actions .card-icons button')];
+  const names = btns.map((b) => b.getAttribute('aria-label').split(':')[0]);
+  assert.deepEqual(names.slice(0, 2), ['Play next', 'Add to queue']);
+  assert.ok(names.includes('Share link'));
+  assert.ok(btns.every((b) => !b.disabled));
+  document.getElementById('toast').textContent = '';
+  fire(btns[0], 'click');
+  assert.equal(document.getElementById('toast').textContent, 'Not implemented yet');
+  fire(btns[1], 'click');
+  assert.match(document.getElementById('toast').textContent, /Added 1 song/);
+  dlg.close();
+});
+
+test('Delete album and its tracks: hidden without linked songs; confirm text; cancel makes no calls', async () => {
+  const none = setup(() => ok(ALBUM), 'alb_1');
+  await none.unmount.ready;
+  assert.equal(none.q('.album-delete-all'), null);
+  assert.ok([...none.pane.querySelectorAll('button')].some((b) => b.textContent === 'Delete album'));
+
+  const linked = { ...ALBUM, tracks: [{ no: 1, title: 'A', durationS: 1, songId: 's1' }, { no: 2, title: 'B', durationS: 1, songId: null }, { no: 3, title: 'C', durationS: 1, songId: 's3' }] };
+  const v = setup(() => ok(linked), 'alb_1');
+  await v.unmount.ready;
+  fire(v.q('.album-delete-all'), 'click');
+  const dlg = document.getElementById('pl-dialog');
+  assert.equal(dlg.open, true);
+  assert.match(dlg.textContent, /Delete album 'Tumult' and 2 songs from your library\? This cannot be undone\./);
+  const before = v.calls.length;
+  dlg.close();
+  assert.equal(v.calls.length, before);
+  assert.equal(v.calls.some((c) => c.opts.method === 'DELETE'), false);
+});
+
+test('Delete album and its tracks: deletes songs one by one, then the album, then reports', async () => {
+  const linked = { ...ALBUM, tracks: [{ no: 1, title: 'A', durationS: 1, songId: 's1' }, { no: 2, title: 'C', durationS: 1, songId: 's3' }] };
+  const v = setup((u, o) => (o.method === 'DELETE' ? { status: 204, body: null } : u === '/library' ? ok({ songs: [] }) : ok(linked)), 'alb_1');
+  await v.unmount.ready;
+  fire(v.q('.album-delete-all'), 'click');
+  const dlg = document.getElementById('pl-dialog');
+  fire(dlg.querySelector('form'), 'submit');
+  for (let i = 0; i < 8; i++) await flush();
+  const dels = v.calls.filter((c) => c.opts.method === 'DELETE').map((c) => c.url);
+  assert.deepEqual(dels, ['/songs/s1', '/songs/s3', '/albums/alb_1']);
+  assert.match(document.getElementById('toast').textContent, /Deleted "Tumult" and 2 songs/);
+  assert.equal(dlg.open, false);
+  assert.equal(location.hash, '#/library/albums');
+});
+
+test('Delete album and its tracks: first error stops, shows Deleted M of N and keeps the album', async () => {
+  const linked = { ...ALBUM, tracks: [{ no: 1, title: 'A', durationS: 1, songId: 's1' }, { no: 2, title: 'B', durationS: 1, songId: 's2' }, { no: 3, title: 'C', durationS: 1, songId: 's3' }] };
+  const v = setup((u, o) => {
+    if (u === '/songs/s2' && o.method === 'DELETE') return { status: 500, body: { detail: 'disk error' } };
+    if (o.method === 'DELETE') return { status: 204, body: null };
+    return u === '/library' ? ok({ songs: [] }) : ok(linked);
+  }, 'alb_1');
+  await v.unmount.ready;
+  fire(v.q('.album-delete-all'), 'click');
+  const dlg = document.getElementById('pl-dialog');
+  fire(dlg.querySelector('form'), 'submit');
+  for (let i = 0; i < 8; i++) await flush();
+  const dels = v.calls.filter((c) => c.opts.method === 'DELETE').map((c) => c.url);
+  assert.deepEqual(dels, ['/songs/s1', '/songs/s2']);
+  assert.match(dlg.querySelector('.msg.error').textContent, /Deleted 1 of 3 songs: disk error/);
+  assert.equal(dlg.open, true);
+  dlg.close();
+});
+
+test('info box also offers Delete album and its tracks when songs are linked', async () => {
+  const { store } = await import('./store.js');
+  store.songs = [{ id: 'x1', file: 'x1.mp3' }];
+  const full = { ...ALBUM, tracks: [{ no: 1, title: 'A', durationS: 1, songId: 'x1' }] };
+  const v = setup((u) => (u === '/albums' ? ok([ROW]) : ok(full)));
+  await v.unmount.ready;
+  fire(v.q('.album-name-btn'), 'click');
+  const dlg = document.getElementById('song-card');
+  assert.ok(dlg.querySelector('.album-delete-all.danger'));
+  assert.ok(dlg.querySelector('.album-delete.danger'));
+  dlg.close();
 });

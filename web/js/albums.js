@@ -103,6 +103,7 @@ export function openAlbumCard(album, opener = null) {
       el('p', { class: 'card-sub t-subhead album-facts-line' }, albumFacts(album))),
     genres.length ? el('div', { class: 'chips album-genres' }, genres.map((g) => el('span', { class: 'tag ns t-caption' }, g))) : null,
     svc?.node,
+    el('div', { class: 'card-actions album-card-actions' }, el('div', { class: 'card-icons' }, albumButtons(album, true).all), plainDeleteButton(album, close), deleteWithSongsButton(album, close)),
     tracks.length ? el('ol', { class: 'album-tracks album-info-tracks' }, tracks.map((t) => el('li', { class: 'album-track' },
       el('span', { class: 'album-no muted t-caption' }, `${t.no}.`),
       el('span', { class: 'album-name t-subhead' }, t.title),
@@ -219,6 +220,64 @@ function confirmDeleteAlbum(album, onDone) {
   del.focus();
 }
 
+const linkedIds = (a) => (a.tracks || []).filter((t) => t.songId).map((t) => t.songId);
+
+function confirmDeleteAlbumAndSongs(album, onDone) {
+  const ids = linkedIds(album);
+  const err = el('p', { class: 'msg error', role: 'alert', hidden: true });
+  const del = el('button', { type: 'submit', class: 'btn danger' }, 'Delete album and songs');
+  const form = el('form', { method: 'dialog' },
+    dialogHead('Delete album and its songs?', album.title, closePlDialog),
+    el('p', { class: 't-body' }, `Delete album '${album.title}' and ${ids.length} ${plural(ids.length, 'song', 'songs')} from your library? This cannot be undone.`),
+    err,
+    el('div', { class: 'row end' }, del));
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    del.disabled = true;
+    err.hidden = true;
+    let done = 0;
+    try {
+      for (const id of ids) {
+        try { await api.remove(id); } catch (ex) { if (ex.status !== 404) throw ex; } // NOSONAR songs go one at a time
+        done += 1;
+      }
+    } catch (ex) {
+      await store.refresh().catch(() => {});
+      window.dispatchEvent(new Event(ALBUMS_CHANGED));
+      err.textContent = `Deleted ${done} of ${ids.length} songs: ${ex.message}`;
+      err.hidden = false;
+      del.disabled = false;
+      return;
+    }
+    try {
+      await api.deleteAlbum(album.id);
+    } catch (ex) {
+      await store.refresh().catch(() => {});
+      err.textContent = `Deleted ${done} of ${ids.length} songs, but the album could not be removed: ${ex.message}`;
+      err.hidden = false;
+      del.disabled = false;
+      return;
+    }
+    await store.refresh().catch(() => {});
+    closePlDialog();
+    toast(`Deleted "${album.title}" and ${done} ${plural(done, 'song', 'songs')}`);
+    window.dispatchEvent(new Event(ALBUMS_CHANGED));
+    onDone();
+  });
+  openPlDialog('Delete album and its songs?', form);
+  del.focus();
+}
+
+function plainDeleteButton(album, onDone) {
+  return el('button', { class: 'btn danger small album-delete', type: 'button', onclick: () => confirmDeleteAlbum(album, () => { toast(`Deleted "${album.title}"`); window.dispatchEvent(new Event(ALBUMS_CHANGED)); onDone(); }) }, icon('trash', 'inline'), 'Delete album');
+}
+
+function deleteWithSongsButton(album, onDone) {
+  if (!linkedIds(album).length) return null;
+  return el('button', { class: 'btn danger small album-delete-all', type: 'button', onclick: () => confirmDeleteAlbumAndSongs(album, onDone) },
+    icon('trash', 'inline'), 'Delete album and its tracks from the library');
+}
+
 const loadFail = (retry) => el('div', { class: 'state card' },
   el('p', { class: 'msg error', role: 'alert' }, 'Albums could not be loaded. Check the connection and try again.'),
   el('button', { class: 'btn', type: 'button', onclick: retry }, 'Retry'));
@@ -227,13 +286,13 @@ export const linkedSongs = (tracks) => (tracks || []).filter((t) => t.songId).ma
 
 const NOT_YET = () => toast('Not implemented yet');
 
-function albumButtons(a) {
+function albumButtons(a, box = false) {
   const songs = linkedSongs(a.tracks);
   const off = !songs.length;
   const btn = (name, label, run, cls = '') => el('button', {
-    class: `icon sq-btn album-act ${cls}`.trim(), type: 'button', disabled: off,
+    class: `${box ? 'icon round' : 'icon sq-btn'} album-act ${cls}`.trim(), type: 'button', disabled: off,
     title: off ? 'No songs linked yet' : label, 'aria-label': `${label}: ${a.title}`, onclick: run,
-  }, icon(name, 'inline'));
+  }, icon(name, box ? 'nav' : 'inline'));
   const queue = btn('listAdd', 'Add to queue', () => {
     const { added, already, fetching } = player.addListed(songs, '');
     const note = already ? ` (${already} already in queue)` : '';
@@ -247,7 +306,7 @@ function albumButtons(a) {
     can('download') ? btn('download', 'Download', NOT_YET, 'act-download') : null,
     can('edit') ? btn('pencil', 'Edit', NOT_YET, 'act-edit') : null,
   ].filter(Boolean);
-  return { queue, rest };
+  return { queue, rest, all: [rest[0], queue, ...rest.slice(1)] };
 }
 
 function albumRow(a) {
@@ -262,8 +321,7 @@ function albumRow(a) {
     el('div', { class: 'info album-text' },
       el('span', { class: 'album-title' },
         el('button', { class: 'open album-name-btn', type: 'button', title: 'Album info', onclick: (e) => openAlbumCard(a, e.currentTarget) }, `${a.title} · ${n} ${plural(n, 'track', 'tracks')}`)),
-      el('span', { class: 'album-sub muted t-caption' }, [a.artist, a.year].filter(Boolean).join(' · ')),
-      el('a', { class: 'album-page-link t-caption', href: `#/library/albums/${encodeURIComponent(a.id)}` }, 'Album page')),
+      el('span', { class: 'album-sub muted t-caption' }, [a.artist, a.year].filter(Boolean).join(' · '))),
     el('div', { class: 'album-facts muted t-caption' },
       time ? el('span', { class: 'album-time' }, time) : null,
       bpm ? el('span', { class: 'album-bpm' }, bpm) : null),
@@ -301,7 +359,7 @@ export function openAddAlbum(opener = null) {
         create.disabled = false;
         if (ex.status === 409 || ex.code === 'already_exists') {
           const existing = ex.data?.id ?? ex.data?.detail?.id;
-          say('This album already exists.', existing ? el('a', { href: `#/library/albums/${encodeURIComponent(existing)}`, onclick: () => dlg.close() }, 'Open it') : null);
+          say('This album already exists.', existing ? el('button', { class: 'link-btn t-caption', type: 'button', onclick: () => { void api.album(existing).then((full) => { dlg.close(); openAlbumCard(full); }, (ex2) => say(ex2.message)); } }, 'Open it') : null);
         } else say(ex.message || 'The album could not be created.');
       }
     });
@@ -407,11 +465,12 @@ export function mountAlbums(pane, id = albumIdOf(location.hash)) {
     }
     if (gone) return;
     const tracks = album.tracks || [];
-    const del = el('button', { class: 'btn danger small', type: 'button', onclick: () => confirmDeleteAlbum(album, () => { toast(`Deleted "${album.title}"`); location.hash = '#/library/albums'; }) }, icon('trash', 'inline'), 'Delete album');
+    const toList = () => { location.hash = '#/library/albums'; };
+    const del = plainDeleteButton(album, toList);
     body.replaceChildren(
       el('a', { class: 'link-btn album-back', href: '#/library/albums' }, icon('chevronLeft', 'inline'), 'Albums'),
       albumHead(album, 'h2', (opener) => openAlbumCard(album, opener)),
-      el('div', { class: 'album-actions' }, del),
+      el('div', { class: 'album-actions' }, del, deleteWithSongsButton(album, toList)),
       trackList(tracks));
   }
 
