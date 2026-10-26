@@ -1,5 +1,6 @@
 import { el } from './dom.js';
 import { icon } from './icons.js';
+import { defaultStorage, loadExpanded, saveExpanded, navNameOfHash, resolveExpanded } from './sidebar-state.js';
 
 export const HELP_ROUTES = ['theory', 'about', 'features'];
 const GLYPHS = { theory: 'theory', about: 'info', features: 'features' };
@@ -15,22 +16,27 @@ export const LIBRARY_ROUTES = ['library', 'library/albums', 'library/drafts'];
 export const isLibraryRoute = (name) => LIBRARY_ROUTES.includes(name);
 const LIB_GLYPHS = { library: 'library', 'library/albums': 'albums', 'library/drafts': 'pencil' };
 
-const HELP_CFG = { group: 'nav-help', toggle: 'help-toggle', sub: 'help-sub', sheet: 'help-sheet', title: 'Help', glyphs: GLYPHS, owns: isHelpRoute };
-const LIBRARY_CFG = { group: 'nav-library', toggle: 'library-toggle', sub: 'library-sub', sheet: 'library-sheet', title: 'Library', glyphs: LIB_GLYPHS, owns: isLibraryRoute };
+const HELP_CFG = { id: 'help', group: 'nav-help', toggle: 'help-toggle', sub: 'help-sub', sheet: 'help-sheet', title: 'Help', glyphs: GLYPHS, owns: isHelpRoute };
+const LIBRARY_CFG = { id: 'library', group: 'nav-library', toggle: 'library-toggle', sub: 'library-sub', sheet: 'library-sheet', title: 'Library', glyphs: LIB_GLYPHS, owns: isLibraryRoute };
 
-export const initHelpNav = (doc = document, win = window) => initNavGroup(HELP_CFG, doc, win);
-export const initLibraryNav = (doc = document, win = window) => initNavGroup(LIBRARY_CFG, doc, win);
+export const initHelpNav = (doc = document, win = window, opts = {}) => initNavGroup(HELP_CFG, doc, win, opts);
+export const initLibraryNav = (doc = document, win = window, opts = {}) => initNavGroup(LIBRARY_CFG, doc, win, opts);
 
-export function initNavGroup(cfg, doc = document, win = window) {
+export function initNavGroup(cfg, doc = document, win = window, opts = {}) {
   const group = doc.getElementById(cfg.group);
   const toggle = doc.getElementById(cfg.toggle);
   const sub = doc.getElementById(cfg.sub);
   const sheet = doc.getElementById(cfg.sheet);
   if (!group || !toggle || !sub) return null;
-  let open = false;
+  const storage = opts.storage === undefined ? defaultStorage() : opts.storage;
   let first = true;
   let current = '';
   const mode = () => helpMode(win.innerWidth, doc.body.classList.contains('side-collapsed'));
+  let open = resolveExpanded({
+    ownsActive: cfg.owns(navNameOfHash(opts.hash ?? win.location?.hash)),
+    remembered: loadExpanded(storage)[cfg.id],
+    inline: mode() === 'inline',
+  });
 
   const links = () => [...sub.querySelectorAll('a')];
 
@@ -78,6 +84,7 @@ export function initNavGroup(cfg, doc = document, win = window) {
 
   toggle.addEventListener('click', (e) => {
     setOpen(!open);
+    if (mode() === 'inline') saveExpanded(storage, cfg.id, open);
     if (open && mode() === 'flyout' && e.detail === 0) links()[0]?.focus();
   });
   sheet?.addEventListener('close', () => { open = false; render(); });
@@ -95,14 +102,24 @@ export function initNavGroup(cfg, doc = document, win = window) {
 
   render();
   return {
+    mark(name) {
+      toggle.classList.toggle('active', cfg.owns(name));
+    },
     sync(name) {
       current = name;
-      const help = cfg.owns(name);
-      toggle.classList.toggle('active', help);
-      if (help && !first && mode() === 'inline') setOpen(true);
+      const owned = cfg.owns(name);
+      toggle.classList.toggle('active', owned);
+      if (owned && mode() === 'inline') setOpen(true);
       else if (open && mode() !== 'inline') setOpen(false);
       first = false;
     },
-    refresh() { setOpen(false); },
+    refresh() {
+      if (first) {
+        if (mode() !== 'inline') open = false;
+        render();
+        return;
+      }
+      setOpen(false);
+    },
   };
 }

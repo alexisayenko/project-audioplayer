@@ -13,7 +13,7 @@ import { loadLegal, syncLegal } from './legal.js';
 import { store } from './store.js';
 import { renderLibrary } from './library.js';
 import { openAdd, loadUi } from './lazy-ui.js';
-import { loadCollapsed, saveCollapsed } from './sidebar-state.js';
+import { loadCollapsed, saveCollapsed, navNameOfHash, defaultStorage } from './sidebar-state.js';
 import { SYNC_POLL_MS } from './constants.js';
 import { describeSync } from './sync-status.js';
 import { describeBuild } from './build-info.js';
@@ -55,6 +55,9 @@ async function openSharedLink(hash) {
 
 function showLogin() {
   document.body.classList.add('signed-out');
+  markActiveNav('');
+  help?.mark('');
+  libNav?.mark('');
   if (document.body.dataset.route === 'login' && view.firstChild) return;
   if (cleanup) cleanup();
   view.replaceChildren();
@@ -151,11 +154,11 @@ function setCollapsed(collapsed) {
   sideToggle.setAttribute('aria-label', label);
   sideToggle.title = label;
 }
-setCollapsed(loadCollapsed(localStorage));
+setCollapsed(loadCollapsed(defaultStorage()));
 sideToggle.addEventListener('click', () => {
   const next = !document.body.classList.contains('side-collapsed');
   setCollapsed(next);
-  saveCollapsed(localStorage, next);
+  saveCollapsed(defaultStorage(), next);
 });
 window.addEventListener('hashchange', route);
 const stage = view.parentNode;
@@ -220,6 +223,10 @@ window.addEventListener('server-starting', () => {
   if (startup.waiting && !view.firstChild) view.replaceChildren(loadingNote('Server is starting...'));
 });
 
+const startNav = navNameOfHash(location.hash);
+markActiveNav(startNav);
+help?.mark(startNav);
+libNav?.mark(startNav);
 const early = { me: api.me(), library: store.refresh() };
 void Promise.allSettled([early.me, early.library]);
 try {

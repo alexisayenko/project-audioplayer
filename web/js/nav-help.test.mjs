@@ -49,11 +49,13 @@ const help = initHelpNav(document, win);
 const state = () => [toggle.getAttribute('aria-expanded'), sub.hidden];
 const click = () => toggle.dispatchEvent({ type: 'click', detail: 1, target: toggle });
 
-test('collapsed by default on load, including a load on a Help page', () => {
+test('collapsed by default on load; a load on a Help page expands it (see nav-expanded.test.mjs)', () => {
   assert.deepEqual(state(), ['false', true]);
   help.sync('theory');
-  assert.deepEqual(state(), ['false', true], 'the first route (a reload) leaves it collapsed');
-  assert.ok(toggle.classList.contains('active'), 'the parent is still the active item');
+  assert.deepEqual(state(), ['true', false], 'the first route (a reload) on a Help page opens the group');
+  assert.ok(toggle.classList.contains('active'), 'the parent is the active item');
+  click();
+  assert.deepEqual(state(), ['false', true]);
 });
 
 test('click expands and collapses', () => {
