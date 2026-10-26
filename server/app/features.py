@@ -289,7 +289,9 @@ def read_tasks(tasks_dir: Path) -> dict[str, dict[str, Any]]:
 def status_kind(status: str) -> str:
     """"in progress" or "to do" for a status that starts with it (suffixes allowed), else ""."""
     s = status.strip().lower()
-    return IN_PROGRESS if s.startswith(IN_PROGRESS) else PLANNED if s.startswith(PLANNED) else ""
+    if s.startswith(IN_PROGRESS):
+        return IN_PROGRESS
+    return PLANNED if s.startswith(PLANNED) else ""
 
 
 def tasks_with(tasks: dict[str, Any], kind: str) -> list[dict[str, Any]]:

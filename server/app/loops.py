@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import math
 from typing import Any
 
 MAX_LOOPS = 20
@@ -13,7 +14,7 @@ DURATION_SLACK = 1.0
 def _number(v: Any) -> float | None:
     if isinstance(v, bool) or not isinstance(v, (int, float)):
         return None
-    return float(v) if v == v and abs(v) != float("inf") else None
+    return float(v) if math.isfinite(v) else None
 
 
 def clean(raw: Any, duration: Any = None) -> list[dict[str, Any]]:

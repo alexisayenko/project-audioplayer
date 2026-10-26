@@ -26,7 +26,8 @@ DATA = ROOT / "server" / "data"
 sys.path.insert(0, str(ROOT / "server"))
 from app import genre_vocab as gv  # noqa: E402
 
-FILES = ("genre_levels.json", "genre_discogs.json", "genre_extras.json")
+LEVELS_NAME = "genre_levels.json"
+FILES = (LEVELS_NAME, "genre_discogs.json", "genre_extras.json")
 
 
 def load(name: str) -> dict:
@@ -123,7 +124,7 @@ def unparent(levels: dict, name: str, parent: str) -> None:
 
 def refresh_meta(levels: dict) -> None:
     """Recompute `_meta.counts`, `total` and `non_discogs` from the data (genres below level 1 counted under every family they descend from)."""
-    entries, forms, synonyms, _ = gv.parse_all(levels)
+    entries, _, synonyms, _ = gv.parse_all(levels)
     counts, non = {}, {}
     for f in synonyms:
         mine = [v for v in entries.values() if f in v["families"] and v is not entries.get(f)]
@@ -138,7 +139,7 @@ def review(base: dict, new: dict, base_name: str) -> str:
     old_e, old_f, _, _ = gv.parse_all(base)
     new_e, new_f, _, _ = gv.parse_all(new)
     old_all, new_all = {**old_e, **old_f}, {**new_e, **new_f}
-    old_groups, new_groups = gv.parse_groups(base), gv.parse_groups(new)
+    _, new_groups = gv.parse_groups(base), gv.parse_groups(new)
     P(f"# Genre data review: working tree against {base_name}\n")
     P(f"- genres below level 1: {len(old_e)} -> {len(new_e)}; promoted level 1 genres: {len(old_f)} -> {len(new_f)} ({', '.join(new_f) or '-'}); groups: {', '.join(new_groups) or '-'}")
     gone = sorted(set(old_all) - set(new_all))
@@ -238,10 +239,10 @@ def main() -> None:
         refresh_meta(levels)
         gv.parse_all(levels)
         if not a.dry_run:
-            (DATA / "genre_levels.json").write_text(dump(levels), encoding="utf-8", newline="\n")
+            (DATA / LEVELS_NAME).write_text(dump(levels), encoding="utf-8", newline="\n")
             (DATA / "genre_discogs.json").write_text(dump(discogs), encoding="utf-8", newline="\n")
             (DATA / "genre_extras.json").write_text(dump(extras), encoding="utf-8", newline="\n")
-    base = json.loads((Path(a.base_dir) / "genre_levels.json").read_text(encoding="utf-8")) if a.base_dir else from_git(a.base, "genre_levels.json")
+    base = json.loads((Path(a.base_dir) / LEVELS_NAME).read_text(encoding="utf-8")) if a.base_dir else from_git(a.base, LEVELS_NAME)
     text = review(base, levels, a.base_dir or a.base)
     if a.out:
         Path(a.out).write_text(text, encoding="utf-8")

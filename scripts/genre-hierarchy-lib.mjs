@@ -19,7 +19,7 @@ export function stripWikitext(text) {
 export function linkTargets(text) {
   const out = [];
   for (const m of text.matchAll(/\[\[([^\]|#]+)(?:#[^\]|]*)?(?:\|[^\]]*)?\]\]/g)) {
-    const t = m[1].replace(/_/g, " ").trim();
+    const t = m[1].replaceAll("_", " ").trim();
     if (!t || NAMESPACE.test(t) || GENERIC.has(normalise(t))) continue;
     if (!out.includes(t)) out.push(t);
   }
@@ -41,10 +41,10 @@ export function leadSentence(wikitext) {
   const para = clean.split(/\n/).map((l) => l.trim()).find((l) => l && !/^(?:\[\[(?:file|image):|[=*#:|!{]|<)/i.test(l) && /[A-Za-z]{3}/.test(l.replace(/\[\[[^\]]*\]\]/g, "x")));
   if (!para) return "";
   const text = para.replace(/'{2,}/g, "").replace(/\s+/g, " ").replace(/\[\[([^\]|#]+)(?:\|([^\]]*))?\]\]/g, (m, t, d) => (GENERIC.has(normalise(t)) ? d || t : m));
-  const hidden = text.replace(/\[\[[^\]]*\]\]/g, (m) => m.replace(/\./g, "\u0001"));
-  const end = hidden.search(/\.\s+(?=[A-Z"'\[])/);
+  const hidden = text.replace(/\[\[[^\]]*\]\]/g, (m) => m.replaceAll(".", "\u0001"));
+  const end = hidden.search(/\.\s+(?=[A-Z"'[])/);
   const sentence = end < 0 ? hidden : hidden.slice(0, end + 1);
-  return sentence.replace(/\u0001/g, ".");
+  return sentence.replaceAll("\u0001", ".");
 }
 
 /** Parents named by the lead sentence: [{label, phrase_kind}] (subgenre, genre_of, fusion, offshoot). */
@@ -87,9 +87,14 @@ export function parseInfobox(wikitext) {
   const block = infoboxBlock(wikitext);
   const fields = {};
   const re = /^\s*\|\s*([A-Za-z_ ]+?)\s*=\s*([\s\S]*?)(?=^\s*\|\s*[A-Za-z_ ]+?\s*=|\n\s*\}\}\s*$|$(?![\s\S]))/gm;
-  for (const m of block.matchAll(re)) fields[m[1].toLowerCase().replace(/ /g, "_")] = m[2];
+  for (const m of block.matchAll(re)) fields[m[1].toLowerCase().replaceAll(" ", "_")] = m[2];
   const links = (v) => linkTargets((v || "").replace(/<!--[\s\S]*?-->/g, "").replace(/<ref\b[^>]*\/>/gi, "").replace(/<ref\b[^>]*>[\s\S]*?<\/ref>/gi, ""));
   return { origins: links(fields.stylistic_origins), derivatives: links(fields.derivatives) };
+}
+
+function grade(a, b) {
+  if (a && b) return "STRONG";
+  return a || b ? "MEDIUM" : "WEAK";
 }
 
 /**
@@ -112,7 +117,7 @@ export function buildResolver(vocab, sources) {
       add(byQ, wp.wikidata, g.name);
     }
   }
-  const one = (m, k) => { const s = m.get(k); return s && s.size === 1 ? [...s][0] : undefined; };
+  const one = (m, k) => { const s = m.get(k); return s?.size === 1 ? [...s][0] : undefined; };
   const hit = (m, k) => m.has(k);
   const byLabel = (label) => {
     for (const k of new Set([normalise(label), normalise(label.replace(/\s*\((?:music|genre|music genre|musical genre)\)\s*$/i, ""))])) {
@@ -157,7 +162,7 @@ export function diffGenre(key, ev, parents, parentsOf) {
     if (own.has(p) || anc.has(p)) continue;
     if (ancestorsOf(p, parentsOf).has(key)) { contradictions.push({ key: p }); continue; }
     const via = [wd.has(p) && "wikidata", lead.has(p) && "lead", orig.has(p) && "origins"].filter(Boolean);
-    const strength = wd.has(p) && lead.has(p) ? "STRONG" : wd.has(p) || lead.has(p) ? "MEDIUM" : "WEAK";
+    const strength = grade(wd.has(p), lead.has(p));
     additions.push({ key: p, strength, via });
   }
   const removals = [];
@@ -167,7 +172,7 @@ export function diffGenre(key, ev, parents, parentsOf) {
     for (const q of all) for (const a of ancestorsOf(q, parentsOf)) supported.add(a);
     for (const p of parents) {
       if (supported.has(p)) continue;
-      removals.push({ key: p, strength: wdAny && leadAny ? "STRONG" : wdAny || leadAny ? "MEDIUM" : "WEAK" });
+      removals.push({ key: p, strength: grade(wdAny, leadAny) });
     }
   }
   return { additions, removals, contradictions, noEvidence };

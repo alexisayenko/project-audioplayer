@@ -88,15 +88,23 @@ def clean_link(key: str, value: Any) -> str | None:
         if not _WP_HOST.fullmatch(host) or not parts.path.startswith("/wiki/") or len(parts.path) < 7:
             raise _bad(key)
         return f"https://{host}{parts.path}"
+    found = _clean_youtube(host, parts)
+    if found is None:
+        raise _bad(key)
+    return found
+
+
+def _clean_youtube(host: str, parts: Any) -> str | None:
     if host == "youtu.be" and len(parts.path) > 1:
         return f"https://youtu.be{parts.path}"
-    if host in _YT_HOSTS and parts.path in ("/watch", "/playlist"):
-        query = {k: v for k, v in reversed(parse_qsl(parts.query)) if k in ("v", "list") and v}
-        needed = "list" if parts.path == "/playlist" else None
-        if (needed and needed in query) or (not needed and ("v" in query or "list" in query)):
-            ordered = {k: query[k] for k in ("v", "list") if k in query}
-            return f"https://{host}{parts.path}?{urlencode(ordered)}"
-    raise _bad(key)
+    if host not in _YT_HOSTS or parts.path not in ("/watch", "/playlist"):
+        return None
+    query = {k: v for k, v in reversed(parse_qsl(parts.query)) if k in ("v", "list") and v}
+    needed = "list" if parts.path == "/playlist" else None
+    if (needed and needed in query) or (not needed and ("v" in query or "list" in query)):
+        ordered = {k: query[k] for k in ("v", "list") if k in query}
+        return f"https://{host}{parts.path}?{urlencode(ordered)}"
+    return None
 
 
 def _stored_link(key: str, value: Any) -> str | None:
@@ -140,16 +148,20 @@ def clean_field(key: str, value: Any) -> Any:
             raise _bad_field(key)
         return text
     if key == "year":
-        if value is None:
-            return None
-        if isinstance(value, bool) or not isinstance(value, int) or not 1900 <= value <= 2100:
-            raise _bad_field(key)
-        return value
+        return _clean_year(value)
     if key == "genres":
         if not isinstance(value, list) or not all(isinstance(g, str) for g in value):
             raise _bad_field(key)
         return _genres({"genres": value})
     raise _bad_field(key)
+
+
+def _clean_year(value: Any) -> int | None:
+    if value is None:
+        return None
+    if isinstance(value, bool) or not isinstance(value, int) or not 1900 <= value <= 2100:
+        raise _bad_field("year")
+    return value
 
 
 def parse_duration(value: Any) -> int | None:
@@ -167,16 +179,19 @@ def _artists(detail: dict[str, Any]) -> str:
     return ", ".join(names)
 
 
+def _track_rows(item: dict[str, Any]) -> list[dict[str, Any]]:
+    kind = item.get("type_") or "track"
+    if kind == "heading":
+        return []
+    subs = [s for s in item.get("sub_tracks") or [] if isinstance(s, dict)]
+    return subs if kind == "index" and subs else [item]
+
+
 def _flat_tracks(detail: dict[str, Any]) -> list[dict[str, Any]]:
     rows: list[dict[str, Any]] = []
     for item in detail.get("tracklist") or []:
-        if not isinstance(item, dict):
-            continue
-        kind = item.get("type_") or "track"
-        if kind == "heading":
-            continue
-        subs = [s for s in item.get("sub_tracks") or [] if isinstance(s, dict)]
-        rows.extend(subs if kind == "index" and subs else [item])
+        if isinstance(item, dict):
+            rows.extend(_track_rows(item))
     tracks = []
     for row in rows:
         title = _POS.sub(" ", str(row.get("title") or "")).strip()[:MAX_TEXT]
@@ -234,6 +249,17 @@ def preview(url: Any) -> dict[str, Any]:
     }
 
 
+def _validated_tracks(raw: list[Any], bad: AlbumError) -> list[dict[str, Any]]:
+    tracks = []
+    for i, t in enumerate(raw, 1):
+        name = str(t.get("title") or "").strip()[:MAX_TEXT] if isinstance(t, dict) else ""
+        if not name:
+            raise bad
+        d = t.get("durationS")
+        tracks.append({"no": i, "title": name, "durationS": d if isinstance(d, int) and not isinstance(d, bool) and 0 < d < 86400 * 2 else None})
+    return tracks
+
+
 def validate(body: Any) -> dict[str, Any]:
     """The preview payload re-checked; client extras are dropped. Raises AlbumError(422, ...)."""
     bad = AlbumError(422, "bad_album")
@@ -246,13 +272,7 @@ def validate(body: Any) -> dict[str, Any]:
     raw = body.get("tracks")
     if not title or not isinstance(raw, list) or not raw or len(raw) > MAX_TRACKS:
         raise bad
-    tracks = []
-    for i, t in enumerate(raw, 1):
-        name = str(t.get("title") or "").strip()[:MAX_TEXT] if isinstance(t, dict) else ""
-        if not name:
-            raise bad
-        d = t.get("durationS")
-        tracks.append({"no": i, "title": name, "durationS": d if isinstance(d, int) and not isinstance(d, bool) and 0 < d < 86400 * 2 else None})
+    tracks = _validated_tracks(raw, bad)
     year = body.get("year")
     genres = _genres({"genres": body["genres"] if isinstance(body.get("genres"), list) else []})
     ident = str(int(src["id"]))

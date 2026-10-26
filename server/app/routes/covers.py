@@ -111,7 +111,7 @@ def json_choice(body: bytes) -> tuple[str, str]:
     """('default', '') or ('url', address) from a JSON body; anything else is refused."""
     try:
         doc = json.loads(body.decode("utf-8"))
-    except (ValueError, UnicodeDecodeError):
+    except ValueError:
         raise Problem(400, "cover_bad_body", "The request body is not valid JSON.") from None
     if not isinstance(doc, dict):
         raise Problem(422, "cover_bad_body", CHOICE_HINT)

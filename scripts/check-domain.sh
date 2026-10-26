@@ -63,8 +63,8 @@ trap 'rm -f "$HDR" "$BODY"' EXIT
 status_of() { head -n1 "$HDR" | tr -d '\r' | awk '{print $2}'; return 0; }
 header_of() { local name="$1"; grep -i "^$name:" "$HDR" | tail -n1 | tr -d '\r' | cut -d' ' -f2-; return 0; }
 
-check_host() { # host which
-  local h="$1" which="$2" url="https://$1" t s body ids
+check_host() { # host
+  local h="$1" url="https://$1" t s body
   # (a) DNS
   local ns a aaaa cn
   ns="$(dns NS "$h" | sort | tr '\n' ' ')"
@@ -100,7 +100,7 @@ check_host() { # host which
   # (c) app
   body="$(get "$url/health")"
   flat="$(printf '%s' "$body" | tr -d ' ')"
-  case "$flat" in *'"ready":false'*) warn "/health $h" "server is starting (startup work still running): $body"; flat="" ;; esac
+  case "$flat" in *'"ready":false'*) warn "/health $h" "server is starting (startup work still running): $body"; flat="" ;; *) ;; esac
   flat="$(printf '%s' "$flat" | sed 's/,"ready":true,"startup":{[^}]*}//')"
   if [[ "$flat" = '{"status":"ok","sync":{"state":"ok"}}' ]] || [[ "$flat" = '{"status":"ok","sync":"ok"}' ]]; then pass "/health $h" "$body"
   elif [[ "$flat" = '{"status":"ok","sync":{"state":"degraded"}}' ]]; then warn "/health $h" "git sync degraded (stale or error): $body"

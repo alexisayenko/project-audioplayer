@@ -71,7 +71,7 @@ def _clean_source(raw: Any) -> dict[str, Any] | None:
 def load(path: Path) -> list[dict[str, Any]]:
     try:
         raw = json.loads(path.read_text(encoding="utf-8"))
-    except (FileNotFoundError, ValueError, OSError):
+    except (ValueError, OSError):
         return []
     found = raw.get("playlists") if isinstance(raw, dict) else None
     out: list[dict[str, Any]] = []

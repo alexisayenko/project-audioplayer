@@ -25,7 +25,7 @@ TEMPLATES: dict[str, str] = {
 _TIME_RE = re.compile(r"^(?:(\d+)h)?(?:(\d+)m)?(?:(\d+(?:\.\d+)?)s?)?$", re.I)
 _CLOCK_RE = re.compile(r"^(?:(\d{1,3}):)?(\d{1,2}):(\d{1,2})(?:\.\d+)?$")
 _SCHEME_RE = re.compile(r"^[a-z][a-z0-9+.-]*://", re.I)
-_SPOTIFY_TRACK_RE = re.compile(r"^https?://open\.spotify\.com/(?:intl-[a-z]{2}(?:-[a-z]{2,4})?/)?track/([A-Za-z0-9]{22})(?:[/?#].*)?$", re.I)
+_SPOTIFY_TRACK_RE = re.compile(r"^https?://open\.spotify\.com/(?:intl-[a-z]{2}(?:-[a-z]{2,4})?/)?track/([a-z0-9]{22})(?:[/?#].*)?$", re.I)
 _SC_PREFIX = "https://soundcloud.com/"
 _START_KEYS = ("t", "start")
 

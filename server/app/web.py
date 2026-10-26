@@ -19,6 +19,7 @@ from .safepath import safe_join
 _ASSET_REF = re.compile(r'(href|src)="([a-z0-9-]+\.css|favicon\.svg|favicon-32\.png|apple-touch-icon\.png|img/[a-z0-9-]+\.png|js/app\.js)"')
 _INLINE_IMPORT = re.compile(r"(\bfrom\s*')\./(js/[a-z0-9-]+\.js')")
 _ENTRY = "js/app.js"
+_HEAD_END = "</head>"
 _STATIC_IMPORT = re.compile(r"""(?:^|[\n;])\s*(?:import|export)\b[^;'"]*?\bfrom\s*['"](\.{1,2}/[^'"]+)['"]""")
 _BARE_IMPORT = re.compile(r"""(?:^|[\n;])\s*import\s*['"](\.{1,2}/[^'"]+)['"]""")
 _DYNAMIC_IMPORT = re.compile(r"""\bimport\(\s*['"](\.{1,2}/[^'"]+)['"]\s*\)""")
@@ -152,8 +153,8 @@ def _index_response(request: Request) -> Response:
     bundled = webbundle.rewrite_page(page, version, manifest) if manifest else None
     page = _ASSET_REF.sub(lambda m: f'{m.group(1)}="_v/{version}/{m.group(2)}"', bundled or page)
     page = _INLINE_IMPORT.sub(lambda m: f"{m.group(1)}./_v/{version}/{m.group(2)}", page)
-    if bundled is None and "</head>" in page:
-        page = page.replace("</head>", _preload_links(version) + "</head>", 1)
+    if bundled is None and _HEAD_END in page:
+        page = page.replace(_HEAD_END, _preload_links(version) + _HEAD_END, 1)
     return HTMLResponse(page, headers=headers)
 
 

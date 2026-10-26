@@ -12,6 +12,7 @@ log = logging.getLogger(__name__)
 
 SOURCES = ("discogs", "wikipedia", "youtube", "url")
 STORED_SOURCES = (*SOURCES, "upload")
+HTTPS = "https://"
 MAX_DISCOGS_IMAGES = 4
 MAX_WIKIPEDIA_IMAGES = 2
 
@@ -37,13 +38,20 @@ def present(uid: str, album: dict[str, Any], songs: list[dict[str, Any]] | None 
     cover = {"source": own["source"] if has_file else None, "url": own["url"] if has_file else None}
     if has_file:
         return {**album, "cover": cover, "coverUrl": f"/albums/{album['id']}/cover?v={own['v'] or ''}", "coverFrom": "album"}
+    song = _first_song_with_cover(album, songs)
+    if song:
+        version = song.get("cover_v")
+        return {**album, "cover": cover, "coverUrl": f"/covers/{song['id']}" + (f"?v={version}" if version else ""), "coverFrom": "song"}
+    return {**album, "cover": cover, "coverUrl": None, "coverFrom": None}
+
+
+def _first_song_with_cover(album: dict[str, Any], songs: list[dict[str, Any]] | None) -> dict[str, Any] | None:
     by_id = {s.get("id"): s for s in songs or []}
     for track in album.get("tracks") or []:
         song = by_id.get(track.get("songId")) if isinstance(track, dict) else None
         if song and song.get("cover"):
-            version = song.get("cover_v")
-            return {**album, "cover": cover, "coverUrl": f"/covers/{song['id']}" + (f"?v={version}" if version else ""), "coverFrom": "song"}
-    return {**album, "cover": cover, "coverUrl": None, "coverFrom": None}
+            return song
+    return None
 
 
 # --- candidates ----------------------------------------------------------------------------------
@@ -56,10 +64,10 @@ def _discogs_images(kind: str, ident: int) -> list[dict[str, Any]]:
     items.sort(key=lambda i: i.get("type") != "primary")
     out = []
     for item in items:
-        url = next((item[k] for k in ("uri", "resource_url") if isinstance(item.get(k), str) and item[k].startswith("https://")
+        url = next((item[k] for k in ("uri", "resource_url") if isinstance(item.get(k), str) and item[k].startswith(HTTPS)
                     and discogs_cover.is_discogs_host(urllib.parse.urlsplit(item[k]).hostname)), None)
         if url:
-            thumb = item.get("uri150") if isinstance(item.get("uri150"), str) and item["uri150"].startswith("https://") else url
+            thumb = item.get("uri150") if isinstance(item.get("uri150"), str) and item["uri150"].startswith(HTTPS) else url
             out.append({"source": "discogs", "url": url, "thumb": thumb, "width": _int(item.get("width")), "height": _int(item.get("height")), "label": "Discogs"})
     main = doc.get("main_release")
     if not out and kind == "master" and isinstance(main, int) and not isinstance(main, bool):
@@ -92,7 +100,7 @@ def discogs_candidates(album: dict[str, Any], link: str | None) -> list[dict[str
         except Exception as exc:
             log.warning("album cover: discogs images failed: %s", type(exc).__name__)
     thumb = album.get("discogsThumb")
-    if not found and isinstance(thumb, str) and thumb.startswith("https://"):
+    if not found and isinstance(thumb, str) and thumb.startswith(HTTPS):
         found = [{"source": "discogs", "url": thumb, "thumb": thumb, "width": None, "height": None, "label": "Discogs search thumbnail"}]
     return found
 

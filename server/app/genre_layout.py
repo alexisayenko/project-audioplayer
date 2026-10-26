@@ -39,7 +39,7 @@ def count(doc: dict[str, Any]) -> int:
 def load(path: Path) -> dict[str, Any]:
     try:
         raw = json.loads(path.read_text(encoding="utf-8"))
-    except (FileNotFoundError, ValueError, OSError):
+    except (ValueError, OSError):
         return empty()
     if not isinstance(raw, dict):
         return empty()

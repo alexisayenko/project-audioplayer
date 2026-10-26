@@ -12,6 +12,7 @@ from pathlib import Path
 log = logging.getLogger("audioplayer.web")
 
 _SHEET = re.compile(r'<link rel="stylesheet" href="([^"]+)">[ \t]*\n?')
+_HEAD_END = "</head>"
 _SCRIPT = 'src="js/app.js"'
 _ICONS_IMPORT = "from './js/icons.js'"
 _cache: dict[tuple[str, str], dict | None] = {}
@@ -65,7 +66,7 @@ def manifest_for(root: Path, version: str) -> dict | None:
 def rewrite_page(page: str, version: str, manifest: dict) -> str | None:
     """index.html with one stylesheet, the bundle entry, the bundled icons module and preload hints for the startup files; None when the page does not have the expected shape."""
     sheets = [m.group(1) for m in _SHEET.finditer(page)]
-    if sheets != manifest["stylesheets"] or page.count(_SCRIPT) != 1 or page.count(_ICONS_IMPORT) != 1 or "</head>" not in page:
+    if sheets != manifest["stylesheets"] or page.count(_SCRIPT) != 1 or page.count(_ICONS_IMPORT) != 1 or _HEAD_END not in page:
         return None
     base = f"_v/{version}/"
     seen: list[str] = []
@@ -79,4 +80,4 @@ def rewrite_page(page: str, version: str, manifest: dict) -> str | None:
     links = "".join(f'<link rel="modulepreload" href="{base}{p}">\n' for p in manifest["tier1"])
     if manifest["tier2"]:
         links += f'<script type="application/json" id="tier2-modules">{json.dumps([base + p for p in manifest["tier2"]])}</script>\n'
-    return page.replace("</head>", links + "</head>", 1)
+    return page.replace(_HEAD_END, links + _HEAD_END, 1)

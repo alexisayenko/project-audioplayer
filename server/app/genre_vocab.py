@@ -23,6 +23,7 @@ DISCOGS_FILE = DATA_DIR / "genre_discogs.json"
 EXTRAS_FILE = DATA_DIR / "genre_extras.json"
 LEVELS_FILE = DATA_DIR / "genre_levels.json"
 DESCRIPTIONS_FILE = DATA_DIR / "genre_descriptions.json"
+_MUSIC = " music"
 DESCRIPTION_MAX = 1000
 SUGGESTIONS = 5
 MIN_CUTOFF = 0.6
@@ -201,8 +202,8 @@ def entry(value: str) -> Entry | None:
 
 def _entry_or_music(value: str) -> Entry | None:
     e = entry(value)
-    if e is None and value.lower().rstrip().endswith(" music"):
-        e = entry(value.rstrip()[: -len(" music")])
+    if e is None and value.lower().rstrip().endswith(_MUSIC):
+        e = entry(value.rstrip()[: -len(_MUSIC)])
     return e
 
 
@@ -251,7 +252,7 @@ def colour_family(family: str) -> str:
 
 def group_colour(value: str) -> str | None:
     """The legacy colour family a group spelling stands for in the graph (a label such as "electronic music" or "electronica" names a group, not a genre); None when the spelling is not a group (also tried without a trailing " music")."""
-    for text in (value, value.rstrip()[: -len(" music")] if value.lower().rstrip().endswith(" music") else ""):
+    for text in (value, value.rstrip()[: -len(_MUSIC)] if value.lower().rstrip().endswith(_MUSIC) else ""):
         name = group(text) if text else None
         if name:
             return load().groups[name].get("colour") or name
@@ -609,7 +610,7 @@ def parse_all(doc: Any) -> tuple[dict[str, dict[str, Any]], dict[str, dict[str, 
     forms = _parse_forms(doc, modifiers, name)
     taken = {k for k in forms if k in levels}
     if taken:
-        raise ValueError(f"{name}: form {sorted(taken)[0]!r} is also an entry")
+        raise ValueError(f"{name}: form {min(taken)!r} is also an entry")
     reserved = {vkey(n): g["name"] for g in groups.values() for n in (g["name"], *g["synonyms"])}
     for k in levels:
         if vkey(k) in reserved:

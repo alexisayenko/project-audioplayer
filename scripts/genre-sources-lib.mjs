@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 
 export function normalise(name) {
   let s = String(name).normalize("NFKD").replace(/[̀-ͯ]/g, "").toLowerCase();
-  s = s.replace(/&/g, " and ").replace(/[-_/,.]/g, " ").replace(/['’`]/g, "");
+  s = s.replaceAll("&", " and ").replace(/[-_/,.]/g, " ").replace(/['’`]/g, "");
   s = s.replace(/\s+/g, " ").trim().replace(/\s+music$/, "");
   return s.replace(/[^a-z0-9]/g, "");
 }

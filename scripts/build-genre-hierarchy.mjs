@@ -139,4 +139,9 @@ async function main() {
   console.log(JSON.stringify({ ...meta, how: undefined, networkCalls: network }, null, 1));
 }
 
-main().catch((e) => { console.error(e); process.exit(1); });
+try {
+  await main();
+} catch (e) {
+  console.error(e);
+  process.exit(1);
+}

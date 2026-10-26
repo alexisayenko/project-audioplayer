@@ -82,9 +82,9 @@ function layout(outputs) {
   const starts = [...new Set(tier1.flatMap((f) => imports(f, 'dynamic-import')))];
   const rank = (f) => { const i = PRELOAD_ORDER.findIndex((n) => f.includes(`/${n}-`)); return i < 0 ? PRELOAD_ORDER.length : i; };
   const lazy = [];
-  for (const start of starts.sort((a, b) => rank(a) - rank(b))) lazy.push(...closure([start], seen));
-  for (let i = 0; i < lazy.length; i += 1) {
-    for (const f of imports(lazy[i], 'dynamic-import')) if (!seen.has(f)) lazy.push(...closure([f], seen));
+  for (const start of starts.toSorted((a, b) => rank(a) - rank(b))) lazy.push(...closure([start], seen));
+  for (const item of lazy) {
+    for (const f of imports(item, 'dynamic-import')) if (!seen.has(f)) lazy.push(...closure([f], seen));
   }
   return { tier1, tier2: lazy };
 }

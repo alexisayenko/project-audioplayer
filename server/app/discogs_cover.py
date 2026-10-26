@@ -58,7 +58,7 @@ def _api(path: str) -> dict[str, Any] | None:
         if exc.code == 404:
             return None
         raise Problem(502, "cover_url_unreachable", "Could not reach Discogs.") from None
-    except (OSError, ValueError, RuntimeError, json.JSONDecodeError):
+    except (OSError, ValueError, RuntimeError):
         raise Problem(502, "cover_url_unreachable", "Could not reach Discogs.") from None
     return doc if isinstance(doc, dict) else None
 

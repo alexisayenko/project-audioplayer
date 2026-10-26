@@ -137,7 +137,7 @@ def decide(groups: dict[str, list[str]], *, weights: dict[str, float] | None = N
 
     `groups` maps a group (`GROUPS`) to the genres it listed (`genre:x` or bare names). `weights` overrides a group's weight (default 1; a Discogs search hit is `DISCOGS_SEARCH_WEIGHT`). With `versioned` only the `youtube` group (the version's own link) is applied; every other found genre is a suggestion marked `original` (or the label `origin` gives for its group, for example `remixer`)."""
     tree = get_tree()
-    weight = {g: 1.0 for g in GROUPS}
+    weight = dict.fromkeys(GROUPS, 1.0)
     weight.update(weights or {})
     listed: dict[str, list[str]] = {}
     for g, values in groups.items():
@@ -224,7 +224,7 @@ def _finish(eligible: list[str], direct: dict[str, set[str]], support: dict[str,
     decision = Decision(applied=applied, sources={n: _order(list(direct[n])) for n in applied})
     if not suggest:
         return decision
-    reasons = {**declined, **{n: OVER_CAP for n in over}}
+    reasons = {**declined, **dict.fromkeys(over, OVER_CAP)}
     suggestions = []
     for n in sorted((n for n in direct if n not in applied and n not in pruned), key=lambda n: _suggest_key(n, direct, support)):
         single = len(direct[n]) == 1 and support[n] <= 1.0

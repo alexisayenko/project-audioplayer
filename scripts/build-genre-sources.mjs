@@ -249,9 +249,14 @@ async function main() {
     how: "A genre matches a catalogue entry when the normalised name is equal (match: name), else when a normalised listed synonym or display name is equal (match: synonym); entries from genre_sources_manual.json are match: manual. Normalisation: lowercase, accents folded, '&' read as 'and', hyphens, spaces and punctuation ignored, a trailing 'music' word dropped. Wikipedia: Wikidata items found by label search that are an instance or subclass of 'music genre' (Q188451) and have an English Wikipedia article. Several candidates, or a target claimed by two genres without exactly one name match, go to genre_sources_review.json and are not stored. Discogs is the genre_levels.json flag (true for the 11 families); discogs_name is Discogs's own spelling where it differs from the key.",
   };
   writeFileSync(join(DATA, "genre_sources.json"), JSON.stringify({ _meta: meta, ...out }, null, 1) + "\n");
-  const rv = review.sort((a, b) => a.source.localeCompare(b.source) || a.genre.localeCompare(b.genre) || a.candidate.localeCompare(b.candidate));
+  const rv = review.toSorted((a, b) => a.source.localeCompare(b.source) || a.genre.localeCompare(b.genre) || a.candidate.localeCompare(b.candidate));
   writeFileSync(join(DATA, "genre_sources_review.json"), JSON.stringify({ _meta: { generated_at: meta.generated_at, note: "Candidates that were not stored. To accept one, add it to server/data/genre_sources_manual.json and rebuild." }, review: rv }, null, 1) + "\n");
   console.log(JSON.stringify({ counts, byMatch, review: rv.length, unreachable, networkCalls: network, wikidataClasses: notes.wikidata_classes }, null, 1));
 }
 
-main().catch((e) => { console.error(e); process.exit(1); });
+try {
+  await main();
+} catch (e) {
+  console.error(e);
+  process.exit(1);
+}

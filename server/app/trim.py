@@ -41,7 +41,10 @@ def check(start: Any, end: Any, duration: float | None = None) -> Trim:
         raise Problem(422, "invalid_trim", "trim start must be before trim end")
     if s is None and e is None:
         return NONE
-    length = (e if e is not None else known if known is not None else math.inf) - (s or 0.0)
+    end = known if known is not None else math.inf
+    if e is not None:
+        end = e
+    length = end - (s or 0.0)
     if length < MIN_CUT:
         raise Problem(422, "trim_too_short", f"the cut must be at least {MIN_CUT:g} s long")
     return s, e

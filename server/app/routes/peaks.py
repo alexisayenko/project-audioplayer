@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from fastapi.concurrency import run_in_threadpool
@@ -17,7 +17,7 @@ HEADERS = {"Cache-Control": "private, no-cache", "Vary": "Cookie, Authorization"
 
 
 @router.get("/songs/{video_id}/peaks", responses=deps.responses(403, 404, 422, 429, 503))
-async def get_peaks(request: Request, video_id: str, user: dict[str, Any] = Depends(deps.read_user)):
+async def get_peaks(request: Request, video_id: str, user: Annotated[dict[str, Any], Depends(deps.read_user)]):
     """`{v, buckets, duration, min, max}`: signed 8-bit min/max pairs of the whole file; computed on first use, cached beside the audio, ETag per file version."""
     deps.valid_id(video_id)
     visitor = guest.is_guest(user)
