@@ -95,3 +95,37 @@
   .album-cover-edit .cover-edit-img { --cover-size: calc(var(--hit) * 2.5); }
 }
 .card-dlg .album-art .card-cover { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.album-video { gap: var(--space-3); }
+.av-head { display: grid; gap: var(--space-1); }
+.av-form { display: grid; gap: var(--space-2) var(--space-3); grid-template-columns: repeat(auto-fit, minmax(min(100%, calc(var(--hit) * 4)), 1fr)); }
+.av-form .field { margin-top: 0; }
+.av-genres { grid-column: 1 / -1; }
+.av-bar-row { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); }
+.av-summary { margin: 0; }
+.av-tools { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2) var(--space-3); }
+.av-shift { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); }
+.av-delta { width: calc(var(--hit) * 1.5); }
+.av-rows { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--space-3); }
+.av-row { display: grid; grid-template-columns: auto auto minmax(0, 1fr) auto; align-items: center; gap: var(--space-2); padding-bottom: var(--space-3); border-bottom: var(--stroke-hairline) solid var(--line); }
+.av-row > input[type=text]:not(.av-start, .av-end-input) { grid-column: 1 / -1; }
+.av-row input[type=checkbox] { width: auto; min-height: 0; }
+.av-inc { display: inline-flex; align-items: center; min-height: var(--hit); min-width: var(--hit); justify-content: center; }
+.av-end { white-space: nowrap; }
+.av-end-input { width: calc(var(--hit) * 2); }
+.av-meta { grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-1) var(--space-3); }
+.av-use { display: inline-flex; align-items: center; gap: var(--space-1); }
+.av-issue { grid-column: 1 / -1; margin: 0; color: var(--power-text); }
+.av-bottom { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3); }
+.av-fades { display: flex; align-items: center; gap: var(--space-2); }
+.av-fades input { width: auto; min-height: 0; }
+.av-problems { margin: 0; color: var(--power-text); }
+.av-paste { width: 100%; resize: vertical; }
+.av-progress { display: grid; gap: var(--space-3); }
+.av-progress p { margin: 0; }
+.av-progress-actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3); }
+.av-bar { height: var(--space-2); background: var(--line); border-radius: var(--radius-pill); overflow: hidden; }
+.av-bar::after { content: ""; display: block; height: 100%; width: var(--w, 0%); background: var(--fill); border-radius: inherit; transition: width var(--dur-slow) linear; }
+@media (min-width: 720px) {
+  .av-row { grid-template-columns: auto auto calc(var(--hit) * 2) calc(var(--hit) * 2) minmax(0, 1fr) minmax(0, 2fr) minmax(0, 1fr); }
+  .av-row > input[type=text]:not(.av-start, .av-end-input) { grid-column: auto; }
+}

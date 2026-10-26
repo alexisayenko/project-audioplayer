@@ -14,6 +14,8 @@ import { songMatches } from './song-match.js';
 import { playlistLink, MIX_MESSAGE, PRIVATE_MESSAGE } from './playlist-link.js';
 import { startDownloads, mountDownloadStatus } from './albums-youtube.js';
 import { albumCoverImg, albumCoverSection } from './albums-cover.js';
+import { createVideoFlow } from './album-video.js';
+import { videoLink } from './album-video-model.js';
 import { dialogHead } from './edit-dialog.js';
 import { artistLine, titleLine, displayLine, albumsOf, albumOf, releasedYear } from './credits.js';
 import { openPlDialog, closePlDialog } from './playlist-dialogs.js';
@@ -770,7 +772,7 @@ export const QUOTA_PER_HOUR = 20;
 
 export function openAddAlbum(opener = null) {
   const dlg = document.getElementById('add-dialog');
-  const url = el('input', { type: 'text', placeholder: 'Discogs release or YouTube playlist address', 'aria-label': 'Discogs release or YouTube playlist address', autocomplete: 'off', inputMode: 'url' });
+  const url = el('input', { type: 'text', placeholder: 'Discogs release, YouTube playlist or video address', 'aria-label': 'Discogs release, YouTube playlist or video address', autocomplete: 'off', inputMode: 'url' });
   const fetchBtn = el('button', { class: 'btn fill small', type: 'submit' }, 'Fetch');
   const form = el('form', { class: 'well' }, url, fetchBtn);
   const message = el('div', { role: 'alert' });
@@ -782,6 +784,18 @@ export function openAddAlbum(opener = null) {
   let live = true;
   let yt = null;
   let owner = false;
+  const video = createVideoFlow({
+    body, say, genreEditor, isLive: () => live,
+    setBusy: (on) => { fetchBtn.disabled = on; },
+    hideForm: () => { form.hidden = true; },
+    onBack: () => { body.replaceChildren(); form.hidden = false; url.focus(); },
+    onCreated: (albumId) => {
+      dlg.close();
+      window.dispatchEvent(new Event(ALBUMS_CHANGED));
+      void store.refresh().catch(() => {});
+      if (albumId) location.hash = `#/library/albums/${encodeURIComponent(albumId)}`;
+    },
+  });
 
   function paintPreview(preview) {
     const editor = genreEditor(preview.genres);
@@ -1062,17 +1076,19 @@ export function openAddAlbum(opener = null) {
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
     const address = url.value.trim();
-    if (!address) { say('Paste a Discogs release or YouTube playlist address.'); url.focus(); return; }
+    if (!address) { say('Paste a Discogs release, YouTube playlist or video address.'); url.focus(); return; }
     const pl = playlistLink(address);
     if (pl?.kind === 'mix') { say(MIX_MESSAGE); return; }
     if (pl?.kind === 'private') { say(PRIVATE_MESSAGE); return; }
     if (pl) { await startYoutube(pl.url); return; }
+    if (videoLink(address)) { await video.start(address); return; }
     if (yt) { await addPasted(address); return; }
     await loadPreview(address);
   });
 
   dlg.onclose = () => {
     live = false;
+    video.dispose();
     dlg.replaceChildren();
     dlg.onclose = null;
     dlg.onclick = null;
