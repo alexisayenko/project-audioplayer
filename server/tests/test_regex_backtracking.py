@@ -1,6 +1,6 @@
 import time
 
-from app import credit_title, wiki_lookup
+from app import album_youtube, credit_title, wiki_lookup
 
 
 def test_bracket_tail_normal_cases():
@@ -32,3 +32,27 @@ def test_adversarial_inputs_stay_linear():
     assert elapsed(lambda: credit_title._VS.split(big_space)) < 1
     for text in (big_space, big_open, "[" * n, "(" * n + "x", ") " * n, "(a" * (n // 2), "(" * n + ")", "[(" * (n // 2) + "]"):
         assert elapsed(lambda: wiki_lookup._strip_bracket_tail(text)) < 1, text[:8]
+
+
+def test_album_title_patterns_stay_linear():
+    n = 20000
+    texts = (" " * n + "x", "x" + " " * n, "x" + " - " * n, "x" + " , " * n, "x" + " (" * n, "x" + " [" * n)
+    for name in ("_NOISE_GROUP", "_NOISE_TAIL", "_SEP", "_TOPIC", "_TRAIL_SQUARE", "_TRAIL_ROUND", "_TRAIL_YEAR"):
+        pattern = getattr(album_youtube, name)
+        for text in texts:
+            assert elapsed(lambda: pattern.sub("", text)) < 1, (name, text[:6])
+    for text in texts:
+        assert elapsed(lambda: album_youtube._strip_brackets(text)) < 1, text[:6]
+
+
+def test_strip_brackets_cases():
+    cases = {
+        "Album (2011 Remastered)": "Album",
+        "Album (Mono) [Live]": "Album [Live]",
+        "Album  (Bonus Track)x": "Albumx",
+        "(Stereo)": "",
+        "Album (a (b) c)": "Album (a (b) c)",
+        "Album (open": "Album (open",
+    }
+    for text, expected in cases.items():
+        assert album_youtube._strip_brackets(text) == expected, text

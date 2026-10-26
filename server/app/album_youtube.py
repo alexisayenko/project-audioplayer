@@ -6,6 +6,7 @@ import difflib
 import os
 import re
 import urllib.error
+from collections.abc import Iterator
 from typing import Any
 
 from fastapi import HTTPException
@@ -19,11 +20,13 @@ BEST_MIN_SCORE = 0.7
 BEST_MARGIN = 0.1
 SUBSTRING_SCORE = 0.6
 MAX_SELECTED = 200
-_NOISE_GROUP = re.compile(r"(?<!\s)\s*[\(\[]\s*(?:(?:full|complete|entire|whole)\s+)?(?:album|lp|ep)(?:\s+(?:stream|version|playlist))?\s*[\)\]]", re.I)
+_FULL_ALBUM = r"(?:(?:full|complete|entire|whole)\s+)?(?:album|lp|ep)"
+_NOISE_GROUP = re.compile(rf"(?<!\s)\s*[\(\[]\s*{_FULL_ALBUM}(?:\s+(?:stream|version|playlist))?\s*[\)\]]", re.I)
 _NOISE_TAIL = re.compile(r"(?<![\s\-–—:|])[\s\-–—:|]+(?:full|complete|entire|whole)\s+(?:album|lp|ep)(?:\s+stream)?\s*$", re.I)
 _SEP = re.compile(r"(?<!\s)\s+[-–—]\s+")
 _TOPIC = re.compile(r"(?<!\s)\s+-\s+topic$", re.I)
-_BRACKETS = re.compile(r"(?<!\s)\s*[\(\[]([^\)\]]*)[\)\]]")
+_OPENER = re.compile(r"[\(\[]")
+_CLOSER = re.compile(r"[\)\]]")
 _IGNORED_BRACKET = re.compile(r"^\s*(?:mono|stereo|bonus track|\d{4}\s+(?:mix|version))\s*$", re.I)
 _YEAR = re.compile(r"(?<![\w])((?:19|20)\d{2})(?![\w])")
 _DESC_YEAR = re.compile(r"(?:released?|release date|℗|©|year)\D{0,15}((?:19|20)\d{2})(?!\d)", re.I)
@@ -413,12 +416,29 @@ def _candidate(item: dict[str, Any], artist: str, album: str, count: int | None,
 
 # --- title matching ------------------------------------------------------------------------------
 
-def _strip_brackets(text: str) -> str:
-    def drop(m: re.Match[str]) -> str:
-        inner = m.group(1)
-        return "" if credits_split.kind_of(inner) == "remaster" or _IGNORED_BRACKET.fullmatch(inner) else m.group(0)
+def _bracket_groups(text: str) -> Iterator[tuple[int, int, int, int]]:
+    """(start incl. the spaces before, inner start, inner end, end) of each opener up to the next closer, left to right, in one pass."""
+    pos = 0
+    while (opener := _OPENER.search(text, pos)) and (closer := _CLOSER.search(text, opener.end())):
+        start = opener.start()
+        while start > pos and text[start - 1].isspace():
+            start -= 1
+        yield start, opener.end(), closer.start(), closer.end()
+        pos = closer.end()
 
-    return _BRACKETS.sub(drop, text)
+
+def _strip_brackets(text: str) -> str:
+    out: list[str] = []
+    last = 0
+    for start, inner_start, inner_end, end in _bracket_groups(text):
+        inner = text[inner_start:inner_end]
+        drop = credits_split.kind_of(inner) == "remaster" or _IGNORED_BRACKET.fullmatch(inner)
+        out.append(text[last:start])
+        if not drop:
+            out.append(text[start:end])
+        last = end
+    out.append(text[last:])
+    return "".join(out)
 
 
 def track_key(title: Any) -> str:
