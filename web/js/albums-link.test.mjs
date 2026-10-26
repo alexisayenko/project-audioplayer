@@ -156,3 +156,20 @@ test('linking inside an open panel keeps that panel open', async () => {
   assert.ok(first.querySelector('.album-unlink'));
   v.dlg.close();
 });
+
+test('arrow keys move focus between track rows; Home and End jump', async () => {
+  const v = await open(() => ok(ALBUM));
+  const rows = () => [...v.dlg.querySelectorAll('.album-row-btn')];
+  rows()[0].focus();
+  fire(rows()[0], 'keydown', { key: 'ArrowDown' });
+  assert.equal(document.activeElement, rows()[1]);
+  fire(rows()[1], 'keydown', { key: 'End' });
+  assert.equal(document.activeElement, rows()[2]);
+  fire(rows()[2], 'keydown', { key: 'ArrowUp' });
+  assert.equal(document.activeElement, rows()[1]);
+  fire(rows()[1], 'keydown', { key: 'Home' });
+  assert.equal(document.activeElement, rows()[0]);
+  fire(rows()[0], 'keydown', { key: 'ArrowUp' });
+  assert.equal(document.activeElement, rows()[0]);
+  v.dlg.close();
+});

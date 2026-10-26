@@ -29,8 +29,14 @@ class AlbumPreviewRequest(BaseModel):
 
 
 class AlbumPatchRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     rymUrl: str | None = Field(default=None, max_length=2000)
     links: dict[str, str | None] | None = None
+    title: Any = None
+    artist: Any = None
+    year: Any = None
+    genres: Any = None
 
 
 class AlbumLinkRequest(BaseModel):

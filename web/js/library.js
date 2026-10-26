@@ -11,13 +11,14 @@ import { getListening } from './listening-data.js';
 import { ROW_FLASH_MS, LIBRARY_FRESH_MS, EAGER_COVERS } from './constants.js';
 import { findRowIndex, scrollTarget, registerRevealer } from './reveal.js';
 import { tagLabel, categoryOf, CATEGORIES } from './tagname.js';
-import { prefs, SORTS, visibleSongs, selectedIn, isUnsetKey, unsetCount, setListening, hasListening, neverCount, listeningData } from './library-data.js';
+import { prefs, SORTS, savePrefs, visibleSongs, selectedIn, isUnsetKey, unsetCount, setListening, hasListening, neverCount, listeningData } from './library-data.js';
 import { songRow, paintDownloadRows } from './library-rows.js';
 import { loadReferences, onReferencesChange, cachedReferences, referenceSongIds, ROLES, roleLabel } from './references.js';
 import { disposeAll } from './marquee.js';
 import { isRowControl, keepCovers } from './row-cover.js';
 import { mountScrollTop } from './scroll-top.js';
 import { searchBox } from './search-box.js';
+import { addAllToQueue, playAll as playAllSongs } from './play-all.js';
 import { draftStore } from './drafts-store.js';
 import { countText } from './drafts-model.js';
 
@@ -26,6 +27,7 @@ export { filterByTags, visibleSongs } from './library-data.js';
 if (typeof window !== 'undefined') window.addEventListener('auth-changed', () => { prefs.view = 'songs'; setListening(null); prefs.refs = ''; });
 
 let flashId = null;
+let albumsTotal = '';
 let flashTimer;
 
 export function prioritizeCovers(rows, count = EAGER_COVERS) {
@@ -65,20 +67,13 @@ export function renderLibrary(root) {
   const list = el('ul', { class: 'songs' });
   const addAll = el('button', { class: 'btn outline small', type: 'button', hidden: true });
   addAll.addEventListener('click', () => {
-    const songs = visibleSongs();
     const only = prefs.sel.size === 1 ? store.tags.find((t) => prefs.sel.has(t.tag.toLocaleLowerCase())) : null;
-    const { added, already, fetching } = player.addListed(songs, only ? only.tag : '');
-    const note = already ? ` (${already} already in queue)` : '';
-    const dl = fetching ? `, ${fetching} downloading` : '';
-    toast(`Added ${added} ${plural(added, 'song', 'songs')}${dl}${note}`);
+    addAllToQueue(visibleSongs(), only ? only.tag : '');
   });
   const playAll = el('button', { class: 'btn outline small', type: 'button', hidden: true });
   playAll.addEventListener('click', () => {
     const tags = [...prefs.sel].map((k) => store.tags.find((t) => t.tag.toLocaleLowerCase() === k)).filter(Boolean).map((t) => t.tag);
-    const { count, skipped, replaced, fetching } = player.playListed(visibleSongs(), tags);
-    if (!count) { toast('Nothing to play'); return; }
-    const note = (fetching ? `, ${fetching} downloading` : '') + (skipped ? `, ${skipped} without audio skipped` : '');
-    toast(`Playing ${count} ${plural(count, 'song', 'songs')}${replaced ? ' (queue replaced)' : ''}${note}`);
+    playAllSongs(visibleSongs(), tags);
   });
   const showPlaying = el('button', { class: 'btn outline small', type: 'button', hidden: true, 'aria-label': 'Show the playing song in the list' }, icon('crosshair', 'inline'), 'Show playing');
   showPlaying.addEventListener('click', () => { if (player.current) reveal(player.current.id); });
@@ -161,10 +156,13 @@ export function renderLibrary(root) {
     status);
 
   function paintTotal() {
-    if (prefs.view === 'albums') total.textContent = '';
+    if (prefs.view === 'albums') total.textContent = albumsTotal;
     else if (prefs.view === 'drafts') total.textContent = draftStore.loaded ? countText(draftStore.count) : '';
     else total.textContent = store.loaded ? `${store.songs.length} ${plural(store.songs.length, 'song', 'songs')}` : '';
   }
+
+  const onAlbumsTotal = (e) => { albumsTotal = e.detail?.text || ''; paintTotal(); };
+  window.addEventListener('albums-total', onAlbumsTotal);
 
   function paintSwitch() {
     paintTotal();
@@ -237,6 +235,7 @@ export function renderLibrary(root) {
     const cur = player.current;
     const filtered = !!(prefs.sel.size || prefs.never || prefs.refs || prefs.query.trim());
     paintTotal();
+    savePrefs();
     summary.textContent = store.loaded && store.songs.length && filtered ? matchSummary(songs.length) : '';
     playAll.hidden = !(store.loaded && songs.length);
     playAll.textContent = `Play all ${songs.length}`;
@@ -360,5 +359,5 @@ export function renderLibrary(root) {
 
   const unmountScrollTop = mountScrollTop();
 
-  return () => { gone = true; window.removeEventListener('server-starting', onStarting); unmountScrollTop(); unsub(); unsubDrafts?.(); unmountDrafts?.(); unmountAlbums?.(); unsubPlayer(); unsubRefs(); unsubDl(); unregister(); clearTimeout(flashTimer); flashId = null; const d = document.getElementById('filter-sheet'); if (d.open) d.close(); };
+  return () => { gone = true; window.removeEventListener('server-starting', onStarting); unmountScrollTop(); unsub(); unsubDrafts?.(); unmountDrafts?.(); unmountAlbums?.(); window.removeEventListener('albums-total', onAlbumsTotal); unsubPlayer(); unsubRefs(); unsubDl(); unregister(); clearTimeout(flashTimer); flashId = null; const d = document.getElementById('filter-sheet'); if (d.open) d.close(); };
 }

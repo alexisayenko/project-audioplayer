@@ -52,7 +52,15 @@
 .album-search { display: flex; flex-wrap: wrap; gap: var(--space-2); align-items: center; }
 .album-search input { flex: 1 1 8rem; min-width: 0; }
 .album-cands { margin: var(--space-3) 0; }
-.album-cand { text-align: left; width: 100%; }
+.album-cand { display: flex; align-items: center; gap: var(--space-3); text-align: left; width: 100%; padding: var(--space-2) 0; }
+.album-cand-cover { --cover-size: calc(var(--hit) * 1.25); }
+.album-cand-cover .cover { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; border-radius: inherit; }
+.album-cand-text { display: grid; gap: var(--space-1); min-width: 0; flex: 1 1 auto; }
+.album-cand-head { display: flex; align-items: center; gap: var(--space-2); min-width: 0; }
+.album-cand-title { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.album-best { flex: none; }
+.album-cand-meta { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+@media (max-width: 719px) { .album-cand-title { white-space: normal; overflow-wrap: anywhere; } }
 .album-links { display: flex; align-items: center; flex-wrap: wrap; gap: var(--space-2); margin-bottom: var(--space-2); }
 .album-links .svc-row { margin-bottom: 0; }
 .svc-rateyourmusic .ic { width: var(--icon-nav, 24px); height: var(--icon-nav, 24px); }
@@ -61,3 +69,7 @@
 .album-link-field input { width: 100%; }
 .album-links-actions { display: flex; justify-content: flex-end; gap: var(--space-2); }
 .album-links-actions .btn { width: auto; flex: 0 0 auto; }
+.album-cover:disabled { opacity: var(--disabled-opacity); cursor: default; }
+.album-edit-deletes { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-top: var(--space-4); }
+.album-edit-deletes .btn { width: auto; flex: 1 1 14rem; }
+.album-edit .field { margin-top: var(--space-3); }

@@ -1,4 +1,5 @@
 import { store } from './store.js';
+import { storeGet, storeSet } from './storage.js';
 import { sortKey, compareKeys, displayYear } from './credits.js';
 import { songMatches } from './song-match.js';
 import { referenceSongIds } from './references.js';
@@ -24,6 +25,27 @@ export function unsetCount(catId, songs = store.songs) {
 }
 
 export const prefs = { query: '', sel: new Set(), sort: 'added', view: 'songs', never: false, reverse: false, refs: '' };
+
+export const LIBRARY_PREFS_KEY = 'electrophone.libraryPrefs';
+
+export function savePrefs() {
+  try {
+    storeSet(LIBRARY_PREFS_KEY, JSON.stringify({ query: prefs.query, sort: prefs.sort, reverse: prefs.reverse, sel: [...prefs.sel], never: prefs.never, refs: prefs.refs }));
+  } catch { /* nothing to save to */ }
+}
+
+export function loadPrefs() {
+  try {
+    const raw = JSON.parse(storeGet(LIBRARY_PREFS_KEY) || 'null');
+    if (!raw || typeof raw !== 'object') return;
+    if (typeof raw.query === 'string') prefs.query = raw.query;
+    if (typeof raw.sort === 'string' && raw.sort in SORTS) prefs.sort = raw.sort;
+    prefs.reverse = raw.reverse === true;
+    if (Array.isArray(raw.sel)) prefs.sel = new Set(raw.sel.filter((t) => typeof t === 'string'));
+    prefs.never = raw.never === true;
+    if (typeof raw.refs === 'string') prefs.refs = raw.refs;
+  } catch { /* a damaged value is ignored */ }
+}
 
 let listening = null;
 
@@ -94,3 +116,5 @@ export function selectedIn(catId) {
   const k = unsetKey(catId);
   return store.tags.filter((t) => categoryOf(t.tag) === catId && prefs.sel.has(t.tag.toLocaleLowerCase())).length + (k && prefs.sel.has(k) ? 1 : 0);
 }
+
+loadPrefs();

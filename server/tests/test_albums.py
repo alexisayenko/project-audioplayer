@@ -324,3 +324,42 @@ def test_old_albums_without_links_read_with_defaults(tmp_path):
     a, b = albums.load(path)
     assert a["links"] == {"discogs": "https://www.discogs.com/release/5", "rateyourmusic": "https://rateyourmusic.com/release/album/a/b/", "youtube": None, "wikipedia": None}
     assert b["links"] == {"discogs": None, "rateyourmusic": None, "youtube": None, "wikipedia": None}
+
+
+def test_patch_edits_fields_independently(client, discogs, tmp_path):
+    album = made_album(client)
+    url = f"/albums/{album['id']}"
+    r = client.patch(url, json={"title": "  New Title "}, headers=H).json()
+    assert (r["title"], r["artist"], r["year"]) == ("New Title", "Derango", 2004) and r["genres"] == album["genres"]
+    r = client.patch(url, json={"artist": " Other ", "year": 1999}, headers=H).json()
+    assert (r["title"], r["artist"], r["year"]) == ("New Title", "Other", 1999)
+    assert client.patch(url, json={"year": None}, headers=H).json()["year"] is None
+    r = client.patch(url, json={"genres": ["a", " A ", "b", ""]}, headers=H).json()
+    assert r["genres"] == ["a", "b"] and r["links"] == album["links"] and len(r["tracks"]) == 5
+    assert client.patch(url, json={"genres": []}, headers=H).json()["genres"] == []
+    assert len(client.patch(url, json={"genres": [str(i) for i in range(30)]}, headers=H).json()["genres"]) == 20
+    assert client.patch(url, json={}, headers=H).json()["title"] == "New Title"
+    saved = stored(tmp_path)[0]
+    assert (saved["title"], saved["artist"], saved["year"]) == ("New Title", "Other", None)
+    assert client.get("/albums", headers=H).json()[0]["title"] == "New Title"
+    both = client.patch(url, json={"title": "T2", "rymUrl": RYM, "links": {"youtube": "https://youtu.be/aaaaaaaaaaa"}}, headers=H).json()
+    assert both["title"] == "T2" and both["rymUrl"] == RYM and both["links"]["youtube"]
+
+
+@pytest.mark.parametrize("patch,key", [
+    ({"title": ""}, "title"), ({"title": "  "}, "title"), ({"title": "x" * 201}, "title"), ({"title": 5}, "title"), ({"title": None}, "title"),
+    ({"artist": ""}, "artist"), ({"artist": "x" * 201}, "artist"),
+    ({"year": 1899}, "year"), ({"year": 2101}, "year"), ({"year": "2000"}, "year"), ({"year": True}, "year"), ({"year": 1999.5}, "year"),
+    ({"genres": "a"}, "genres"), ({"genres": [1]}, "genres"), ({"genres": None}, "genres"),
+])
+def test_patch_rejects_bad_fields_and_changes_nothing(client, discogs, patch, key):
+    album = made_album(client)
+    r = client.patch(f"/albums/{album['id']}", json=patch, headers=H)
+    assert (r.status_code, r.json()["detail"]) == (422, {"code": "bad_field", "key": key})
+    assert client.get(f"/albums/{album['id']}", headers=H).json() == album
+
+
+def test_patch_unknown_keys_are_422(client, discogs):
+    album = made_album(client)
+    assert client.patch(f"/albums/{album['id']}", json={"tracks": []}, headers=H).status_code == 422
+    assert client.patch(f"/albums/{album['id']}", json={"id": "alb_00000000"}, headers=H).status_code == 422

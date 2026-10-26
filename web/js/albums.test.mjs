@@ -47,7 +47,9 @@ test('empty state and the one-row form', async () => {
   await v.unmount.ready;
   assert.match(v.text(), /No albums yet/);
   assert.equal(v.q('.albums-row'), null);
-  assert.equal(v.q('input'), null);
+  assert.equal(v.q('.toolbar').hidden, true);
+  const add = [...v.pane.querySelectorAll('button')].find((b) => b.textContent.includes('Add album'));
+  assert.ok(add);
   assert.equal(v.pane.querySelectorAll('dialog').length, 0);
 });
 
@@ -55,10 +57,11 @@ test('list renders song-style rows: name and count over artist and year, total t
   const v = setup((u) => (u === '/albums' ? ok([ROW]) : u === '/albums/alb_1' ? ok(ALBUM) : ok({})));
   await v.unmount.ready;
   const card = v.q('.album-row');
-  assert.match(card.textContent, /Tumult · 2 tracks[sS]*Derango · 2004/);
+  assert.match(card.textContent, /Tumult · 2 tracks[\s\S]*Derango · 2004/);
   assert.ok(card.classList.contains('song'));
   assert.equal(v.q('ul.songs.album-list').parentNode.className.includes('group'), true);
-  assert.equal(v.q('.album-time').textContent, '4:25');
+  assert.equal(v.q('.title-len').textContent, '4:25');
+  assert.equal(v.q('.title-len').className.includes('t-time'), true);
   assert.equal(v.q('.row-cover .cover-mark') !== null, true);
   assert.equal(card.querySelector('a'), null);
   assert.equal(v.pane.textContent.includes('Album page'), false);
@@ -172,7 +175,7 @@ test('card header: album and track count, artist and year, total time, bpm of li
   const full = { ...ALBUM, genres: ['Techno', 'Ambient'], tracks: [{ no: 1, title: 'A', durationS: 60, songId: 's1' }, { no: 2, title: 'B', durationS: 3600, songId: 's2' }, { no: 3, title: 'C', durationS: 5, songId: null }] };
   const v = setup((u) => (u === '/albums' ? ok([ROW]) : ok(full)));
   await v.unmount.ready;
-  assert.match(v.q('.album-title').textContent, /^Tumult · 3 tracks$/);
+  assert.match(v.q('.album-title').textContent, /^Tumult · 3 tracks/);
   assert.equal(v.q('.album-sub').textContent, 'Derango · 2004');
   assert.equal(v.q('.album-time').textContent, '1:01:05');
   assert.equal(v.q('.album-bpm').textContent, '120 - 128 bpm');
@@ -199,7 +202,7 @@ test('facet helpers: distinct values with counts, any within a facet, all across
 test('facet pills: hidden without albums; Genres and Years counts; picking filters the cards', async () => {
   const none = setup(() => ok([]));
   await none.unmount.ready;
-  assert.equal(none.q('.albums-facets').hidden, true);
+  assert.equal(none.q('.toolbar').hidden, true);
 
   const rows = [{ ...ROW, id: 'a1', genres: ['Techno'], year: 2004 }, { ...ROW, id: 'a2', title: 'Other', genres: ['House'], year: 1999 }];
   const v = setup((u) => (u === '/albums' ? ok(rows) : ok(rows.find((r) => u.endsWith(r.id)))));
@@ -210,6 +213,7 @@ test('facet pills: hidden without albums; Genres and Years counts; picking filte
   assert.deepEqual(pills.map((p) => p.textContent), ['Genres2', 'Years2']);
   assert.equal(v.pane.querySelectorAll('.album-row').length, 2);
   fire(pills[0], 'click');
+  for (let i = 0; i < 8; i++) await flush();
   const dlg = document.getElementById('filter-sheet');
   assert.equal(dlg.open, true);
   fire([...dlg.querySelectorAll('.chip')].find((c) => c.dataset.key === 'House'), 'click');
@@ -276,31 +280,35 @@ test('info box on the album page title; no links or genres row when there is no 
   assert.deepEqual(albumLinks({ source: 'https://evil.example/x' }), {});
 });
 
-test('card action row: song-row order, disabled without linked songs, picker wired, others toast', async () => {
+test('info box action row: queue, playlist and edit only; disabled without linked songs; no unimplemented buttons', async () => {
   const { store } = await import('./store.js');
   store.songs = [{ id: 'z1', title: 'One', artist: 'X', file: 'z1.mp3', duration: 60 }];
+  const dlg = document.getElementById('song-card');
   const linked = { ...ALBUM, tracks: [{ no: 1, title: 'A', durationS: 1, songId: 'z1' }] };
   const none = setup((u) => (u === '/albums' ? ok([ROW]) : ok(ALBUM)));
   await none.unmount.ready;
   fire(none.q('.album-name-btn'), 'click');
-  const all = [...document.getElementById('song-card').querySelectorAll('.album-act')];
-  assert.ok(all.length >= 3);
-  assert.ok(all.every((b) => b.disabled && b.title === 'No songs linked yet'));
+  const names0 = [...dlg.querySelectorAll('.album-act')].map((b) => b.getAttribute('aria-label').split(':')[0]);
+  assert.equal(names0.includes('Play next') || names0.includes('Share link') || names0.includes('Download'), false);
+  for (const b of dlg.querySelectorAll('.album-act')) {
+    if (b.classList.contains('act-edit')) assert.equal(b.disabled, false);
+    else assert.ok(b.disabled && b.title === 'No songs linked yet');
+  }
+  dlg.close();
 
   const v = setup((u) => (u === '/albums' ? ok([ROW]) : ok(linked)));
   await v.unmount.ready;
   fire(v.q('.album-name-btn'), 'click');
-  const acts = [...document.getElementById('song-card').querySelectorAll('.album-act')];
+  const acts = [...dlg.querySelectorAll('.album-act')];
   const names = acts.map((b) => b.getAttribute('aria-label').split(':')[0]);
-  const order = ['Play next', 'Add to queue', 'Add to playlist...', 'Share link', 'Download', 'Edit'].filter((n) => names.includes(n));
-  assert.deepEqual(names, order);
-  assert.ok(names.slice(0, 2).join() === 'Play next,Add to queue' && names.includes('Share link'));
+  assert.deepEqual(names, ['Add to queue', 'Add to playlist...', 'Edit'].filter((n) => names.includes(n)));
+  assert.equal(names[0], 'Add to queue');
+  assert.ok(names.includes('Edit'));
   assert.ok(acts.every((b) => !b.disabled));
-  for (const label of ['Play next', 'Share link']) {
-    fire(acts[names.indexOf(label)], 'click');
-    assert.equal(document.getElementById('toast').textContent, 'Not implemented yet');
-    document.getElementById('toast').textContent = '';
-  }
+  document.getElementById('toast').textContent = '';
+  fire(acts[0], 'click');
+  assert.match(document.getElementById('toast').textContent, /Added 1 song/);
+  dlg.close();
 });
 
 test('preview genres use the song-form genre field: vocabulary suggestions, remove, cap, free text refused, Create sends them', async () => {
@@ -343,34 +351,28 @@ test('cards show genre chips without remove buttons', async () => {
   assert.equal(v.pane.querySelectorAll('.album-genres .x').length, 0);
 });
 
-test('info box carries the song-box action row with the list-row behaviour', async () => {
+test('the list row keeps ONLY the queue button; the cover plays the linked songs', async () => {
   const { store } = await import('./store.js');
-  store.songs = [{ id: 'b1', title: 'One', artist: 'X', file: 'b1.mp3', duration: 60 }];
-  const dlg = document.getElementById('song-card');
-  const open = async (full) => {
-    const v = setup((u) => (u === '/albums' ? ok([ROW]) : ok(full)));
-    await v.unmount.ready;
-    fire(v.q('.album-name-btn'), 'click');
-    return v;
-  };
-  await open(ALBUM);
-  let btns = [...dlg.querySelectorAll('.card-actions .card-icons button')];
-  assert.ok(btns.length >= 3);
-  assert.ok(btns.every((b) => b.classList.contains('icon') && b.classList.contains('round') && b.disabled && b.title === 'No songs linked yet'));
-  dlg.close();
+  store.songs = [{ id: 'r1', title: 'One', artist: 'X', file: 'r1.mp3', duration: 60 }, { id: 'r2', title: 'Two', artist: 'X', file: 'r2.mp3', duration: 60 }];
+  const linked = { ...ALBUM, tracks: [{ no: 1, title: 'B', durationS: 1, songId: 'r2' }, { no: 2, title: 'A', durationS: 1, songId: 'r1' }] };
+  const none = setup((u) => (u === '/albums' ? ok([ROW]) : ok(ALBUM)));
+  await none.unmount.ready;
+  const cover0 = none.q('.album-row .row-cover');
+  assert.equal(cover0.disabled, true);
+  assert.equal(cover0.title, 'No songs linked yet');
 
-  await open({ ...ALBUM, tracks: [{ no: 1, title: 'A', durationS: 1, songId: 'b1' }] });
-  btns = [...dlg.querySelectorAll('.card-actions .card-icons button')];
-  const names = btns.map((b) => b.getAttribute('aria-label').split(':')[0]);
-  assert.deepEqual(names.slice(0, 2), ['Play next', 'Add to queue']);
-  assert.ok(names.includes('Share link'));
-  assert.ok(btns.every((b) => !b.disabled));
+  const v = setup((u) => (u === '/albums' ? ok([ROW]) : ok(linked)));
+  await v.unmount.ready;
+  const row = v.q('.album-row');
+  assert.equal(row.querySelectorAll('.row-acts button').length, 1);
+  assert.equal(row.querySelectorAll('.album-act').length, 1);
+  assert.ok(row.querySelector('.row-acts .act-queue'));
+  const cover = row.querySelector('.row-cover');
+  assert.equal(cover.disabled, false);
   document.getElementById('toast').textContent = '';
-  fire(btns[0], 'click');
-  assert.equal(document.getElementById('toast').textContent, 'Not implemented yet');
-  fire(btns[1], 'click');
-  assert.match(document.getElementById('toast').textContent, /Added 1 song/);
-  dlg.close();
+  fire(cover, 'click');
+  assert.match(document.getElementById('toast').textContent, /Playing 2 songs/);
+  assert.equal(player.queuePosition('r2').pos < player.queuePosition('r1').pos, true);
 });
 
 test('Delete album and its tracks: hidden without linked songs; confirm text; cancel makes no calls', async () => {
@@ -426,15 +428,21 @@ test('Delete album and its tracks: first error stops, shows Deleted M of N and k
   dlg.close();
 });
 
-test('info box also offers Delete album and its tracks when songs are linked', async () => {
+test('the info box has no delete buttons; the pencil opens the Edit dialog that has both', async () => {
   const { store } = await import('./store.js');
   store.songs = [{ id: 'x1', file: 'x1.mp3' }];
-  const full = { ...ALBUM, tracks: [{ no: 1, title: 'A', durationS: 1, songId: 'x1' }] };
+  const full = { ...ALBUM, genres: ['Techno'], tracks: [{ no: 1, title: 'A', durationS: 1, songId: 'x1' }] };
   const v = setup((u) => (u === '/albums' ? ok([ROW]) : ok(full)));
   await v.unmount.ready;
   fire(v.q('.album-name-btn'), 'click');
   const dlg = document.getElementById('song-card');
-  assert.ok(dlg.querySelector('.album-delete-all.danger'));
-  assert.ok(dlg.querySelector('.album-delete.danger'));
+  assert.equal(dlg.querySelector('.album-delete'), null);
+  assert.equal(dlg.querySelector('.album-delete-all'), null);
+  fire(dlg.querySelector('.act-edit'), 'click');
+  const edit = document.getElementById('edit-dialog');
+  assert.equal(edit.open, true);
+  assert.ok(edit.querySelector('.album-delete.danger'));
+  assert.ok(edit.querySelector('.album-delete-all.danger'));
+  edit.close();
   dlg.close();
 });

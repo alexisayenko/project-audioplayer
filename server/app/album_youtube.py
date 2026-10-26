@@ -14,6 +14,9 @@ from . import albums, credit_title, credits_split, discogs_lookup, downloads, ex
 from .links import Resolved
 
 MAX_CANDIDATES = 8
+MAX_LABELS = 3
+BEST_MIN_SCORE = 0.7
+BEST_MARGIN = 0.1
 _NOISE_GROUP = re.compile(r"\s*[\(\[]\s*(?:(?:full|complete|entire|whole)\s+)?(?:album|lp|ep)(?:\s+(?:stream|version|playlist))?\s*[\)\]]", re.I)
 _NOISE_TAIL = re.compile(r"[\s\-–—:|]+(?:full|complete|entire|whole)\s+(?:album|lp|ep)(?:\s+stream)?\s*$", re.I)
 _SEP = re.compile(r"\s+[-–—]\s+")
@@ -133,7 +136,19 @@ def search(artist: Any, album: Any, track_count: Any, durations: Any) -> dict[st
             picks.append(item)
     candidates = [_candidate(item, artist, album, count, total) for item in picks[:MAX_CANDIDATES]]
     candidates.sort(key=lambda c: (-c["score"], c["discogsId"]))
+    if candidates and candidates[0]["score"] >= BEST_MIN_SCORE and (len(candidates) == 1 or candidates[0]["score"] - candidates[1]["score"] >= BEST_MARGIN):
+        candidates[0]["best"] = True
     return {"candidates": candidates}
+
+
+def _texts(value: Any, limit: int | None = None) -> list[str]:
+    items = value if isinstance(value, list) else []
+    out = [str(v).strip() for v in items if isinstance(v, (str, int)) and not isinstance(v, bool) and str(v).strip()]
+    return out[:limit] if limit else out
+
+
+def _text(value: Any) -> str | None:
+    return value.strip() or None if isinstance(value, str) else None
 
 
 def _candidate(item: dict[str, Any], artist: str, album: str, count: int | None, total: float | None) -> dict[str, Any]:
@@ -163,7 +178,10 @@ def _candidate(item: dict[str, Any], artist: str, album: str, count: int | None,
     return {
         "url": f"https://www.discogs.com/release/{ident}", "discogsId": ident, "title": title,
         "artist": discogs_lookup._DISAMBIG.sub("", who).rstrip(), "year": timeutil.valid_year(year) if year else None,
-        "trackCount": len(tracks) if tracks is not None else None, "score": score,
+        "trackCount": len(tracks) if tracks is not None else None, "score": score, "best": False,
+        "formats": _texts(item.get("format")), "labels": _texts(item.get("label"), MAX_LABELS),
+        "country": _text(item.get("country")), "catno": _text(item.get("catno")),
+        "thumb": _text(item.get("thumb")) if str(item.get("thumb") or "").startswith("https://") else None,
     }
 
 

@@ -1,8 +1,11 @@
 {
   "results": [
     {"id": 111, "type": "release", "title": "Someone Else - Tumult", "year": "1999"},
-    {"id": 545650, "type": "release", "title": "Derango - Tumult", "year": "2004"},
-    {"id": 222, "type": "release", "title": "Derango - Tumult (Remixes)", "year": "2005"},
+    {"id": 545650, "type": "release", "title": "Derango - Tumult", "year": "2004", "country": "Germany", "catno": "SUB 001",
+     "format": ["Vinyl", "LP", "Album", "Limited Edition"], "label": ["Subsonic", "Subsonic Records", "Third", "Fourth"],
+     "thumb": "https://i.discogs.com/thumb545650.jpg"},
+    {"id": 222, "type": "release", "title": "Derango - Tumult (Remixes)", "year": "2005", "country": "", "format": "CD",
+     "thumb": "http://i.discogs.com/insecure.jpg"},
     {"id": 545650, "type": "release", "title": "Derango - Tumult", "year": "2004"},
     {"id": 333, "type": "master", "title": "Derango - Tumult", "year": "2004"}
   ]

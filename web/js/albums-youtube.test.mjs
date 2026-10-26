@@ -99,7 +99,11 @@ test('YouTube start runs the downloads and the Discogs search together; candidat
   assert.match(q('.album-yt').textContent, /2 songs were added to your library/);
   assert.match(q('.album-yt').textContent, /Closing this window keeps them/);
   const cand = q('.album-cand');
-  assert.equal(cand.textContent, 'Derango - Tumult · 2004 · 2 tracks');
+  assert.equal(cand.querySelector('.album-cand-title').textContent, 'Derango - Tumult');
+  assert.equal(cand.querySelector('.album-cand-sub').textContent, '2004 · 2 tracks');
+  assert.equal(cand.querySelector('.album-cand-meta'), null);
+  assert.equal(cand.querySelector('.album-best'), null);
+  assert.ok(cand.querySelector('.row-cover .cover-mark'));
   assert.equal(await until(() => d.calls.filter((c) => /\/audio$/.test(c.url)).length === 2), true);
   assert.deepEqual(d.calls.filter((c) => /\/audio$/.test(c.url)).map((c) => c.url), ['/songs/y1/audio', '/songs/y2/audio']);
   assert.equal(await until(() => /Downloaded 2 songs/.test(toastText())), true);
@@ -230,4 +234,26 @@ test('songs that already have audio are skipped', async () => {
   const n = await yt.startDownloads(['e1']);
   assert.equal(n, 0);
   assert.equal(d.calls.some((c) => c.url === '/songs/e1/audio'), false);
+});
+
+test('candidate rows show a thumbnail, bold title, year and tracks, edition details and a Best match pill', async () => {
+  const rich = { ...CAND, best: true, thumb: 'https://img.discogs.com/a.jpg', formats: ['Vinyl', 'LP', 'Limited Edition'], labels: ['Sonic Records'], catno: 'SON 12', country: 'Germany' };
+  const plain = { ...CAND, url: 'https://www.discogs.com/release/2', thumb: null, year: 1999, trackCount: 10 };
+  server({ ids: ['r1'], search: () => ok({ candidates: [rich, plain] }) });
+  await popup(PLAYLIST);
+  const [a, b] = qa('.album-cand');
+  assert.equal(a.querySelector('.album-cand-title').textContent, 'Derango - Tumult');
+  assert.equal(a.querySelector('.album-cand-sub').textContent, '2004 · 2 tracks');
+  assert.equal(a.querySelector('.album-cand-meta').textContent, 'Vinyl, LP, Limited Edition · Sonic Records (SON 12) · Germany');
+  assert.equal(a.querySelector('.album-best').textContent, 'Best match');
+  const img = a.querySelector('img.cover');
+  assert.equal(img.getAttribute('loading'), 'lazy');
+  assert.equal(img.getAttribute('src'), 'https://img.discogs.com/a.jpg');
+  assert.match(a.title, /Derango - Tumult\n2004 · 2 tracks\nVinyl/);
+  assert.equal(b.querySelector('.album-best'), null);
+  assert.equal(b.querySelector('img.cover'), null);
+  assert.ok(b.querySelector('.row-cover .cover-mark'));
+  assert.equal(b.querySelector('.album-cand-meta'), null);
+  assert.equal(a.tagName, 'BUTTON');
+  D().close();
 });

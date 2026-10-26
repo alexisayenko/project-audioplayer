@@ -179,3 +179,34 @@ def test_auto_link_only_uses_the_callers_songs(multi, discogs, yt):
     payload = c.post("/albums/preview", json={"url": DISCOGS_URL}, headers=b).json()
     body = c.post("/albums", json={**payload, "songIds": [A, B]}, headers=b).json()
     assert (body["linked"], body["unlinked"]) == (0, 5)
+
+
+def test_candidates_carry_format_label_country_catno_thumb_and_best(client, discogs):
+    discogs["data"]["database/search"] = SEARCH
+    discogs["data"]["releases/222"] = {"id": 222, "title": "Tumult (Remixes)", "year": 2005, "artists": [{"name": "Derango"}], "tracklist": [{"type_": "track", "title": "x", "duration": "1:00"}]}
+    discogs["data"]["releases/111"] = {"id": 111, "title": "Tumult", "year": 1999, "artists": [{"name": "Someone Else"}], "tracklist": [{"type_": "track", "title": "x", "duration": "1:00"}] * 9}
+    got = client.post("/albums/discogs-search", json={"artist": "Derango", "album": "Tumult", "trackCount": 5}, headers=H).json()["candidates"]
+    top, second, third = got
+    assert top["formats"] == ["Vinyl", "LP", "Album", "Limited Edition"] and top["labels"] == ["Subsonic", "Subsonic Records", "Third"]
+    assert (top["country"], top["catno"], top["thumb"]) == ("Germany", "SUB 001", "https://i.discogs.com/thumb545650.jpg")
+    assert second["formats"] == [] and second["labels"] == [] and second["country"] is None and second["catno"] is None and second["thumb"] is None
+    assert third["thumb"] is None and third["year"] == 1999
+    assert [c["best"] for c in got] == [True, False, False]
+
+
+def test_best_needs_a_clear_margin_and_a_good_score(monkeypatch):
+    def cand(score, i):
+        return {"discogsId": i, "score": score, "best": False}
+
+    def run(scores):
+        items = [cand(s, i) for i, s in enumerate(scores)]
+        monkeypatch.setattr(album_youtube, "_candidate", lambda item, *a: items[item["id"]])
+        monkeypatch.setenv("DISCOGS_TOKEN", "t")
+        monkeypatch.setattr(discogs_lookup, "_get", lambda *a, **k: {"results": [{"id": i, "type": "release"} for i in range(len(items))]})
+        return [c["best"] for c in album_youtube.search("a", "b", None, None)["candidates"]]
+
+    assert run([0.95, 0.6]) == [True, False]
+    assert run([0.95, 0.9]) == [False, False]
+    assert run([0.5, 0.2]) == [False, False]
+    assert run([0.8]) == [True]
+    assert run([]) == []

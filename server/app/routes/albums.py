@@ -89,17 +89,22 @@ def get_album(album_id: str, user: User):
 @router.patch("/albums/{album_id}", responses=deps.responses(404, 422))
 def patch_album(album_id: str, body: AlbumPatchRequest, user: User):
     changes: dict[str, Any] = {}
+    fields: dict[str, Any] = {}
     try:
         for key, value in (body.links or {}).items():
             changes[key] = albums.clean_link(key, value)
         if "rymUrl" in body.model_fields_set:
             changes["rateyourmusic"] = albums.clean_rym(body.rymUrl)
+        for key in ("title", "artist", "year", "genres"):
+            if key in body.model_fields_set:
+                fields[key] = albums.clean_field(key, getattr(body, key))
     except albums.AlbumError as exc:
         _raise(exc)
     uid = user["uid"]
     with deps.tx(uid, "albums patch"):
         items = albums.load(deps.albums_path(uid))
         album = _found(items, album_id)
+        album.update(fields)
         albums.set_links(album, changes)
         albums.save(deps.albums_path(uid), items)
         return album

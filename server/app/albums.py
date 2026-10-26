@@ -124,6 +124,33 @@ def set_links(album: dict[str, Any], changes: dict[str, Any]) -> None:
     album["rymUrl"] = links["rateyourmusic"]
 
 
+MAX_FIELD = 200
+
+
+def _bad_field(key: str) -> AlbumError:
+    return AlbumError(422, "bad_field", key)
+
+
+def clean_field(key: str, value: Any) -> Any:
+    """One editable album field checked for PATCH; raises 422 bad_field with the key."""
+    if key in ("title", "artist"):
+        text = value.strip() if isinstance(value, str) else ""
+        if not text or len(text) > MAX_FIELD:
+            raise _bad_field(key)
+        return text
+    if key == "year":
+        if value is None:
+            return None
+        if isinstance(value, bool) or not isinstance(value, int) or not 1900 <= value <= 2100:
+            raise _bad_field(key)
+        return value
+    if key == "genres":
+        if not isinstance(value, list) or not all(isinstance(g, str) for g in value):
+            raise _bad_field(key)
+        return _genres({"genres": value})
+    raise _bad_field(key)
+
+
 def parse_duration(value: Any) -> int | None:
     parts = str(value or "").strip().split(":")
     if not 1 < len(parts) <= 3 or not all(p.isdigit() for p in parts):
