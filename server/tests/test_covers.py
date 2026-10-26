@@ -92,12 +92,6 @@ def test_too_large_is_refused_by_header_and_by_stream(client, song, monkeypatch)
     assert r.status_code == 413
 
 
-def test_requires_auth(client, song):
-    assert client.put(f"/songs/{VID}/cover", content=image(), headers={"Content-Type": "image/png"}).status_code == 401
-    assert client.delete(f"/songs/{VID}/cover").status_code == 401
-    assert client.post(f"/songs/{VID}/cover/from-url", json={"url": "http://x.example/a.png"}).status_code == 401
-
-
 def test_cover_changes_do_not_touch_audio_quota(client, song):
     before = client.get("/me/usage", headers=H).json()["bytes"]
     put(client, image())
@@ -479,10 +473,6 @@ def test_suggestions_are_capped_at_four(client, song, monkeypatch):
 def test_suggestions_unknown_song_and_auth(client, song):
     assert client.get("/songs/aaaaaaaaaaa/cover/suggestions", headers=H).status_code == 404
     assert client.get(f"/songs/{VID}/cover/suggestions").status_code == 401
-
-
-def test_put_json_requires_auth(client, song):
-    assert client.put(f"/songs/{VID}/cover", json={"default": True}).status_code == 401
 
 
 def test_non_owner_fetches_are_rate_limited():

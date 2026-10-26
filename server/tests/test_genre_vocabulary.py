@@ -350,10 +350,6 @@ def test_vocabulary_endpoint_is_built_once(client):
     assert genre_vocab.vocabulary() is a
 
 
-def test_vocabulary_endpoint_needs_credentials_or_the_public_view(client):
-    assert client.get("/genres/vocabulary").status_code == 401
-
-
 def test_vocabulary_endpoint_is_readable_by_guests(client, monkeypatch):
     monkeypatch.setenv("PUBLIC_VIEW", "1")
     add(client, audio=False)
@@ -494,7 +490,6 @@ def test_the_graph_exposes_an_anchor_per_node(client):
     assert by["neurofunk"]["anchor"] == "neurofunk"
     assert by["electronic"]["anchor"] is None
     assert all("anchor" in n and n["style"] == n["anchor"] for n in nodes)
-
 
 
 @pytest.mark.parametrize("raw", ["soviet wave", "Soviet Wave", "sovietwave", "Soviet-Wave", "soviet-wave", "советская волна", "Советская-волна", "советская-волна"])

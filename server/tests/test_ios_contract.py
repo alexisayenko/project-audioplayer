@@ -7,7 +7,7 @@ from pathlib import Path
 import pytest
 
 from app import credits_v1, extractor, genre_lookup, library, migrate_model2, migrate_model3
-from tests.test_credits_api import REAL_PREVIEW, post
+from tests.test_credits import REAL_PREVIEW, post
 from tests.test_extractor_mapping import ydl  # noqa: F401
 from tests.test_library import H, ODIR, VID, VID2, client  # noqa: F401
 

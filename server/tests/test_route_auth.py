@@ -116,6 +116,14 @@ def test_public_view_defaults_to_off_so_every_data_route_is_401_for_anonymous(li
     assert r.status_code == 401, (method, path, r.status_code)
 
 
+@pytest.mark.parametrize("headers", [{"X-API-Token": "nope"}, {"Authorization": "Bearer junk"}, {"Authorization": "Basic Zm9vOmJhcg=="}, {"Authorization": "Bearer "}], ids=["wrong-token", "garbage-bearer", "basic", "empty-bearer"])
+@pytest.mark.parametrize(("method", "path"), _anonymous_data_routes())
+def test_a_wrong_credential_is_401_on_every_data_route(lib, method, path, headers):
+    url = re.sub(r"\{[^}]+\}", VID, path)
+    r = web().request(method, url, json={} if method in ("POST", "PUT", "PATCH") else None, headers={**CSRF, **headers})
+    assert r.status_code == 401, (method, path, r.status_code)
+
+
 @pytest.mark.parametrize("value", ["", "0", "false", "off", "no", "banana"])
 def test_only_an_explicit_yes_enables_the_public_view(monkeypatch, value):
     monkeypatch.setenv("PUBLIC_VIEW", value)

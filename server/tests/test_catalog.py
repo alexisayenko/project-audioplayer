@@ -118,6 +118,13 @@ def test_catalog_etag_and_304(client):
     again = client.get("/catalog", headers={**H, "If-None-Match": r.headers["etag"]})
     assert again.status_code == 304
     assert again.content == b""
+    assert r.headers["cache-control"] == "private, no-cache"
+    for sent in (f"W/{r.headers['etag']}", "*", f'"zzz", {r.headers["etag"]}'):
+        revalidated = client.get("/catalog", headers={**H, "If-None-Match": sent})
+        assert revalidated.status_code == 304, sent
+        assert revalidated.content == b"", sent
+        assert revalidated.headers["etag"] == r.headers["etag"], sent
+    assert client.get("/catalog", headers={**H, "If-None-Match": '"other"'}).status_code == 200
     client.patch(f"/songs/{VID}", json={"title": "Changed"}, headers=H)
     changed = client.get("/catalog", headers={**H, "If-None-Match": r.headers["etag"]})
     assert changed.status_code == 200
@@ -150,11 +157,6 @@ def test_catalog_since(client, tmp_path):
     body = client.get("/catalog", params={"since": "2026-06-01T00:00:00Z"}, headers=H).json()
     assert [s["id"] for s in body["songs"]] == [VID, VID2]
     assert client.get("/catalog", params={"since": "yesterday"}, headers=H).status_code == 422
-
-
-def test_catalog_requires_token(client):
-    assert client.get("/catalog").status_code == 401
-    assert client.delete(f"/songs/{VID}/audio").status_code == 401
 
 
 def test_mixed_source_ids(client, tmp_path):

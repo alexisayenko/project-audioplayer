@@ -10,10 +10,6 @@ def test_builtin_list_is_clean():
     assert {"techno", "melodic techno", "progressive trance", "drum and bass"} <= set(g)
 
 
-def test_genres_requires_token(client):
-    assert client.get("/genres").status_code == 401
-
-
 def test_genres_library_first_then_builtin(client):
     add(client, "dQw4w9WgXcQ", tags=["genre:techno", "genre:house", "mood:calm"])
     add(client, "9bZkp7q19f0", tags=["genre:Techno", "genre:house"])

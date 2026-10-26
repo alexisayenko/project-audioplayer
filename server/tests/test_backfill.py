@@ -51,12 +51,6 @@ def blocker(monkeypatch, value=100):
     return gate, seen
 
 
-def test_anonymous_is_refused(client):
-    assert client.get(URL).status_code == 401
-    assert client.post(URL).status_code == 401
-    assert client.delete(URL).status_code == 401
-
-
 def test_idle_and_nothing_to_do(client):
     assert client.get(URL, headers=H).json()["state"] == "idle"
     add(client)

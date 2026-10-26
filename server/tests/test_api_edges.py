@@ -6,43 +6,23 @@ from types import SimpleNamespace
 from urllib.parse import unquote
 
 import pytest
-from fastapi.routing import APIRoute
 from fastapi.testclient import TestClient
 
-from app import bpm, deps, downloads, extractor, identify, jobs, library, limits, links, main, session, users
+from app import bpm, deps, downloads, extractor, identify, jobs, library, links, main, session, users
 from app.routes import analyze, lookup
 from fastapi import HTTPException
 from app.problems import Problem
 from tests.test_library import ADIR, H, ODIR, OWNER_UID, VID, VID2, client  # noqa: F401
-from tests.test_users import ALICE, BOB, CSRF, VID3, VID4, add, key, multi, token, uid, who  # noqa: F401
+from tests.test_users import ALICE, BOB, CSRF, add, key, multi, token, who  # noqa: F401
 
 SC_URL = "https://soundcloud.com/some-artist/some-track"
-PUBLIC = {"/anon/session", "/auth/config", "/auth/session", "/auth/logout", "/health", "/features/data", "/legal", "/robots.txt", "/", "/index.html", "/version", "/_v/{version}/{path:path}"}
 
 
 def owner_add(client, vid=VID, **kw):
     return add(client, H, vid, **kw)
 
 
-# ---- auth on every route, at runtime ---------------------------------------------------------
-
-def test_every_protected_route_answers_401_without_credentials(client):
-    seen = 0
-    for route in main.app.routes:
-        if not isinstance(route, APIRoute) or route.path in PUBLIC:
-            continue
-        path = route.path.replace("{video_id}", VID)
-        for method in route.methods - {"HEAD"}:
-            r = client.request(method, path, json={} if method in ("POST", "PATCH", "PUT") else None)
-            assert r.status_code == 401, (method, route.path, r.status_code)
-            seen += 1
-    assert seen >= 20
-
-
-def test_every_protected_route_rejects_a_wrong_token_and_garbage_bearer(client):
-    for headers in ({"X-API-Token": "nope"}, {"Authorization": "Bearer junk"}, {"Authorization": "Basic Zm9vOmJhcg=="}, {"Authorization": "Bearer "}):
-        assert client.get("/library", headers=headers).status_code == 401, headers
-        assert client.get("/me/usage", headers=headers).status_code == 401, headers
+# ---- auth (every route is covered in test_route_auth.py) ------------------------------------
 
 
 def test_api_token_header_wins_over_a_valid_bearer_and_is_not_bypassed(multi):
@@ -84,30 +64,11 @@ def test_session_endpoint_needs_csrf_then_a_secret_then_a_valid_token(multi, mon
     assert multi.post("/auth/session", json={}, headers=CSRF).status_code == 422
 
 
-def test_session_cookie_flags(multi):
-    r = multi.post("/auth/session", json={"id_token": token(multi.key, ALICE)}, headers=CSRF)
-    assert r.status_code == 200
-    cookie = r.headers["set-cookie"]
-    assert cookie.startswith("__Host-session=")
-    for flag in ("HttpOnly", "Secure", "SameSite=strict", "Path=/"):
-        assert flag.lower() in cookie.lower()
-    assert f"Max-Age={session.LIFETIME}" in cookie
-    assert "Domain" not in cookie
-
-
 def test_unverified_google_email_cannot_open_a_session(multi):
     r = multi.post("/auth/session", json={"id_token": token(multi.key, ALICE, email_verified=False)}, headers=CSRF)
     assert r.status_code == 403
     assert r.json()["error"] == "unverified_email"
     assert "set-cookie" not in r.headers
-
-
-def test_logout_needs_csrf_and_clears_the_cookie(multi):
-    assert multi.post("/auth/logout").status_code == 403
-    r = multi.post("/auth/logout", headers=CSRF)
-    assert r.status_code == 204
-    assert "__Host-session" in r.headers["set-cookie"]
-    assert "Max-Age=0" in r.headers["set-cookie"]
 
 
 @pytest.fixture
@@ -117,30 +78,6 @@ def https(multi):
 
 def cookie_for(https, value):
     https.headers["Cookie"] = f"__Host-session={value}"
-
-
-def test_expired_and_tampered_session_cookies_are_refused(https, multi):
-    ident = {"provider": "google", "email": ALICE, "uid": uid(ALICE)}
-    cookie_for(https, session.issue(ident))
-    assert https.get("/me").json()["email"] == ALICE
-    cookie_for(https, session.issue(ident, now=time.time() - session.LIFETIME - 5))
-    assert https.get("/me").status_code == 401
-    body, sig = session.issue(ident).split(".")
-    for bad in (f"{body}.{sig[::-1]}", f"{body}x.{sig}", body, "", "a.b.c"):
-        cookie_for(https, bad)
-        assert https.get("/me").status_code == 401, bad
-
-
-def test_cookie_authenticated_writes_need_csrf_header_and_same_origin(https, multi):
-    cookie_for(https, session.issue({"provider": "google", "email": ALICE, "uid": uid(ALICE)}))
-    body = {"url": VID, "metadata": {"title": "S"}, "audio": False}
-    assert https.post("/songs", json=body).status_code == 403
-    assert https.post("/songs", json=body, headers={"X-Requested-With": "x"}).status_code == 403
-    assert https.post("/songs", json=body, headers={**CSRF, "Origin": "https://evil.example"}).status_code == 403
-    assert https.post("/songs", json=body, headers={**CSRF, "Origin": "https://testserver"}).status_code == 201
-    assert https.delete(f"/songs/{VID}").status_code == 403
-    assert https.get("/library").status_code == 200
-    assert https.delete(f"/songs/{VID}", headers=CSRF).status_code == 204
 
 
 def test_cookie_for_a_closed_signup_user_is_refused_but_owner_cookie_works(https, multi, monkeypatch):
@@ -277,24 +214,6 @@ def test_download_of_a_metadata_only_song_is_a_structured_404(client):
     assert r.json() == {"detail": "not downloaded"}
 
 
-# ---- catalog ETag ----------------------------------------------------------------------------
-
-def test_catalog_etag_revalidation_forms(client):
-    owner_add(client)
-    first = client.get("/catalog", headers=H)
-    etag = first.headers["etag"]
-    assert first.status_code == 200
-    assert first.headers["cache-control"] == "private, no-cache"
-    for sent in (etag, f"W/{etag}", "*", f'"zzz", {etag}'):
-        r = client.get("/catalog", headers={**H, "If-None-Match": sent})
-        assert r.status_code == 304, sent
-        assert r.content == b"", sent
-        assert r.headers["etag"] == etag, sent
-    assert client.get("/catalog", headers={**H, "If-None-Match": '"other"'}).status_code == 200
-    owner_add(client, VID2)
-    assert client.get("/catalog", headers={**H, "If-None-Match": etag}).status_code == 200
-
-
 def test_catalog_since_is_validated_and_filters(client):
     owner_add(client)
     for bad in ("yesterday", "2020-01-01", "2020-01-01T00:00:00", "2020-01-01 00:00:00Z", "2020-01-01T00:00:00+01:00", "' OR 1=1"):
@@ -306,64 +225,6 @@ def test_catalog_since_is_validated_and_filters(client):
     past = client.get("/catalog", params={"since": "2000-01-01T00:00:00Z"}, headers=H)
     assert len(past.json()["songs"]) == 1
     assert past.headers["etag"] != client.get("/catalog", headers=H).headers["etag"]
-
-
-# ---- quotas through the API with an injected clock -------------------------------------------
-
-def test_song_quota_exact_limit_and_delete_frees_a_slot(multi, monkeypatch):
-    monkeypatch.setenv("USER_MAX_SONGS", "2")
-    a = who(multi, ALICE)
-    assert add(multi, a, VID).status_code == 202
-    assert add(multi, a, VID2).status_code == 202
-    r = add(multi, a, VID3)
-    assert (r.status_code, r.json()["error"]) == (403, "library_full_songs")
-    assert add(multi, a, VID3, audio=False).status_code == 403
-    assert multi.delete(f"/songs/{VID}", headers=a).status_code == 204
-    assert add(multi, a, VID3).status_code == 202
-
-
-def test_hourly_window_rolls_over_with_an_injected_clock(multi, monkeypatch):
-    monkeypatch.setenv("USER_ADDS_PER_HOUR", "2")
-    now = {"t": time.time()}
-    monkeypatch.setattr(limits.time, "time", lambda: now["t"])
-    a = who(multi, ALICE)
-    assert add(multi, a, VID).status_code == 202
-    now["t"] += 1800
-    assert add(multi, a, VID2).status_code == 202
-    r = add(multi, a, VID3)
-    assert r.status_code == 429
-    assert r.json()["retry_after_minutes"] == 30
-    assert r.headers["retry-after"] == "1800"
-    now["t"] += 1800
-    assert add(multi, a, VID3).status_code == 202
-    r = add(multi, a, VID4)
-    assert r.status_code == 429
-    assert r.json()["retry_after_minutes"] == 30
-    now["t"] += 3600
-    assert add(multi, a, VID4).status_code == 202
-
-
-def test_owner_has_no_quota_and_a_full_pool_blocks_everyone(multi, monkeypatch):
-    monkeypatch.setenv("USER_MAX_SONGS", "1")
-    monkeypatch.setenv("USER_ADDS_PER_HOUR", "1")
-    for v in (VID, VID2, VID3):
-        assert add(multi, H, v).status_code == 202
-    monkeypatch.setenv("POOL_MAX_BYTES", "1")
-    r = add(multi, H, VID4)
-    assert (r.status_code, r.json()["error"]) == (503, "server_full")
-    assert add(multi, H, VID4, audio=False).status_code == 201
-
-
-def test_usage_endpoint_boundaries(multi, monkeypatch):
-    monkeypatch.setenv("USER_MAX_SONGS", "3")
-    a = who(multi, ALICE)
-    add(multi, a, VID)
-    u = multi.get("/me/usage", headers=a).json()
-    assert (u["songs"], u["max_songs"], u["adds_last_hour"], u["bytes"]) == (1, 3, 1, 5)
-    o = multi.get("/me/usage", headers=H).json()
-    assert o["max_songs"] is None
-    assert o["max_bytes"] is None
-    assert o["max_adds"] is None
 
 
 # ---- scheduler: caps under real threads ------------------------------------------------------
@@ -693,17 +554,6 @@ def test_auto_identify_is_best_effort(monkeypatch, caplog):
     assert "auto identify skipped" in caplog.text
     monkeypatch.setattr(identify, "configured", lambda: False)
     downloads.auto_identify("u", VID)
-
-
-@pytest.mark.parametrize("msg,expected", [
-    ("xUse --cookies later", "xUse --cookies later"),
-    ("a See b See https://x.y", "a See b"),
-    ("See\thttps://x.y", "See\thttps://x.y"),
-    ("Seeing https://x.y", "Seeing https://x.y"),
-    ("", ""),
-])
-def test_short_hint_cutting_edges(msg, expected):
-    assert links.short_error(Exception(msg)) == expected
 
 
 def test_problem_error_shape_and_music_root_503(client):

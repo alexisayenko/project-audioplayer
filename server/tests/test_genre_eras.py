@@ -107,10 +107,6 @@ def test_only_the_owner_writes_and_signed_in_users_read(multi):
     assert [e["name"] for e in get(multi, headers=alice)["eras"]] == ["A"]
 
 
-def test_nobody_without_credentials_writes(client):
-    assert client.put("/genres/trance/eras", json={"eras": []}).status_code == 401
-
-
 @pytest.fixture
 def datadir(tmp_path, monkeypatch):
     monkeypatch.setattr(seedmod.deps, "data_root", lambda: tmp_path)

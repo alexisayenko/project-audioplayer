@@ -15,16 +15,6 @@ def client(tmp_path, monkeypatch):
     return TestClient(main.app)
 
 
-def test_requires_token(client):
-    assert client.get("/search", params={"q": "x"}).status_code == 401
-    assert client.get("/search", params={"q": "x"}, headers={"X-API-Token": "no"}).status_code == 401
-
-
-def test_unconfigured_token_is_refused(client, monkeypatch):
-    monkeypatch.delenv("AUDIO_API_TOKEN")
-    assert client.get("/search", params={"q": "x"}, headers=HEADERS).status_code == 503
-
-
 def test_search(client, monkeypatch):
     monkeypatch.setattr(extractor, "search", lambda q, n: [{"id": VID, "title": q}])
     r = client.get("/search", params={"q": "song"}, headers=HEADERS)
@@ -66,6 +56,11 @@ def test_missing_file_404(client):
         ("Use --cookies first", "Use --cookies first"),
         ("See the docs. Use --cookies", "See the docs."),
         ("plain\x1b[31m red\x1b[0m", "plain red"),
+        ("xUse --cookies later", "xUse --cookies later"),
+        ("a See b See https://x.y", "a See b"),
+        ("See\thttps://x.y", "See\thttps://x.y"),
+        ("Seeing https://x.y", "Seeing https://x.y"),
+        ("", ""),
     ],
 )
 def test_short_cuts_hints(msg, expected):

@@ -3,7 +3,7 @@ import json
 import pytest
 
 from app import library, migrate_model2
-from tests.test_credits_api import ODIR, on_disk, post, song
+from tests.test_credits import ODIR, on_disk, post, song
 from tests.test_library import H, VID, client  # noqa: F401
 
 

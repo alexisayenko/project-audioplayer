@@ -326,16 +326,6 @@ def test_usage_for_owner_has_no_limits(multi):
     assert multi.get("/me/usage").status_code == 401
 
 
-def test_every_data_endpoint_needs_a_user(multi):
-    for method, path in [
-        ("get", "/me"), ("get", "/me/usage"), ("get", "/library"), ("get", "/catalog"), ("get", "/tags"),
-        ("get", f"/files/{VID}"), ("get", f"/covers/{VID}"), ("get", f"/songs/{VID}/status"),
-        ("post", "/songs"), ("patch", f"/songs/{VID}"), ("delete", f"/songs/{VID}"),
-        ("delete", f"/songs/{VID}/audio"), ("post", f"/songs/{VID}/bpm/detect"), ("post", "/download"),
-    ]:
-        assert getattr(multi, method)(path).status_code == 401, path
-
-
 def test_legacy_download_endpoint_is_per_user(multi, monkeypatch, tmp_path):
     def fake(vid, out):
         (out / f"{vid}.m4a").write_bytes(b"dl")

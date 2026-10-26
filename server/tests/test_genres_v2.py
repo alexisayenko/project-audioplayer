@@ -97,10 +97,6 @@ def test_a_broken_file_raises(tmp_path, monkeypatch):
         genres_v2.reset()
 
 
-def test_the_route_needs_a_sign_in(client):
-    assert client.get("/genres/v2").status_code == 401
-
-
 def test_the_route_serves_the_shipped_genres_with_v1_descriptions_and_links(client):
     r = client.get("/genres/v2", headers=H)
     assert r.status_code == 200

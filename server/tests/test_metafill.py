@@ -41,12 +41,6 @@ def bare(uid, *ids):
         edit(uid, v, albums=[], releaseYear=None, tags=[])
 
 
-def test_anonymous_is_refused(client):
-    assert client.get(URL).status_code == 401
-    assert client.post(URL).status_code == 401
-    assert client.delete(URL).status_code == 401
-
-
 def test_nothing_to_do_when_complete(client):
     add(client)
     edit(OWNER_UID, VID, album="A", released=2000, tags=["genre:pop"])

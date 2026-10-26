@@ -162,12 +162,6 @@ def test_signed_in_users_read_but_only_the_owner_writes(multi):
     assert multi.delete(f"/genres/trance/references/{entry['id']}", headers=alice).status_code == 403
 
 
-def test_nobody_without_credentials_reads_or_writes(client):
-    assert client.get("/genres/references").status_code == 401
-    assert client.get("/genres/trance/references").status_code == 401
-    assert client.post("/genres/trance/references", json={}).status_code == 401
-
-
 def test_in_library_follows_the_requesters_own_library(multi, tmp_path):
     write_owner_library(tmp_path, [song(VID)])
     post(multi, "trance", {"song_id": VID, "role": "archetype"})

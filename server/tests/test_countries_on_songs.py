@@ -1,7 +1,7 @@
 import json
 
 from app import metafill
-from tests.test_credits_api import ODIR, on_disk, post, song
+from tests.test_credits import ODIR, on_disk, post, song
 from tests.test_guest import web
 from tests.test_library import H, VID, VID2, client  # noqa: F401
 
