@@ -2,7 +2,11 @@
 
 What shipped, newest first. One line each; the web UI and server are live at https://electrophone.cc. Everything listed here is deployed except the sections marked "built, not deployed" (the 2026-10-14 release went out once the SSH access in [task-0027](tasks/task-0027.md) was restored; the live visualizer files match `origin/main` as of 2026-10-15). Why: [tech/decisions.md](tech/decisions.md); runbook: [tech/deploy.md](tech/deploy.md).
 
-## 2026-10-26 (Tracklist parser; server only, built, not deployed)
+## 2026-10-26 (Album from a time-coded YouTube video; server and web deployed)
+
+- Server and web (task-0038 phase 1B, API-264 to API-270, API-290 to API-295; `test_albums_video`, `test_video_split`, `test_album_video_flow`, `album-video` and `album-video-model` tests pass): Add album accepts a single YouTube video link, reads the track list from the chapters, the description or a pasted text, shows an editable preview table (times, artists, titles, versions, "In library" rows with Use existing, shift all times, fades), and creates the album with one metadata-only song per ticked track; a split job downloads the audio once, cuts one file per track with ffmpeg and marks each song's audio as on the server; the whole split counts as one add. The web shows the job progress and opens the album when it is done. Create errors (already exists, album limit, wrong times) show readable messages. Live on https://electrophone.cc; ffmpeg is installed on perkunas, but a real cut has not been run yet (the tests fake it), and the iOS side is not built.
+
+## 2026-10-26 (Tracklist parser; server only, deployed with the album-from-video release above)
 
 - Server (task-0038 phase 0, ADD-193 to ADD-198; `test_tracklist` passes): `server/app/tracklist.py` turns a description, pasted text or yt-dlp chapters into tracks (start, end, artists, title, version, flags); the reference fixture of 13 tracks and a JSON case file are tested; no API yet.
 
