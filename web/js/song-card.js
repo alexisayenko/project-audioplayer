@@ -22,7 +22,7 @@ import { toggleQueue, playNextInQueue } from './queue-toggle.js';
 import { openShareDialog, copyText } from './share-ui.js';
 import { lineParts, partInfo } from './part-info.js';
 import { togglePartPopover, closePartPopover, initPartPopovers } from './part-popover.js';
-import { prefs, saveLibraryView } from './library-data.js';
+import { prefs } from './library-data.js';
 import * as audioGraph from './audio-graph.js';
 import { createLiveBpmController } from './live-bpm-ctl.js';
 import { loadReferences, onReferencesChange, songMarks, marksTip, roleLabel } from './references.js';
@@ -60,7 +60,6 @@ function viewInLibrary(term) {
   prefs.sel.clear();
   prefs.never = false;
   prefs.view = 'songs';
-  saveLibraryView('songs');
   document.getElementById('song-card')?.close();
   if (/^#?\/?(library)?$/.test(location.hash)) window.dispatchEvent(new Event('hashchange'));
   else location.hash = '#/library';

@@ -17,6 +17,7 @@
 <link rel="stylesheet" href="genres.css">
 <link rel="stylesheet" href="drafts.css">
 <link rel="stylesheet" href="playlists.css">
+<link rel="stylesheet" href="albums.css">
 <link rel="stylesheet" href="stats.css">
 <link rel="stylesheet" href="progress.css">
 <link rel="stylesheet" href="import.css">
@@ -33,7 +34,14 @@
   <button class="side-toggle" id="side-toggle" type="button" aria-expanded="true" aria-label="Collapse sidebar" title="Collapse sidebar"><span data-icon="chevronLeft" aria-hidden="true"></span></button>
   <div class="brand"><span class="brand-lockup"><span class="brand-mark"><span data-icon="mark" aria-hidden="true"></span><output class="server" id="server-status"><span class="led" id="server-led"></span></output></span><img class="brand-wordmark" src="img/electrophone-lockup.png" width="396" height="132" alt="Electrophone" loading="eager"></span></div>
   <nav id="nav" aria-label="Main">
-    <a href="#/library" data-route="library" title="Library"><span data-icon="library" aria-hidden="true"></span><span class="nav-label">Library</span></a>
+    <div class="nav-group" id="nav-library">
+      <button type="button" class="nav-parent" id="library-toggle" aria-expanded="false" aria-controls="library-sub" title="Library"><span data-icon="library" aria-hidden="true"></span><span class="nav-label">Library</span></button>
+      <ul class="nav-sub" id="library-sub" hidden>
+        <li><a class="help-link" href="#/library" data-route="library" title="Songs"><span data-icon="music" aria-hidden="true"></span><span class="nav-label">Songs</span></a></li>
+        <li><a class="help-link" href="#/library/albums" data-route="library/albums" title="Albums"><span data-icon="albums" aria-hidden="true"></span><span class="nav-label">Albums</span></a></li>
+        <li><a class="help-link" href="#/library/drafts" data-route="library/drafts" title="Drafts"><span data-icon="pencil" aria-hidden="true"></span><span class="nav-label">Drafts</span><small class="nav-count t-caption" id="nav-drafts-count"></small></a></li>
+      </ul>
+    </div>
     <a href="#/playback" data-route="playback" title="Now playing"><span data-icon="playOutline" aria-hidden="true"></span><span class="nav-label">Now playing</span></a>
     <a href="#/playlists" data-route="playlists" title="Playlists"><span data-icon="playlist" aria-hidden="true"></span><span class="nav-label">Playlists</span></a>
     <a href="#/genres" data-route="genres" title="Genres map"><span data-icon="genresMap" aria-hidden="true"></span><span class="nav-label">Genres map</span></a>
@@ -146,6 +154,7 @@
 <dialog id="pl-dialog" aria-label="Playlists"></dialog>
 <dialog id="filter-sheet" class="sheet" aria-labelledby="sheet-title"></dialog>
 <dialog id="help-sheet" class="sheet" aria-labelledby="help-sheet-title"></dialog>
+<dialog id="library-sheet" class="sheet" aria-labelledby="library-sheet-title"></dialog>
 <output id="toast" class="toast t-subhead" hidden></output>
 <div id="viz-full" class="viz-full" role="dialog" aria-label="Visualizer" aria-describedby="viz-exit-hint" tabindex="-1" hidden> <!-- NOSONAR fullscreen overlay needs custom focus and Escape handling, not a modal dialog element -->
   <span class="viz-sr" id="viz-exit-hint">Press Escape or use the Exit button to leave. Click the picture to pause or play.</span>

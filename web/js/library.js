@@ -11,7 +11,7 @@ import { getListening } from './listening-data.js';
 import { ROW_FLASH_MS, LIBRARY_FRESH_MS, EAGER_COVERS } from './constants.js';
 import { findRowIndex, scrollTarget, registerRevealer } from './reveal.js';
 import { tagLabel, categoryOf, CATEGORIES } from './tagname.js';
-import { prefs, readLibraryView, saveLibraryView, SORTS, visibleSongs, selectedIn, isUnsetKey, unsetCount, setListening, hasListening, neverCount, listeningData } from './library-data.js';
+import { prefs, SORTS, visibleSongs, selectedIn, isUnsetKey, unsetCount, setListening, hasListening, neverCount, listeningData } from './library-data.js';
 import { songRow, paintDownloadRows } from './library-rows.js';
 import { loadReferences, onReferencesChange, cachedReferences, referenceSongIds, ROLES, roleLabel } from './references.js';
 import { disposeAll } from './marquee.js';
@@ -95,12 +95,27 @@ export function renderLibrary(root) {
   const group = el('div', { class: 'group' }, head, list);
 
   const drafting = can('drafts');
-  const tabSongs = el('button', { class: 'seg-btn', type: 'button', role: 'tab', id: 'lib-tab-songs', 'aria-controls': 'lib-songs' }, 'Songs');
-  const draftCount = el('small', { class: 't-caption' });
-  const tabDrafts = el('button', { class: 'seg-btn', type: 'button', role: 'tab', id: 'lib-tab-drafts', 'aria-controls': 'lib-drafts' }, 'Drafts', draftCount);
-  const switcher = drafting ? el('div', { class: 'seg', role: 'tablist', 'aria-label': 'Library view' }, tabSongs, tabDrafts) : null;
-  const songsPane = el('div', { class: 'lib-pane', id: 'lib-songs', role: drafting ? 'tabpanel' : null, 'aria-labelledby': drafting ? 'lib-tab-songs' : null });
-  const draftsPane = el('div', { class: 'lib-pane drafts', id: 'lib-drafts', role: 'tabpanel', 'aria-labelledby': 'lib-tab-drafts', hidden: true });
+  const songsPane = el('div', { class: 'lib-pane', id: 'lib-songs', });
+  const draftsPane = el('div', { class: 'lib-pane drafts', id: 'lib-drafts', hidden: true });
+  const albumsPane = el('div', { class: 'lib-pane', id: 'lib-albums', hidden: true });
+  let unmountAlbums = null;
+  let albumsLoading = false;
+  function showAlbums() {
+    if (unmountAlbums || albumsLoading) return;
+    albumsLoading = true;
+    albumsPane.replaceChildren(el('p', { class: 'muted t-subhead state', role: 'status' }, 'Loading albums...'));
+    loadUi('albums').then((m) => {
+      albumsLoading = false;
+      if (gone) return;
+      unmountAlbums = m.mountAlbums(albumsPane);
+    }, () => {
+      albumsLoading = false;
+      if (gone) return;
+      albumsPane.replaceChildren(el('div', { class: 'state card' },
+        el('p', { class: 'msg error', role: 'alert' }, 'Albums could not be loaded. Check the connection and try again.'),
+        el('button', { class: 'btn', type: 'button', onclick: showAlbums }, 'Retry')));
+    });
+  }
   let unmountDrafts = null;
   let draftsLoading = false;
   let gone = false;
@@ -124,14 +139,13 @@ export function renderLibrary(root) {
 
   root.append(
     el('header', { class: 'page-head lib-head' },
-      el('div', { class: 'lib-lead' },
-        el('div', { class: 'page-title' },
-          el('p', { class: 't-eyebrow' }, 'ELECTROPHONE'),
-          el('h1', { class: 't-display' }, 'Library')),
-        switcher),
+      el('div', { class: 'page-title' },
+        el('p', { class: 't-eyebrow' }, 'ELECTROPHONE'),
+        el('h1', { class: 't-display', id: 'lib-title' }, 'Library')),
       el('div', { class: 'head-actions' }, total,
         can('add') ? el('button', { class: 'btn primary glow', type: 'button', onclick: (e) => openAdd(undefined, e.currentTarget) }, icon('plus', 'action'), 'Add song') : null)),
     songsPane,
+    albumsPane,
     draftsPane);
   songsPane.append(
     el('div', { class: 'toolbar' },
@@ -145,28 +159,29 @@ export function renderLibrary(root) {
     status);
 
   function paintTotal() {
-    if (prefs.view === 'drafts') total.textContent = draftStore.loaded ? countText(draftStore.count) : '';
+    if (prefs.view === 'albums') total.textContent = '';
+    else if (prefs.view === 'drafts') total.textContent = draftStore.loaded ? countText(draftStore.count) : '';
     else total.textContent = store.loaded ? `${store.songs.length} ${plural(store.songs.length, 'song', 'songs')}` : '';
   }
 
   function paintSwitch() {
-    draftCount.textContent = draftStore.loaded ? String(draftStore.count) : '';
-    tabDrafts.setAttribute('aria-label', draftStore.loaded ? `Drafts, ${draftStore.count}` : 'Drafts');
     paintTotal();
   }
 
+  function routeView() {
+    const m = /^#\/library\/(albums(?:\/[^/?#]+)?|drafts)$/.exec(location.hash);
+    return drafting && m ? m[1].split('/')[0] : 'songs';
+  }
+
   function setView(view) {
-    prefs.view = drafting && view === 'drafts' ? 'drafts' : 'songs';
-    if (drafting) saveLibraryView(prefs.view);
-    const onDrafts = prefs.view === 'drafts';
-    songsPane.hidden = onDrafts;
-    draftsPane.hidden = !onDrafts;
-    for (const [tab, on] of [[tabSongs, !onDrafts], [tabDrafts, onDrafts]]) {
-      tab.setAttribute('aria-selected', String(on));
-      tab.tabIndex = on ? 0 : -1;
-      tab.classList.toggle('on', on);
-    }
-    if (onDrafts) showDrafts();
+    prefs.view = view;
+    songsPane.hidden = view !== 'songs';
+    albumsPane.hidden = view !== 'albums';
+    draftsPane.hidden = view !== 'drafts';
+    const heading = root.querySelector('#lib-title');
+    if (heading) heading.textContent = { songs: 'Library', albums: 'Albums', drafts: 'Drafts' }[view];
+    if (view === 'drafts') showDrafts();
+    if (view === 'albums') showAlbums();
     paintTotal();
   }
 
@@ -298,20 +313,11 @@ export function renderLibrary(root) {
   const unsub = store.subscribe(renderAll);
   let unsubDrafts = null;
   if (drafting) {
-    tabSongs.addEventListener('click', () => setView('songs'));
-    tabDrafts.addEventListener('click', () => setView('drafts'));
-    switcher.addEventListener('keydown', (e) => {
-      const next = { ArrowRight: 'drafts', ArrowLeft: 'songs', Home: 'songs', End: 'drafts' }[e.key];
-      if (!next) return;
-      e.preventDefault();
-      setView(next);
-      (next === 'drafts' ? tabDrafts : tabSongs).focus();
-    });
     unsubDrafts = draftStore.subscribe(paintSwitch);
     if (!draftStore.loaded) void draftStore.load();
     paintSwitch();
-    setView(readLibraryView(true));
-  } else prefs.view = 'songs';
+    setView(routeView());
+  } else setView('songs');
   const unsubPlayer = player.onChange(renderList);
   const unsubDl = autodl.onChange(paintDownloads);
 
@@ -350,5 +356,5 @@ export function renderLibrary(root) {
 
   const unmountScrollTop = mountScrollTop();
 
-  return () => { gone = true; window.removeEventListener('server-starting', onStarting); unmountScrollTop(); unsub(); unsubDrafts?.(); unmountDrafts?.(); unsubPlayer(); unsubRefs(); unsubDl(); unregister(); clearTimeout(flashTimer); flashId = null; const d = document.getElementById('filter-sheet'); if (d.open) d.close(); };
+  return () => { gone = true; window.removeEventListener('server-starting', onStarting); unmountScrollTop(); unsub(); unsubDrafts?.(); unmountDrafts?.(); unmountAlbums?.(); unsubPlayer(); unsubRefs(); unsubDl(); unregister(); clearTimeout(flashTimer); flashId = null; const d = document.getElementById('filter-sheet'); if (d.open) d.close(); };
 }

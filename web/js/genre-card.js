@@ -6,7 +6,7 @@ import { familyIndex, dotClass, OTHER_COLOR } from './genre-data.js';
 import { descriptionNode, tempoBadge } from './genre-desc.js';
 import { shownSourceLinks } from './genre-source-links.js';
 import { createReferencesPanel } from './genre-references.js';
-import { filterByTags, prefs, saveLibraryView } from './library-data.js';
+import { filterByTags, prefs } from './library-data.js';
 import { showGenreOnMap } from './genre-focus.js';
 
 export const NOT_FOUND = 'Genre not found';
@@ -45,7 +45,6 @@ function viewInLibrary(n, tree) {
   filterByTags(libraryTags(tree, n.id));
   prefs.never = false;
   prefs.view = 'songs';
-  saveLibraryView('songs');
   if (/^#?\/?(library)?$/.test(location.hash)) window.dispatchEvent(new Event('hashchange'));
   else location.hash = '#/library';
 }

@@ -54,6 +54,7 @@ export const ICONS = {
   equalizer: { d: '<path d="M5 21v-6"/><path d="M12 21V3"/><path d="M19 21V9"/>' },
   terrain: { d: '<path d="m8 3 4 8 5-5 5 15H2L8 3z"/>' },
   link: { d: '<path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>' },
+  albums: { d: '<circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="2"/>' },
   music: { d: '<path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>' },
   crosshair: { d: '<circle cx="12" cy="12" r="10"/><line x1="22" x2="18" y1="12" y2="12"/><line x1="6" x2="2" y1="12" y2="12"/><line x1="12" x2="12" y1="6" y2="2"/><line x1="12" x2="12" y1="22" y2="18"/>' },
   maximize: { d: '<path d="M8 3H5a2 2 0 0 0-2 2v3"/><path d="M21 8V5a2 2 0 0 0-2-2h-3"/><path d="M3 16v3a2 2 0 0 0 2 2h3"/><path d="M16 21h3a2 2 0 0 0 2-2v-3"/>' },

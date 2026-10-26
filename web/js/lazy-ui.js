@@ -19,6 +19,7 @@ export const UI_LOADERS = {
   shareOpen: () => import('./share-open.js'),
   tagPicker: () => import('./player-tag-picker.js'),
   drafts: () => import('./drafts.js'),
+  albums: () => import('./albums.js'),
   actions: () => import('./player-actions.js'),
   filters: () => import('./library-toolbar.js'),
   playlistPicker: () => import('./playlist-picker.js'),

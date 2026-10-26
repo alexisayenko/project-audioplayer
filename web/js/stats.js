@@ -19,7 +19,7 @@ import { getListening, refreshListening } from './listening-data.js';
 import { renderListening } from './stats-listening.js';
 import { renderGenres } from './stats-genres-view.js';
 import { DEFAULT_SORT, genreTag } from './stats-genres.js';
-import { filterByTags, prefs, saveLibraryView } from './library-data.js';
+import { filterByTags, prefs } from './library-data.js';
 import {
   COLOR_MODES, DEFAULT_MODE, PALETTE_SIZE, FAMILY_PALETTE_SIZE, splitPlottable, makePoint, assignGroups, colorIndex, songFamilies, countText, skippedText, chartLabel,
 } from './stats-data.js';
@@ -310,7 +310,6 @@ export function renderStats(root) {
     filterByTags([genreTag(row)]);
     prefs.never = false;
     prefs.view = 'songs';
-    saveLibraryView('songs');
     location.hash = '#/library';
   }
 

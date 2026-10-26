@@ -22,7 +22,7 @@ FAILS_BEFORE_ERROR = 5
 STATE_NAME = "gitsync-state.json"
 ADD_SPEC = ("--", "audioplayer", ":(exclude)*.tmp")
 REPO_NAMES = ("data", "covers")
-WATCHED_JSON = ("library.json", "profile.json", "drafts.json", "genre_layout.json", "playlists.json")
+WATCHED_JSON = ("library.json", "profile.json", "drafts.json", "genre_layout.json", "playlists.json", "albums.json")
 DEFAULT_OWNED = ("audioplayer/",)
 FLOCK_WAIT_S = 30.0
 UNPUSHED_RANGE = "@{u}..HEAD"
@@ -862,6 +862,8 @@ def check_inbound_json(rel: str, text: str) -> str | None:
         return "not a draft list"
     elif rel.endswith("genre_layout.json") and not all(isinstance(raw.get(k, {}), dict) for k in ("positions", "families")):
         return "not a genre layout"
+    elif rel.endswith("albums.json") and not isinstance(raw.get("albums", []), list):
+        return "not an album list"
     elif rel.endswith("playlists.json") and not isinstance(raw.get("playlists", []), list):
         return "not a playlist list"
     return None

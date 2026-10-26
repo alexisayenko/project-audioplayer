@@ -24,6 +24,10 @@ class TrimIn(BaseModel):
     end: float | None = None
 
 
+class AlbumPreviewRequest(BaseModel):
+    url: str = Field(min_length=1, max_length=2000)
+
+
 class DownloadRequest(BaseModel):
     video_id: str
     trim: TrimIn | None = None

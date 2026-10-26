@@ -1116,3 +1116,6 @@ body:has(.legal:not([hidden])) main, body:has(.legal:not([hidden])) .player { pa
 .ref-badge svg { fill: currentColor; }
 .ref-badge-item { padding: var(--stroke-hairline) var(--space-2); border-radius: var(--radius-pill); border: var(--stroke-hairline) solid var(--line); color: var(--ink); }
 .refs-role { width: auto; min-width: 0; }
+.nav-count { margin-left: auto; padding: 0 var(--space-2); border-radius: var(--radius-pill); background: var(--surface-sunken); color: var(--ink); font-variant-numeric: tabular-nums; }
+.nav-count:empty { display: none; }
+body.side-collapsed #nav .nav-count { display: none; }

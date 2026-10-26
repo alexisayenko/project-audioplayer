@@ -10,7 +10,7 @@ const jsDir = join(root, 'js');
 const dist = join(root, 'dist');
 const ENTRIES = ['app', 'icons', 'viz-timeline-worker'];
 const GROUPS = {
-  ui: ['song-card', 'add', 'edit-dialog', 'cover-dialog', 'genre-card', 'share-ui', 'share-open', 'share', 'player-tag-picker', 'drafts', 'player-actions', 'library-toolbar', 'playlist-picker', 'update-check', 'stats', 'settings', 'theory', 'playlists', 'studio', 'about', 'features', 'viz-ui'],
+  ui: ['song-card', 'add', 'edit-dialog', 'cover-dialog', 'genre-card', 'share-ui', 'share-open', 'share', 'player-tag-picker', 'drafts', 'albums', 'player-actions', 'library-toolbar', 'playlist-picker', 'update-check', 'stats', 'settings', 'theory', 'playlists', 'studio', 'about', 'features', 'viz-ui'],
   genres: ['genres-rework', 'genres'],
 };
 const PRELOAD_ORDER = ['lazy-ui', 'lazy-genres'];

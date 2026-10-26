@@ -1,0 +1,18 @@
+{
+  "id": 545650,
+  "title": "Tumult",
+  "year": 2004,
+  "genres": ["Electronic", "Rock"],
+  "styles": ["Hardcore", "electronic", "Breakbeat"],
+  "artists": [{"name": "Derango (2)", "id": 1}],
+  "tracklist": [
+    {"position": "", "type_": "heading", "title": "Side A", "duration": ""},
+    {"position": "1", "type_": "track", "title": "Intro", "duration": ""},
+    {"position": "2", "type_": "track", "title": "Tumult  Part I", "duration": "4:05"},
+    {"position": "", "type_": "index", "title": "Suite", "duration": "", "sub_tracks": [
+      {"position": "3.1", "type_": "track", "title": "Suite I", "duration": "1:02:03"},
+      {"position": "3.2", "type_": "track", "title": "Suite II", "duration": "bad"}
+    ]},
+    {"position": "2-1", "type_": "track", "title": "Disc Two Opener", "duration": "0:59"}
+  ]
+}

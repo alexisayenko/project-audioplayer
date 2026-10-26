@@ -17,7 +17,9 @@ import { loadCollapsed, saveCollapsed } from './sidebar-state.js';
 import { SYNC_POLL_MS } from './constants.js';
 import { describeSync } from './sync-status.js';
 import { describeBuild } from './build-info.js';
-import { initHelpNav } from './nav-help.js';
+import { initHelpNav, initLibraryNav } from './nav-help.js';
+import { draftStore } from './drafts-store.js';
+import { syncLibraryMenu } from './nav-library.js';
 import { renderLogin } from './login.js';
 import { studioSiteUrl } from './studio-redirect.js';
 
@@ -86,6 +88,8 @@ function route() {
     history.replaceState(null, '', '#/library');
   }
   if (name.startsWith('playlists/')) name = 'playlists';
+  const navName = /^library\/albums\//.test(name) ? 'library/albums' : name;
+  if (/^library\/(albums(\/[^/]+)?|drafts)$/.test(name)) name = 'library';
   if (name === 'genres-rework') {
     name = 'genres';
     history.replaceState(null, '', '#/genres');
@@ -99,11 +103,13 @@ function route() {
   cleanup = routes[name](view) || null;
   if (name === 'playback') void viz.ensure().catch(() => {});
   for (const a of document.querySelectorAll('#nav a')) {
-    const on = a.dataset.route === name;
+    const on = a.dataset.route === navName;
     a.classList.toggle('active', on);
     if (on) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current');
   }
-  help?.sync(name);
+  help?.sync(navName);
+  libNav?.sync(navName);
+  syncLibraryMenu(draftStore);
   window.scrollTo(0, 0);
   if (wantsAdd) void openAdd();
   if (shared) void openSharedLink(shared);
@@ -113,10 +119,12 @@ initPlayer();
 const viz = lazyVisualizer({ player: playerApi });
 initShare();
 const help = initHelpNav();
+const libNav = initLibraryNav();
 const sideToggle = document.getElementById('side-toggle');
 function setCollapsed(collapsed) {
   document.body.classList.toggle('side-collapsed', collapsed);
   help?.refresh();
+  libNav?.refresh();
   const label = collapsed ? 'Expand sidebar' : 'Collapse sidebar';
   sideToggle.setAttribute('aria-expanded', String(!collapsed));
   sideToggle.setAttribute('aria-label', label);

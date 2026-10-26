@@ -110,3 +110,14 @@ test('WEB-131: no chevron in the header; sub items are indented in the wide rail
   assert.match(css, /data-mode="inline"\] \.nav-sub a \{[^}]*margin-left: calc\(var\(--icon-nav\) \+ var\(--space-3\)\)/);
   assert.doesNotMatch(css, /data-mode="flyout"\] \.nav-sub a \{[^}]*margin-left/);
 });
+
+test('the Library menu group lists Songs, Albums and Drafts and owns the library routes', async () => {
+  const { LIBRARY_ROUTES, isLibraryRoute } = await import('./nav-help.js');
+  assert.deepEqual(LIBRARY_ROUTES, ['library', 'library/albums', 'library/drafts']);
+  assert.ok(isLibraryRoute('library/albums') && !isLibraryRoute('playback'));
+  assert.match(nav, /id="nav-library"[\s\S]*?id="library-toggle"[\s\S]*?id="library-sub"/);
+  const subs = [...nav.match(/id="library-sub"[\s\S]*?<\/ul>/)[0].matchAll(/data-route="([^"]+)"/g)].map((m) => m[1]);
+  assert.deepEqual(subs, ['library', 'library/albums', 'library/drafts']);
+  assert.match(nav, /id="nav-drafts-count"/);
+  assert.doesNotMatch(nav, /<a href="#\/library" data-route="library" title="Library"/);
+});
