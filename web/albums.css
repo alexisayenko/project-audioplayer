@@ -48,9 +48,16 @@
 .album-link-btn { padding-left: 0; }
 .album-rym { display: grid; gap: var(--space-1); margin: var(--space-3) 0; }
 .album-rym input { width: 100%; }
-.svc-rym { padding: 0 var(--space-2); font-weight: 600; }
 .album-dl-status { margin: 0 0 var(--space-2); }
 .album-search { display: flex; flex-wrap: wrap; gap: var(--space-2); align-items: center; }
 .album-search input { flex: 1 1 8rem; min-width: 0; }
 .album-cands { margin: var(--space-3) 0; }
 .album-cand { text-align: left; width: 100%; }
+.album-links { display: flex; align-items: center; flex-wrap: wrap; gap: var(--space-2); margin-bottom: var(--space-2); }
+.album-links .svc-row { margin-bottom: 0; }
+.svc-rateyourmusic .ic { width: var(--icon-nav, 24px); height: var(--icon-nav, 24px); }
+.album-links-form { display: grid; gap: var(--space-2); margin: 0 0 var(--space-3); }
+.album-link-field { margin: 0; }
+.album-link-field input { width: 100%; }
+.album-links-actions { display: flex; justify-content: flex-end; gap: var(--space-2); }
+.album-links-actions .btn { width: auto; flex: 0 0 auto; }

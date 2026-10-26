@@ -15,7 +15,7 @@ User = Annotated[dict[str, Any], Depends(deps.require_token)]
 
 
 def _raise(exc: albums.AlbumError):
-    raise HTTPException(status_code=exc.status, detail=exc.code) from exc
+    raise HTTPException(status_code=exc.status, detail={"code": exc.code, "key": exc.key} if exc.key else exc.code) from exc
 
 
 def _snapshot(uid: str) -> list[dict[str, Any]]:
@@ -88,15 +88,19 @@ def get_album(album_id: str, user: User):
 
 @router.patch("/albums/{album_id}", responses=deps.responses(404, 422))
 def patch_album(album_id: str, body: AlbumPatchRequest, user: User):
+    changes: dict[str, Any] = {}
     try:
-        rym = albums.clean_rym(body.rymUrl)
+        for key, value in (body.links or {}).items():
+            changes[key] = albums.clean_link(key, value)
+        if "rymUrl" in body.model_fields_set:
+            changes["rateyourmusic"] = albums.clean_rym(body.rymUrl)
     except albums.AlbumError as exc:
         _raise(exc)
     uid = user["uid"]
     with deps.tx(uid, "albums patch"):
         items = albums.load(deps.albums_path(uid))
         album = _found(items, album_id)
-        album["rymUrl"] = rym
+        albums.set_links(album, changes)
         albums.save(deps.albums_path(uid), items)
         return album
 

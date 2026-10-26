@@ -8,6 +8,7 @@ import os
 import re
 import secrets
 import urllib.error
+from urllib.parse import parse_qsl, urlencode, urlsplit
 from pathlib import Path
 from typing import Any
 
@@ -24,9 +25,9 @@ _POS = re.compile(r"\s+")
 
 
 class AlbumError(Exception):
-    def __init__(self, status: int, code: str):
+    def __init__(self, status: int, code: str, key: str | None = None):
         super().__init__(code)
-        self.status, self.code = status, code
+        self.status, self.code, self.key = status, code, key
 
 
 def parse_url(value: Any) -> tuple[str, int]:
@@ -48,6 +49,79 @@ def clean_rym(value: Any) -> str | None:
     if not match:
         raise AlbumError(422, "bad_rym_url")
     return f"https://rateyourmusic.com{match.group(1)}"
+
+
+LINK_KEYS = ("discogs", "rateyourmusic", "youtube", "wikipedia")
+_YT_HOSTS = {"youtube.com", "www.youtube.com", "m.youtube.com", "music.youtube.com"}
+_WP_HOST = re.compile(r"(?:[a-z0-9-]+\.)+wikipedia\.org")
+
+
+def _bad(key: str) -> AlbumError:
+    return AlbumError(422, "bad_link", key)
+
+
+def clean_link(key: str, value: Any) -> str | None:
+    """A link of one kind normalised (https only, fragment dropped, at most 300 characters); empty or None is None; anything else raises 422 bad_link with the key."""
+    if key not in LINK_KEYS:
+        raise _bad(str(key))
+    if value is None or (isinstance(value, str) and not value.strip()):
+        return None
+    text = value.strip() if isinstance(value, str) else ""
+    if len(text) > MAX_TEXT or not text.startswith("https://"):
+        raise _bad(key)
+    if key == "rateyourmusic":
+        try:
+            return clean_rym(text)
+        except AlbumError:
+            raise _bad(key) from None
+    if key == "discogs":
+        found = discogs_lookup.clean_url(text)
+        if not found:
+            raise _bad(key)
+        return found
+    try:
+        parts = urlsplit(text)
+        host = (parts.hostname or "").lower()
+    except ValueError:
+        raise _bad(key) from None
+    if key == "wikipedia":
+        if not _WP_HOST.fullmatch(host) or not parts.path.startswith("/wiki/") or len(parts.path) < 7:
+            raise _bad(key)
+        return f"https://{host}{parts.path}"
+    if host == "youtu.be" and len(parts.path) > 1:
+        return f"https://youtu.be{parts.path}"
+    if host in _YT_HOSTS and parts.path in ("/watch", "/playlist"):
+        wanted = "v" if parts.path == "/watch" else "list"
+        values = [v for k, v in parse_qsl(parts.query) if k == wanted and v]
+        if values:
+            return f"https://{host}{parts.path}?{urlencode({wanted: values[0]})}"
+    raise _bad(key)
+
+
+def _stored_link(key: str, value: Any) -> str | None:
+    try:
+        return clean_link(key, value)
+    except AlbumError:
+        return None
+
+
+def full_links(album: dict[str, Any]) -> dict[str, str | None]:
+    """All four links of a stored album; an unedited discogs link is the import source link, rateyourmusic follows `rymUrl`."""
+    stored = album.get("links") if isinstance(album.get("links"), dict) else {}
+    out = {key: _stored_link(key, stored.get(key)) for key in LINK_KEYS}
+    if "discogs" not in stored:
+        source = album.get("source")
+        out["discogs"] = _stored_link("discogs", source.get("url")) if isinstance(source, dict) else None
+    out["rateyourmusic"] = _stored_rym(album.get("rymUrl")) or out["rateyourmusic"]
+    return out
+
+
+def set_links(album: dict[str, Any], changes: dict[str, Any]) -> None:
+    """Applies already-validated link changes and keeps `rymUrl` and links.rateyourmusic equal."""
+    links = full_links(album)
+    links.update(changes)
+    album["links"] = links
+    album["rymUrl"] = links["rateyourmusic"]
 
 
 def parse_duration(value: Any) -> int | None:
@@ -126,6 +200,7 @@ def preview(url: Any) -> dict[str, Any]:
         "year": timeutil.valid_year(detail.get("year")) if detail.get("year") else None,
         "genres": _genres(detail),
         "rymUrl": None,
+        "links": {"discogs": f"https://www.discogs.com/release/{ident}", "rateyourmusic": None, "youtube": None, "wikipedia": None},
         "source": {"type": "discogs", "id": str(ident), "url": f"https://www.discogs.com/release/{ident}"},
         "tracks": tracks,
     }
@@ -153,12 +228,18 @@ def validate(body: Any) -> dict[str, Any]:
     year = body.get("year")
     genres = _genres({"genres": body["genres"] if isinstance(body.get("genres"), list) else []})
     ident = str(int(src["id"]))
+    given = body.get("links") if isinstance(body.get("links"), dict) else {}
+    links = {key: clean_link(key, given[key]) for key in given}
+    links.setdefault("discogs", f"https://www.discogs.com/release/{ident}")
+    if body.get("rymUrl") not in (None, ""):
+        links["rateyourmusic"] = clean_rym(body.get("rymUrl"))
     return {
         "title": title,
         "artist": str(body.get("artist") or "").strip()[:MAX_TEXT],
         "year": timeutil.valid_year(year) if isinstance(year, int) and not isinstance(year, bool) else None,
         "genres": genres,
-        "rymUrl": clean_rym(body.get("rymUrl")),
+        "rymUrl": links.get("rateyourmusic"),
+        "links": {key: links.get(key) for key in LINK_KEYS},
         "source": {"type": "discogs", "id": ident, "url": f"https://www.discogs.com/release/{ident}"},
         "tracks": tracks,
     }
@@ -185,7 +266,7 @@ def load(path: Path) -> list[dict[str, Any]]:
         return []
     items = raw.get("albums") if isinstance(raw, dict) else None
     good = [a for a in (items if isinstance(items, list) else []) if isinstance(a, dict) and isinstance(a.get("id"), str) and isinstance(a.get("tracks", []), list)]
-    return [{**a, "rymUrl": _stored_rym(a.get("rymUrl")), "genres": _genres({"genres": a["genres"] if isinstance(a.get("genres"), list) else []})} for a in good]
+    return [{**a, "rymUrl": full_links(a)["rateyourmusic"], "links": full_links(a), "genres": _genres({"genres": a["genres"] if isinstance(a.get("genres"), list) else []})} for a in good]
 
 
 def save(path: Path, albums: list[dict[str, Any]]) -> None:
@@ -202,11 +283,11 @@ def find_source(albums: list[dict[str, Any]], source: dict[str, Any]) -> dict[st
 
 def build(payload: dict[str, Any], existing: set[str]) -> dict[str, Any]:
     tracks = [{**t, "songId": None} for t in payload["tracks"]]
-    return {"id": new_id(existing), **{k: payload[k] for k in ("title", "artist", "year", "genres", "rymUrl", "source")}, "tracks": tracks, "created_at": timeutil.now_utc()}
+    return {"id": new_id(existing), **{k: payload[k] for k in ("title", "artist", "year", "genres", "rymUrl", "links", "source")}, "tracks": tracks, "created_at": timeutil.now_utc()}
 
 
 def summary(a: dict[str, Any]) -> dict[str, Any]:
-    return {"id": a["id"], "title": a.get("title", ""), "artist": a.get("artist", ""), "year": a.get("year"), "genres": a.get("genres") or [], "rymUrl": a.get("rymUrl"), "trackCount": len(a.get("tracks") or []), "created_at": a.get("created_at")}
+    return {"id": a["id"], "title": a.get("title", ""), "artist": a.get("artist", ""), "year": a.get("year"), "genres": a.get("genres") or [], "rymUrl": a.get("rymUrl"), "links": full_links(a), "trackCount": len(a.get("tracks") or []), "created_at": a.get("created_at")}
 
 
 def without_dangling(album: dict[str, Any], song_ids: set[Any]) -> dict[str, Any]:

@@ -69,16 +69,32 @@ const trackList = (tracks) => el('ol', { class: 'album-tracks' }, tracks.map(tra
 
 const httpUrl = (v) => (typeof v === 'string' && /^https?:\/\/\S+$/i.test(v.trim()) ? v.trim() : null);
 
+export const LINK_KEYS = [
+  { key: 'discogs', label: 'Discogs', placeholder: 'https://www.discogs.com/release/...' },
+  { key: 'rateyourmusic', label: 'Rate Your Music', placeholder: 'https://rateyourmusic.com/release/album/...' },
+  { key: 'youtube', label: 'YouTube', placeholder: 'https://www.youtube.com/playlist?list=...' },
+  { key: 'wikipedia', label: 'Wikipedia', placeholder: 'https://en.wikipedia.org/wiki/...' },
+];
+
 export function albumLinks(a) {
-  const src = a.source;
-  const raw = typeof src === 'string' ? src : src?.url;
-  let url = httpUrl(raw);
-  if (!url && typeof raw === 'string') {
-    const m = /^discogs:(\d+)$/.exec(raw);
-    if (m) url = `https://www.discogs.com/release/${m[1]}`;
+  const stored = a?.links && typeof a.links === 'object' ? a.links : {};
+  const out = {};
+  for (const { key } of LINK_KEYS) {
+    let url = httpUrl(stored[key]);
+    if (!url && key === 'discogs' && !('discogs' in stored)) {
+      const src = a?.source;
+      const raw = typeof src === 'string' ? src : src?.url;
+      url = httpUrl(raw);
+      if (!url && typeof raw === 'string') {
+        const m = /^discogs:(\d+)$/.exec(raw);
+        if (m) url = `https://www.discogs.com/release/${m[1]}`;
+      }
+      if (url && !/^https?:\/\/([a-z0-9-]+\.)*discogs\.com\//i.test(url)) url = null;
+    }
+    if (!url && key === 'rateyourmusic' && !('rateyourmusic' in stored)) url = httpUrl(a?.rymUrl);
+    if (url) out[key] = url;
   }
-  if (!url || !/^https?:\/\/([a-z0-9-]+\.)*discogs\.com\//i.test(url)) return {};
-  return { discogs: { on: true, url } };
+  return out;
 }
 
 export function albumFacts(a) {
@@ -87,30 +103,52 @@ export function albumFacts(a) {
   return [`${n} ${plural(n, 'track', 'tracks')}`, bpm, totalTime(a.tracks), a.year ? String(a.year) : ''].filter(Boolean).join(' · ');
 }
 
-export const RYM_ERROR = 'Use a rateyourmusic.com album or release address.';
-const rymHref = (u) => (typeof u === 'string' && /^https?:\/\/\S+$/i.test(u.trim()) ? u.trim() : '');
+export const linkErrorText = (label) => `This is not a valid ${label} address.`;
 
-function rymBadge(url) {
-  return el('a', { class: 'svc svc-rym on', href: url, target: '_blank', rel: 'noopener', title: 'RateYourMusic', 'aria-label': 'RateYourMusic' },
-    el('span', { class: 't-caption', 'aria-hidden': 'true' }, 'RYM'));
-}
+const linkIconRow = (links) => {
+  const row = serviceIcons({ onlyOn: true });
+  const { rateyourmusic, ...std } = links;
+  row.setState(Object.fromEntries(Object.entries(std).map(([k, url]) => [k, { on: true, url }])));
+  if (rateyourmusic) {
+    row.node.append(el('a', { class: 'svc svc-rateyourmusic on', href: rateyourmusic, target: '_blank', rel: 'noopener', title: 'Rate Your Music', 'aria-label': 'Rate Your Music' }, icon('srcRym', 'nav')));
+  }
+  return row.node;
+};
 
-function rymForm(album, onSaved) {
-  const input = el('input', { type: 'text', placeholder: 'https://rateyourmusic.com/release/album/...', 'aria-label': 'RateYourMusic link', autocomplete: 'off', inputMode: 'url', value: album.rymUrl || '' });
+function linksEditor(album, onSaved, onCancel) {
+  const have = albumLinks(album);
+  const fields = LINK_KEYS.map(({ key, label, placeholder }) => {
+    const input = el('input', { type: 'text', class: 'album-link-input', placeholder, 'aria-label': label, 'data-key': key, autocomplete: 'off', inputMode: 'url', value: have[key] || '' });
+    const err = el('p', { class: 'msg error t-caption', role: 'alert', hidden: true });
+    return { key, label, input, err, node: el('div', { class: 'field album-link-field' }, el('label', { class: 't-caption muted' }, label), input, err) };
+  });
   const save = el('button', { class: 'btn fill small', type: 'submit' }, 'Save');
-  const err = el('p', { class: 'msg error t-caption', role: 'alert', hidden: true });
-  const form = el('form', { class: 'album-rym' },
-    el('label', { class: 't-caption muted' }, 'RateYourMusic link'),
-    el('div', { class: 'well' }, input, save), err);
+  const cancel = el('button', { class: 'btn outline small', type: 'button', onclick: onCancel }, 'Cancel');
+  const general = el('p', { class: 'msg error t-caption', role: 'alert', hidden: true });
+  const form = el('form', { class: 'album-links-form' }, ...fields.map((f) => f.node), general, el('div', { class: 'album-links-actions' }, cancel, save));
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
-    err.hidden = true;
+    const links = {};
+    for (const f of fields) {
+      f.err.hidden = true;
+      const next = f.input.value.trim();
+      if (next !== (have[f.key] || '')) links[f.key] = next || null;
+    }
+    general.hidden = true;
+    if (!Object.keys(links).length) { onCancel(); return; }
     save.disabled = true;
     try {
-      onSaved(await api.patchAlbum(album.id, { rymUrl: input.value.trim() || null }));
+      onSaved(await api.patchAlbum(album.id, { links }));
     } catch (ex) {
-      err.textContent = ex.status === 422 || ex.code === 'bad_rym_url' ? RYM_ERROR : ex.message;
-      err.hidden = false;
+      const key = ex.data?.key ?? ex.data?.detail?.key;
+      const bad = fields.find((f) => f.key === key);
+      if ((ex.status === 422 || ex.code === 'bad_link') && bad) {
+        bad.err.textContent = linkErrorText(bad.label);
+        bad.err.hidden = false;
+      } else {
+        general.textContent = ex.message;
+        general.hidden = false;
+      }
       save.disabled = false;
     }
   });
@@ -182,6 +220,7 @@ export function openAlbumCard(album, opener = null) {
   const dlg = document.getElementById('song-card');
   const close = () => dlg.close();
   let cur = album;
+  let editingLinks = false;
 
   let openNo = null;
   const panelId = (t) => `album-panel-${cur.id}-${t.no}`;
@@ -224,11 +263,8 @@ export function openAlbumCard(album, opener = null) {
     if (next) { cur = next; window.dispatchEvent(new Event(ALBUMS_CHANGED)); }
     const closeBtn = el('button', { type: 'button', class: 'card-close', title: 'Close', 'aria-label': 'Close', onclick: close }, icon('clear', 'nav'));
     const art = el('div', { class: 'card-art album-art' }, el('span', { class: 'cover-mark', 'aria-hidden': 'true' }, icon('coverPlaceholder')), closeBtn);
-    const links = albumLinks(cur);
-    const rym = rymHref(cur.rymUrl);
-    const svc = Object.keys(links).length || rym ? serviceIcons({ onlyOn: true }) : null;
-    svc?.setState(links);
-    if (rym) svc.node.append(rymBadge(rym));
+    const editBtn = el('button', { class: 'link-btn t-caption album-edit-links', type: 'button', 'aria-expanded': String(editingLinks), onclick: () => { editingLinks = !editingLinks; paint(); } }, 'Edit links');
+    const linkRow = el('div', { class: 'album-links' }, linkIconRow(albumLinks(cur)), editBtn);
     const genres = Array.isArray(cur.genres) ? cur.genres.filter(Boolean) : [];
     const tracks = cur.tracks || [];
     dlg.replaceChildren(...[
@@ -238,8 +274,8 @@ export function openAlbumCard(album, opener = null) {
         el('h2', { id: 'song-card-title', class: 't-title' }, [cur.artist, cur.title].filter(Boolean).join(' - ')),
         el('p', { class: 'card-sub t-subhead album-facts-line' }, albumFacts(cur))),
       genres.length ? el('div', { class: 'chips album-genres' }, genres.map((g) => el('span', { class: 'tag ns t-caption' }, g))) : null,
-      svc?.node,
-      rymForm(cur, paint),
+      linkRow,
+      editingLinks ? linksEditor(cur, (full) => { editingLinks = false; paint(full); }, () => { editingLinks = false; paint(); }) : null,
       el('div', { class: 'card-actions album-card-actions' }, el('div', { class: 'card-icons' }, albumButtons(cur, true).all), plainDeleteButton(cur, close), deleteWithSongsButton(cur, close)),
       tracks.length ? el('ol', { class: 'album-tracks album-info-tracks' }, tracks.map(trackRow)) : null].filter(Boolean));
   }
@@ -499,7 +535,7 @@ export function openAddAlbum(opener = null) {
   function paintPreview(preview) {
     const editor = genreEditor(preview.genres);
     const time = totalTime(preview.tracks);
-    const rymInput = el('input', { type: 'text', placeholder: 'RateYourMusic link (optional)', 'aria-label': 'RateYourMusic link', autocomplete: 'off', inputMode: 'url' });
+    const rymInput = el('input', { type: 'text', placeholder: 'Rate Your Music link (optional)', 'aria-label': 'Rate Your Music link', autocomplete: 'off', inputMode: 'url' });
     const create = el('button', { class: 'btn primary glow', type: 'button' }, icon('plus', 'nav'), 'Create');
     const back = el('button', { class: 'btn outline', type: 'button', onclick: backToStart }, 'Back');
     create.addEventListener('click', async () => {
@@ -508,7 +544,7 @@ export function openAddAlbum(opener = null) {
       create.disabled = true;
       try {
         const rymUrl = rymInput.value.trim();
-        const made = await api.createAlbum({ ...preview, genres: editor.get(), ...(rymUrl ? { rymUrl } : {}), ...(yt ? { songIds: yt.songIds } : {}) });
+        const made = await api.createAlbum({ ...preview, genres: editor.get(), ...(rymUrl ? { links: { rateyourmusic: rymUrl } } : {}), ...(yt ? { songIds: yt.songIds } : {}) });
         dlg.close();
         if (yt) {
           const linked = countOfList(made.linked);
@@ -530,7 +566,7 @@ export function openAddAlbum(opener = null) {
         el('div', { class: 't-headline album-headline' }, [`${preview.artist} - ${preview.title}`, preview.year].filter(Boolean).join(' · ')),
         time ? el('div', { class: 't-time muted album-time' }, time) : null),
       editor.node,
-      el('div', { class: 'field album-rym' }, el('label', { class: 't-caption muted' }, 'RateYourMusic link (optional)'), rymInput),
+      el('div', { class: 'field album-rym' }, el('label', { class: 't-caption muted' }, 'Rate Your Music link (optional)'), rymInput),
       trackList(preview.tracks || []),
       el('div', { class: 'add-foot' }, back, create)));
   }

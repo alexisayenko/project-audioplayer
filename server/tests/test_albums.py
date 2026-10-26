@@ -82,7 +82,7 @@ def test_create_list_get_delete_roundtrip(client, discogs, tmp_path):
     assert album["created_at"]
     assert stored(tmp_path)[0]["id"] == album["id"]
     assert client.get("/albums", headers=H).json() == [
-        {"id": album["id"], "title": "Tumult", "artist": "Derango", "year": 2004, "genres": ["Electronic", "Rock", "Hardcore", "Breakbeat"], "rymUrl": None, "trackCount": 5, "created_at": album["created_at"]}]
+        {"id": album["id"], "title": "Tumult", "artist": "Derango", "year": 2004, "genres": ["Electronic", "Rock", "Hardcore", "Breakbeat"], "rymUrl": None, "links": {"discogs": "https://www.discogs.com/release/545650", "rateyourmusic": None, "youtube": None, "wikipedia": None}, "trackCount": 5, "created_at": album["created_at"]}]
     assert client.get(f"/albums/{album['id']}", headers=H).json() == album
     assert client.delete(f"/albums/{album['id']}", headers=H).status_code == 200
     assert client.get("/albums", headers=H).json() == []
@@ -260,3 +260,67 @@ def test_rym_missing_or_bad_in_file_reads_null(tmp_path):
     path = tmp_path / "albums.json"
     path.write_text(json.dumps({"albums": [{"id": "alb_00000001", "tracks": []}, {"id": "alb_00000002", "tracks": [], "rymUrl": "http://evil"}]}), encoding="utf-8")
     assert [a["rymUrl"] for a in albums.load(path)] == [None, None]
+
+
+DISCOGS = "https://www.discogs.com/release/545650"
+NONE4 = {"discogs": DISCOGS, "rateyourmusic": None, "youtube": None, "wikipedia": None}
+
+
+@pytest.mark.parametrize("key,value,expected", [
+    ("discogs", "https://www.discogs.com/master/77-Tumult#x", "https://www.discogs.com/master/77"),
+    ("discogs", "https://discogs.com/release/5-A-B", "https://www.discogs.com/release/5"),
+    ("youtube", "https://www.youtube.com/watch?v=aaaaaaaaaaa&t=5#f", "https://www.youtube.com/watch?v=aaaaaaaaaaa"),
+    ("youtube", "https://music.youtube.com/playlist?list=OLAK5uy_x&si=1", "https://music.youtube.com/playlist?list=OLAK5uy_x"),
+    ("youtube", "https://youtu.be/aaaaaaaaaaa?t=3", "https://youtu.be/aaaaaaaaaaa"),
+    ("wikipedia", "https://en.wikipedia.org/wiki/Tumult_(album)?x=1#top", "https://en.wikipedia.org/wiki/Tumult_(album)"),
+    ("rateyourmusic", "https://www.rateyourmusic.com/release/album/a/b/?q=1", "https://rateyourmusic.com/release/album/a/b/"),
+    ("wikipedia", "", None), ("youtube", None, None),
+])
+def test_clean_link_accepts(key, value, expected):
+    assert albums.clean_link(key, value) == expected
+
+
+@pytest.mark.parametrize("key,value", [
+    ("discogs", "http://www.discogs.com/release/5"), ("discogs", "https://www.discogs.com/artist/5"), ("discogs", "https://evil.com/release/5"),
+    ("youtube", "https://www.youtube.com/channel/x"), ("youtube", "https://youtube.com.evil.com/watch?v=aaaaaaaaaaa"), ("youtube", "https://www.youtube.com/watch"),
+    ("wikipedia", "https://en.wikipedia.org/w/index.php"), ("wikipedia", "https://wikipedia.org.evil.com/wiki/X"), ("wikipedia", "https://example.com/wiki/X"),
+    ("rateyourmusic", "https://rateyourmusic.com/artist/x"), ("discogs", "https://www.discogs.com/release/" + "5" * 300), ("nope", "https://x.com"), ("youtube", 5),
+])
+def test_clean_link_rejects(key, value):
+    with pytest.raises(albums.AlbumError) as e:
+        albums.clean_link(key, value)
+    assert (e.value.status, e.value.code, e.value.key) == (422, "bad_link", key)
+
+
+def test_links_default_create_patch_and_sync(client, discogs, tmp_path):
+    base = preview(client).json()
+    assert base["links"] == NONE4
+    bad = client.post("/albums", json={**base, "links": {"wikipedia": "https://x.com/wiki/A"}}, headers=H)
+    assert (bad.status_code, bad.json()["detail"]) == (422, {"code": "bad_link", "key": "wikipedia"})
+    album = client.post("/albums", json={**base, "links": {"youtube": "https://youtu.be/aaaaaaaaaaa"}}, headers=H).json()
+    assert album["links"] == {**NONE4, "youtube": "https://youtu.be/aaaaaaaaaaa"}
+    url = f"/albums/{album['id']}"
+    r = client.patch(url, json={"links": {"wikipedia": "https://en.wikipedia.org/wiki/Tumult", "discogs": None}}, headers=H).json()
+    assert r["links"] == {"discogs": None, "rateyourmusic": None, "youtube": "https://youtu.be/aaaaaaaaaaa", "wikipedia": "https://en.wikipedia.org/wiki/Tumult"}
+    assert client.get(url, headers=H).json()["links"]["discogs"] is None
+    r = client.patch(url, json={"links": {"rateyourmusic": RYM}}, headers=H).json()
+    assert r["rymUrl"] == RYM and r["links"]["rateyourmusic"] == RYM
+    r = client.patch(url, json={"rymUrl": "https://rateyourmusic.com/album/x"}, headers=H).json()
+    assert r["links"]["rateyourmusic"] == "https://rateyourmusic.com/album/x" == r["rymUrl"]
+    assert client.get("/albums", headers=H).json()[0]["links"]["rateyourmusic"] == r["rymUrl"]
+    bad = client.patch(url, json={"links": {"youtube": "https://x.com"}}, headers=H)
+    assert (bad.status_code, bad.json()["detail"]) == (422, {"code": "bad_link", "key": "youtube"})
+    assert client.patch(url, json={"links": {"bogus": "https://x.com"}}, headers=H).json()["detail"]["key"] == "bogus"
+    r = client.patch(url, json={"links": {"youtube": ""}, "rymUrl": None}, headers=H).json()
+    assert r["links"]["youtube"] is None and r["links"]["rateyourmusic"] is None and r["rymUrl"] is None
+    assert client.patch(url, json={}, headers=H).json()["links"]["wikipedia"] == "https://en.wikipedia.org/wiki/Tumult"
+
+
+def test_old_albums_without_links_read_with_defaults(tmp_path):
+    path = tmp_path / "albums.json"
+    old = {"id": "alb_00000001", "tracks": [], "rymUrl": "https://rateyourmusic.com/release/album/a/b/", "source": {"type": "discogs", "id": "5", "url": "https://www.discogs.com/release/5"}}
+    junk = {"id": "alb_00000002", "tracks": [], "links": {"discogs": "javascript:x", "youtube": 5}, "source": {}}
+    path.write_text(json.dumps({"albums": [old, junk]}), encoding="utf-8")
+    a, b = albums.load(path)
+    assert a["links"] == {"discogs": "https://www.discogs.com/release/5", "rateyourmusic": "https://rateyourmusic.com/release/album/a/b/", "youtube": None, "wikipedia": None}
+    assert b["links"] == {"discogs": None, "rateyourmusic": None, "youtube": None, "wikipedia": None}

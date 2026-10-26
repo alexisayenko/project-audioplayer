@@ -30,6 +30,7 @@ class AlbumPreviewRequest(BaseModel):
 
 class AlbumPatchRequest(BaseModel):
     rymUrl: str | None = Field(default=None, max_length=2000)
+    links: dict[str, str | None] | None = None
 
 
 class AlbumLinkRequest(BaseModel):
