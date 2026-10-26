@@ -2,7 +2,7 @@
 
 What shipped, newest first. One line each; the web UI and server are live at https://electrophone.cc. Everything listed here is deployed except the sections marked "built, not deployed" (the 2026-10-14 release went out once the SSH access in [task-0027](tasks/task-0027.md) was restored; the live visualizer files match `origin/main` as of 2026-10-15). Why: [tech/decisions.md](tech/decisions.md); runbook: [tech/deploy.md](tech/deploy.md).
 
-## 2026-10-26 (Albums: total length in the title line; web, not deployed)
+## 2026-10-26 (Albums: total length in the title line; web deployed)
 
 - Web (owner request 2026-10-26, LIB-244, LIB-231; `albums-length`, `albums-list` and `albums` tests pass): an album row shows the total length after the track count, "Eye To Eye · 10 tracks · 1 h 12 min" (under a minute "45 s", under an hour "48 min", from an hour "1 h 12 min", rounded to the nearest minute; with some tracks lacking a duration the known ones are summed as "~1 h 05 min" with the tooltip "Some tracks have no duration"; none known: omitted). The group is nowrap and shrinks as one unit. The same format is in the album page header title and the info box "Length" detail; the separate right-aligned `m:ss` time on the row is gone.
 
