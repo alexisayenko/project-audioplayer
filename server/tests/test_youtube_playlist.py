@@ -49,8 +49,12 @@ def get(client, url=URL, headers=H):
 def test_contract_and_watch_urls(client, fake):
     fake["entries"] = [flat(1), flat(2, duration=None)]
     body = get(client).json()
-    assert body["playlist_id"] == LIST and body["title"] == "Mix tape" and body["channel"] == "Alex"
-    assert body["count"] == 2 and body["truncated"] is False and body["skipped"] == 0
+    assert body["playlist_id"] == LIST
+    assert body["title"] == "Mix tape"
+    assert body["channel"] == "Alex"
+    assert body["count"] == 2
+    assert body["truncated"] is False
+    assert body["skipped"] == 0
     assert body["entries"][0] == {"id": vid(1), "title": "Song 1", "channel": "Chan", "duration": 200,
                                   "url": f"https://www.youtube.com/watch?v={vid(1)}", "available": True}
     assert body["entries"][1]["duration"] is None
@@ -60,21 +64,24 @@ def test_private_deleted_are_skipped_and_duplicates_dropped(client, fake):
     fake["entries"] = [flat(1), flat(1), {"id": vid(2), "title": "[Private video]"}, {"id": vid(3), "title": "[Deleted video]"}, flat(4)]
     body = get(client).json()
     assert [e["id"] for e in body["entries"]] == [vid(1), vid(4)]
-    assert body["count"] == 2 and body["skipped"] == 2
+    assert body["count"] == 2
+    assert body["skipped"] == 2
 
 
 def test_cap_at_500_sets_truncated(client, fake):
     fake["entries"] = [flat(n) for n in range(600)]
     fake["total"] = 600
     body = get(client).json()
-    assert body["count"] == 500 and body["truncated"] is True
+    assert body["count"] == 500
+    assert body["truncated"] is True
     assert fake["calls"] == [(LIST, 501)]
 
 
 def test_exactly_500_is_not_truncated(client, fake):
     fake["entries"] = [flat(n) for n in range(500)]
     body = get(client).json()
-    assert body["count"] == 500 and body["truncated"] is False
+    assert body["count"] == 500
+    assert body["truncated"] is False
 
 
 def test_result_is_cached(client, fake):
@@ -92,7 +99,8 @@ def test_result_is_cached(client, fake):
 ])
 def test_bad_urls_are_400_and_never_fetched(client, fake, url):
     r = get(client, url)
-    assert r.status_code == 400 and r.json()["error"] == "bad_url"
+    assert r.status_code == 400
+    assert r.json()["error"] == "bad_url"
     assert fake["calls"] == []
 
 
@@ -109,14 +117,16 @@ def test_accepted_hosts(client, fake, url):
 @pytest.mark.parametrize("list_id", ["RDabcdefghijk", "WL", "LL"])
 def test_mix_and_login_lists_are_422(client, fake, list_id):
     r = get(client, f"https://www.youtube.com/playlist?list={list_id}")
-    assert r.status_code == 422 and r.json()["error"] == "playlist_unavailable"
+    assert r.status_code == 422
+    assert r.json()["error"] == "playlist_unavailable"
     assert fake["calls"] == []
 
 
 def test_ytdlp_private_or_missing_is_422(client, fake):
     fake["error"] = Exception("ERROR: HTTP Error 404: Not Found")
     r = get(client)
-    assert r.status_code == 422 and r.json()["error"] == "playlist_unavailable"
+    assert r.status_code == 422
+    assert r.json()["error"] == "playlist_unavailable"
 
 
 def test_timeout_is_504_and_other_failure_502(client, fake):
@@ -140,7 +150,8 @@ def test_rate_limited_per_user_and_not_for_owner(client, fake, monkeypatch):
         assert get(client, headers={}).status_code == 200
         assert get(client, headers={}).status_code == 200
         r = get(client, headers={})
-        assert r.status_code == 429 and r.json()["error"] == "import_limit"
+        assert r.status_code == 429
+        assert r.json()["error"] == "import_limit"
         overrides[deps.require_token] = lambda: {**user, "uid": "owner", "owner": True}
         assert all(get(client, headers={}).status_code == 200 for _ in range(5))
     finally:

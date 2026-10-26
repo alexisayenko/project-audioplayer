@@ -206,7 +206,8 @@ def test_web_every_root_level_css_gets_a_versioned_url_that_serves(tmp_path, mon
         for name in ("tokens.css", "genres.css", "viz-synth.css"):
             assert f'href="_v/{version}/{name}"' in page
         res = client.get(f"/_v/{version}/genres.css")
-        assert res.status_code == 200 and res.headers["content-type"].startswith("text/css")
+        assert res.status_code == 200
+        assert res.headers["content-type"].startswith("text/css")
     finally:
         monkeypatch.delenv("AUDIO_WEB_DIR")
         importlib.reload(main)

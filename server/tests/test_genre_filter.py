@@ -21,7 +21,12 @@ def test_canonical_strips_music_and_uses_builtin_spelling():
     assert gf.canonical("Electronic Music") == "electronic"
     assert gf.canonical("Electronic Dance") == "edm"
     assert gf.canonical("electronic-dance-music") == "edm"
-    assert gf.is_dropped("electronica") and gf.is_dropped("rave") and gf.is_dropped("club") and gf.is_dropped("dance & edm") and gf.is_dropped("alternative dance") and gf.is_dropped("indietronica"), "the aliases of electronic are dropped: electronic is not a genre"
+    assert gf.is_dropped("electronica"), "the aliases of electronic are dropped: electronic is not a genre"
+    assert gf.is_dropped("rave"), "the aliases of electronic are dropped: electronic is not a genre"
+    assert gf.is_dropped("club"), "the aliases of electronic are dropped: electronic is not a genre"
+    assert gf.is_dropped("dance & edm"), "the aliases of electronic are dropped: electronic is not a genre"
+    assert gf.is_dropped("alternative dance"), "the aliases of electronic are dropped: electronic is not a genre"
+    assert gf.is_dropped("indietronica"), "the aliases of electronic are dropped: electronic is not a genre"
     assert gf.canonical("punk rock") == "punk"
     for keep in ("trap", "downtempo", "dance-pop", "pop-punk", "chillwave", "soft-rock", "synth-rock", "new age", "indie pop", "classical", "country"):
         assert gf.canonical(keep) == keep or gf.canonical(keep) == keep.replace("-", " ")
@@ -43,7 +48,8 @@ def test_merge_dedupes_and_does_not_waste_slots():
     out = metadata.merge([], {"tags": tags}, {"tags": tags}, None)
     applied = [t[6:] for t in out["tags"]]
     suggested = [s["genre"] for s in out["genre_suggestions"]]
-    assert len(applied) == 5 and len(set(applied)) == 5
+    assert len(applied) == 5
+    assert len(set(applied)) == 5
     assert sorted([*applied, *suggested]) == sorted({"house", *REAL[:8]}), "junk takes no slot, house music and house are one genre"
 
 
@@ -51,7 +57,8 @@ def test_merge_song_genres_are_filtered_like_every_other_source():
     kin = ["deep house", "acid house", "tech house"]
     song = ["genre:house music", "genre:house", "genre:danish", *[f"genre:{g}" for g in kin]]
     out = metadata.merge([], {"tags": ["genre:house"]}, {"song_genres": song, "tags": song}, None)
-    assert out["tags"][0] != "genre:danish" and "genre:danish" not in out["tags"]
+    assert out["tags"][0] != "genre:danish"
+    assert "genre:danish" not in out["tags"]
     assert sorted(out["tags"]) == sorted(f"genre:{g}" for g in kin), "house: MusicBrainz and the song page agree; the rest of the song page is under house and more specific, so house itself is left out"
     assert out["genre_suggestions"] == []
 
@@ -146,8 +153,12 @@ def test_progressive_goes_to_house_with_an_electronic_tag_else_rock():
     assert gf.is_electronic("house")
     assert gf.is_electronic("Electronic"), "the raw source word counts as context for the progressive retag"
     assert gf.is_electronic("club")
-    assert gf.is_electronic("dance") and gf.is_electronic("edm")
-    assert gf.is_electronic("eurodance") and gf.is_electronic("deep house") and not gf.is_electronic("disco") and not gf.is_electronic("synthpop"), "disco and synthpop left Others (2026-10-20)"
+    assert gf.is_electronic("dance")
+    assert gf.is_electronic("edm")
+    assert gf.is_electronic("eurodance"), "disco and synthpop left Others (2026-10-20)"
+    assert gf.is_electronic("deep house"), "disco and synthpop left Others (2026-10-20)"
+    assert not gf.is_electronic("disco"), "disco and synthpop left Others (2026-10-20)"
+    assert not gf.is_electronic("synthpop"), "disco and synthpop left Others (2026-10-20)"
     assert not gf.is_electronic("rock")
     assert not gf.is_electronic("progressive")
     assert not gf.is_electronic("zzz-weird")

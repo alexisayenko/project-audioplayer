@@ -40,8 +40,11 @@ def test_preview_creates_nothing_and_returns_tracks_guess_and_matches(client, ha
     assert body["playlist"] == {"title": HALLU["title"], "uploader": "Hallucinogen - Topic", "count": 11, "url": f"https://www.youtube.com/playlist?list={LIST}"}
     assert body["guess"] == {"artist": "Hallucinogen", "album": "Twisted", "year": 1995}
     assert [(t["position"], t["videoId"], t["songId"]) for t in body["tracks"]] == [(i, HID[i - 1], None) for i in range(1, 12)]
-    assert body["tracks"][0]["title"] == "LSD" and body["tracks"][0]["durationS"] == 450 and body["tracks"][0]["url"].endswith(HID[0])
-    assert body["searchError"] is None and len(body["candidates"]) == 1
+    assert body["tracks"][0]["title"] == "LSD"
+    assert body["tracks"][0]["durationS"] == 450
+    assert body["tracks"][0]["url"].endswith(HID[0])
+    assert body["searchError"] is None
+    assert len(body["candidates"]) == 1
     cand = body["candidates"][0]
     assert (cand["url"], cand["discogsId"], cand["year"], cand["trackCount"], cand["best"]) == ("https://www.discogs.com/release/77001", 77001, 1995, 9, True)
     assert (cand["formats"], cand["labels"], cand["country"], cand["catno"]) == (["CD", "Album"], ["Dragonfly Records"], "UK", "DRAGON 1")
@@ -61,19 +64,23 @@ def test_preview_shows_existing_songs_and_survives_discogs_failures(client, hall
     monkeypatch.setenv("DISCOGS_TOKEN", "t")
     monkeypatch.setattr(discogs_lookup, "_get", lambda *a, **k: (_ for _ in ()).throw(OSError("down")))
     body = pv(client).json()
-    assert (body["candidates"], body["searchError"]) == ([], "discogs_failed") and len(body["tracks"]) == 11
+    assert (body["candidates"], body["searchError"]) == ([], "discogs_failed")
+    assert len(body["tracks"]) == 11
 
 
 def test_preview_without_a_guess_skips_the_search(client, yt, discogs):
     yt["data"] = {"title": "", "uploader": "", "entries": HALLU["entries"][:2]}
     body = pv(client).json()
-    assert body["guess"] == {"artist": None, "album": None, "year": None} and body["candidates"] == [] and body["searchError"] is None
+    assert body["guess"] == {"artist": None, "album": None, "year": None}
+    assert body["candidates"] == []
+    assert body["searchError"] is None
 
 
 @pytest.mark.parametrize("url", ["https://example.com/playlist?list=PLabcdef", "http://www.youtube.com/playlist?list=PLabcdef", "https://www.youtube.com/playlist?list=RDabcdef", "nope"])
 def test_preview_bad_urls(client, yt, url):
     r = pv(client, url)
-    assert (r.status_code, r.json()["detail"]) == (400, "bad_url") and yt["calls"] == []
+    assert (r.status_code, r.json()["detail"]) == (400, "bad_url")
+    assert yt["calls"] == []
 
 
 def test_preview_errors_and_auth(client, yt, multi):
@@ -109,9 +116,11 @@ def test_discogs_search_returns_tracks_and_matches_for_playlist_tracks(client, d
     discogs["data"]["releases/77001"] = HALLU_RELEASE
     pl = [{"position": 3, "title": "Alpha Centauri", "durationS": 420}, {"position": 9, "title": "Solstice"}, {"position": 12, "title": "Other"}]
     got = client.post("/albums/discogs-search", json={"artist": "Hallucinogen", "album": "Twisted", "playlistTracks": pl}, headers=H).json()["candidates"][0]
-    assert got["matches"] == {"3": 3, "9": 8, "12": None} and len(got["tracks"]) == 9
+    assert got["matches"] == {"3": 3, "9": 8, "12": None}
+    assert len(got["tracks"]) == 9
     plain = client.post("/albums/discogs-search", json={"artist": "Hallucinogen", "album": "Twisted"}, headers=H).json()["candidates"][0]
-    assert "matches" not in plain and len(plain["tracks"]) == 9
+    assert "matches" not in plain
+    assert len(plain["tracks"]) == 9
 
 
 def test_commit_with_a_candidate_creates_selected_songs_and_links_by_mapping(client, hallu):
@@ -125,7 +134,8 @@ def test_commit_with_a_candidate_creates_selected_songs_and_links_by_mapping(cli
     assert out["songs"] == [{"position": p, "songId": HID[p - 1]} for p in (1, 2, 9, 10)]
     album = out["album"]
     assert album["links"]["youtube"] == f"https://www.youtube.com/watch?v={HID[0]}&list={LIST}"
-    assert album["links"]["discogs"] == "https://www.discogs.com/release/77001" and album["genres"] == ["Psy-Trance"]
+    assert album["links"]["discogs"] == "https://www.discogs.com/release/77001"
+    assert album["genres"] == ["Psy-Trance"]
     assert [t["songId"] for t in album["tracks"]] == [HID[0], HID[1], None, None, None, None, None, None, HID[8]]
     assert set(library_ids(client)) == {HID[0], HID[1], HID[8], HID[9]}
     assert all(s["file"] is None for s in library_ids(client).values())
@@ -150,8 +160,10 @@ def test_commit_without_a_candidate_builds_the_album_from_the_selection(client, 
     assert (album["title"], album["artist"], album["year"]) == ("My Album", "Derango", 2004)
     assert [(t["no"], t["title"], t["durationS"], t["songId"]) for t in album["tracks"]] == [(1, "Intro", 60, A), (2, "Suite (Live)", 3723, D)]
     assert album["source"] == {"type": "youtube", "id": LIST, "url": f"https://www.youtube.com/playlist?list={LIST}"}
-    assert album["links"]["youtube"] == PL_URL and album["links"]["discogs"] is None
-    assert (out["linked"], out["unlinked"]) == (2, 0) and [s["position"] for s in out["songs"]] == [1, 4]
+    assert album["links"]["youtube"] == PL_URL
+    assert album["links"]["discogs"] is None
+    assert (out["linked"], out["unlinked"]) == (2, 0)
+    assert [s["position"] for s in out["songs"]] == [1, 4]
     assert post_commit(client, commit_body(selected, fallback={"title": "x"})).status_code == 409
 
 
@@ -164,7 +176,8 @@ def test_commit_without_a_candidate_builds_the_album_from_the_selection(client, 
 def test_commit_validates_the_selection_and_fallback(client, yt, patch):
     body = {**commit_body(sel((1, A, "Intro", 60)), fallback={"title": "T"}), **patch}
     r = post_commit(client, body)
-    assert r.status_code == 422 and library_ids(client) == {}
+    assert r.status_code == 422
+    assert library_ids(client) == {}
 
 
 @pytest.mark.parametrize("mapping", [{"7": 1}, {"1": 99}, {"1": 1, "2": 1}, {"x": 1}, {"1": True}, {"1": "1"}, [1]])
@@ -172,7 +185,8 @@ def test_commit_validates_the_mapping_and_creates_nothing(client, hallu, mapping
     cand = pv(client).json()["candidates"][0]
     r = post_commit(client, commit_body(sel((1, HID[0], "LSD", 1), (2, HID[1], "Orphic Thrench", 1)), candidate=cand, mapping=mapping))
     assert (r.status_code, r.json()["detail"]) == (422, "bad_mapping")
-    assert library_ids(client) == {} and client.get("/albums", headers=H).json() == []
+    assert library_ids(client) == {}
+    assert client.get("/albums", headers=H).json() == []
 
 
 def test_commit_bad_candidate_and_url(client, hallu):
@@ -188,7 +202,8 @@ def test_commit_over_the_cap_creates_nothing(multi, yt, monkeypatch):
     c, a = multi, who(multi, ALICE)
     r = c.post("/albums/youtube/commit", json=commit_body(sel((1, A, "Intro", 1), (2, B, "Two", 1)), fallback={"title": "T"}), headers=a)
     assert (r.status_code, r.json()["detail"]) == (409, "library_full_songs")
-    assert c.get("/library", headers=a).json()["songs"] == [] and c.get("/albums", headers=a).json() == []
+    assert c.get("/library", headers=a).json()["songs"] == []
+    assert c.get("/albums", headers=a).json() == []
 
 
 def test_a_playlist_youtube_link_survives_patch_and_get(client, discogs):

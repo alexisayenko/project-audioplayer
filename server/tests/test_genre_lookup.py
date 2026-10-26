@@ -251,7 +251,8 @@ def test_preview_filters_caps_and_drops_lang(monkeypatch):
     body = TestClient(main.app).post("/preview", json={"url": "https://youtu.be/dQw4w9WgXcQ"}, headers={"X-API-Token": "secret"}).json()
     tags = body["tags"]
     genres = [t[6:] for t in tags if t.startswith("genre:")]
-    assert len(genres) == 5 and set(genres) <= _GENRES, "MusicBrainz and Wikipedia agree on everything: at most five are applied"
+    assert len(genres) == 5, "MusicBrainz and Wikipedia agree on everything: at most five are applied"
+    assert set(genres) <= _GENRES, "MusicBrainz and Wikipedia agree on everything: at most five are applied"
     assert [t for t in tags if not t.startswith("genre:")] == ["country:lt"]
     assert {x["genre"] for x in body["genre_suggestions"]} <= _GENRES - set(genres)
     assert not {"danish", "dj"} & ({x["genre"] for x in body["genre_suggestions"]} | set(genres))
@@ -277,7 +278,8 @@ def test_lookup_wikipedia_uses_same_rule(monkeypatch):
     monkeypatch.setattr(wl, "from_links", lambda s, a, al=None: dict(found))
     r = TestClient(main.app).post("/lookup/wikipedia", json={"wikipedia_song": "https://en.wikipedia.org/wiki/X"}, headers={"X-API-Token": "secret"}).json()
     genres = [t[6:] for t in r["tags"] if t.startswith("genre:")]
-    assert len(genres) == 5 and set(genres) <= _GENRES
+    assert len(genres) == 5
+    assert set(genres) <= _GENRES
     assert [t for t in r["tags"] if not t.startswith("genre:")] == ["country:lt"]
     assert r["year"] == 1999
     assert {x["genre"] for x in r["genre_suggestions"]} <= _GENRES - set(genres)

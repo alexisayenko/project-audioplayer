@@ -320,13 +320,17 @@ def test_wrong_audience_is_logged_and_response_unchanged(client, key, caplog):
     with caplog.at_level("INFO", logger="app.oauth"):
         r = client.get("/tags", headers={"Authorization": f"Bearer {token}"})
     assert r.status_code == 401
-    assert "bad token" in r.text and "other.audience" not in r.text and GOOGLE_AUD not in r.text
+    assert "bad token" in r.text
+    assert "other.audience" not in r.text
+    assert GOOGLE_AUD not in r.text
     text = "\n".join(rec.getMessage() for rec in auth_records(caplog) if rec.levelname == "WARNING")
     assert "InvalidAudienceError" in text
     assert "aud='other.audience'" in text
     assert "iss='https://accounts.google.com'" in text
-    assert "GOOGLE_CLIENT_ID" in text and GOOGLE_AUD in text
-    assert token not in text and OWNER not in text
+    assert "GOOGLE_CLIENT_ID" in text
+    assert GOOGLE_AUD in text
+    assert token not in text
+    assert OWNER not in text
 
 
 def test_expired_is_logged_with_expiry(client, key, caplog):
@@ -344,7 +348,9 @@ def test_apple_failure_names_apple_env(client, key, caplog):
     with caplog.at_level("INFO", logger="app.oauth"):
         get(client, make(key, "apple", aud="com.other"))
     text = "\n".join(rec.getMessage() for rec in auth_records(caplog))
-    assert "apple token rejected" in text and "APPLE_AUDIENCE" in text and APPLE_AUD in text
+    assert "apple token rejected" in text
+    assert "APPLE_AUDIENCE" in text
+    assert APPLE_AUD in text
 
 
 def test_success_logs_provider_and_hashed_user(client, key, caplog):
@@ -353,4 +359,5 @@ def test_success_logs_provider_and_hashed_user(client, key, caplog):
     infos = [rec.getMessage() for rec in auth_records(caplog) if rec.levelname == "INFO"]
     assert any("google sign-in verified, user=" in m for m in infos)
     user = [m for m in infos if "user=" in m][0].split("user=")[1]
-    assert len(user) == 8 and user != "123"
+    assert len(user) == 8
+    assert user != "123"

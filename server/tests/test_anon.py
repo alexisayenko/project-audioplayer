@@ -100,7 +100,8 @@ def test_session_issues_a_signed_token_and_bad_ones_are_refused(env):
     c = at()
     r = c.post("/anon/session")
     assert r.status_code == 200
-    assert set(r.json()) == {"token", "expires_in"} and r.json()["expires_in"] == 30 * 24 * 3600
+    assert set(r.json()) == {"token", "expires_in"}
+    assert r.json()["expires_in"] == 30 * 24 * 3600
     token = r.json()["token"]
     assert anon.read(token) is not None
     for bad in ("", "x", token[:-2] + "AA", token + "a", token.split(".")[0], "a.b"):
@@ -132,7 +133,8 @@ def test_a_token_signed_with_another_secret_is_refused(env, monkeypatch):
 def test_without_a_server_secret_the_session_is_not_configured(env, monkeypatch):
     monkeypatch.delenv("AUDIO_API_TOKEN", raising=False)
     r = at().post("/anon/session")
-    assert r.status_code == 503 and r.json()["error"] == "not_configured"
+    assert r.status_code == 503
+    assert r.json()["error"] == "not_configured"
 
 
 def test_session_requests_are_limited_per_ip(env, monkeypatch):
@@ -141,7 +143,9 @@ def test_session_requests_are_limited_per_ip(env, monkeypatch):
     assert c.post("/anon/session").status_code == 200
     assert c.post("/anon/session").status_code == 200
     r = c.post("/anon/session")
-    assert r.status_code == 429 and r.json()["error"] == "limit_ip" and int(r.headers["retry-after"]) > 0
+    assert r.status_code == 429
+    assert r.json()["error"] == "limit_ip"
+    assert int(r.headers["retry-after"]) > 0
     assert at("198.51.100.8").post("/anon/session").status_code == 200
     env["clock"].now += 3601
     assert c.post("/anon/session").status_code == 200
@@ -151,23 +155,31 @@ def test_a_download_is_staged_fetched_and_deleted_on_ack(env):
     c = at()
     h = token_of(c)
     r = start(c, h, f"https://youtu.be/{VID}?si=abc&list=PLxyz")
-    assert r.status_code == 202 and r.json()["status"] == "queued" and r.json()["id"]
+    assert r.status_code == 202
+    assert r.json()["status"] == "queued"
+    assert r.json()["id"]
     job = r.json()["id"]
     body = c.get(f"/anon/downloads/{job}", headers=h).json()
-    assert body["status"] == "ready" and body["progress"] == 1.0 and body["error_code"] is None
+    assert body["status"] == "ready"
+    assert body["progress"] == 1.0
+    assert body["error_code"] is None
     assert body["meta"] == {
         "title": "Yt Title", "artist": "Yt Artist", "duration": 200, "source_url": f"https://www.youtube.com/watch?v={VID}",
         "platform": "youtube", "year": 2019, "video_id": VID,
     }
-    assert body["size"] == len(AUDIO) and body["sha256"] == hashlib.sha256(AUDIO).hexdigest()
+    assert body["size"] == len(AUDIO)
+    assert body["sha256"] == hashlib.sha256(AUDIO).hexdigest()
     assert body["expires_at"].endswith("Z")
     staged = env["root"] / job
     assert (staged / f"{VID}.m4a").is_file()
     f = c.get(f"/anon/downloads/{job}/file", headers=h)
-    assert f.status_code == 200 and f.content == AUDIO and f.headers["content-type"] == "audio/mp4"
+    assert f.status_code == 200
+    assert f.content == AUDIO
+    assert f.headers["content-type"] == "audio/mp4"
     assert c.get(f"/anon/downloads/{job}/cover", headers=h).content == b"jpegbytes"
     ack = c.post(f"/anon/downloads/{job}/ack", json={"sha256": body["sha256"].upper()}, headers=h)
-    assert ack.status_code == 204 and ack.content == b""
+    assert ack.status_code == 204
+    assert ack.content == b""
     assert not staged.exists()
     assert c.post(f"/anon/downloads/{job}/ack", json={"sha256": body["sha256"]}, headers=h).status_code == 204
     for path in ("", "/file", "/cover"):
@@ -178,8 +190,10 @@ def test_a_soundcloud_track_is_staged_with_its_cover_and_no_year(env):
     c = at()
     h = token_of(c)
     job, body = ready(c, h, SC_URL + "?si=tracking")
-    assert body["meta"]["platform"] == "soundcloud" and body["meta"]["video_id"] == "soundcloud-123"
-    assert body["meta"]["source_url"] == SC_URL and body["meta"]["year"] is None
+    assert body["meta"]["platform"] == "soundcloud"
+    assert body["meta"]["video_id"] == "soundcloud-123"
+    assert body["meta"]["source_url"] == SC_URL
+    assert body["meta"]["year"] is None
     assert c.get(f"/anon/downloads/{job}/cover", headers=h).status_code == 200
 
 
@@ -192,7 +206,8 @@ def test_the_cover_is_optional(env, monkeypatch):
     h = token_of(c)
     job, _ = ready(c, h)
     r = c.get(f"/anon/downloads/{job}/cover", headers=h)
-    assert r.status_code == 404 and r.json()["error"] == "no_cover"
+    assert r.status_code == 404
+    assert r.json()["error"] == "no_cover"
 
 
 def test_another_device_sees_nothing_of_a_download(env):
@@ -217,7 +232,8 @@ def test_another_device_sees_nothing_of_a_download(env):
 def test_only_single_youtube_and_soundcloud_tracks_are_accepted(env, url):
     c = at()
     r = start(c, token_of(c), url)
-    assert r.status_code == 422 and r.json()["error"] == "unsupported_url"
+    assert r.status_code == 422
+    assert r.json()["error"] == "unsupported_url"
     assert env["calls"] == 0
 
 
@@ -229,7 +245,9 @@ def test_the_hourly_limit_is_per_device_and_refills(env):
         assert start(c, h).status_code == 202
         env["clock"].now += 10
     r = start(c, h)
-    assert r.status_code == 429 and r.json()["error"] == "limit_hour" and int(r.headers["retry-after"]) > 0
+    assert r.status_code == 429
+    assert r.json()["error"] == "limit_hour"
+    assert int(r.headers["retry-after"]) > 0
     assert start(c, other).status_code == 202
     env["clock"].now += 3600
     assert start(c, h).status_code == 202
@@ -249,7 +267,8 @@ def test_the_daily_limit_is_per_ip_across_devices(env, monkeypatch):
     for _ in range(3):
         assert start(c, token_of(c)).status_code == 202
     r = start(c, token_of(c))
-    assert r.status_code == 429 and r.json()["error"] == "limit_ip"
+    assert r.status_code == 429
+    assert r.json()["error"] == "limit_ip"
     assert start(at("198.51.100.21"), token_of(at("198.51.100.21"))).status_code == 202
     env["clock"].now += 86401
     assert start(c, token_of(c)).status_code == 202
@@ -267,7 +286,8 @@ def test_one_download_at_a_time_per_device(env, monkeypatch):
     a, b = token_of(c), token_of(c)
     assert start(c, a).status_code == 202
     r = start(c, a, VID2)
-    assert r.status_code == 429 and r.json()["error"] == "limit_concurrent"
+    assert r.status_code == 429
+    assert r.json()["error"] == "limit_concurrent"
     assert start(c, b, VID2).status_code == 202
 
 
@@ -278,7 +298,8 @@ def test_the_global_anonymous_queue_is_capped(env, monkeypatch):
     assert start(c, token_of(c)).status_code == 202
     assert start(c, token_of(c)).status_code == 202
     r = start(c, token_of(c))
-    assert r.status_code == 503 and r.json()["error"] == "busy"
+    assert r.status_code == 503
+    assert r.json()["error"] == "busy"
 
 
 def test_anonymous_jobs_go_through_the_shared_scheduler(env, monkeypatch):
@@ -287,7 +308,9 @@ def test_anonymous_jobs_go_through_the_shared_scheduler(env, monkeypatch):
     c = at()
     h = token_of(c)
     start(c, h)
-    assert len(seen) == 1 and seen[0][0].startswith("anon:") and seen[0][1] is False
+    assert len(seen) == 1
+    assert seen[0][0].startswith("anon:")
+    assert seen[0][1] is False
     assert c.get(f"/anon/downloads/{next(iter(anon._jobs))}", headers=h).json()["status"] == "queued"
 
 
@@ -297,7 +320,9 @@ def test_too_long_is_refused_before_anything_is_downloaded(env):
     h = token_of(c)
     job = start(c, h).json()["id"]
     body = c.get(f"/anon/downloads/{job}", headers=h).json()
-    assert body["status"] == "failed" and body["error_code"] == "too_long" and body["meta"] is None
+    assert body["status"] == "failed"
+    assert body["error_code"] == "too_long"
+    assert body["meta"] is None
     assert env["calls"] == 0
     assert c.get(f"/anon/downloads/{job}/file", headers=h).status_code == 409
 
@@ -317,7 +342,9 @@ def test_too_big_files_are_deleted(env, monkeypatch):
     h = token_of(c)
     job = start(c, h).json()["id"]
     body = c.get(f"/anon/downloads/{job}", headers=h).json()
-    assert body["status"] == "failed" and body["error_code"] == "too_big" and body["size"] is None
+    assert body["status"] == "failed"
+    assert body["error_code"] == "too_big"
+    assert body["size"] is None
     assert not (env["root"] / job).exists()
 
 
@@ -325,7 +352,8 @@ def test_a_low_disk_refuses_new_jobs(env, monkeypatch):
     monkeypatch.setattr(anon, "free_bytes", lambda path: 100 * 1024 ** 2)
     c = at()
     r = start(c, token_of(c))
-    assert r.status_code == 503 and r.json()["error"] == "disk_low"
+    assert r.status_code == 503
+    assert r.json()["error"] == "disk_low"
     monkeypatch.setenv("ANON_MIN_FREE_MB", "50")
     assert start(c, token_of(c)).status_code == 202
 
@@ -342,7 +370,8 @@ def test_extractor_failures_carry_a_clear_code_and_leave_no_files(env, error, co
     h = token_of(c)
     job = start(c, h).json()["id"]
     body = c.get(f"/anon/downloads/{job}", headers=h).json()
-    assert body["status"] == "failed" and body["error_code"] == code
+    assert body["status"] == "failed"
+    assert body["error_code"] == code
     assert not (env["root"] / job).exists()
 
 
@@ -362,16 +391,20 @@ def test_the_file_supports_range_and_etag(env):
     job, _ = ready(c, h)
     url = f"/anon/downloads/{job}/file"
     full = c.get(url, headers=h)
-    assert full.headers["accept-ranges"] == "bytes" and int(full.headers["content-length"]) == len(AUDIO)
+    assert full.headers["accept-ranges"] == "bytes"
+    assert int(full.headers["content-length"]) == len(AUDIO)
     assert full.headers["etag"]
     part = c.get(url, headers={**h, "Range": "bytes=100-199"})
-    assert part.status_code == 206 and part.content == AUDIO[100:200]
+    assert part.status_code == 206
+    assert part.content == AUDIO[100:200]
     assert part.headers["content-range"] == f"bytes 100-199/{len(AUDIO)}"
     tail = c.get(url, headers={**h, "Range": "bytes=10000-"})
-    assert tail.status_code == 206 and tail.content == AUDIO[10000:]
+    assert tail.status_code == 206
+    assert tail.content == AUDIO[10000:]
     assert c.get(url, headers={**h, "Range": "bytes=999999-"}).status_code == 416
     same = c.get(url, headers={**h, "If-None-Match": full.headers["etag"]})
-    assert same.status_code == 304 and same.content == b""
+    assert same.status_code == 304
+    assert same.content == b""
     assert c.head(url, headers=h).headers["accept-ranges"] == "bytes"
     assert c.get(url, headers={**h, "If-None-Match": '"other"'}).status_code == 200
 
@@ -382,7 +415,8 @@ def test_the_file_is_not_served_before_it_is_ready(env, monkeypatch):
     h = token_of(c)
     job = start(c, h).json()["id"]
     r = c.get(f"/anon/downloads/{job}/file", headers=h)
-    assert r.status_code == 409 and r.json()["error"] == "not_ready"
+    assert r.status_code == 409
+    assert r.json()["error"] == "not_ready"
     assert c.get(f"/anon/downloads/{job}/cover", headers=h).status_code == 404
     assert c.post(f"/anon/downloads/{job}/ack", json={"sha256": "0" * 64}, headers=h).status_code == 409
 
@@ -393,10 +427,12 @@ def test_a_wrong_or_malformed_hash_keeps_the_file(env):
     job, body = ready(c, h)
     url = f"/anon/downloads/{job}/ack"
     r = c.post(url, json={"sha256": "0" * 64}, headers=h)
-    assert r.status_code == 422 and r.json()["error"] == "hash_mismatch"
+    assert r.status_code == 422
+    assert r.json()["error"] == "hash_mismatch"
     for bad in ("", "abc", "g" * 64, body["sha256"] + "0"):
         r = c.post(url, json={"sha256": bad}, headers=h)
-        assert r.status_code == 422 and r.json()["error"] == "bad_hash", bad
+        assert r.status_code == 422, bad
+        assert r.json()["error"] == "bad_hash", bad
     assert c.post(url, json={}, headers=h).status_code == 422
     assert (env["root"] / job / f"{VID}.m4a").is_file()
     assert c.get(f"/anon/downloads/{job}/file", headers=h).status_code == 200
@@ -407,10 +443,12 @@ def test_ready_jobs_are_swept_one_hour_after_ready(env):
     h = token_of(c)
     job, _ = ready(c, h)
     env["clock"].now += 3599
-    assert anon.sweep() == 0 and (env["root"] / job).exists()
+    assert anon.sweep() == 0
+    assert (env["root"] / job).exists()
     assert c.get(f"/anon/downloads/{job}", headers=h).status_code == 200
     env["clock"].now += 1
-    assert anon.sweep() == 1 and not (env["root"] / job).exists()
+    assert anon.sweep() == 1
+    assert not (env["root"] / job).exists()
     assert c.get(f"/anon/downloads/{job}", headers=h).status_code == 404
 
 
@@ -463,7 +501,8 @@ def test_unknown_directories_are_swept_as_orphans(env):
     os.utime(old, (stamp - 901, stamp - 901))
     os.utime(new, (stamp - 10, stamp - 10))
     anon.sweep()
-    assert not old.exists() and new.exists()
+    assert not old.exists()
+    assert new.exists()
 
 
 def test_everything_staged_before_a_restart_is_removed_on_start(env):
@@ -486,7 +525,9 @@ def test_the_audit_log_never_holds_the_token_the_url_query_or_raw_ids(env, caplo
     job, body = ready(c, h, f"https://www.youtube.com/watch?v={VID}&si=SECRETQUERY")
     c.post(f"/anon/downloads/{job}/ack", json={"sha256": body["sha256"]}, headers=h)
     text = "\n".join(r.getMessage() for r in caplog.records)
-    assert "anon job queued" in text and "anon job ready" in text and "anon ack" in text
+    assert "anon job queued" in text
+    assert "anon job ready" in text
+    assert "anon ack" in text
     did = anon.read(token)
     for secret in (token, token.split(".")[0], did, "SECRETQUERY", "198.51.100.99", job):
         assert secret not in text
@@ -499,7 +540,8 @@ def test_turning_the_feature_off_closes_every_route(env, monkeypatch):
     monkeypatch.setenv("ANON_DOWNLOADS_ENABLED", "0")
     assert c.post("/anon/session").json()["error"] == "anon_disabled"
     r = start(c, h)
-    assert r.status_code == 403 and r.json()["error"] == "anon_disabled"
+    assert r.status_code == 403
+    assert r.json()["error"] == "anon_disabled"
 
 
 def test_the_staging_folder_is_outside_the_user_pool(env, tmp_path):

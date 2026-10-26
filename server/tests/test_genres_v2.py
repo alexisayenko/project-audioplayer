@@ -30,14 +30,27 @@ def test_the_shipped_file_has_the_six_super_genres_psytrance_and_its_six_childre
     assert [g["name"] for g in out["genres"]] == ALL
     by = {g["id"]: g for g in out["genres"]}
     assert [g["level"] for g in out["genres"]] == [1] * 6 + [2] + [3] * 5 + [4] * 3 + [3, 4] + [1, 1] + [2] * 5
-    assert all(g["parents"] == [] for g in out["genres"][:6]) and all(g["cluster"] == "edm-dance" for g in out["genres"][:17]) and [g["cluster"] for g in out["genres"][17:]] == ["synthwave", "vapor"] + ["synthwave"] * 5
-    assert by["synthwave"]["parents"] == [] and by["vaporwave"]["parents"] == [] and by["vaporwave"]["v1"] == "vaporwave" and by["chillsynth"]["v1"] is None
+    assert all(g["parents"] == [] for g in out["genres"][:6])
+    assert all(g["cluster"] == "edm-dance" for g in out["genres"][:17])
+    assert [g["cluster"] for g in out["genres"][17:]] == ["synthwave", "vapor"] + ["synthwave"] * 5
+    assert by["synthwave"]["parents"] == []
+    assert by["vaporwave"]["parents"] == []
+    assert by["vaporwave"]["v1"] == "vaporwave"
+    assert by["chillsynth"]["v1"] is None
     assert all(by[i]["parents"] == ["synthwave"] for i in ["chillsynth", "darksynth", "dreamwave", "outrun", "sovietwave"])
-    assert by["synthwave"]["synonyms"] == ["retro-synth", "retrowave", "futuresynth", "new retro wave", "neo 80s", "retro electro"] and "scene" in by["sovietwave"]["details"]
-    assert by["psytrance"]["parents"] == ["trance"] and by["goa-trance"]["parents"] == ["psytrance"]
+    assert by["synthwave"]["synonyms"] == ["retro-synth", "retrowave", "futuresynth", "new retro wave", "neo 80s", "retro electro"]
+    assert "scene" in by["sovietwave"]["details"]
+    assert by["psytrance"]["parents"] == ["trance"]
+    assert by["goa-trance"]["parents"] == ["psytrance"]
     assert all(by[i]["parents"] == ["psytrance"] for i in ["dark-psytrance", "progressive-psytrance", "forest-psytrance", "full-on-psytrance"])
-    assert by["dark-psytrance"]["synonyms"] == ["darkpsy", "dark psychedelic trance", "horror trance"] and by["psycore"]["parents"] == ["dark-psytrance"] and by["hi-tech-psytrance"]["parents"] == ["dark-psytrance"] and by["nitzhonot"]["parents"] == ["goa-trance"] and by["suomisaundi"]["parents"] == ["psytrance"] and by["zenonesque"]["parents"] == ["progressive-psytrance"]
-    assert by["psytrance"]["synonyms"] == ["psychedelic trance", "psy-trance"] and by["goa-trance"]["synonyms"] == ["goa"]
+    assert by["dark-psytrance"]["synonyms"] == ["darkpsy", "dark psychedelic trance", "horror trance"]
+    assert by["psycore"]["parents"] == ["dark-psytrance"]
+    assert by["hi-tech-psytrance"]["parents"] == ["dark-psytrance"]
+    assert by["nitzhonot"]["parents"] == ["goa-trance"]
+    assert by["suomisaundi"]["parents"] == ["psytrance"]
+    assert by["zenonesque"]["parents"] == ["progressive-psytrance"]
+    assert by["psytrance"]["synonyms"] == ["psychedelic trance", "psy-trance"]
+    assert by["goa-trance"]["synonyms"] == ["goa"]
     assert [c["name"] for c in out["clusters"]] == ["EDM / Dance", "Synthwave", "Vapor"]
     assert [c["colour"] for c in out["clusters"]] == ["#D52633", "#881DF7", "#D0549A"]
     assert {g["v1"] for g in out["genres"]} == NAMES | {"psytrance", "goa trance", "dark psytrance", "progressive psytrance", "forest psytrance", "full-on psytrance", "hi-tech psytrance", "psycore", "nitzhonot", "suomisaundi", "zenonesque", "synthwave", "vaporwave", "darksynth", "dreamwave", "outrun", "sovietwave", None}
@@ -45,7 +58,9 @@ def test_the_shipped_file_has_the_six_super_genres_psytrance_and_its_six_childre
 
 def test_a_valid_document_parses():
     out = genres_v2.parse(doc(), NAMES)
-    assert out["version"] == 2 and out["genres"][0]["v1"] == "house" and out["genres"][0]["description"] is None
+    assert out["version"] == 2
+    assert out["genres"][0]["v1"] == "house"
+    assert out["genres"][0]["description"] is None
 
 
 @pytest.mark.parametrize("bad, message", [
@@ -110,8 +125,10 @@ def test_the_route_serves_the_six_with_v1_descriptions_and_links(client):
     assert list(by) == ALL
     house = by["House"]
     assert house["description"] == genre_vocab.load_descriptions()["house"]
-    assert house["v1"] == "house" and house["source_links"]
-    assert by["Drum 'n' Bass"]["v1"] == "drum and bass" and by["Hardcore"]["v1"] == "hardcore techno"
+    assert house["v1"] == "house"
+    assert house["source_links"]
+    assert by["Drum 'n' Bass"]["v1"] == "drum and bass"
+    assert by["Hardcore"]["v1"] == "hardcore techno"
     assert by["Hardcore"]["description"] is None
 
 

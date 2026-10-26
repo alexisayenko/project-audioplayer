@@ -23,11 +23,16 @@ def test_put_creates_ids_sorts_by_start_then_name_and_roundtrips(owned, tmp_path
         {"name": "Alpha", "start": 1990, "end": 1995},
         {"name": "Undated"},
     ])
-    assert r.status_code == 200 and r.json()["genre"] == "trance"
+    assert r.status_code == 200
+    assert r.json()["genre"] == "trance"
     got = r.json()["eras"]
     assert [e["name"] for e in got] == ["Alpha", "Zed", "Late", "Undated"]
-    assert all(len(e["id"]) == 8 for e in got) and len({e["id"] for e in got}) == 4
-    assert got[2]["end"] is None and got[2]["sources"] == [{"type": "rym", "url": "https://x.example/a"}] and got[1]["sources"] == [] and got[1]["note"] is None
+    assert all(len(e["id"]) == 8 for e in got)
+    assert len({e["id"] for e in got}) == 4
+    assert got[2]["end"] is None
+    assert got[2]["sources"] == [{"type": "rym", "url": "https://x.example/a"}]
+    assert got[1]["sources"] == []
+    assert got[1]["note"] is None
     assert get(owned)["eras"] == got
     stored = json.loads((tmp_path / "genre_eras.json").read_text(encoding="utf-8"))
     assert [e["name"] for e in stored["trance"]] == ["Late", "Zed", "Alpha", "Undated"]
@@ -36,8 +41,11 @@ def test_put_creates_ids_sorts_by_start_then_name_and_roundtrips(owned, tmp_path
 def test_put_keeps_given_ids_and_replaces_the_list(owned):
     first = put(owned, "trance", [{"name": "A", "start": 1990}, {"name": "B", "start": 2000}]).json()["eras"]
     again = put(owned, "trance", [{"id": first[0]["id"], "name": "A renamed", "start": 1991}, {"name": "C"}]).json()["eras"]
-    assert again[0]["id"] == first[0]["id"] and again[0]["name"] == "A renamed" and {e["name"] for e in again} == {"A renamed", "C"}
-    assert put(owned, "trance", []).json()["eras"] == [] and get(owned)["eras"] == []
+    assert again[0]["id"] == first[0]["id"]
+    assert again[0]["name"] == "A renamed"
+    assert {e["name"] for e in again} == {"A renamed", "C"}
+    assert put(owned, "trance", []).json()["eras"] == []
+    assert get(owned)["eras"] == []
 
 
 def test_validation(owned):
@@ -94,7 +102,8 @@ def test_only_the_owner_writes_and_signed_in_users_read(multi):
     assert put(multi, "trance", [{"name": "A", "start": 1990}]).status_code == 200
     alice = who(multi, ALICE)
     refused = put(multi, "trance", [{"name": "B"}], headers=alice)
-    assert refused.status_code == 403 and refused.json()["error"] == "owner_only"
+    assert refused.status_code == 403
+    assert refused.json()["error"] == "owner_only"
     assert [e["name"] for e in get(multi, headers=alice)["eras"]] == ["A"]
 
 
@@ -114,10 +123,14 @@ def test_seed_creates_the_goa_and_forest_eras_once(datadir):
     doc = json.loads((datadir / "genre_eras.json").read_text(encoding="utf-8"))
     names = [e["name"] for e in doc["goa trance"]]
     assert names == ["Proto-goa", "Origins", "Golden era", "Transition to psytrance", "New school goa"]
-    assert "end" not in doc["goa trance"][4] and doc["goa trance"][0]["start"] == 1983 and all(len(e["id"]) == 8 and e["sources"] for e in doc["goa trance"])
+    assert "end" not in doc["goa trance"][4]
+    assert doc["goa trance"][0]["start"] == 1983
+    assert all(len(e["id"]) == 8 and e["sources"] for e in doc["goa trance"])
     forest = doc["forest psytrance"]
     assert [e["name"] for e in forest] == ["Nordic roots", "Tumult and the dark turn", "Swamp psytrance"]
-    assert "start" not in forest[2] and "end" not in forest[1] and all(len(e["id"]) == 8 and e["sources"] for e in forest)
+    assert "start" not in forest[2]
+    assert "end" not in forest[1]
+    assert all(len(e["id"]) == 8 and e["sources"] for e in forest)
     assert seedmod.run() == 0
     assert json.loads((datadir / "genre_eras.json").read_text(encoding="utf-8")) == doc
 
@@ -138,7 +151,8 @@ def test_seed_keeps_other_genres_backs_up_and_a_deleted_set_does_not_return(data
     del doc["goa trance"]
     del doc["forest psytrance"]
     (datadir / "genre_eras.json").write_text(json.dumps(doc), encoding="utf-8")
-    assert seedmod.run() == 0 and set(json.loads((datadir / "genre_eras.json").read_text(encoding="utf-8"))) == {"trance"}
+    assert seedmod.run() == 0
+    assert set(json.loads((datadir / "genre_eras.json").read_text(encoding="utf-8"))) == {"trance"}
 
 
 def test_seed_after_the_old_marker_adds_only_forest(datadir):
@@ -148,7 +162,8 @@ def test_seed_after_the_old_marker_adds_only_forest(datadir):
     seedmod.marker_path().write_text(json.dumps({"marker": 1, "eras": 5}), encoding="utf-8")
     assert seedmod.run() == 3
     doc = json.loads((datadir / "genre_eras.json").read_text(encoding="utf-8"))
-    assert doc["goa trance"] == goa and len(doc["forest psytrance"]) == 3
+    assert doc["goa trance"] == goa
+    assert len(doc["forest psytrance"]) == 3
     assert json.loads(seedmod.marker_path().read_text(encoding="utf-8"))["genres"] == ["forest psytrance", "goa trance"]
     assert seedmod.run() == 0
 
@@ -162,4 +177,5 @@ def test_seed_after_the_old_marker_does_not_bring_goa_back(datadir):
 
 def test_seed_disabled_by_env(datadir, monkeypatch):
     monkeypatch.setenv("AUDIO_GENRE_ERAS_SEED", "0")
-    assert seedmod.run() == 0 and not (datadir / "genre_eras.json").exists()
+    assert seedmod.run() == 0
+    assert not (datadir / "genre_eras.json").exists()

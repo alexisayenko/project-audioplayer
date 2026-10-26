@@ -54,7 +54,8 @@ def test_data_routes_wait_while_the_worker_runs(client, background):
         for method, path in DATA_ROUTES:
             r = c.request(method, path, headers=H)
             assert r.status_code == 503, (method, path)
-            assert r.headers["retry-after"] == "3" and r.headers["cache-control"] == "no-store"
+            assert r.headers["retry-after"] == "3"
+            assert r.headers["cache-control"] == "no-store"
             assert r.json() == {"detail": "starting", "step": "migrate model 2"}
             assert "noindex" in r.headers["x-robots-tag"]
         background.release.set()
@@ -72,11 +73,14 @@ def test_static_files_and_health_are_served_while_starting(client, background):
         assert c.get("/robots.txt").status_code == 200
         assert c.head("/health").status_code == 200
         h = c.get("/health").json()
-        assert h["status"] == "ok" and h["ready"] is False
+        assert h["status"] == "ok"
+        assert h["ready"] is False
         assert h["startup"] == {"state": "starting", "step": "migrate model 2"}
         assert h["sync"] == {"state": "pending"}
         owner = c.get("/health", headers=H).json()
-        assert owner["ready"] is False and owner["startup"]["error"] is None and "elapsed_s" in owner["startup"]
+        assert owner["ready"] is False
+        assert owner["startup"]["error"] is None
+        assert "elapsed_s" in owner["startup"]
         background.release.set()
         assert wait_ready(c)
         assert c.get("/health").json()["startup"] == {"state": "ready", "step": None}
@@ -143,7 +147,9 @@ def test_a_crashed_worker_marks_failed_and_stops_blocking(caplog):
 
     rd.run_worker([("boom", crash)], state)
     snap = state.snapshot(owner=True)
-    assert snap["ready"] is True and snap["startup"]["state"] == "failed" and "worker died" in snap["startup"]["error"]
+    assert snap["ready"] is True
+    assert snap["startup"]["state"] == "failed"
+    assert "worker died" in snap["startup"]["error"]
     assert state.snapshot()["startup"] == {"state": "failed", "step": None}
     assert "worker crashed" in caplog.text
 
@@ -157,7 +163,8 @@ def test_the_cap_unblocks_the_app_and_warns_once(client, background, monkeypatch
         r = c.get("/library", headers=H)
         assert r.status_code == 200, r.text
         h = c.get("/health").json()
-        assert h["ready"] is True and h["startup"]["state"] == "overdue"
+        assert h["ready"] is True
+        assert h["startup"]["state"] == "overdue"
         background.release.set()
         end = time.time() + 5
         while time.time() < end and c.get("/health").json()["startup"]["state"] != "ready":
@@ -190,7 +197,8 @@ def test_without_the_switch_startup_returns_while_the_worker_still_runs(monkeypa
     gate = Gate()
     monkeypatch.setattr(main.migrate_model2, "run", gate.wait)
     main._startup()
-    assert gate.entered.wait(5) and readiness.blocking()
+    assert gate.entered.wait(5)
+    assert readiness.blocking()
     gate.release.set()
     end = time.time() + 5
     while time.time() < end and readiness.blocking():

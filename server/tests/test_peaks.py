@@ -45,8 +45,10 @@ def decodes(monkeypatch):
 def test_reduce_is_signed_8_bit_and_normalised():
     samples = np.array([0, 100, -200, 50, 400, -400, 10, 0], dtype="<i2")
     out = peaks.reduce(samples, buckets=4)
-    assert out["buckets"] == 4 and len(out["min"]) == len(out["max"]) == 4
-    assert max(out["max"]) == 127 and min(out["min"]) == -127
+    assert out["buckets"] == 4
+    assert len(out["min"]) == len(out["max"]) == 4
+    assert max(out["max"]) == 127
+    assert min(out["min"]) == -127
     assert all(-127 <= v <= 127 for v in out["min"] + out["max"])
     assert all(lo <= hi for lo, hi in zip(out["min"], out["max"]))
     assert out["duration"] == round(8 / peaks.RATE, 3)
@@ -63,7 +65,8 @@ def test_owner_gets_the_peaks_of_the_real_file(lib):
     r = lib.get(f"/songs/{VID}/peaks", headers=H)
     assert r.status_code == 200
     body = r.json()
-    assert body["v"] == 1 and body["buckets"] == BUCKETS
+    assert body["v"] == 1
+    assert body["buckets"] == BUCKETS
     assert len(body["min"]) == len(body["max"]) == BUCKETS
     assert body["duration"] == pytest.approx(2.0, abs=0.1)
     assert body["max"][-1] > body["max"][0]
@@ -86,10 +89,12 @@ def test_the_result_is_cached_beside_the_audio_not_in_the_data_tree(lib, tmp_pat
 def test_etag_gives_304_and_a_changed_file_is_recomputed(lib, tmp_path, decodes):
     first = lib.get(f"/songs/{VID}/peaks", headers=H)
     again = lib.get(f"/songs/{VID}/peaks", headers={**H, "If-None-Match": first.headers["etag"]})
-    assert again.status_code == 304 and again.content == b""
+    assert again.status_code == 304
+    assert again.content == b""
     write_wav(ADIR(tmp_path) / f"{VID}.m4a", seconds=3.0)
     changed = lib.get(f"/songs/{VID}/peaks", headers={**H, "If-None-Match": first.headers["etag"]})
-    assert changed.status_code == 200 and changed.headers["etag"] != first.headers["etag"]
+    assert changed.status_code == 200
+    assert changed.headers["etag"] != first.headers["etag"]
     assert changed.json()["duration"] == pytest.approx(3.0, abs=0.1)
     assert len(list((ADIR(tmp_path) / ".peaks").glob(f"{VID}.*.json"))) == 1
 
@@ -107,7 +112,8 @@ def test_wrong_credentials_and_guest_access_follows_files(lib, monkeypatch):
     monkeypatch.setenv("PUBLIC_VIEW", "1")
     assert lib.get(f"/songs/{VID}/peaks", headers={"X-API-Token": "wrong"}).status_code == 401
     seen = web().get(f"/songs/{VID}/peaks")
-    assert seen.status_code == 200 and seen.json()["buckets"] == BUCKETS
+    assert seen.status_code == 200
+    assert seen.json()["buckets"] == BUCKETS
     monkeypatch.setenv("PUBLIC_AUDIO", "0")
     assert web().get(f"/songs/{VID}/peaks").status_code == 403
 
@@ -123,7 +129,8 @@ def test_no_ffmpeg_answers_503_with_a_code_and_writes_no_cache(lib, tmp_path, mo
 
     monkeypatch.setattr(subprocess, "run", missing)
     r = lib.get(f"/songs/{VID}/peaks", headers=H)
-    assert r.status_code == 503 and r.json()["error"] == "peaks_unavailable"
+    assert r.status_code == 503
+    assert r.json()["error"] == "peaks_unavailable"
     assert not (ADIR(tmp_path) / ".peaks").exists()
 
 
@@ -133,4 +140,5 @@ def test_an_undecodable_file_is_503_too(client, tmp_path):
     (ADIR(tmp_path)).mkdir(parents=True, exist_ok=True)
     (ADIR(tmp_path) / f"{VID}.m4a").write_bytes(b"not audio at all")
     r = client.get(f"/songs/{VID}/peaks", headers=H)
-    assert r.status_code == 503 and r.json()["error"] == "peaks_unavailable"
+    assert r.status_code == 503
+    assert r.json()["error"] == "peaks_unavailable"

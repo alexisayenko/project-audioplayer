@@ -37,19 +37,22 @@ def test_append_writes_header_and_rows(lib, tmp_path):
     assert r.json() == {"ok": True, "appended": 1, "duplicate": False, "ignored": 1}
     lines = (tmp_path / "plays" / uid() / "play-history.csv").read_text().splitlines()
     assert lines[0] == "timestamp,song_id,listened_s"
-    assert len(lines) == 2 and lines[1].endswith(f",{VID},7.0")
+    assert len(lines) == 2
+    assert lines[1].endswith(f",{VID},7.0")
 
 
 def test_repeated_batch_key_appends_nothing(lib, tmp_path):
     post(lib, "k1", play())
     r = post(lib, "k1", play())
-    assert r.json()["duplicate"] is True and r.json()["appended"] == 0
+    assert r.json()["duplicate"] is True
+    assert r.json()["appended"] == 0
     assert len((tmp_path / "plays" / uid() / "play-history.csv").read_text().splitlines()) == 2
 
 
 def test_unknown_song_and_long_play_are_handled(lib, tmp_path):
     r = post(lib, "k1", play(song=VID2), play(seconds=99999))
-    assert r.json()["appended"] == 1 and r.json()["ignored"] == 1
+    assert r.json()["appended"] == 1
+    assert r.json()["ignored"] == 1
     assert (tmp_path / "plays" / uid() / "play-history.csv").read_text().splitlines()[1].endswith(",7.7")
 
 
@@ -93,7 +96,8 @@ def test_delete_user_removes_both(lib):
     post(lib, "k1", play())
     plays.sync_once()
     plays.delete_user(uid())
-    assert not plays.user_dir(uid()).exists() and not plays.repo_copy(uid()).exists()
+    assert not plays.user_dir(uid()).exists()
+    assert not plays.repo_copy(uid()).exists()
 
 
 def lines_of(tmp_path):
@@ -105,13 +109,15 @@ def test_cont_merges_into_previous_record(lib, tmp_path):
     r = post(lib, "k2", {**play(seconds=2, delta=timedelta(seconds=55)), "cont": True})
     assert r.json() == {"ok": True, "appended": 1, "duplicate": False, "ignored": 0}
     lines = lines_of(tmp_path)
-    assert len(lines) == 2 and lines[1].endswith(f",{VID},7.0")
+    assert len(lines) == 2
+    assert lines[1].endswith(f",{VID},7.0")
     assert lib.get("/stats/listening", headers=H).json()["songs"][VID]["listened"]["all"] == 1
 
 
 def test_cont_without_match_appends_or_drops(lib, tmp_path):
     r = post(lib, "k1", {**play(seconds=6), "cont": True}, {**play(seconds=1, delta=timedelta(hours=3)), "cont": True})
-    assert r.json()["appended"] == 1 and r.json()["ignored"] == 1
+    assert r.json()["appended"] == 1
+    assert r.json()["ignored"] == 1
     assert len(lines_of(tmp_path)) == 2
 
 
@@ -130,7 +136,8 @@ def test_cont_pieces_in_one_batch_merge(lib, tmp_path):
     )
     assert r.json()["appended"] == 3
     lines = lines_of(tmp_path)
-    assert len(lines) == 2 and lines[1].endswith(f",{VID},7.0")
+    assert len(lines) == 2
+    assert lines[1].endswith(f",{VID},7.0")
 
 
 def day(seconds):

@@ -32,9 +32,13 @@ def test_families_come_from_the_vocabulary_files():
         assert family in gg.FAMILIES, (name, family)
     assert table["house"] == table["deep house"] == table["trance"] == table["jungle"] == table["dub"] == "Electronic", "the group Others and the genres promoted out of it keep the legacy colour family Electronic"
     assert table["drum and bass"] == table["techno"] == table["synthwave"] == "Electronic"
-    assert table["synthpop"] == "Pop" and table["disco"] == "Funk / Soul" and table["italo disco"] == "Funk / Soul", "synthpop and disco left Others (2026-10-20): their colour family is their first remaining family"
-    assert table["rock"] == "Rock" and table["edm"] == "Electronic"
-    assert "electronic" not in table and "others" not in table
+    assert table["synthpop"] == "Pop", "synthpop and disco left Others (2026-10-20): their colour family is their first remaining family"
+    assert table["disco"] == "Funk / Soul", "synthpop and disco left Others (2026-10-20): their colour family is their first remaining family"
+    assert table["italo disco"] == "Funk / Soul", "synthpop and disco left Others (2026-10-20): their colour family is their first remaining family"
+    assert table["rock"] == "Rock"
+    assert table["edm"] == "Electronic"
+    assert "electronic" not in table
+    assert "others" not in table
     assert len(gg.FAMILIES) == 9
     assert not (Path(gg.__file__).resolve().parent.parent / "data" / "genre_families.json").exists()
 
@@ -146,6 +150,8 @@ def test_group_labels_keep_the_electronic_colour_in_the_graph():
         assert gg.table_families(label) == ("Electronic",), label
         assert gg.own_anchor(label) is None, label
     assert gg.table_family("dance music") == "Electronic"
-    assert gg.table_families("synthpop") == ("Pop", "Rock") and gg.table_families("disco") == ("Funk / Soul",)
-    assert gg.table_families("house") == ("Electronic",) and gg.table_families("eurodance") == ("Electronic", "Funk / Soul", "Pop")
+    assert gg.table_families("synthpop") == ("Pop", "Rock")
+    assert gg.table_families("disco") == ("Funk / Soul",)
+    assert gg.table_families("house") == ("Electronic",)
+    assert gg.table_families("eurodance") == ("Electronic", "Funk / Soul", "Pop")
     assert gg.own_anchor("house") == "house"

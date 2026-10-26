@@ -34,7 +34,8 @@ def test_commit_body_the_web_builds_is_accepted_by_the_server(client, hallu):
     r = post_commit(client, sent)
     assert r.status_code == 201, r.text
     out = r.json()
-    assert out["linked"] == 9 and out["unlinked"] == 0
+    assert out["linked"] == 9
+    assert out["unlinked"] == 0
     assert [s["position"] for s in out["songs"]] == list(range(1, 10))
     assert [t["songId"] for t in out["album"]["tracks"]] == [s["songId"] for s in out["songs"]]
 

@@ -160,7 +160,8 @@ def test_youtube_trim_uses_download_ranges_then_reencodes_without_cutting(tmp_pa
     assert FakeYdl.opts["force_keyframes_at_cuts"] is True
     assert callable(FakeYdl.opts["download_ranges"])
     encode = next(c for c in fake.commands if c[0] == "ffmpeg")
-    assert "-ss" not in encode and "-to" not in encode
+    assert "-ss" not in encode
+    assert "-to" not in encode
     assert info["duration"] == 78.0
     assert info["source_duration"] == 200
     assert info["trim"] == (12.0, 90.0)
@@ -199,9 +200,11 @@ def test_untrimmed_youtube_download_has_no_sections_and_no_ffmpeg(tmp_path, monk
     monkeypatch.setattr(extractor.yt_dlp, "YoutubeDL", FakeYdl)
     fake = FakeFfmpeg(monkeypatch)
     info = extractor.download_audio(VID, tmp_path)
-    assert "download_ranges" not in FakeYdl.opts and "force_keyframes_at_cuts" not in FakeYdl.opts
+    assert "download_ranges" not in FakeYdl.opts
+    assert "force_keyframes_at_cuts" not in FakeYdl.opts
     assert fake.commands == []
-    assert info["duration"] == 200 and "trim" not in info
+    assert info["duration"] == 200
+    assert "trim" not in info
     assert (tmp_path / f"{VID}.m4a").read_bytes() == b"whole"
     extractor.download_audio(VID, tmp_path, trim=(None, None))
     assert fake.commands == []
@@ -213,8 +216,10 @@ def test_soundcloud_trim_downloads_everything_then_cuts_with_ffmpeg(tmp_path, mo
     fake = FakeFfmpeg(monkeypatch, seconds=60.0)
     info = extractor.download_audio(sc, tmp_path, None, None, trim=(30, 90))
     encode = next(c for c in fake.commands if c[0] == "ffmpeg")
-    assert encode[encode.index("-ss") + 1] == "30" and encode[encode.index("-to") + 1] == "90"
-    assert info["duration"] == 60.0 and info["source_duration"] == 240
+    assert encode[encode.index("-ss") + 1] == "30"
+    assert encode[encode.index("-to") + 1] == "90"
+    assert info["duration"] == 60.0
+    assert info["source_duration"] == 240
 
 
 def test_duration_falls_back_to_the_cut_arithmetic_when_ffprobe_fails(tmp_path, monkeypatch):
@@ -326,7 +331,8 @@ def test_redownload_refreshes_the_automatic_cover_version(client, calls):
     before = song(client).get("cover_v")
     client.post(f"/songs/{VID}/redownload", headers=H)
     after = song(client).get("cover_v")
-    assert after and after != before
+    assert after
+    assert after != before
 
 
 def test_redownload_keeps_the_old_file_when_the_new_download_fails(client, calls, monkeypatch):
@@ -377,7 +383,8 @@ def test_legacy_download_passes_the_trim_and_persists_it_on_an_existing_song(cli
     assert add(client, audio=False).status_code == 201
     r = client.post("/download", json={"video_id": VID, "trim": {"start": 1, "end": 8}}, headers=H)
     assert r.status_code == 200
-    assert r.json()["duration"] == 60 and "trim" not in r.json()
+    assert r.json()["duration"] == 60
+    assert "trim" not in r.json()
     assert seen == [(1.0, 8.0)]
     assert stored_trim(client) == (1, 8)
     assert song(client)["duration"] == 60

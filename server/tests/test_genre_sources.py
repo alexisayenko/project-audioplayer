@@ -100,8 +100,10 @@ def test_payload_rows_carry_sources(sources_file):
     assert rows["house"]["sources"]["musicbrainz"]["id"] == "mb-1"
     assert rows["funk / soul"]["sources"]["apple_music"]["name"] == "Funk / Soul"
     assert rows["funk / soul"]["source_links"][3]["url"].startswith("https://www.discogs.com/search/?genre=")
-    assert rows["house"]["level"] == "family" and rows["house"]["sources"]["discogs"]["family"] is False, "house is a level 1 genre (promoted), not a Discogs family"
-    assert "electronic" not in rows and "others" not in rows
+    assert rows["house"]["level"] == "family", "house is a level 1 genre (promoted), not a Discogs family"
+    assert rows["house"]["sources"]["discogs"]["family"] is False, "house is a level 1 genre (promoted), not a Discogs family"
+    assert "electronic" not in rows
+    assert "others" not in rows
     assert rows["neurofunk"]["sources"] == {}
     assert [x["source"] for x in rows["neurofunk"]["source_links"]] == ["wikipedia", "apple_music", "spotify", "discogs"]
     assert rows["house"]["source_links"][0]["url"] == "https://en.wikipedia.org/wiki/House_music"
@@ -213,7 +215,9 @@ def test_review_file_names_real_genres():
     names = set(genre_vocab.load().entries)
     for item in doc["review"]:
         assert item["genre"] in names
-        assert item["candidate"] and item["reason"] and item["source"]
+        assert item["candidate"]
+        assert item["reason"]
+        assert item["source"]
 
 
 def test_hierarchy_evidence_keys_are_vocabulary_names_and_it_is_not_in_the_payload():

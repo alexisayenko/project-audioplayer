@@ -186,7 +186,8 @@ def test_suggestion_still_listed_when_the_thumbnail_lookup_fails(client, song, a
     link(client, discogs_url="https://www.discogs.com/release/12")
     api.docs["releases/12"] = OSError("down")
     got = client.get(f"/songs/{VID}/cover/suggestions", headers=H).json()["suggestions"]
-    assert got[0]["source"] == "discogs" and got[0]["thumb"] is None
+    assert got[0]["source"] == "discogs"
+    assert got[0]["thumb"] is None
 
 
 def test_suggestions_skip_discogs_without_a_token(client, song, api, monkeypatch):

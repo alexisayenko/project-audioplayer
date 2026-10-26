@@ -38,9 +38,12 @@ def test_spellings_end_up_identical_and_the_rest_is_untouched(datadir):
     assert mv.run() == 3
     rows = stored(path)
     assert rows["a"]["version"]["name"] == rows["b"]["version"]["name"] == "2024 remaster"
-    assert rows["c"]["version"]["name"] == "2011 remaster" and rows["d"]["version"]["name"] == "remaster"
-    assert rows["e"]["version"]["name"] == "Live in Tokyo" and "version" not in rows["f"]
-    assert rows["a"]["title"] == "Smoke On The Water" and rows["a"]["updated_at"] == "2026-02-02T00:00:00Z"
+    assert rows["c"]["version"]["name"] == "2011 remaster"
+    assert rows["d"]["version"]["name"] == "remaster"
+    assert rows["e"]["version"]["name"] == "Live in Tokyo"
+    assert "version" not in rows["f"]
+    assert rows["a"]["title"] == "Smoke On The Water"
+    assert rows["a"]["updated_at"] == "2026-02-02T00:00:00Z"
     assert rows["a"]["version"]["type"] == "remaster"
 
 
@@ -91,7 +94,8 @@ def test_switch_off(datadir, monkeypatch, caplog):
     monkeypatch.setenv("AUDIO_VERSION_NORM", "0")
     with caplog.at_level("INFO", logger="app.migrate_version_norm"):
         assert mv.run() == 0
-    assert path.read_bytes() == before and not (datadir / "backups-version-norm").exists()
+    assert path.read_bytes() == before
+    assert not (datadir / "backups-version-norm").exists()
     assert "AUDIO_VERSION_NORM=0" in caplog.text
 
 

@@ -48,8 +48,10 @@ def test_removes_for_every_user_keeps_order_tags_and_updated_at(datadir):
     b = lib(datadir, "other", [song("d", ["Electronic ", "techno"])])
     assert mr.run() == 3
     sa, sb = stored(a), stored(b)
-    assert sa["a"]["genres"] == ["house", "disco"] and sa["a"]["tags"] == ["country:us"]
-    assert sa["only"]["genres"] == [] and sa["c"]["genres"] == ["pop"]
+    assert sa["a"]["genres"] == ["house", "disco"]
+    assert sa["a"]["tags"] == ["country:us"]
+    assert sa["only"]["genres"] == []
+    assert sa["c"]["genres"] == ["pop"]
     assert sb["d"]["genres"] == ["techno"]
     assert sa["a"]["updated_at"] == "2026-02-02T00:00:00Z"
     assert "electronic" not in json.dumps(library.load_doc(a)["songs"])
@@ -63,7 +65,8 @@ def test_backup_marker_and_report(datadir):
     assert (root / "library.json").read_bytes() == before
     assert json.loads((root / "applied.json").read_text())["applied"] == ["electronic"]
     run = json.loads((root / "report.json").read_text())["runs"][0]
-    assert run["removed"] == {"electronic": 2} and run["songs_touched"] == 2
+    assert run["removed"] == {"electronic": 2}
+    assert run["songs_touched"] == 2
     assert run["left_without_genre"] == [{"id": "only", "title": "ONLY"}]
 
 
@@ -110,7 +113,8 @@ def test_switch_off(datadir, monkeypatch, caplog):
     monkeypatch.setenv("AUDIO_GENRE_RETIRED", "0")
     with caplog.at_level("INFO", logger="app.migrate_retired"):
         assert mr.run() == 0
-    assert path.read_bytes() == before and not (datadir / "backups-genre-retired").exists()
+    assert path.read_bytes() == before
+    assert not (datadir / "backups-genre-retired").exists()
     assert "AUDIO_GENRE_RETIRED=0" in caplog.text
 
 
@@ -150,7 +154,8 @@ def test_startup_runs_retired_after_renames_and_removals(monkeypatch):
         monkeypatch.setattr(getattr(main, mod), "run", lambda m=mod: order.append(m) or 0)
     monkeypatch.setattr(deps, "SYNC", None)
     main._startup()
-    assert order[-2:] == ["migrate_renames", "migrate_retired"] and order.index("migrate_removals") < order.index("migrate_renames")
+    assert order[-2:] == ["migrate_renames", "migrate_retired"]
+    assert order.index("migrate_removals") < order.index("migrate_renames")
 
 
 def _tree_hashes(root):

@@ -31,14 +31,16 @@ def test_clean_subject_filters_types_and_strips_prefix():
 
 def test_clean_subject_trims_at_a_word_boundary():
     out = gf.clean_subject("feat: " + "word " * 40)
-    assert out.endswith("word...") and len(out) <= 114
+    assert out.endswith("word...")
+    assert len(out) <= 114
 
 
 def test_by_day_groups_by_utc_day_with_last_commit_hash():
     commits = [commit("a", 19, "feat: first", hour=9), commit("b", 19, "feat: second", hour=18), commit("c", 20, "feat: third"), commit("d", 20, "docs: only docs", hour=20)]
     out = gf.by_day(commits, {}, {})
     by_date = {r["date"]: r for r in out}
-    assert by_date["2026-10-19"]["hash"] == "bbbbbbb" and by_date["2026-10-19"]["full"] == "b" * 40
+    assert by_date["2026-10-19"]["hash"] == "bbbbbbb"
+    assert by_date["2026-10-19"]["full"] == "b" * 40
     assert [i["text"] for i in by_date["2026-10-19"]["items"]] == ["Second", "First"]
     assert by_date["2026-10-20"]["hash"] == "ddddddd"
 
@@ -58,7 +60,8 @@ def test_all_items_of_a_release_are_kept():
     for i, c in enumerate(commits):
         c["ts"] += i
     items = gf.by_day(commits, {}, {})[0]["items"]
-    assert len(items) == 15 and all("more" not in i["text"] for i in items)
+    assert len(items) == 15
+    assert all("more" not in i["text"] for i in items)
 
 
 def test_task_link_from_message_subject_and_body():
@@ -150,7 +153,8 @@ def test_build_backfills_then_uses_recorded_deploys(tmp_path):
     data = gf.build(repo, [], {})
     assert [r["date"] for r in data["releases"]] == ["2026-10-19", "2026-10-18"]
     assert data["releases"][0]["items"] == [{"text": "Sidebar help menu task-0001", "task": "task-0001"}]
-    assert [p["id"] for p in data["planned"]] == ["task-0001"] and data["unavailable"] is False
+    assert [p["id"] for p in data["planned"]] == ["task-0001"]
+    assert data["unavailable"] is False
     first = {"hash": head(repo), "date": "2026-10-19"}
     add_commit(repo, "g.txt", "feat: after the deploy")
     second = {"hash": head(repo), "date": "2026-10-21"}
@@ -168,7 +172,9 @@ def test_empty_history_and_missing_git_are_unavailable_not_errors(tmp_path):
     (nogit / "docs" / "tasks").mkdir(parents=True)
     (nogit / "docs" / "tasks" / "task-0003.md").write_text("---\ntask_id: task-0003\ntitle: T\nstatus: to do\n---\n", encoding="utf-8")
     out = gf.build(nogit, [], {})
-    assert out["unavailable"] is True and out["releases"] == [] and [p["id"] for p in out["planned"]] == ["task-0003"]
+    assert out["unavailable"] is True
+    assert out["releases"] == []
+    assert [p["id"] for p in out["planned"]] == ["task-0003"]
 
 
 def test_unknown_recorded_hash_falls_back_to_days(tmp_path):
@@ -186,7 +192,8 @@ def test_record_deploy_appends_once_per_head(tmp_path):
     assert json.loads(state.read_text()) == [{"hash": head(repo), "date": "2026-10-21"}]
     add_commit(repo, "h.txt", "feat: more")
     assert gf.record_deploy(repo, state, now) is True
-    assert [d["hash"] for d in json.loads(state.read_text())][-1] == head(repo) and len(json.loads(state.read_text())) == 2
+    assert [d["hash"] for d in json.loads(state.read_text())][-1] == head(repo)
+    assert len(json.loads(state.read_text())) == 2
 
 
 def test_record_deploy_without_git_does_nothing(tmp_path):
@@ -226,10 +233,13 @@ def served(tmp_path, monkeypatch):
 def test_route_is_public_with_shape_and_no_cache(served):
     repo, client = served
     r = client.get("/features/data")
-    assert r.status_code == 200 and r.headers["cache-control"] == "no-cache"
+    assert r.status_code == 200
+    assert r.headers["cache-control"] == "no-cache"
     body = r.json()
-    assert set(body) == {"releases", "planned", "in_progress", "unavailable"} and body["unavailable"] is False
-    assert body["releases"][0]["date"] == "2026-10-19" and len(body["releases"][0]["full"]) == 40
+    assert set(body) == {"releases", "planned", "in_progress", "unavailable"}
+    assert body["unavailable"] is False
+    assert body["releases"][0]["date"] == "2026-10-19"
+    assert len(body["releases"][0]["full"]) == 40
     assert body["planned"] == [{"id": "task-0001", "title": "Sidebar help", "status": "to do", "tags": ["web"]}]
 
 
@@ -247,7 +257,8 @@ def test_route_cache_follows_task_files(served):
     client.get("/features/data")
     (repo / "docs" / "tasks" / "task-0009.md").write_text("---\ntask_id: task-0009\ntitle: Fresh\nstatus: in progress\n---\n", encoding="utf-8")
     body = client.get("/features/data").json()
-    assert [p["id"] for p in body["in_progress"]] == ["task-0009"] and [p["id"] for p in body["planned"]] == ["task-0001"]
+    assert [p["id"] for p in body["in_progress"]] == ["task-0009"]
+    assert [p["id"] for p in body["planned"]] == ["task-0001"]
 
 
 def test_data_scope_and_removal_subjects_are_skipped():
@@ -297,7 +308,8 @@ def test_same_day_deploys_are_one_release(tmp_path):
     deploys = [{"hash": first, "date": "2026-10-19"}, {"hash": second, "date": today}, {"hash": third, "date": today}]
     out = gf.build(repo, deploys, {})["releases"]
     assert [r["full"] for r in out[:2]] == [third, first]
-    assert out[0]["date"] == today and out[1]["date"] == "2026-10-19"
+    assert out[0]["date"] == today
+    assert out[1]["date"] == "2026-10-19"
     assert sorted(i["text"] for i in out[0]["items"]) == ["Second deploy feature", "Third deploy feature"]
     texts = [i["text"] for r in out for i in r["items"]]
     assert len(texts) == len(set(texts))
@@ -348,7 +360,8 @@ def test_malformed_curated_entries_are_ignored():
     rmap = {"items": {"abc": [{"text": "short key"}], "zzzzzzz": [{"text": "not hex"}], "abcdef1": "oops", "abcdef2": [1, {"text": ""}, {"nope": 1}],
                       "abcdef3": [{"text": "Kept", "task": "bad"}, {"text": "Kept too", "task": 5}]}}
     table = gf.curated_items(rmap)
-    assert list(table) == ["abcdef3"] and table["abcdef3"] == [{"text": "Kept", "task": None}, {"text": "Kept too", "task": None}]
+    assert list(table) == ["abcdef3"]
+    assert table["abcdef3"] == [{"text": "Kept", "task": None}, {"text": "Kept too", "task": None}]
     out = gf.by_day([commit("abcdef1234", 19, "feat: generated one"), commit("abcdef2345", 19, "feat: generated two", hour=13)], {}, rmap)
     assert sorted(i["text"] for i in out[0]["items"]) == ["Generated one", "Generated two"]
     for bad in ({"items": ["x"]}, {"items": None}, {"items": 3}):
@@ -407,16 +420,20 @@ def test_notes_come_from_the_map_file_and_keep_only_https_urls():
     rmap = {"notes": [{"date": "2026-10-25", "text": "Moved", "url": "https://studio.electrophone.cc/"}, {"date": "2026-10-25", "text": "Plain", "url": "http://x"},
                       {"date": "bad", "text": "No"}, {"date": "2026-10-25", "text": " "}, "x"]}
     assert gf.curated_notes(rmap) == [{"date": "2026-10-25", "text": "Moved", "url": "https://studio.electrophone.cc/"}, {"date": "2026-10-25", "text": "Plain"}]
-    assert gf.curated_notes({"notes": 3}) == [] and gf.curated_notes({}) == []
+    assert gf.curated_notes({"notes": 3}) == []
+    assert gf.curated_notes({}) == []
 
 
 def test_a_note_joins_the_release_of_its_date_or_makes_one_in_date_order():
     releases = [{"hash": "bbbbbbb", "full": "b" * 40, "date": "2026-10-25", "items": [{"text": "A", "task": None}]},
                 {"hash": "aaaaaaa", "full": "a" * 40, "date": "2026-10-20", "items": [{"text": "B", "task": None}]}]
     same = gf.with_notes(releases, [{"date": "2026-10-25", "text": "Moved", "url": "https://x.test/"}])
-    assert [i["text"] for i in same[0]["items"]] == ["Moved", "A"] and same[0]["items"][0]["url"] == "https://x.test/" and len(same) == 2
+    assert [i["text"] for i in same[0]["items"]] == ["Moved", "A"]
+    assert same[0]["items"][0]["url"] == "https://x.test/"
+    assert len(same) == 2
     between = gf.with_notes(releases, [{"date": "2026-10-22", "text": "Moved"}])
-    assert [r["date"] for r in between] == ["2026-10-25", "2026-10-22", "2026-10-20"] and between[1]["hash"] == gf.NOTE_HASH
+    assert [r["date"] for r in between] == ["2026-10-25", "2026-10-22", "2026-10-20"]
+    assert between[1]["hash"] == gf.NOTE_HASH
     assert [r["date"] for r in gf.with_notes([], [{"date": "2026-10-22", "text": "Moved"}])] == ["2026-10-22"]
     assert releases[0]["items"] == [{"text": "A", "task": None}]
 

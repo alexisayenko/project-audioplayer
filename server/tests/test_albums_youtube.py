@@ -73,7 +73,7 @@ def library_ids(client):
 ])
 def test_guess(title, uploader, expected):
     got = album_youtube.guess(title, uploader)
-    assert (got["artist"], got["album"]) == expected
+    assert expected == (got["artist"], got["album"])
 
 
 @pytest.mark.parametrize("title,desc,expected", [
@@ -94,8 +94,10 @@ def test_discogs_search_ranks_candidates(client, discogs):
     assert [c["discogsId"] for c in got] == [545650, 222, 111]
     top = got[0]
     assert (top["url"], top["title"], top["artist"], top["year"], top["trackCount"]) == ("https://www.discogs.com/release/545650", "Tumult", "Derango", 2004, 5)
-    assert top["score"] > got[1]["score"] > got[2]["score"] and 0 < top["score"] <= 1
-    assert [t["title"] for t in top["tracks"]][:2] == ["Intro", "Tumult Part I"] and "matches" not in top
+    assert top["score"] > got[1]["score"] > got[2]["score"]
+    assert 0 < top["score"] <= 1
+    assert [t["title"] for t in top["tracks"]][:2] == ["Intro", "Tumult Part I"]
+    assert "matches" not in top
 
 
 def test_discogs_search_edges(client, discogs, monkeypatch):
@@ -126,7 +128,8 @@ def test_create_auto_links_imported_songs(client, discogs, yt):
 
 def test_create_without_song_ids_has_no_link_counts(client, discogs):
     body = client.post("/albums", json=preview(client).json(), headers=H).json()
-    assert "linked" not in body and all(t["songId"] is None for t in body["tracks"])
+    assert "linked" not in body
+    assert all(t["songId"] is None for t in body["tracks"])
 
 
 def test_versions_are_not_ignored_but_remasters_and_features_are():
@@ -162,10 +165,16 @@ def test_candidates_carry_format_label_country_catno_thumb_and_best(client, disc
     discogs["data"]["releases/111"] = {"id": 111, "title": "Tumult", "year": 1999, "artists": [{"name": "Someone Else"}], "tracklist": [{"type_": "track", "title": "x", "duration": "1:00"}] * 9}
     got = client.post("/albums/discogs-search", json={"artist": "Derango", "album": "Tumult", "trackCount": 5}, headers=H).json()["candidates"]
     top, second, third = got
-    assert top["formats"] == ["Vinyl", "LP", "Album", "Limited Edition"] and top["labels"] == ["Subsonic", "Subsonic Records", "Third"]
+    assert top["formats"] == ["Vinyl", "LP", "Album", "Limited Edition"]
+    assert top["labels"] == ["Subsonic", "Subsonic Records", "Third"]
     assert (top["country"], top["catno"], top["thumb"]) == ("Germany", "SUB 001", "https://i.discogs.com/thumb545650.jpg")
-    assert second["formats"] == [] and second["labels"] == [] and second["country"] is None and second["catno"] is None and second["thumb"] is None
-    assert third["thumb"] is None and third["year"] == 1999
+    assert second["formats"] == []
+    assert second["labels"] == []
+    assert second["country"] is None
+    assert second["catno"] is None
+    assert second["thumb"] is None
+    assert third["thumb"] is None
+    assert third["year"] == 1999
     assert [c["best"] for c in got] == [True, False, False]
 
 

@@ -56,13 +56,15 @@ def test_limits_and_duration_slack():
 def test_tolerant_drops_bad_entries_and_never_raises():
     raw = [{"name": "ok", "start": 1, "end": 2}, {"name": "bad", "start": 3, "end": 3}, 7, None]
     assert loops.tolerant(raw) == [{"name": "ok", "start": 1.0, "end": 2.0}]
-    assert loops.tolerant("x") == [] and loops.tolerant(None) == []
+    assert loops.tolerant("x") == []
+    assert loops.tolerant(None) == []
 
 
 def test_patch_saves_loops_with_the_song_and_returns_them(song, tmp_path):
     body = {"loops": [{"name": "Solo", "start": 2.5, "end": 5.5}]}
     r = patch(song, body)
-    assert r.status_code == 200 and r.json()["loops"] == body["loops"]
+    assert r.status_code == 200
+    assert r.json()["loops"] == body["loops"]
     stored = json.loads((ODIR(tmp_path) / "library.json").read_text(encoding="utf-8"))
     assert stored["songs"][0]["loops"] == body["loops"]
     assert song.get("/library", headers=H).json()["songs"][0]["loops"] == body["loops"]
@@ -73,7 +75,8 @@ def test_an_other_edit_keeps_the_loops_and_an_empty_list_removes_them(song, tmp_
     patch(song, {"loops": [{"name": "A", "start": 1, "end": 2}]})
     assert patch(song, {"title": "New"}).json()["loops"][0]["name"] == "A"
     r = patch(song, {"loops": []})
-    assert r.status_code == 200 and "loops" not in r.json()
+    assert r.status_code == 200
+    assert "loops" not in r.json()
     stored = json.loads((ODIR(tmp_path) / "library.json").read_text(encoding="utf-8"))
     assert "loops" not in stored["songs"][0]
     assert "loops" not in patch(song, {"loops": None}).json()

@@ -68,7 +68,8 @@ def test_never_empties_a_song_and_logs_it(datadir, plan_file, caplog):
     assert stored(owner)["a"]["genres"] == ["disco"]
     assert "would be left without a genre" in caplog.text
     report = json.loads(mr.report_path(OWNER).read_text(encoding="utf-8"))
-    assert report["removed"] == {"a": ["house"]} and report["skipped"] == {"a": ["disco"]}
+    assert report["removed"] == {"a": ["house"]}
+    assert report["skipped"] == {"a": ["disco"]}
 
 
 def test_backup_report_marker_and_idempotent(datadir, plan_file):
@@ -77,8 +78,10 @@ def test_backup_report_marker_and_idempotent(datadir, plan_file):
     original = owner.read_bytes()
     assert mr.run() == 1
     assert mr.backup_path(OWNER).read_bytes() == original
-    assert mr.marker_path(OWNER).is_file() and mr.report_path(OWNER).is_file()
-    assert "backups-genre-removals" in str(mr.backup_path(OWNER)) and "audioplayer" not in str(mr.backup_path(OWNER))
+    assert mr.marker_path(OWNER).is_file()
+    assert mr.report_path(OWNER).is_file()
+    assert "backups-genre-removals" in str(mr.backup_path(OWNER))
+    assert "audioplayer" not in str(mr.backup_path(OWNER))
     after = owner.read_bytes()
     lib(datadir, OWNER, [song("a", ["house", "pop"])])
     again = owner.read_bytes()
@@ -92,7 +95,8 @@ def test_nothing_to_remove_writes_only_the_marker(datadir, plan_file):
     before = owner.read_bytes()
     assert mr.run() == 0
     assert owner.read_bytes() == before
-    assert mr.marker_path(OWNER).is_file() and not mr.backup_path(OWNER).exists()
+    assert mr.marker_path(OWNER).is_file()
+    assert not mr.backup_path(OWNER).exists()
 
 
 def test_switch_off(datadir, plan_file, monkeypatch):
@@ -101,7 +105,8 @@ def test_switch_off(datadir, plan_file, monkeypatch):
     owner = lib(datadir, OWNER, [song("a", ["house", "pop"])])
     before = owner.read_bytes()
     assert mr.run() == 0
-    assert owner.read_bytes() == before and not mr.marker_path(OWNER).exists()
+    assert owner.read_bytes() == before
+    assert not mr.marker_path(OWNER).exists()
 
 
 @pytest.mark.parametrize("raw", ["{not json", "[]", '{"songs": {"a": {"remove": "pop"}}}', '{"songs": []}'])
@@ -124,7 +129,8 @@ def test_a_failure_leaves_the_library_unchanged(datadir, plan_file, monkeypatch,
 
     monkeypatch.setattr(mr.library, "save_doc", boom)
     assert mr.run() == 0
-    assert owner.read_bytes() == before and not mr.marker_path(OWNER).exists()
+    assert owner.read_bytes() == before
+    assert not mr.marker_path(OWNER).exists()
     assert "genre removals failed" in caplog.text
 
 
@@ -140,21 +146,26 @@ def test_add_appends_after_the_last_genre_validates_and_is_idempotent(datadir, p
         assert mr.run() == 1
     s = stored(owner)
     assert s["a"]["genres"] == ["house", "disco", "deep house"]
-    assert s["a"]["tags"] == ["country:us"] and s["a"]["updated_at"] == "2026-02-02T00:00:00Z"
+    assert s["a"]["tags"] == ["country:us"]
+    assert s["a"]["updated_at"] == "2026-02-02T00:00:00Z"
     assert s["b"]["genres"] == ["house"]
     assert "genre removals applied for owneruid: 1 songs, 1 removed, 1 added" in caplog.text
     assert "genre addition skipped for owneruid: song a, not in the vocabulary (zzzz qqq)" in caplog.text
     report = json.loads(mr.report_path(OWNER).read_text(encoding="utf-8"))
-    assert report["added"] == {"a": ["deep house"]} and report["unknown"] == {"a": ["zzzz qqq"]}
+    assert report["added"] == {"a": ["deep house"]}
+    assert report["unknown"] == {"a": ["zzzz qqq"]}
     after = owner.read_bytes()
-    assert mr.run() == 0 and owner.read_bytes() == after
+    assert mr.run() == 0
+    assert owner.read_bytes() == after
 
 
 def test_an_added_genre_is_never_removed_and_keeps_a_song_from_being_empty():
     songs = [{"id": "a", "tags": ["genre:pop", "decade:10s"]}]
     result = mr.apply_plan(songs, {"a": ["pop", "deep house"]}, {"a": ["deep house"]})
     assert songs[0]["tags"] == ["genre:deep house", "decade:10s"]
-    assert result["removed"] == {"a": ["pop"]} and result["added"] == {"a": ["deep house"]} and not result["skipped"]
+    assert result["removed"] == {"a": ["pop"]}
+    assert result["added"] == {"a": ["deep house"]}
+    assert not result["skipped"]
 
 
 def test_clear_empties_the_genres_only_with_the_flag_and_is_idempotent(datadir, plan_file, caplog):
@@ -163,13 +174,15 @@ def test_clear_empties_the_genres_only_with_the_flag_and_is_idempotent(datadir, 
     with caplog.at_level("INFO", logger="app.migrate_removals"):
         assert mr.run() == 1
     s = stored(owner)
-    assert s["a"]["genres"] == [] and s["a"]["tags"] == ["country:us"]
+    assert s["a"]["genres"] == []
+    assert s["a"]["tags"] == ["country:us"]
     assert s["b"]["genres"] == ["house"]
     assert "song b would be left without a genre (house)" in caplog.text
     report = json.loads(mr.report_path(OWNER).read_text(encoding="utf-8"))
     assert report["cleared"] == {"a": ["rock", "pop"]}
     after = owner.read_bytes()
-    assert mr.run() == 0 and owner.read_bytes() == after
+    assert mr.run() == 0
+    assert owner.read_bytes() == after
 
 
 def test_a_clear_row_with_remove_or_add_is_rejected(plan_file):
@@ -184,23 +197,32 @@ def test_the_real_file_against_the_live_shape():
     adds = mr.load_adds(mr.DATA_FILE)
     clears = mr.load_clears(mr.DATA_FILE)
     planned = sum(len(v) for v in plan.values())
-    assert clears <= set(plan) and not clears & set(adds) and 50 <= len(plan) <= 1000 and planned >= len(plan) and len(digest) == 64 and set(adds) <= set(plan)
+    assert clears <= set(plan)
+    assert not clears & set(adds)
+    assert 50 <= len(plan) <= 1000
+    assert planned >= len(plan)
+    assert len(digest) == 64
+    assert set(adds) <= set(plan)
     doc = json.loads(mr.DATA_FILE.read_text(encoding="utf-8"))
-    assert doc["scope"] == "owner" and doc["approved"] == "2026-10-19"
+    assert doc["scope"] == "owner"
+    assert doc["approved"] == "2026-10-19"
     assert all(row["title"] for row in doc["songs"].values())
     live = json.loads(FIXTURE.read_text(encoding="utf-8"))["songs"]
     assert {s["id"] for s in live} == set(plan)
     songs = library.normalize({"songs": copy.deepcopy(live)})["songs"]
     before = copy.deepcopy(songs)
     result = mr.apply_plan(songs, plan, adds, clears)
-    assert not result["skipped"] and result["unknown"] == {"yQR_NLeXKtw": ["electronic"]}, "the owner's 2026-10-19 row added electronic, a group now (history, already applied live): reported as unknown, not added"
+    assert not result["skipped"], "the owner's 2026-10-19 row added electronic, a group now (history, already applied live): reported as unknown, not added"
+    assert result["unknown"] == {"yQR_NLeXKtw": ["electronic"]}, "the owner's 2026-10-19 row added electronic, a group now (history, already applied live): reported as unknown, not added"
     present = {s["id"]: {t.partition(":")[2] for t in s["tags"] if t.startswith("genre:")} for s in before}
     assert set(result["cleared"]) == clears
     assert sum(len(v) for v in result["removed"].values()) == sum(len(set(v) & present[sid]) for sid, v in plan.items())
     assert result["added"].get("cb6WpqqN1ww") == ["deep house"]
     for old, new in zip(before, songs):
         genres = [t.partition(":")[2] for t in new["tags"] if t.startswith("genre:")]
-        assert (genres or new["id"] in clears) and not (new["id"] in clears and genres) and not set(plan[new["id"]]) & set(genres)
+        assert (genres or new["id"] in clears)
+        assert not (new["id"] in clears and genres)
+        assert not set(plan[new["id"]]) & set(genres)
         assert {a for a in adds.get(new["id"], []) if genre_vocab.is_canonical(a)} <= set(genres)
         assert {k: v for k, v in new.items() if k != "tags"} == {k: v for k, v in old.items() if k != "tags"}
         assert [t for t in new["tags"] if not t.startswith("genre:")] == [t for t in old["tags"] if not t.startswith("genre:")]

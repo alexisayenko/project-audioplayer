@@ -366,7 +366,8 @@ def test_delete_resets_custom_to_automatic_and_bumps_the_version(client, song, t
     rec = stored(tmp_path)
     assert "cover_source" not in rec
     assert rec["cover"] == f"covers/{VID}.jpg"
-    assert rec["cover_v"] and rec["cover_v"] != custom
+    assert rec["cover_v"]
+    assert rec["cover_v"] != custom
     assert not rec.get("cover_off")
     assert client.get(f"/covers/{VID}", headers=H).content == b"jpg"
 
@@ -426,7 +427,8 @@ def test_suggestions_from_song_and_album_pages(client, song, monkeypatch):
     got = client.get(f"/songs/{VID}/cover/suggestions", headers=H).json()["suggestions"]
     assert [s["title"] for s in got] == ["Some Song", "Some Album"]
     first = got[0]
-    assert first["url"].startswith("https://upload.wikimedia.org/") and "/1024px-" in first["url"]
+    assert first["url"].startswith("https://upload.wikimedia.org/")
+    assert "/1024px-" in first["url"]
     assert "/240px-" in first["thumb"]
     assert first["source"] == "wikipedia"
     assert first["page"] == "https://en.wikipedia.org/wiki/Some_Song"
@@ -532,8 +534,10 @@ def test_api_202_summary_gives_non_free_cover_with_parenthesised_title(monkeypat
     monkeypatch.setattr(wiki_lookup, "_fetch_json", routed([("rest_v1/page/summary/Wings_%28Birdy_song%29", doc)], calls))
     got = wiki_lookup.cover_candidates(["https://en.wikipedia.org/wiki/Wings_(Birdy_song)#Background"])
     assert len(got) == 1
-    assert got[0]["url"] == NONFREE and got[0]["thumb"] == NONFREE_THUMB
-    assert got[0]["title"] == "Wings (Birdy song)" and got[0]["page"] == "https://en.wikipedia.org/wiki/Wings_(Birdy_song)"
+    assert got[0]["url"] == NONFREE
+    assert got[0]["thumb"] == NONFREE_THUMB
+    assert got[0]["title"] == "Wings (Birdy song)"
+    assert got[0]["page"] == "https://en.wikipedia.org/wiki/Wings_(Birdy_song)"
     assert (got[0]["width"], got[0]["height"]) == (300, 300)
     assert len(calls) == 1
 
@@ -544,7 +548,8 @@ def test_api_202_summary_large_original_is_rescaled_from_the_thumbnail(monkeypat
     thumb = "https://upload.wikimedia.org/wikipedia/en/thumb/c/cd/Big.jpg/320px-Big.jpg"
     monkeypatch.setattr(wiki_lookup, "_fetch_json", routed([("rest_v1/page/summary/", summary("Big", (thumb, 320, 320), (big, 3000, 3000)))]))
     got = wiki_lookup.cover_candidates(["https://de.wikipedia.org/wiki/Big"])
-    assert got[0]["url"].endswith("/1024px-Big.jpg") and got[0]["thumb"] == thumb
+    assert got[0]["url"].endswith("/1024px-Big.jpg")
+    assert got[0]["thumb"] == thumb
     assert (got[0]["width"], got[0]["height"]) == (1024, 1024)
 
 
@@ -555,7 +560,8 @@ def test_api_202_pageimages_used_when_summary_has_no_image(monkeypatch):
         ("prop=pageimages", {"query": {"pages": [page("Some Song", "Song.jpg")]}}),
     ]))
     got = wiki_lookup.cover_candidates(["https://en.wikipedia.org/wiki/Some_Song"])
-    assert got[0]["url"].endswith("/1024px-Song.jpg") and "/240px-" in got[0]["thumb"]
+    assert got[0]["url"].endswith("/1024px-Song.jpg")
+    assert "/240px-" in got[0]["thumb"]
 
 
 def test_api_202_summary_failure_falls_through_to_pageimages(monkeypatch):
@@ -578,7 +584,8 @@ def test_api_202_file_list_fallback_skips_icons_and_resolves_the_cover(monkeypat
         ("prop=imageinfo", {"query": {"pages": [info]}}),
     ]))
     got = wiki_lookup.cover_candidates(["https://en.wikipedia.org/wiki/Wings_(Birdy_song)"])
-    assert [g["url"] for g in got] == [NONFREE] and (got[0]["width"], got[0]["height"]) == (300, 300)
+    assert [g["url"] for g in got] == [NONFREE]
+    assert (got[0]["width"], got[0]["height"]) == (300, 300)
 
 
 def test_api_202_no_image_anywhere_is_an_empty_list(monkeypatch):

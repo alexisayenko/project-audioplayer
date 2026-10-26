@@ -54,13 +54,17 @@ def cover_file(tmp_path, album_id, uid=OWNER_UID):
 def test_a_new_album_gets_the_discogs_cover_first(client, covers, tmp_path):
     album = made_album(client)
     assert album["cover"] == {"source": "discogs", "url": IMG}
-    assert album["coverFrom"] == "album" and album["coverUrl"].startswith(f"/albums/{album['id']}/cover?v=") and len(album["coverUrl"].split("=")[1]) == 10
+    assert album["coverFrom"] == "album"
+    assert album["coverUrl"].startswith(f"/albums/{album['id']}/cover?v=")
+    assert len(album["coverUrl"].split("=")[1]) == 10
     assert covers["fetched"] == [IMG]
     assert cover_file(tmp_path, album["id"]).is_file()
     img = Image.open(io.BytesIO(cover_file(tmp_path, album["id"]).read_bytes()))
-    assert img.format == "JPEG" and img.size == (300, 200)
+    assert img.format == "JPEG"
+    assert img.size == (300, 200)
     served = client.get(album["coverUrl"], headers=H)
-    assert (served.status_code, served.headers["content-type"]) == (200, "image/jpeg") and served.content[:2] == b"\xff\xd8"
+    assert (served.status_code, served.headers["content-type"]) == (200, "image/jpeg")
+    assert served.content[:2] == b"\xff\xd8"
     assert client.get(f"/albums/{album['id']}", headers=H).json() == album
     row = client.get("/albums", headers=H).json()[0]
     assert (row["cover"], row["coverUrl"], row["coverFrom"]) == (album["cover"], album["coverUrl"], "album")
@@ -70,7 +74,8 @@ def test_auto_cover_falls_back_wikipedia_then_youtube_and_never_fails_the_create
     covers["fail"].update({IMG, "https://i.discogs.com/abc/back.jpg"})
     base = preview(client).json()
     got = client.post("/albums", json={**base, "links": {"wikipedia": "https://en.wikipedia.org/wiki/Tumult", "youtube": "https://youtu.be/aaaaaaaaaaa"}}, headers=H)
-    assert got.status_code == 201 and got.json()["cover"] == {"source": "wikipedia", "url": WIKI}
+    assert got.status_code == 201
+    assert got.json()["cover"] == {"source": "wikipedia", "url": WIKI}
     assert covers["fetched"] == [IMG, "https://i.discogs.com/abc/back.jpg", WIKI]
     client.delete(f"/albums/{got.json()['id']}", headers=H)
     covers["fail"].update({IMG, "https://i.discogs.com/abc/back.jpg", WIKI})
@@ -79,7 +84,9 @@ def test_auto_cover_falls_back_wikipedia_then_youtube_and_never_fails_the_create
     client.delete(f"/albums/{got['id']}", headers=H)
     covers["fail"].add(YT)
     got = client.post("/albums", json={**base, "links": {"youtube": "https://youtu.be/aaaaaaaaaaa"}}, headers=H)
-    assert got.status_code == 201 and got.json()["cover"] == {"source": None, "url": None} and got.json()["coverUrl"] is None
+    assert got.status_code == 201
+    assert got.json()["cover"] == {"source": None, "url": None}
+    assert got.json()["coverUrl"] is None
 
 
 def test_candidates_list_what_is_available_and_write_nothing(client, covers, tmp_path):
@@ -92,8 +99,11 @@ def test_candidates_list_what_is_available_and_write_nothing(client, covers, tmp
     got = r.json()["candidates"]
     assert [(c["source"], c["url"]) for c in got] == [("discogs", IMG), ("discogs", "https://i.discogs.com/abc/back.jpg"), ("wikipedia", WIKI), ("youtube", YT)]
     assert got[0] == {"source": "discogs", "url": IMG, "thumb": THUMB, "width": 600, "height": 600, "label": "Discogs"}
-    assert got[2]["thumb"] == WIKI + "?t" and got[3]["width"] == 480 and got[3]["label"] == "YouTube thumbnail"
-    assert stored(tmp_path) == before and not cover_file(tmp_path, album["id"]).exists()
+    assert got[2]["thumb"] == WIKI + "?t"
+    assert got[3]["width"] == 480
+    assert got[3]["label"] == "YouTube thumbnail"
+    assert stored(tmp_path) == before
+    assert not cover_file(tmp_path, album["id"]).exists()
 
 
 def test_candidates_are_tolerant(client, covers, monkeypatch):
@@ -126,9 +136,12 @@ def test_put_cover_downloads_validates_stores_and_delete_resets(client, covers, 
     r = client.put(f"/albums/{album['id']}/cover", json={"source": "url", "url": "https://example.com/c.png"}, headers=H)
     assert r.status_code == 200
     out = r.json()
-    assert out["cover"] == {"source": "url", "url": "https://example.com/c.png"} and out["coverFrom"] == "album" and out["tracks"]
+    assert out["cover"] == {"source": "url", "url": "https://example.com/c.png"}
+    assert out["coverFrom"] == "album"
+    assert out["tracks"]
     assert Image.open(io.BytesIO(cover_file(tmp_path, album["id"]).read_bytes())).size == (1024, 512)
-    assert stored(tmp_path)[0]["cover"]["v"] and "v=" in out["coverUrl"]
+    assert stored(tmp_path)[0]["cover"]["v"]
+    assert "v=" in out["coverUrl"]
     monkeypatch.setattr(discogs_cover, "fetch", lambda address: b"not an image")
     bad = client.put(f"/albums/{album['id']}/cover", json={"source": "wikipedia", "url": WIKI}, headers=H)
     assert (bad.status_code, bad.json()["error"]) == (422, "cover_bad_image")
@@ -139,7 +152,9 @@ def test_put_cover_downloads_validates_stores_and_delete_resets(client, covers, 
     monkeypatch.setattr(discogs_cover, "fetch", lambda address: picture("PNG", (400, 400)))
     assert client.put(f"/albums/{album['id']}/cover", json={"source": "url", "url": WIKI}, headers=H).status_code == 413
     gone = client.delete(f"/albums/{album['id']}/cover", headers=H)
-    assert gone.status_code == 200 and gone.json()["cover"] == {"source": None, "url": None} and gone.json()["coverUrl"] is None
+    assert gone.status_code == 200
+    assert gone.json()["cover"] == {"source": None, "url": None}
+    assert gone.json()["coverUrl"] is None
     assert not cover_file(tmp_path, album["id"]).exists()
     assert client.get(f"/albums/{album['id']}/cover", headers=H).status_code == 404
     assert client.delete(f"/albums/{album['id']}/cover", headers=H).status_code == 200
@@ -162,7 +177,8 @@ def test_unsafe_addresses_are_refused_by_the_shared_fetcher(client, covers, monk
     monkeypatch.setattr(album_covers, "fetch_jpeg", REAL_FETCH_JPEG)
     for address in ("http://127.0.0.1/x.png", "https://localhost/x.png", "file:///etc/passwd", "https://user:pw@example.com/x.png", "ftp://example.com/x"):
         r = client.put(f"/albums/{album['id']}/cover", json={"source": "url", "url": address}, headers=H)
-        assert r.status_code == 422 and r.json()["error"] == "cover_url_refused", address
+        assert r.status_code == 422, address
+        assert r.json()["error"] == "cover_url_refused", address
 
 
 def test_display_falls_back_to_the_first_linked_song_cover(client, covers, tmp_path):
@@ -180,12 +196,14 @@ def test_display_falls_back_to_the_first_linked_song_cover(client, covers, tmp_p
     url = f"/albums/{album['id']}/tracks"
     assert client.put(f"{url}/1/song", json={"songId": VID}, headers=H).json()["coverUrl"] is None
     linked = client.put(f"{url}/2/song", json={"songId": VID2}, headers=H).json()
-    assert (linked["coverUrl"], linked["coverFrom"]) == (f"/covers/{VID2}?v=abc123", "song") and linked["cover"] == {"source": None, "url": None}
+    assert (linked["coverUrl"], linked["coverFrom"]) == (f"/covers/{VID2}?v=abc123", "song")
+    assert linked["cover"] == {"source": None, "url": None}
     assert client.get(f"/albums/{album['id']}", headers=H).json()["coverUrl"] == f"/covers/{VID2}?v=abc123"
     assert client.get("/albums", headers=H).json()[0]["coverFrom"] == "song"
     covers["fail"].clear()
     own = client.put(f"/albums/{album['id']}/cover", json={"source": "url", "url": WIKI}, headers=H).json()
-    assert own["coverFrom"] == "album" and own["coverUrl"].startswith("/albums/")
+    assert own["coverFrom"] == "album"
+    assert own["coverUrl"].startswith("/albums/")
 
 
 def test_deleting_an_album_removes_its_cover_file(client, covers, tmp_path):
@@ -199,7 +217,8 @@ def test_the_youtube_commit_also_gets_a_cover(client, yt, covers, tmp_path):
     body = commit_body(sel((1, A, "Intro", 60), (2, B, "Two", 10)), fallback={"title": "From videos"})
     out = client.post("/albums/youtube/commit", json={**body, "playlistUrl": f"https://www.youtube.com/watch?v={A}&list={LIST}"}, headers=H).json()
     assert out["album"]["cover"] == {"source": "youtube", "url": f"https://i.ytimg.com/vi/{A}/hqdefault.jpg"}
-    assert out["album"]["coverFrom"] == "album" and cover_file(tmp_path, out["album"]["id"]).is_file()
+    assert out["album"]["coverFrom"] == "album"
+    assert cover_file(tmp_path, out["album"]["id"]).is_file()
 
 
 def test_covers_are_per_user_and_need_a_login(multi, covers, discogs):
@@ -222,11 +241,14 @@ def test_upload_a_cover_as_raw_bytes_or_multipart(client, covers, tmp_path, monk
     r = client.put(url, content=picture("PNG", (2000, 1000)), headers={**H, "Content-Type": "image/png"})
     assert r.status_code == 200
     out = r.json()
-    assert out["cover"] == {"source": "upload", "url": None} and out["coverFrom"] == "album" and out["tracks"]
+    assert out["cover"] == {"source": "upload", "url": None}
+    assert out["coverFrom"] == "album"
+    assert out["tracks"]
     assert Image.open(io.BytesIO(cover_file(tmp_path, album["id"]).read_bytes())).size == (1024, 512)
     assert client.get(out["coverUrl"], headers=H).status_code == 200
     r = client.put(url, files={"file": ("c.jpg", picture("JPEG", (50, 50)), "image/jpeg")}, headers=H)
-    assert r.status_code == 200 and r.json()["cover"]["source"] == "upload"
+    assert r.status_code == 200
+    assert r.json()["cover"]["source"] == "upload"
     assert Image.open(io.BytesIO(cover_file(tmp_path, album["id"]).read_bytes())).size == (50, 50)
     assert client.get(f"/albums/{album['id']}", headers=H).json()["cover"] == {"source": "upload", "url": None}
     assert client.get("/albums", headers=H).json()[0]["cover"]["source"] == "upload"

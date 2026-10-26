@@ -78,7 +78,8 @@ def test_a_version_gives_the_same_split_on_preview_and_metadata(client, monkeypa
     monkeypatch.setattr(extractor, "preview", lambda vid: {"id": vid, "source_url": extractor.watch_url(vid), "title": "Tell It to My Heart (Pendulum Remix)", "artist": "Taylor Dayne", "album": None, "year": None, "tags": ["genre:dubstep"], "remixer": "Pendulum", "duration": 9, "thumbnail": ""})
     preview = client.post("/preview", json={"url": URL}, headers=H).json()
     meta = client.post("/metadata", json={"title": "Tell It to My Heart", "artist": "Taylor Dayne", "version_type": "remix", "sources": [{"url": URL}]}, headers=H).json()
-    assert preview["tags"][0] == "genre:dubstep" and meta["tags"][0] == "genre:dubstep"
+    assert preview["tags"][0] == "genre:dubstep"
+    assert meta["tags"][0] == "genre:dubstep"
     assert [t for t in preview["tags"] if t.startswith("genre:")] == ["genre:dubstep"]
     assert [t for t in meta["tags"] if t.startswith("genre:")] == ["genre:dubstep"]
     assert sorted(preview["original_genres"]) == sorted(meta["original_genres"])

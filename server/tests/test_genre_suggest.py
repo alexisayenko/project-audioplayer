@@ -40,8 +40,9 @@ def test_owner_examples_as_recorded_evidence(case):
 
 def test_taylor_dayne_applies_the_owner_genres_and_never_soul_house_or_freestyle():
     d = decide(CASES["taylor_dayne_tell_it_to_my_heart"]["groups"])
-    assert set(d.applied) == {"dance pop", "pop", "synthpop"}, "electronic is never applied; hi-nrg left Others (2026-10-20), so the agreed group no longer rescues it"
-    assert not {"soul", "house", "freestyle", "hi-nrg"} & set(d.applied) and by_name(d)["hi-nrg"]["reason"] == gs.NO_FAMILY
+    assert {"dance pop", "pop", "synthpop"} == set(d.applied), "electronic is never applied; hi-nrg left Others (2026-10-20), so the agreed group no longer rescues it"
+    assert not {"soul", "house", "freestyle", "hi-nrg"} & set(d.applied)
+    assert by_name(d)["hi-nrg"]["reason"] == gs.NO_FAMILY
     assert by_name(d)["freestyle"]["reason"] == gs.AMBIGUOUS_NAME
     assert by_name(d)["soul"]["sources"] == [WA]
     assert by_name(d)["house"]["reason"] == gs.SINGLE_SOURCE
@@ -63,7 +64,8 @@ def test_a_version_applies_nothing_from_the_original_and_marks_the_hint():
 
 def test_the_same_recording_prodigy_remaster_prunes_breakbeat_beside_big_beat():
     d = decide(CASES["prodigy_voodoo_people_remaster"]["groups"])
-    assert "breakbeat" not in d.applied and "breakbeat" not in names(d)
+    assert "breakbeat" not in d.applied
+    assert "breakbeat" not in names(d)
     assert {"big beat", "techno"} == set(d.applied)
 
 
@@ -107,7 +109,8 @@ def test_r3_electronic_is_ignored_evidence_and_never_unlocks_a_song_page_genre()
     d = decide({MB: ["electronic"], WS: ["breakbeat", "techno"], WA: ["house"]})
     assert d.applied == []
     assert "electronic" not in names(d)
-    assert by_name(d)["breakbeat"]["reason"] == gs.NO_FAMILY and by_name(d)["house"]["sources"] == [WA]
+    assert by_name(d)["breakbeat"]["reason"] == gs.NO_FAMILY
+    assert by_name(d)["house"]["sources"] == [WA]
 
 
 def test_r3_ancestors_and_families_use_every_parent():
@@ -120,7 +123,8 @@ def test_r3_ancestors_and_families_use_every_parent():
     assert t.family["hi-nrg"] == {"funk / soul"}
     assert t.family["industrial rock"] == {"rock"}
     assert t.family["hip house"] == {"house", "hip hop"}
-    assert t.family["deep house"] == {"house"} and t.family["breakbeat"] == {"others"}
+    assert t.family["deep house"] == {"house"}
+    assert t.family["breakbeat"] == {"others"}
     assert (t.depth["hi-nrg"], t.depth["hip house"], t.depth["deep house"]) == (3, 2, 2)
 
 
@@ -129,23 +133,29 @@ def test_r4_the_song_page_alone_applies_a_genre_sharing_a_real_family_with_an_ag
     assert d.applied == ["tech house"], "house is pruned as the non-family ancestor of tech house"
     assert d.sources["tech house"] == [WS]
     d = decide({MB: ["electronic"], WA: ["electronic"], WS: ["breakbeat"]})
-    assert d.applied == [] and by_name(d)["breakbeat"]["reason"] == gs.NO_FAMILY
+    assert d.applied == []
+    assert by_name(d)["breakbeat"]["reason"] == gs.NO_FAMILY
 
 
 def test_r4_electronic_never_counts_as_agreement_or_a_source_group():
     d = decide({MB: ["electronic"], WA: ["electronic music"], YT: ["electronica"]})
-    assert d.applied == [] and d.suggestions == []
+    assert d.applied == []
+    assert d.suggestions == []
     d = decide({MB: ["electronic", "house"], WA: ["electronic"], WS: ["electronic"]})
-    assert d.applied == [] and names(d) == ["house"] and by_name(d)["house"] == {"genre": "house", "sources": [MB], "reason": gs.SINGLE_SOURCE}
+    assert d.applied == []
+    assert names(d) == ["house"]
+    assert by_name(d)["house"] == {"genre": "house", "sources": [MB], "reason": gs.SINGLE_SOURCE}
     d = decide({MB: ["electronic", "house"], WA: ["house"]})
-    assert d.applied == ["house"] and d.sources["house"] == [MB, WA]
+    assert d.applied == ["house"]
+    assert d.sources["house"] == [MB, WA]
 
 
 def test_r4_the_ignored_names_are_electronic_and_the_group_synonyms():
     from app import genre_vocab
 
     syn = genre_vocab.load().groups["Others"]["synonyms"]
-    assert "electronic" in syn and "rave" in syn
+    assert "electronic" in syn
+    assert "rave" in syn
     for n in ["electronic", "Electronic Music", "others", *syn]:
         assert gs.ignored(n), n
     for n in ["house", "edm", "synthpop", "electropop"]:
@@ -222,7 +232,8 @@ def test_r6_ambiguous_names_need_two_groups(name):
 
 
 def test_r6_the_ambiguity_list_is_a_data_constant():
-    assert {"freestyle", "hardcore", "soul", "garage"} <= set(gs.AMBIGUOUS) and "industrial" not in gs.AMBIGUOUS
+    assert {"freestyle", "hardcore", "soul", "garage"} <= set(gs.AMBIGUOUS)
+    assert "industrial" not in gs.AMBIGUOUS
     assert isinstance(gs.AMBIGUOUS, frozenset)
 
 
@@ -310,7 +321,8 @@ def test_r10_a_version_applies_only_its_own_link_and_the_rest_is_marked_original
     s = by_name(d)
     assert s["techno"] == {"genre": "techno", "sources": [gs.ORIGINAL, MB], "reason": gs.FROM_ORIGINAL}
     assert s["pop"]["sources"][0] == gs.ORIGINAL
-    assert "dubstep" not in s and "acoustic" not in s
+    assert "dubstep" not in s
+    assert "acoustic" not in s
 
 
 def test_r10_the_remixers_artist_page_is_marked_remixer():

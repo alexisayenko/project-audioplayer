@@ -86,7 +86,9 @@ def test_dedupe_by_type_and_ref_fills_missing_trims():
     c = sources.make_entry("youtube", VID2)
     out = sources.dedupe([a, c, b])
     assert [(e["type"], e["ref"]) for e in out] == [("youtube", VID), ("youtube", VID2)]
-    assert out[0]["trim_start"] == 5 and out[0]["trim_end"] == 10 and out[0]["duration"] == 100
+    assert out[0]["trim_start"] == 5
+    assert out[0]["trim_end"] == 10
+    assert out[0]["duration"] == 100
 
 
 @pytest.mark.parametrize("start,end,duration,ok", [
@@ -109,7 +111,8 @@ def test_api_song_returns_legacy_fields_next_to_the_new_ones(client):
     first = song["sources"][0]
     assert first["url"] == f"https://www.youtube.com/watch?v={VID}"
     assert (first["source"], first["id"], first["type"], first["ref"]) == ("youtube", VID, "youtube", VID)
-    assert first["trim_start"] is None and first["trim_end"] is None
+    assert first["trim_start"] is None
+    assert first["trim_end"] is None
     assert song["source_url"] == first["url"]
 
 
@@ -156,7 +159,8 @@ def test_patch_trim_rejects_nonsense(client, trim):
 def test_patch_trim_checks_a_known_duration(client):
     assert owner_add(client).status_code == 202
     r = client.patch(f"/songs/{VID}", json={"sources": [{"url": f"https://youtu.be/{VID}", "duration": 100}]}, headers=H)
-    assert r.status_code == 200 and r.json()["sources"][0]["duration"] == 100
+    assert r.status_code == 200
+    assert r.json()["sources"][0]["duration"] == 100
     assert client.patch(f"/songs/{VID}", json={"trim": {"end": 101}}, headers=H).status_code == 422
     assert client.patch(f"/songs/{VID}", json={"trim": {"start": 100}}, headers=H).status_code == 422
     assert client.patch(f"/songs/{VID}", json={"trim": {"start": 10, "end": 100}}, headers=H).status_code == 200

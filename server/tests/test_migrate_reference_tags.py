@@ -48,7 +48,8 @@ def test_converts_bare_and_genre_prefixed_tags_and_leaves_the_rest(datadir):
     assert set(cat) == {"progressive house", "trance"}
     entry = cat["progressive house"][0]
     assert (entry["role"], entry["reviewed"], entry["song_id"], entry["artist"], entry["title"], entry["year"]) == ("archetype", False, "a", "Faithless", "Insomnia", 1995)
-    assert "sources" not in entry and len(entry["id"]) == 8
+    assert "sources" not in entry
+    assert len(entry["id"]) == 8
     assert (datadir / mr.BACKUP_DIR / OWNER / "library.json").exists()
 
 
@@ -57,7 +58,8 @@ def test_only_the_owners_library_is_touched(datadir):
     before = other.read_bytes()
     lib(datadir, OWNER, [song("a", [])])
     assert mr.run() == 0
-    assert other.read_bytes() == before and not (datadir / "genre_references.json").exists()
+    assert other.read_bytes() == before
+    assert not (datadir / "genre_references.json").exists()
 
 
 def test_idempotent_marker_and_second_run_changes_nothing(datadir):
@@ -74,14 +76,16 @@ def test_an_existing_reference_is_kept_and_the_tag_still_removed(datadir):
     (datadir / "genre_references.json").write_text(json.dumps({"trance": [{"id": "keep0001", "artist": "faithless", "title": "insomnia", "role": "origin", "reviewed": True}]}), encoding="utf-8")
     assert mr.run() == 0
     cat = json.loads((datadir / "genre_references.json").read_text(encoding="utf-8"))
-    assert [e["id"] for e in cat["trance"]] == ["keep0001"] and cat["trance"][0]["role"] == "origin"
+    assert [e["id"] for e in cat["trance"]] == ["keep0001"]
+    assert cat["trance"][0]["role"] == "origin"
     assert tags_of(stored(path)["a"]) == []
 
 
 def test_disabled_by_env_and_missing_library_are_noops(datadir, monkeypatch):
     path = lib(datadir, OWNER, [song("a", ["classical trance"])])
     monkeypatch.setenv("AUDIO_REFERENCE_TAGS", "0")
-    assert mr.run() == 0 and "classical trance" in path.read_text(encoding="utf-8")
+    assert mr.run() == 0
+    assert "classical trance" in path.read_text(encoding="utf-8")
     monkeypatch.delenv("AUDIO_REFERENCE_TAGS")
     path.unlink()
     assert mr.run() == 0
@@ -91,9 +95,13 @@ def test_logs_counts(datadir, caplog):
     lib(datadir, OWNER, [song("a", ["classical trance", "classical nonsense xyz"])])
     with caplog.at_level("INFO", logger="app.migrate_reference_tags"):
         mr.run()
-    assert "1 converted" in caplog.text and "1 left untouched" in caplog.text
+    assert "1 converted" in caplog.text
+    assert "1 left untouched" in caplog.text
 
 
 def test_parse_tag():
-    assert mr.parse_tag("classical trance") == "trance" and mr.parse_tag("genre:Classical  Trance") == "Trance"
-    assert mr.parse_tag("modern classical") is None and mr.parse_tag("mood:classical x") is None and mr.parse_tag("classical") is None
+    assert mr.parse_tag("classical trance") == "trance"
+    assert mr.parse_tag("genre:Classical  Trance") == "Trance"
+    assert mr.parse_tag("modern classical") is None
+    assert mr.parse_tag("mood:classical x") is None
+    assert mr.parse_tag("classical") is None

@@ -76,7 +76,9 @@ def test_create_list_get_delete_roundtrip(client, discogs, tmp_path):
     r = client.post("/albums", json=payload, headers=H)
     assert r.status_code == 201
     album = r.json()
-    assert album["id"].startswith("alb_") and album["id"] != "alb_evil" and "extra" not in album
+    assert album["id"].startswith("alb_")
+    assert album["id"] != "alb_evil"
+    assert "extra" not in album
     assert album["genres"] == ["Electronic", "Rock", "Hardcore", "Breakbeat"]
     assert all(t["songId"] is None and "junk" not in t for t in album["tracks"])
     assert album["created_at"]
@@ -109,13 +111,15 @@ def test_create_revalidates(client, discogs, patch):
 def test_create_clamps_genres(client, discogs):
     body = {**preview(client).json(), "genres": ["a", "A", " b ", 5] + [str(i) for i in range(20)]}
     got = client.post("/albums", json=body, headers=H).json()["genres"]
-    assert got[:3] == ["a", "b", "5"] and len(got) == 20
+    assert got[:3] == ["a", "b", "5"]
+    assert len(got) == 20
 
 
 def test_bad_durations_and_year_are_nulled(client, discogs):
     body = {**preview(client).json(), "year": "x", "tracks": [{"title": "A", "durationS": -3}, {"title": "B", "durationS": True}]}
     album = client.post("/albums", json=body, headers=H).json()
-    assert album["year"] is None and [t["durationS"] for t in album["tracks"]] == [None, None]
+    assert album["year"] is None
+    assert [t["durationS"] for t in album["tracks"]] == [None, None]
     assert [t["no"] for t in album["tracks"]] == [1, 2]
 
 
@@ -171,12 +175,14 @@ def test_link_and_unlink_a_song(client, discogs, tmp_path):
     assert add(client).status_code == 202
     album = made_album(client)
     r = link(client, album, 2, VID)
-    assert r.status_code == 200 and r.json()["tracks"][1]["songId"] == VID
+    assert r.status_code == 200
+    assert r.json()["tracks"][1]["songId"] == VID
     assert client.get(f"/albums/{album['id']}", headers=H).json()["tracks"][1]["songId"] == VID
     assert stored(tmp_path)[0]["tracks"][1]["songId"] == VID
     assert link(client, album, 2, VID).status_code == 200
     r = client.delete(f"/albums/{album['id']}/tracks/2/song", headers=H)
-    assert r.status_code == 200 and r.json()["tracks"][1]["songId"] is None
+    assert r.status_code == 200
+    assert r.json()["tracks"][1]["songId"] is None
 
 
 def test_link_errors(client, discogs):
@@ -245,7 +251,9 @@ def test_rym_on_create_patch_list_and_get(client, discogs, tmp_path):
     assert album["rymUrl"] == RYM
     assert client.get("/albums", headers=H).json()[0]["rymUrl"] == RYM
     r = client.patch(f"/albums/{album['id']}", json={"rymUrl": "https://rateyourmusic.com/release/album/x/y/"}, headers=H)
-    assert r.status_code == 200 and r.json()["rymUrl"].endswith("/x/y/") and r.json()["tracks"]
+    assert r.status_code == 200
+    assert r.json()["rymUrl"].endswith("/x/y/")
+    assert r.json()["tracks"]
     assert client.get(f"/albums/{album['id']}", headers=H).json()["rymUrl"].endswith("/x/y/")
     assert client.patch(f"/albums/{album['id']}", json={"rymUrl": "nope"}, headers=H).status_code == 422
     assert client.patch(f"/albums/{album['id']}", json={"rymUrl": ""}, headers=H).json()["rymUrl"] is None
@@ -304,7 +312,8 @@ def test_links_default_create_patch_and_sync(client, discogs, tmp_path):
     assert r["links"] == {"discogs": None, "rateyourmusic": None, "youtube": "https://youtu.be/aaaaaaaaaaa", "wikipedia": "https://en.wikipedia.org/wiki/Tumult"}
     assert client.get(url, headers=H).json()["links"]["discogs"] is None
     r = client.patch(url, json={"links": {"rateyourmusic": RYM}}, headers=H).json()
-    assert r["rymUrl"] == RYM and r["links"]["rateyourmusic"] == RYM
+    assert r["rymUrl"] == RYM
+    assert r["links"]["rateyourmusic"] == RYM
     r = client.patch(url, json={"rymUrl": "https://rateyourmusic.com/album/x"}, headers=H).json()
     assert r["links"]["rateyourmusic"] == "https://rateyourmusic.com/album/x" == r["rymUrl"]
     assert client.get("/albums", headers=H).json()[0]["links"]["rateyourmusic"] == r["rymUrl"]
@@ -312,7 +321,9 @@ def test_links_default_create_patch_and_sync(client, discogs, tmp_path):
     assert (bad.status_code, bad.json()["detail"]) == (422, {"code": "bad_link", "key": "youtube"})
     assert client.patch(url, json={"links": {"bogus": "https://x.com"}}, headers=H).json()["detail"]["key"] == "bogus"
     r = client.patch(url, json={"links": {"youtube": ""}, "rymUrl": None}, headers=H).json()
-    assert r["links"]["youtube"] is None and r["links"]["rateyourmusic"] is None and r["rymUrl"] is None
+    assert r["links"]["youtube"] is None
+    assert r["links"]["rateyourmusic"] is None
+    assert r["rymUrl"] is None
     assert client.patch(url, json={}, headers=H).json()["links"]["wikipedia"] == "https://en.wikipedia.org/wiki/Tumult"
 
 
@@ -330,12 +341,15 @@ def test_patch_edits_fields_independently(client, discogs, tmp_path):
     album = made_album(client)
     url = f"/albums/{album['id']}"
     r = client.patch(url, json={"title": "  New Title "}, headers=H).json()
-    assert (r["title"], r["artist"], r["year"]) == ("New Title", "Derango", 2004) and r["genres"] == album["genres"]
+    assert (r["title"], r["artist"], r["year"]) == ("New Title", "Derango", 2004)
+    assert r["genres"] == album["genres"]
     r = client.patch(url, json={"artist": " Other ", "year": 1999}, headers=H).json()
     assert (r["title"], r["artist"], r["year"]) == ("New Title", "Other", 1999)
     assert client.patch(url, json={"year": None}, headers=H).json()["year"] is None
     r = client.patch(url, json={"genres": ["a", " A ", "b", ""]}, headers=H).json()
-    assert r["genres"] == ["a", "b"] and r["links"] == album["links"] and len(r["tracks"]) == 5
+    assert r["genres"] == ["a", "b"]
+    assert r["links"] == album["links"]
+    assert len(r["tracks"]) == 5
     assert client.patch(url, json={"genres": []}, headers=H).json()["genres"] == []
     assert len(client.patch(url, json={"genres": [str(i) for i in range(30)]}, headers=H).json()["genres"]) == 20
     assert client.patch(url, json={}, headers=H).json()["title"] == "New Title"
@@ -343,7 +357,9 @@ def test_patch_edits_fields_independently(client, discogs, tmp_path):
     assert (saved["title"], saved["artist"], saved["year"]) == ("New Title", "Other", None)
     assert client.get("/albums", headers=H).json()[0]["title"] == "New Title"
     both = client.patch(url, json={"title": "T2", "rymUrl": RYM, "links": {"youtube": "https://youtu.be/aaaaaaaaaaa"}}, headers=H).json()
-    assert both["title"] == "T2" and both["rymUrl"] == RYM and both["links"]["youtube"]
+    assert both["title"] == "T2"
+    assert both["rymUrl"] == RYM
+    assert both["links"]["youtube"]
 
 
 @pytest.mark.parametrize("patch,key", [

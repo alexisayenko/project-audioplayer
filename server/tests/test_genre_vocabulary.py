@@ -40,7 +40,8 @@ def test_discogs_genres_are_lowercase_trimmed_and_filed_under_a_family():
     for name, parents in genres.items():
         assert name, name
         assert name == " ".join(name.lower().split()), name
-        assert parents and all(p in FAMILIES for p in parents), (name, parents)
+        assert parents, (name, parents)
+        assert all(p in FAMILIES for p in parents), (name, parents)
 
 
 def test_no_discogs_genre_in_two_families_unless_it_lists_more_parents():
@@ -76,9 +77,11 @@ def test_extras_have_parents_and_a_family_without_cycles():
     for name, spec in EXTRAS.items():
         assert name == " ".join(name.lower().split()), name
         assert name not in DISCOGS["genres"], name
-        assert "parent" not in spec and "also_under" not in spec, name
+        assert "parent" not in spec, name
+        assert "also_under" not in spec, name
         parents = spec["parents"]
-        assert parents and len(set(parents)) == len(parents), name
+        assert parents, name
+        assert len(set(parents)) == len(parents), name
         assert all(p in ALL_FAMILIES or p in names() - {name} for p in parents), (name, parents)
         assert entries[name].family in ALL_FAMILIES, name
     for name in EXTRAS:
@@ -112,9 +115,12 @@ def test_kept_subgenres_are_canonical(name):
 
 
 def test_electronic_and_the_group_others_are_not_vocabulary_names():
-    assert not genre_vocab.is_canonical("electronic") and genre_vocab.lookup("electronic") is None
-    assert not genre_vocab.is_canonical("others") and genre_vocab.lookup("others") is None
-    assert gf.vocabulary_name("Electronic") is None and gf.vocabulary_name("electronic music") is None
+    assert not genre_vocab.is_canonical("electronic")
+    assert genre_vocab.lookup("electronic") is None
+    assert not genre_vocab.is_canonical("others")
+    assert genre_vocab.lookup("others") is None
+    assert gf.vocabulary_name("Electronic") is None
+    assert gf.vocabulary_name("electronic music") is None
     assert gf.unmappable("electronic")
     assert genre_vocab.group("electronic") == "Others" == genre_vocab.group("Electronic Music") == genre_vocab.group("others")
     assert genre_vocab.group("house") is None
@@ -170,9 +176,12 @@ def test_lookup(raw, want):
 
 def test_family_of_also_reads_the_music_form():
     assert genre_vocab.family_of("house") == "house" == genre_vocab.family_of("house music")
-    assert genre_vocab.family_of("deep house") == "house" and genre_vocab.family_of("disco") == "Funk / Soul" and genre_vocab.family_of("dub") == "Others"
+    assert genre_vocab.family_of("deep house") == "house"
+    assert genre_vocab.family_of("disco") == "Funk / Soul"
+    assert genre_vocab.family_of("dub") == "Others"
     assert genre_vocab.family_of("zzz") is None
-    assert not genre_vocab.is_below_family("house") and genre_vocab.is_below_family("deep house")
+    assert not genre_vocab.is_below_family("house")
+    assert genre_vocab.is_below_family("deep house")
     assert not genre_vocab.is_below_family("electronic")
 
 
@@ -315,16 +324,20 @@ def test_vocabulary_endpoint_lists_every_name_with_family_and_level(client):
     assert body["families"] == ALL_FAMILIES
     assert body["count"] == len(body["genres"]) == len(names())
     by = {g["name"]: g for g in body["genres"]}
-    assert by["house"]["family"] == "house" and by["house"]["level"] == "family", "house is a level 1 genre (promoted out of Others)"
-    assert not by["house"]["extra"] and set(body["forms"]) == set(FORMS)
-    assert by["deep house"]["family"] == "house" and by["deep house"]["level"] == "genre"
+    assert by["house"]["family"] == "house", "house is a level 1 genre (promoted out of Others)"
+    assert by["house"]["level"] == "family", "house is a level 1 genre (promoted out of Others)"
+    assert not by["house"]["extra"]
+    assert set(body["forms"]) == set(FORMS)
+    assert by["deep house"]["family"] == "house"
+    assert by["deep house"]["level"] == "genre"
     assert by["rock"]["level"] == "family"
     assert by["rock"]["parents"] == []
     assert by["rock"]["family"] == "Rock"
     assert by["neurofunk"]["extra"]
     assert by["neurofunk"]["parents"] == ["drum and bass"]
     assert by["house"]["parents"] == []
-    assert "parent" not in by["house"] and "also_under" not in by["house"]
+    assert "parent" not in by["house"]
+    assert "also_under" not in by["house"]
     assert [g["name"] for g in body["genres"]] == sorted(by)
     assert body["aliases"]["dnb"] == "drum and bass"
     assert body["aliases"]["indie"] == "indie rock"
@@ -492,9 +505,11 @@ def test_soviet_wave_spellings_resolve(raw):
 def test_the_payload_has_sovietwave_and_not_soviet_wave():
     genre_vocab.reset()
     body = genre_vocab.vocabulary()
-    assert "sovietwave" in body["levels"] and "soviet wave" not in body["levels"]
+    assert "sovietwave" in body["levels"]
+    assert "soviet wave" not in body["levels"]
     names = {r["name"] for r in body["genres"]}
-    assert "sovietwave" in names and "soviet wave" not in names
+    assert "sovietwave" in names
+    assert "soviet wave" not in names
 
 
 def test_migration_rewrites_a_stored_soviet_wave_to_sovietwave_with_a_backup(datadir):
@@ -518,8 +533,12 @@ def test_soviet_wave_hashtag_is_a_youtube_genre():
 
 
 def test_lofi_is_removed_everywhere_and_its_tag_is_dropped():
-    assert "lo-fi" not in DISCOGS["genres"] and "lo-fi" not in EXTRAS
-    assert genre_vocab.lookup("lo-fi") is None and "lo-fi" not in names()
-    assert gf.is_dropped("lo-fi") and gf.is_dropped("Lo-Fi") and not gf.is_dropped("lo-fi hip hop")
+    assert "lo-fi" not in DISCOGS["genres"]
+    assert "lo-fi" not in EXTRAS
+    assert genre_vocab.lookup("lo-fi") is None
+    assert "lo-fi" not in names()
+    assert gf.is_dropped("lo-fi")
+    assert gf.is_dropped("Lo-Fi")
+    assert not gf.is_dropped("lo-fi hip hop")
     assert "lo-fi" not in gf.ALIASES.values()
     assert library.clean_tags(["genre:lo-fi", "genre:shoegaze"]) == ["genre:shoegaze"]

@@ -36,7 +36,7 @@ def test_an_extra_whose_tree_parent_is_a_genre_has_that_parent_in_its_row(body):
         if tree[0] in families:
             continue
         want = LEGACY_PRIMARY.get(row["name"], (tree[0], tree[0]))
-        assert (row["parents"][0], tree[0]) == want, row["name"]
+        assert want == (row["parents"][0], tree[0]), row["name"]
 
 
 def test_spacesynth_and_space_disco_in_the_payload(body):
@@ -67,15 +67,21 @@ def test_every_row_and_level_carries_all_families_and_the_legacy_family_is_the_f
     order = body["families"]
     for row in body["genres"]:
         lv = body["levels"].get(row["name"])
-        assert row["families"] and row["family"] == row["families"][0], row["name"]
+        assert row["families"], row["name"]
+        assert row["family"] == row["families"][0], row["name"]
         assert row["families"] == [f for f in order if f in row["families"]], row["name"]
         if lv:
-            assert row["families"] == lv["families"] and lv["family"] == lv["families"][0], row["name"]
+            assert row["families"] == lv["families"], row["name"]
+            assert lv["family"] == lv["families"][0], row["name"]
     rows = {r["name"]: r for r in body["genres"]}
     assert rows["disco"]["families"] == ["Funk / Soul"] == body["levels"]["euro disco"]["families"], "disco left Others (task-0066, 2026-10-20)"
-    assert rows["post-disco"]["families"] == ["Funk / Soul"] and body["levels"]["post-disco"]["parents"] == ["disco"]
-    assert "electronic" not in rows and "others" not in rows, "Others is a group and electronic is not a genre: neither is a vocabulary row"
-    assert "Others" in body["families"] and body["groups"]["Others"]["assignable"] is False and body["groups"]["Others"]["temporary"] is True
+    assert rows["post-disco"]["families"] == ["Funk / Soul"]
+    assert body["levels"]["post-disco"]["parents"] == ["disco"]
+    assert "electronic" not in rows, "Others is a group and electronic is not a genre: neither is a vocabulary row"
+    assert "others" not in rows, "Others is a group and electronic is not a genre: neither is a vocabulary row"
+    assert "Others" in body["families"]
+    assert body["groups"]["Others"]["assignable"] is False
+    assert body["groups"]["Others"]["temporary"] is True
 
 
 def test_the_graph_table_families_list_every_family_of_the_genre():
