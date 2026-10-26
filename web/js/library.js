@@ -137,13 +137,15 @@ export function renderLibrary(root) {
     });
   }
 
+  const addSong = can('add') ? el('button', { class: 'btn primary glow', type: 'button', onclick: (e) => openAdd(undefined, e.currentTarget) }, icon('plus', 'action'), 'Add song') : null;
+  const addAlbum = can('add') ? el('button', { class: 'btn primary glow', type: 'button', hidden: true, onclick: (e) => { const o = e.currentTarget; void loadUi('albums').then((m) => m.openAddAlbum(o)); } }, 'Add Album', icon('plus', 'action')) : null;
   root.append(
     el('header', { class: 'page-head lib-head' },
       el('div', { class: 'page-title' },
         el('p', { class: 't-eyebrow' }, 'ELECTROPHONE'),
         el('h1', { class: 't-display', id: 'lib-title' }, 'Library')),
       el('div', { class: 'head-actions' }, total,
-        can('add') ? el('button', { class: 'btn primary glow', type: 'button', onclick: (e) => openAdd(undefined, e.currentTarget) }, icon('plus', 'action'), 'Add song') : null)),
+        addSong, addAlbum)),
     songsPane,
     albumsPane,
     draftsPane);
@@ -178,6 +180,8 @@ export function renderLibrary(root) {
     songsPane.hidden = view !== 'songs';
     albumsPane.hidden = view !== 'albums';
     draftsPane.hidden = view !== 'drafts';
+    if (addSong) addSong.hidden = view === 'albums';
+    if (addAlbum) addAlbum.hidden = view !== 'albums';
     const heading = root.querySelector('#lib-title');
     if (heading) heading.textContent = { songs: 'Library', albums: 'Albums', drafts: 'Drafts' }[view];
     if (view === 'drafts') showDrafts();

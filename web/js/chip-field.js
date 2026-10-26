@@ -35,8 +35,8 @@ let listSeq = 0;
 
 const fallbackIndex = () => buildIndex({ genres: libraryGenres().map((name) => ({ name, family: null, level: 'genre' })) });
 
-export function chipField(ns, editor) {
-  const kind = KINDS[ns];
+export function chipField(ns, editor, { cap } = {}) {
+  const kind = cap ? { ...KINDS[ns], cap } : KINDS[ns];
   const prefix = `${ns}:`;
   const mine = () => editor.peek().filter((t) => t.toLowerCase().startsWith(prefix));
   const input = el('input', { type: 'text', placeholder: kind.placeholder, 'aria-label': kind.label, enterKeyHint: 'done', autocomplete: 'off' });
