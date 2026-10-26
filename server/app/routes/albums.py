@@ -4,11 +4,15 @@ from __future__ import annotations
 
 from typing import Annotated, Any
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi.responses import FileResponse
 from fastapi.concurrency import run_in_threadpool
 
-from .. import album_youtube, albums, deps, library, users
-from ..schemas import AlbumLinkRequest, AlbumPatchRequest, AlbumPreviewRequest, AlbumSearchRequest
+from .. import album_covers, album_youtube, albums, coverimg, deps, library, users
+from ..problems import Problem
+from . import covers as covers_routes
+from .covers import _charge, _fetches, _suggestions
+from ..schemas import AlbumCoverRequest, AlbumLinkRequest, AlbumPatchRequest, AlbumPreviewRequest, AlbumSearchRequest
 
 router = APIRouter()
 User = Annotated[dict[str, Any], Depends(deps.require_token)]
@@ -22,7 +26,12 @@ def _snapshot(uid: str) -> list[dict[str, Any]]:
     with users.user_lock(uid):
         items = albums.load(deps.albums_path(uid))
         ids = {s.get("id") for s in library.load(deps.library_path(uid))} if any(t.get("songId") for a in items for t in a["tracks"]) else set()
-    return [albums.without_dangling(a, ids) for a in items]
+        songs = library.load(deps.library_path(uid)) if items else []
+    return [album_covers.present(uid, albums.without_dangling(a, ids), songs) for a in items]
+
+
+def _out(uid: str, album: dict[str, Any]) -> dict[str, Any]:
+    return album_covers.present_one(uid, album)
 
 
 @router.post("/albums/preview", responses=deps.responses(400, 404, 502, 503))
@@ -44,9 +53,10 @@ def _create(uid: str, payload: dict[str, Any], song_ids: Any = None) -> dict[str
         item = albums.build(payload, {a["id"] for a in items})
         linked = album_youtube.auto_link(item, song_ids, library.load(deps.library_path(uid))) if isinstance(song_ids, list) else None
         albums.save(deps.albums_path(uid), [item, *items])
-        if linked is None:
-            return item
-        return {**item, "linked": linked, "unlinked": len(item["tracks"]) - linked}
+    item = album_covers.auto(uid, item)
+    if linked is None:
+        return _out(uid, item)
+    return {**_out(uid, item), "linked": linked, "unlinked": len(item["tracks"]) - linked}
 
 
 @router.post("/albums", status_code=201, responses=deps.responses(409, 422))
@@ -113,7 +123,7 @@ def patch_album(album_id: str, body: AlbumPatchRequest, user: User):
         album.update(fields)
         albums.set_links(album, changes)
         albums.save(deps.albums_path(uid), items)
-        return album
+    return _out(uid, album)
 
 
 @router.delete("/albums/{album_id}", responses=deps.responses(404))
@@ -123,6 +133,7 @@ def delete_album(album_id: str, user: User):
         items = albums.load(deps.albums_path(uid))
         found = _found(items, album_id)
         albums.save(deps.albums_path(uid), [a for a in items if a is not found])
+        album_covers.remove_file(uid, album_id)
     return {"deleted": album_id}
 
 
@@ -147,7 +158,7 @@ def link_song(album_id: str, no: int, body: AlbumLinkRequest, user: User):
             raise HTTPException(status_code=409, detail={"code": "already_linked", "no": other["no"]})
         track["songId"] = body.songId
         albums.save(deps.albums_path(uid), items)
-        return album
+    return _out(uid, album)
 
 
 @router.delete("/albums/{album_id}/tracks/{no}/song", responses=deps.responses(404))
@@ -158,4 +169,61 @@ def unlink_song(album_id: str, no: int, user: User):
         album = _found(items, album_id)
         _track(album, no)["songId"] = None
         albums.save(deps.albums_path(uid), items)
-        return album
+    return _out(uid, album)
+
+
+@router.get("/albums/{album_id}/cover", responses=deps.responses(404))
+def get_album_cover(album_id: str, user: Annotated[dict[str, Any], Depends(deps.require_token_or_query)]):
+    path = album_covers.path_of(user["uid"], album_id) if albums.ID_RE.fullmatch(album_id) else None
+    if path is None or not path.is_file():
+        raise HTTPException(status_code=404, detail="no cover")
+    return FileResponse(path, media_type="image/jpeg", headers={"Cache-Control": "private, no-cache"})
+
+
+@router.get("/albums/{album_id}/cover/candidates", responses=deps.responses(404, 429))
+def cover_candidates(album_id: str, user: User):
+    album = _found(_snapshot(user["uid"]), album_id)
+    _charge(_suggestions, user)
+    return {"candidates": album_covers.candidates(album)}
+
+
+@router.put("/albums/{album_id}/cover", responses=deps.responses(400, 404, 413, 415, 422, 429, 502))
+async def put_cover(album_id: str, request: Request, user: User):
+    """The new cover as raw image bytes (`image/jpeg|png|webp` body), multipart/form-data with a `file` part (both stored with source `upload`), or JSON `{"source", "url"}` (the server downloads it). Limits and errors as the song cover upload."""
+    uid = user["uid"]
+    content_type = request.headers.get("content-type", "")
+    kind = content_type.split(";")[0].strip().lower()
+    if kind not in (*coverimg.ALLOWED_TYPES, "multipart/form-data", "application/json"):
+        raise Problem(415, "cover_bad_type", "Use a JPEG, PNG or WebP image.")
+    _found(await run_in_threadpool(_snapshot, uid), album_id)
+    url: str | None = None
+    source = "upload"
+    if kind == "application/json":
+        try:
+            body = AlbumCoverRequest.model_validate_json(await covers_routes._body(request, covers_routes.JSON_MAX_BYTES))
+        except ValueError:
+            raise Problem(422, "cover_bad_body", "Send {\"source\": \"url\", \"url\": \"https://...\"}.") from None
+        if body.source not in album_covers.SOURCES:
+            raise HTTPException(status_code=422, detail={"code": "bad_field", "key": "source"})
+        _charge(_fetches, user)
+        source, url = body.source, body.url
+        jpeg = await run_in_threadpool(album_covers.fetch_jpeg, url)
+    else:
+        if kind == "multipart/form-data":
+            data = covers_routes.multipart_file(content_type, await covers_routes._body(request, coverimg.MAX_BYTES + covers_routes.MULTIPART_OVERHEAD))
+        else:
+            data = await covers_routes._body(request)
+        jpeg = await run_in_threadpool(coverimg.normalize, data)
+    album = await run_in_threadpool(album_covers.store, uid, album_id, jpeg, source, url)
+    if album is None:
+        raise HTTPException(status_code=404, detail="not_found")
+    return await run_in_threadpool(_out, uid, album)
+
+
+@router.delete("/albums/{album_id}/cover", responses=deps.responses(404))
+def delete_cover(album_id: str, user: User):
+    uid = user["uid"]
+    album = album_covers.clear(uid, album_id) if albums.ID_RE.fullmatch(album_id) else None
+    if album is None:
+        raise HTTPException(status_code=404, detail="not_found")
+    return _out(uid, album)

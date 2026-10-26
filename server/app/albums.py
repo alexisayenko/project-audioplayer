@@ -256,6 +256,7 @@ def validate(body: Any) -> dict[str, Any]:
     year = body.get("year")
     genres = _genres({"genres": body["genres"] if isinstance(body.get("genres"), list) else []})
     ident = str(int(src["id"]))
+    thumb = body.get("thumb") or body.get("discogsThumb")
     given = body.get("links") if isinstance(body.get("links"), dict) else {}
     links = {key: clean_link(key, given[key]) for key in given}
     links.setdefault("discogs", f"https://www.discogs.com/release/{ident}")
@@ -266,6 +267,7 @@ def validate(body: Any) -> dict[str, Any]:
         "artist": str(body.get("artist") or "").strip()[:MAX_TEXT],
         "year": timeutil.valid_year(year) if isinstance(year, int) and not isinstance(year, bool) else None,
         "genres": genres,
+        "discogsThumb": thumb if isinstance(thumb, str) and thumb.startswith("https://") and len(thumb) <= 500 else None,
         "rymUrl": links.get("rateyourmusic"),
         "links": {key: links.get(key) for key in LINK_KEYS},
         "source": {"type": "discogs", "id": ident, "url": f"https://www.discogs.com/release/{ident}"},
@@ -311,11 +313,11 @@ def find_source(albums: list[dict[str, Any]], source: dict[str, Any]) -> dict[st
 
 def build(payload: dict[str, Any], existing: set[str]) -> dict[str, Any]:
     tracks = [{**t, "songId": None} for t in payload["tracks"]]
-    return {"id": new_id(existing), **{k: payload[k] for k in ("title", "artist", "year", "genres", "rymUrl", "links", "source")}, "tracks": tracks, "created_at": timeutil.now_utc()}
+    return {"id": new_id(existing), **{k: payload[k] for k in ("title", "artist", "year", "genres", "rymUrl", "links", "source")}, **({"discogsThumb": payload["discogsThumb"]} if payload.get("discogsThumb") else {}), "tracks": tracks, "created_at": timeutil.now_utc()}
 
 
 def summary(a: dict[str, Any]) -> dict[str, Any]:
-    return {"id": a["id"], "title": a.get("title", ""), "artist": a.get("artist", ""), "year": a.get("year"), "genres": a.get("genres") or [], "rymUrl": a.get("rymUrl"), "links": full_links(a), "trackCount": len(a.get("tracks") or []), "tracks": [{k: t.get(k) for k in ("no", "title", "durationS", "songId")} for t in a.get("tracks") or [] if isinstance(t, dict)], "created_at": a.get("created_at")}
+    return {**{k: a[k] for k in ("cover", "coverUrl", "coverFrom") if k in a}, "id": a["id"], "title": a.get("title", ""), "artist": a.get("artist", ""), "year": a.get("year"), "genres": a.get("genres") or [], "rymUrl": a.get("rymUrl"), "links": full_links(a), "trackCount": len(a.get("tracks") or []), "tracks": [{k: t.get(k) for k in ("no", "title", "durationS", "songId")} for t in a.get("tracks") or [] if isinstance(t, dict)], "created_at": a.get("created_at")}
 
 
 def without_dangling(album: dict[str, Any], song_ids: set[Any]) -> dict[str, Any]:

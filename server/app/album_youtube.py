@@ -10,7 +10,7 @@ from typing import Any
 
 from fastapi import HTTPException
 
-from . import albums, credit_title, credits_split, deps, discogs_lookup, downloads, extractor, limits, playlist_import, timeutil, urlclean, users
+from . import album_covers, albums, credit_title, credits_split, deps, discogs_lookup, downloads, extractor, limits, playlist_import, timeutil, urlclean, users
 from .links import Resolved
 
 MAX_CANDIDATES = 8
@@ -241,6 +241,7 @@ def commit(uid: str, owner: bool, body: dict[str, Any], songs: list[dict[str, An
         for pos, no in mapping.items():
             by_no[no]["songId"] = ids[pos]
         albums.save(deps.albums_path(uid), [album, *items])
+    album = album_covers.present_one(uid, album_covers.auto(uid, album))
     return {
         "album": album,
         "songs": [{"position": s["position"], "songId": ids[s["position"]]} for s in selected],

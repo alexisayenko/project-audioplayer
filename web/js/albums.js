@@ -13,6 +13,7 @@ import { loadGenreTree } from './genre-tree.js';
 import { songMatches } from './song-match.js';
 import { playlistLink, MIX_MESSAGE, PRIVATE_MESSAGE } from './playlist-link.js';
 import { startDownloads, mountDownloadStatus } from './albums-youtube.js';
+import { albumCoverImg, albumCoverSection } from './albums-cover.js';
 import { dialogHead } from './edit-dialog.js';
 import { artistLine, titleLine, displayLine, albumsOf, albumOf, releasedYear } from './credits.js';
 import { openPlDialog, closePlDialog } from './playlist-dialogs.js';
@@ -288,6 +289,9 @@ export function openAlbumCard(album, opener = null) {
     dlg.replaceChildren(...[
       el('span', { class: 'grab', 'aria-hidden': 'true' }),
       closeBtn,
+      el('div', { class: 'card-art album-art' },
+        el('span', { class: 'cover-mark', 'aria-hidden': 'true' }, icon('coverPlaceholder')),
+        albumCoverImg(cur, `${[cur.artist, cur.title].filter(Boolean).join(' - ')} cover`, 'cover card-cover')),
       el('div', { class: 'card-head album-card-head' },
         el('h2', { id: 'song-card-title', class: 't-title' }, cur.title),
         sub ? el('p', { class: 'card-sub t-subhead' }, sub) : null),
@@ -474,8 +478,10 @@ export function openAlbumEdit(album, onSaved, closeCard = () => {}) {
   const general = el('p', { class: 'msg error', role: 'alert', hidden: true });
   const showErr = (key, text) => { const e = errs[key]; if (e) { e.textContent = text; e.hidden = false; } else { general.textContent = text; general.hidden = false; } };
   const save = el('button', { type: 'submit', class: 'btn primary glow' }, 'Save');
+  const coverSec = albumCoverSection(album, (full) => onSaved(full));
   const form = el('form', { method: 'dialog', class: 'album-edit' },
     dialogHead('Edit album', [album.artist, album.title].filter(Boolean).join(' - '), close),
+    coverSec.node,
     field('title'), field('artist'), field('year'),
     el('div', {}, genres.node, errs.genres),
     el('div', { class: 'album-edit-links' }, links.map((f) => f.node)),
@@ -605,7 +611,7 @@ function albumRow(a) {
   const name = `album ${a.title}`;
   const hereNow = () => !!player.current && ids.has(player.current.id);
   const model = () => coverModel({ audio: true, queueable: songs.length > 0, here: hereNow(), playing: player.playing });
-  const cover = coverButton(null, model(), name, { run: (action) => { if (action === 'pause' || action === 'resume') player.toggle(); else playAll(songs); } });
+  const cover = coverButton(albumCoverImg(a), model(), name, { run: (action) => { if (action === 'pause' || action === 'resume') player.toggle(); else playAll(songs); } });
   const open = el('button', { class: 'open t-headline album-name-btn', type: 'button', title: 'Album info', 'aria-label': `Open: ${a.title}` },
     el('span', { class: 'ttl' }, a.title), ' ', el('span', { class: 'rmx' }, `· ${n} ${plural(n, 'track', 'tracks')}`));
   const row = el('li', { class: `song has-acts album-row${songs.length ? '' : ' unlinked'}`, 'data-id': a.id, 'data-songs': linked.map((s) => s.id).join(',') },

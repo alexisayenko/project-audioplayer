@@ -78,3 +78,18 @@
 .album-delete-choice { flex-wrap: wrap; }
 .album-delete-choice .btn { width: auto; flex: 1 1 14rem; }
 .album-link-results { margin-top: var(--space-3); }
+.album-cover-edit { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: var(--space-3); align-items: start; margin: var(--space-3) 0; }
+.album-cover-edit .cover-edit-img { --cover-size: calc(var(--hit) * 3); width: var(--cover-size); height: var(--cover-size); object-fit: cover; }
+.album-cover-edit .cover-edit-body { display: grid; gap: var(--space-2); min-width: 0; }
+.album-cover-cands { display: flex; gap: var(--space-2); overflow-x: auto; padding-bottom: var(--space-1); }
+.album-cover-cands:empty { display: none; }
+.album-cover-cand { flex: none; display: grid; justify-items: center; gap: var(--space-1); width: calc(var(--hit) * 2); padding: var(--space-1); background: transparent; color: var(--ink); border: var(--stroke-hairline) solid var(--line); border-radius: var(--radius-sm); cursor: pointer; }
+.album-cover-cand[aria-pressed="true"] { border-color: var(--accent-ink); }
+.album-cover-thumb { --cover-size: calc(var(--hit) * 1.6); width: var(--cover-size); height: var(--cover-size); object-fit: cover; }
+.album-cover-actions { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.album-cover-actions .btn { width: auto; }
+@media (max-width: 479px) {
+  .album-cover-edit { grid-template-columns: minmax(0, 1fr); justify-items: start; }
+  .album-cover-edit .cover-edit-img { --cover-size: calc(var(--hit) * 2.5); }
+}
+.card-dlg .album-art .card-cover { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }

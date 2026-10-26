@@ -268,7 +268,7 @@ test('tapping the album name opens the info box; Esc/close and backdrop close it
   assert.equal(dlg.querySelector('h2').textContent, 'Tumult');
   assert.equal(dlg.querySelector('.card-sub').textContent, 'Derango · 2004');
   assert.equal(dlg.querySelector('.card-details').textContent, '100 - 140BPMTracks: 2Length: 4:25');
-  assert.equal(dlg.querySelector('.card-art'), null);
+  assert.ok(dlg.querySelector('.card-art .cover-mark'));
   assert.deepEqual([...dlg.querySelectorAll('.card-genre-line .tag')].map((c) => c.textContent), ['Techno']);
   assert.equal(dlg.querySelector('.svc-discogs').getAttribute('href'), 'https://www.discogs.com/release/545650-Derango-Tumult');
   assert.equal(dlg.querySelector('.svc-youtube'), null);

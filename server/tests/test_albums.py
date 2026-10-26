@@ -82,7 +82,7 @@ def test_create_list_get_delete_roundtrip(client, discogs, tmp_path):
     assert album["created_at"]
     assert stored(tmp_path)[0]["id"] == album["id"]
     assert client.get("/albums", headers=H).json() == [
-        {"id": album["id"], "title": "Tumult", "artist": "Derango", "year": 2004, "genres": ["Electronic", "Rock", "Hardcore", "Breakbeat"], "rymUrl": None, "links": {"discogs": "https://www.discogs.com/release/545650", "rateyourmusic": None, "youtube": None, "wikipedia": None}, "trackCount": 5, "tracks": [{k: t[k] for k in ("no", "title", "durationS", "songId")} for t in album["tracks"]], "created_at": album["created_at"]}]
+        {"cover": {"source": None, "url": None}, "coverUrl": None, "coverFrom": None, "id": album["id"], "title": "Tumult", "artist": "Derango", "year": 2004, "genres": ["Electronic", "Rock", "Hardcore", "Breakbeat"], "rymUrl": None, "links": {"discogs": "https://www.discogs.com/release/545650", "rateyourmusic": None, "youtube": None, "wikipedia": None}, "trackCount": 5, "tracks": [{k: t[k] for k in ("no", "title", "durationS", "songId")} for t in album["tracks"]], "created_at": album["created_at"]}]
     assert client.get(f"/albums/{album['id']}", headers=H).json() == album
     assert client.delete(f"/albums/{album['id']}", headers=H).status_code == 200
     assert client.get("/albums", headers=H).json() == []

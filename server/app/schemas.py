@@ -47,6 +47,11 @@ class AlbumPlaylistTrack(BaseModel):
     durationS: float | None = None
 
 
+class AlbumCoverRequest(BaseModel):
+    source: str = Field(max_length=20)
+    url: str = Field(min_length=1, max_length=2048)
+
+
 class AlbumLinkRequest(BaseModel):
     songId: str = Field(min_length=1, max_length=64)
 

@@ -53,7 +53,7 @@ def test_listing_parses_credits_title_and_year_only_from_youtube_data(client, fa
         flat(B, "Song (Foo Remix)", channel="Bar"),
     ]
     body = post(client).json()
-    assert body["playlist"] == {"id": LIST, "url": URL, "title": "Mix tape", "uploader": "Alex", "total": 2, "shown": 2, "limit": 200, "truncated": False}
+    assert body["playlist"] == {"id": LIST, "url": URL, "title": "Mix tape", "uploader": "Alex", "description": "", "total": 2, "shown": 2, "limit": 200, "truncated": False}
     rows = by_id(body)
     first = rows[A]
     assert (first["title"], first["mainArtists"], first["version"], first["state"]) == ("Around the World", ["Daft Punk"], None, "ok")
@@ -457,7 +457,7 @@ def test_extractor_playlist_is_one_flat_bounded_call_on_the_canonical_url(monkey
     assert opts["playlistend"] == 200
     assert opts["socket_timeout"] == extractor.PLAYLIST_TIMEOUT_S
     assert call == (URL, False)
-    assert got == {"title": "T", "uploader": "C", "total": 300, "entries": [{"id": A}, {"id": B}]}
+    assert got == {"title": "T", "uploader": "C", "description": "", "total": 300, "entries": [{"id": A}, {"id": B}]}
 
 
 def test_extractor_playlist_without_a_count_uses_the_entries(monkeypatch):
