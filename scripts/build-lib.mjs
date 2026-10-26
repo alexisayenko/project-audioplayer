@@ -1,7 +1,7 @@
 import { execFileSync } from 'node:child_process';
 import { createRequire } from 'node:module';
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
-import { tmpdir } from 'node:os';
+import { cpSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { homedir, tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 
 export const ESBUILD = '0.27.7';
@@ -23,7 +23,10 @@ function npmCli() {
 }
 
 export function loadEsbuild() {
-  const dir = join(tmpdir(), `electrophone-esbuild-${ESBUILD}`);
+  const name = `electrophone-esbuild-${ESBUILD}`;
+  const dir = join(process.env.XDG_CACHE_HOME || join(homedir(), '.cache'), name);
+  const old = join(tmpdir(), name);
+  if (!existsSync(dir) && existsSync(old)) cpSync(old, dir, { recursive: true });
   const pkg = join(dir, 'node_modules', 'esbuild', 'package.json');
   if (!existsSync(pkg) || JSON.parse(readFileSync(pkg, 'utf8')).version !== ESBUILD) {
     mkdirSync(dir, { recursive: true });
