@@ -282,17 +282,19 @@ test('card action row: song-row order, disabled without linked songs, picker wir
   const linked = { ...ALBUM, tracks: [{ no: 1, title: 'A', durationS: 1, songId: 'z1' }] };
   const none = setup((u) => (u === '/albums' ? ok([ROW]) : ok(ALBUM)));
   await none.unmount.ready;
-  const all = [...none.pane.querySelectorAll('.album-act')];
+  fire(none.q('.album-name-btn'), 'click');
+  const all = [...document.getElementById('song-card').querySelectorAll('.album-act')];
   assert.ok(all.length >= 3);
   assert.ok(all.every((b) => b.disabled && b.title === 'No songs linked yet'));
 
   const v = setup((u) => (u === '/albums' ? ok([ROW]) : ok(linked)));
   await v.unmount.ready;
-  const acts = [...v.pane.querySelectorAll('.album-act')];
+  fire(v.q('.album-name-btn'), 'click');
+  const acts = [...document.getElementById('song-card').querySelectorAll('.album-act')];
   const names = acts.map((b) => b.getAttribute('aria-label').split(':')[0]);
-  const order = ['Add to queue', 'Play next', 'Add to playlist...', 'Share link', 'Download', 'Edit'].filter((n) => names.includes(n));
+  const order = ['Play next', 'Add to queue', 'Add to playlist...', 'Share link', 'Download', 'Edit'].filter((n) => names.includes(n));
   assert.deepEqual(names, order);
-  assert.ok(names.slice(0, 2).join() === 'Add to queue,Play next' && names.includes('Share link'));
+  assert.ok(names.slice(0, 2).join() === 'Play next,Add to queue' && names.includes('Share link'));
   assert.ok(acts.every((b) => !b.disabled));
   for (const label of ['Play next', 'Share link']) {
     fire(acts[names.indexOf(label)], 'click');

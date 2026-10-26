@@ -442,7 +442,7 @@ function albumButtons(a, box = false) {
     can('download') ? btn('download', 'Download', NOT_YET, 'act-download') : null,
     can('edit') ? btn('pencil', 'Edit', NOT_YET, 'act-edit') : null,
   ].filter(Boolean);
-  return { queue, rest, all: [rest[0], queue, ...rest.slice(1)] };
+  return { queue, all: [rest[0], queue, ...rest.slice(1)] };
 }
 
 function albumRow(a) {
@@ -450,7 +450,7 @@ function albumRow(a) {
   const time = totalTime(a.tracks);
   const bpm = bpmRange(a.tracks);
   const genres = Array.isArray(a.genres) ? a.genres.filter(Boolean) : [];
-  const { queue, rest } = albumButtons(a);
+  const { queue } = albumButtons(a);
   return el('li', { class: 'song has-acts album-row', 'data-id': a.id },
     el('div', { class: 'row-acts' }, queue),
     el('span', { class: 'row-cover album-cover' }, el('span', { class: 'cover-mark', 'aria-hidden': 'true' }, icon('coverPlaceholder'))),
@@ -461,8 +461,7 @@ function albumRow(a) {
     el('div', { class: 'album-facts muted t-caption' },
       time ? el('span', { class: 'album-time' }, time) : null,
       bpm ? el('span', { class: 'album-bpm' }, bpm) : null),
-    el('div', { class: 'chips album-genres' }, genres.map((g) => el('span', { class: 'chip tint' }, g))),
-    el('div', { class: 'album-acts' }, rest));
+    el('div', { class: 'chips album-genres' }, genres.map((g) => el('span', { class: 'chip tint' }, g))));
 }
 
 export const ALBUMS_CHANGED = 'albums-changed';

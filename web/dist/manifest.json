@@ -1,6 +1,6 @@
 {
   "esbuild": "0.27.7",
-  "sources": "8f45b6b2fd6ae4c40f09ccead7cf1d5c02e72a80396c4fc4ae926bd3df8e7d9c",
+  "sources": "9b23a2530cd9e67e1abfcdd7966ddb39e7954b539c59a7ea22119ad2957be57c",
   "stylesheets": [
     "tokens.css",
     "style.css",
@@ -24,17 +24,17 @@
   "tier1": [
     "dist/app.js",
     "dist/icons.js",
-    "dist/chunk-53ZKANJH.js",
-    "dist/chunk-WHOEYC4S.js",
-    "dist/chunk-ETV5A66J.js",
+    "dist/chunk-WLLCB3C4.js",
+    "dist/chunk-3HBZV4ZL.js",
+    "dist/chunk-7V2VKIW4.js",
     "dist/chunk-PQ375MZV.js",
     "dist/chunk-EEQXK5JZ.js",
     "dist/chunk-WOT6VMZA.js"
   ],
   "tier2": [
-    "dist/lazy-ui-JWKDA54Y.js",
+    "dist/lazy-ui-TKBY3OBH.js",
     "dist/chunk-N44TH7US.js",
-    "dist/chunk-CZHJA4D5.js",
-    "dist/lazy-genres-IPD7R4GZ.js"
+    "dist/chunk-AKTCUZZB.js",
+    "dist/lazy-genres-OP5DDN4L.js"
   ]
 }
