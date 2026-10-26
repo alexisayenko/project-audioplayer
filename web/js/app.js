@@ -88,12 +88,12 @@ function resolveRoute() {
   }
   firstRoute = false;
   if (name.startsWith('playlists/')) name = 'playlists';
-  const navName = name.startsWith('library/albums/') ? 'library/albums' : name;
-  if (/^library\/(albums(\/[^/]+)?|drafts)$/.test(name)) name = 'library';
   if (name === 'genres-rework') {
     name = 'genres';
     history.replaceState(null, '', '#/genres');
   }
+  const navName = name.startsWith('library/albums/') ? 'library/albums' : name;
+  if (/^library\/(albums(\/[^/]+)?|drafts)$/.test(name)) name = 'library';
   if (!routes[name]) name = 'library';
   return { name, navName, wantsAdd, shared };
 }
