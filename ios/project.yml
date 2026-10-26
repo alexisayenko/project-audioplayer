@@ -61,7 +61,8 @@ targets:
         CFBundleDisplayName: Electrophone
         CFBundleVersion: $(CURRENT_PROJECT_VERSION)
         CFBundleShortVersionString: $(MARKETING_VERSION)
-        UILaunchScreen: {}
+        UILaunchScreen:
+          UIColorName: LaunchGround
         UIBackgroundModes: [audio]
         NSMicrophoneUsageDescription: Electrophone listens through the microphone only while you use Tools such as Live BPM.
         UIFileSharingEnabled: true
