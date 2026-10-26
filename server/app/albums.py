@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import hashlib
-import json
 import os
 import re
 import secrets
@@ -12,7 +11,7 @@ from urllib.parse import parse_qsl, urlencode, urlsplit
 from pathlib import Path
 from typing import Any
 
-from . import discogs_lookup, timeutil
+from . import discogs_lookup, timeutil, userjson
 from .jsonio import write_json_atomic
 
 MAX_ALBUMS = 2000
@@ -316,11 +315,8 @@ def _stored_rym(value: Any) -> str | None:
 
 
 def load(path: Path) -> list[dict[str, Any]]:
-    try:
-        raw = json.loads(path.read_text(encoding="utf-8"))
-    except (OSError, ValueError):
-        return []
-    items = raw.get("albums") if isinstance(raw, dict) else None
+    raw = userjson.read_object(path)
+    items = raw.get("albums") if raw else None
     good = [a for a in (items if isinstance(items, list) else []) if isinstance(a, dict) and isinstance(a.get("id"), str) and isinstance(a.get("tracks", []), list)]
     return [{**a, "rymUrl": full_links(a)["rateyourmusic"], "links": full_links(a), "genres": _genres({"genres": a["genres"] if isinstance(a.get("genres"), list) else []})} for a in good]
 

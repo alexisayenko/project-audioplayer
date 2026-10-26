@@ -4,7 +4,7 @@ from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends
 
-from .. import buildinfo, deps
+from .. import buildinfo, deps, userjson
 from ..readiness import readiness
 
 router = APIRouter()
@@ -30,4 +30,6 @@ def health(viewer: Annotated[str, Depends(deps.sync_viewer)]) -> dict[str, Any]:
     body.update(ready)
     if owner:
         body["build"] = buildinfo.build()
+        if bad := userjson.flagged(deps.data_root()):
+            body["corrupt_files"] = bad
     return body

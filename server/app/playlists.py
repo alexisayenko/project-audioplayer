@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import copy
-import json
 import math
 import re
 import secrets
@@ -11,7 +10,7 @@ import string
 from pathlib import Path
 from typing import Any
 
-from . import credits, library
+from . import credits, library, userjson
 from .jsonio import write_json_atomic
 from .problems import Problem
 from .timeutil import now_utc
@@ -69,11 +68,8 @@ def _clean_source(raw: Any) -> dict[str, Any] | None:
 
 
 def load(path: Path) -> list[dict[str, Any]]:
-    try:
-        raw = json.loads(path.read_text(encoding="utf-8"))
-    except (ValueError, OSError):
-        return []
-    found = raw.get("playlists") if isinstance(raw, dict) else None
+    raw = userjson.read_object(path)
+    found = raw.get("playlists") if raw else None
     out: list[dict[str, Any]] = []
     seen: set[str] = set()
     for entry in found if isinstance(found, list) else ():

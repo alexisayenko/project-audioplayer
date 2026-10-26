@@ -139,7 +139,7 @@ def test_albums_are_per_user_and_need_a_login(multi, discogs):
 def test_tolerant_reader(tmp_path):
     path = tmp_path / "albums.json"
     assert albums.load(path) == []
-    for text in ("{", "[]", '{"albums": 3}'):
+    for text in ('{"albums": 3}', "{}"):
         path.write_text(text, encoding="utf-8")
         assert albums.load(path) == []
     path.write_text('{"albums": [{"id": "alb_00000002", "tracks": [], "genres": "x"}]}', encoding="utf-8")

@@ -2,11 +2,11 @@
 
 from __future__ import annotations
 
-import json
 import math
 from pathlib import Path
 from typing import Any
 
+from . import userjson
 from .jsonio import write_json_atomic
 from .timeutil import now_utc
 
@@ -37,11 +37,8 @@ def count(doc: dict[str, Any]) -> int:
 
 
 def load(path: Path) -> dict[str, Any]:
-    try:
-        raw = json.loads(path.read_text(encoding="utf-8"))
-    except (ValueError, OSError):
-        return empty()
-    if not isinstance(raw, dict):
+    raw = userjson.read_object(path)
+    if raw is None:
         return empty()
     doc = empty()
     for kind in KINDS:
@@ -57,8 +54,10 @@ def load(path: Path) -> dict[str, Any]:
 
 def save(path: Path, positions: dict[str, tuple[int, int]], families: dict[str, tuple[int, int]]) -> dict[str, Any]:
     """Replace the whole document; both tables empty removes the file."""
+    userjson.check_replaceable(path)
     if not positions and not families:
         path.unlink(missing_ok=True)
+        userjson.mark_replaced(path)
         return empty()
     doc = {
         "positions": {k: [v[0], v[1]] for k, v in positions.items()},
@@ -66,4 +65,5 @@ def save(path: Path, positions: dict[str, tuple[int, int]], families: dict[str, 
         "updated": now_utc(),
     }
     write_json_atomic(path, doc, compact=True)
+    userjson.mark_replaced(path)
     return doc

@@ -343,11 +343,9 @@ def test_the_song_schema_and_library_routes_are_untouched(client, fake):
     assert client.get("/tags", headers=H).json() == []
 
 
-def test_a_broken_drafts_file_reads_as_empty(client, fake, tmp_path):
+def test_a_malformed_drafts_file_keeps_its_good_rows(client, fake, tmp_path):
     path = tmp_path / "users" / OWNER_UID / "drafts.json"
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text("{not json", encoding="utf-8")
-    assert listed(client)["drafts"] == []
     path.write_text(json.dumps({"drafts": [{"id": "d_000000000000", "text": "A - B", "url": "", "source": None, "state": "weird"}, "junk", {"no": "id"}]}), encoding="utf-8")
     rows = listed(client)["drafts"]
     assert [(r["id"], r["state"], r["mainArtists"], r["inLibrary"]) for r in rows] == [("d_000000000000", "new", [], False)]

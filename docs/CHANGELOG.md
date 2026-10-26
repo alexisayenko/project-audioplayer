@@ -2,6 +2,10 @@
 
 What shipped, newest first. One line each; the web UI and server are live at https://electrophone.cc. Everything listed here is deployed except the sections marked "built, not deployed" (the 2026-10-14 release went out once the SSH access in [task-0027](tasks/task-0027.md) was restored; the live visualizer files match `origin/main` as of 2026-10-15). Why: [tech/decisions.md](tech/decisions.md); runbook: [tech/deploy.md](tech/deploy.md).
 
+## 2026-10-26 (Reliability phase of the architecture audit; in source, not deployed, not on TestFlight)
+
+- Server (task-0122 F2, DATA-208, API-296; `test_userjson` and the neighbouring suites pass): a corrupt `drafts.json`, `playlists.json`, `albums.json` or `genre_layout.json` is no longer read as empty and then overwritten by the next save; it is copied to `<name>.corrupt-<stamp>`, logged, listed in the owner `/health` as `corrupt_files`, and its routes answer 500 `data_corrupt` without writing. The server still starts.
+
 ## 2026-10-26 (iOS: Playlists, Albums and Download album; in source, not on TestFlight)
 
 - iOS (task-0058 phase 4, task-0120 phases 4 and 5, PLS-102, IOS-098 to IOS-100, IOS-104 to IOS-106; unit tests pass, both schemes build, seen in the simulator against a local mock server, not run on a device or against the live server): Playlists is a real screen (list, create, rename, delete, add songs, remove, reorder, Play, Shuffle, Queue, "Add to playlist" from a Library row); the Library has a "Songs | Albums" switch with an Albums grid and an album screen (tracks in order, missing tracks muted, status, total length); "Download album" shows a plan sheet with the quotas, then fetches and copies the tracks with a pause on the hourly limit. Playlists and Albums share one song list screen and keep an offline copy of the last lists. Not uploaded to TestFlight.

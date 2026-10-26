@@ -5,7 +5,7 @@ import pytest
 from datetime import UTC, datetime
 from pathlib import Path
 
-from app import album_covers, deps, features, readiness as readiness_mod, genre_lookup, guest, httpjson, limits, previewcache, timeutil, wiki_lookup
+from app import album_covers, deps, features, readiness as readiness_mod, genre_lookup, guest, httpjson, limits, previewcache, timeutil, userjson, wiki_lookup
 
 ENV = (
     "OWNER_EMAIL", "ALLOWED_EMAIL", "ALLOWED_APPLE_SUB", "SIGNUP_OPEN", "USER_MAX_SONGS", "USER_MAX_BYTES",
@@ -68,3 +68,4 @@ def _hermetic(monkeypatch, tmp_path_factory):
     limits.RATE.reset()
     deps.SUBS.clear()
     guest.reset()
+    userjson.reset()

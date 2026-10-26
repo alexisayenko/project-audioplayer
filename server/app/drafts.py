@@ -14,7 +14,7 @@ from concurrent.futures import ThreadPoolExecutor, wait
 from pathlib import Path
 from typing import Any
 
-from . import credit_title, credits, credits_split, links, playlist_import, previewcache, titleclean, titles, urlclean
+from . import credit_title, credits, credits_split, links, playlist_import, previewcache, titleclean, titles, urlclean, userjson
 from .jsonio import write_json_atomic
 from .library import sources_of
 from .problems import Problem
@@ -243,11 +243,8 @@ def fetch_many(drafts: list[dict[str, Any]]) -> tuple[dict[str, dict[str, Any] |
 # --- storage --------------------------------------------------------------------------------
 
 def load(path: Path) -> list[dict[str, Any]]:
-    try:
-        raw = json.loads(path.read_text(encoding="utf-8"))
-    except (FileNotFoundError, ValueError):
-        return []
-    items = raw.get("drafts") if isinstance(raw, dict) else None
+    raw = userjson.read_object(path)
+    items = raw.get("drafts") if raw else None
     return [d for d in items or [] if isinstance(d, dict) and isinstance(d.get("id"), str)]
 
 
