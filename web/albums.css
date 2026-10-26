@@ -70,6 +70,8 @@
 .album-in-library { white-space: nowrap; }
 .album-quota { margin: 0; }
 .album-title .album-name-btn { background: none; border: 0; padding: 0; font: inherit; color: inherit; text-align: left; cursor: pointer; overflow-wrap: anywhere; }
+.album-meta { white-space: nowrap; }
+.album-total { font-variant-numeric: tabular-nums; }
 .album-title .album-name-btn:hover, .album-title .album-name-btn:focus-visible { color: var(--accent-ink); }
 .album-row.unlinked .row-cover { opacity: .6; }
 .album-links .svc-discogs.on, .album-links .svc-rateyourmusic.on { color: var(--ink); }

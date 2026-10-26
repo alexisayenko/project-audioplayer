@@ -13,7 +13,26 @@ export function totalTime(tracks) {
   return secs.length ? fmtTime(secs.reduce((x, y) => x + y, 0)) : '';
 }
 
-const bpmValues = (tracks) => (tracks || []).filter((t) => t.songId).map((t) => Number(store.get(t.songId)?.bpm)).filter((n) => Number.isFinite(n) && n > 0);
+export function formatTotalLength(sec) {
+  const s = Math.round(sec);
+  if (s < 60) return `${s} s`;
+  const m = Math.round(sec / 60);
+  const h = Math.floor(m / 60);
+  return h ? `${h} h ${String(m % 60).padStart(2, '0')} min` : `${m} min`;
+}
+
+export const SOME_UNKNOWN = 'Some tracks have no duration';
+
+export function albumLength(tracks) {
+  const list = tracks || [];
+  const secs = seconds(list);
+  const sum = secs.reduce((x, y) => x + y, 0);
+  if (!sum) return null;
+  const approx = secs.length < list.length;
+  return { text: `${approx ? '~' : ''}${formatTotalLength(sum)}`, approx, title: approx ? SOME_UNKNOWN : '' };
+}
+
+const bpmValues =(tracks) => (tracks || []).filter((t) => t.songId).map((t) => Number(store.get(t.songId)?.bpm)).filter((n) => Number.isFinite(n) && n > 0);
 
 export function bpmRange(tracks) {
   const v = bpmValues(tracks);

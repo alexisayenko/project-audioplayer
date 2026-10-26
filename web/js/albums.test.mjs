@@ -60,8 +60,8 @@ test('list renders song-style rows: name and count over artist and year, total t
   assert.match(card.textContent, /Tumult · 2 tracks[\s\S]*Derango · 2004/);
   assert.ok(card.classList.contains('song'));
   assert.equal(v.q('ul.songs.album-list').parentNode.className.includes('group'), true);
-  assert.equal(v.q('.title-len').textContent, '4:25');
-  assert.equal(v.q('.title-len').className.includes('t-time'), true);
+  assert.equal(v.q('.title-line .rmx').textContent, '· 2 tracks · 4 min');
+  assert.equal(v.q('.title-len'), null);
   assert.equal(v.q('.row-cover .cover-mark') !== null, true);
   assert.equal(card.querySelector('a'), null);
   assert.equal(v.pane.textContent.includes('Album page'), false);
@@ -177,9 +177,10 @@ test('card header: album and track count, artist and year, total time, bpm of li
   await v.unmount.ready;
   assert.match(v.q('.title-line .open').textContent, /^Tumult · 3 tracks/);
   assert.equal(v.q('.title-line .open .ttl').textContent, 'Tumult');
-  assert.equal(v.q('.title-line .open .rmx').textContent, '· 3 tracks');
+  assert.equal(v.q('.title-line .open .rmx').textContent, '· 3 tracks · 1 h 01 min');
   assert.equal(v.q('.album-sub').textContent, 'Derango · 2004');
-  assert.equal(v.q('.album-time').textContent, '1:01:05');
+  assert.equal(v.q('.title-line .album-total').textContent, ' · 1 h 01 min');
+  assert.equal(v.q('.album-time'), null);
   assert.equal(v.q('.sub-line .sub-end .bpm-badge').textContent, '120 - 128BPM');
   assert.equal(v.q('.c-genres .g-txt').textContent, 'Techno, Ambient');
   assert.equal(v.q('.album-facts'), null);
@@ -267,7 +268,7 @@ test('tapping the album name opens the info box; Esc/close and backdrop close it
   assert.equal(dlg.open, true);
   assert.equal(dlg.querySelector('h2').textContent, 'Tumult');
   assert.equal(dlg.querySelector('.card-sub').textContent, 'Derango · 2004');
-  assert.equal(dlg.querySelector('.card-details').textContent, '100 - 140BPMTracks: 2Length: 4:25');
+  assert.equal(dlg.querySelector('.card-details').textContent, '100 - 140BPMTracks: 2Length: 4 min');
   assert.ok(dlg.querySelector('.card-art .cover-mark'));
   assert.deepEqual([...dlg.querySelectorAll('.card-genre-line .tag')].map((c) => c.textContent), ['Techno']);
   assert.equal(dlg.querySelector('.svc-discogs').getAttribute('href'), 'https://www.discogs.com/release/545650-Derango-Tumult');

@@ -261,15 +261,26 @@ test('Edit dialog: nothing changed makes no request; invalid year and 422 bad_fi
   dlg.close();
 });
 
-test('rows follow the Songs table: header row, title with muted count, duration at the right, genres as text, BPM badge', async () => {
+test('title line total length: approximate with a tooltip when a duration is missing, absent when none is known', async () => {
+  const some = mk('Delta', { tracks: [{ no: 1, title: 'a', durationS: 3900, songId: null }, { no: 2, title: 'b', durationS: null, songId: null }] });
+  const none = mk('Echo', { tracks: [{ no: 1, title: 'a', durationS: null, songId: null }] });
+  const v = await open([some, none]);
+  const total = (id) => v.q(`li.album-row[data-id=${id}] .title-line .open .rmx`);
+  assert.equal(total('Delta').textContent, '· 2 tracks · ~1 h 05 min');
+  assert.equal(total('Delta').querySelector('.album-total').getAttribute('title'), 'Some tracks have no duration');
+  assert.equal(total('Echo').textContent, '· 1 track');
+  assert.equal(total('Echo').querySelector('.album-total'), null);
+});
+
+test('rows follow the Songs table: header row, title with muted count and total length, genres as text, BPM badge', async () => {
   const v = await open();
   const head = v.q('.group .table-head');
   assert.deepEqual([...head.querySelectorAll('span')].map((x) => x.textContent), ['', 'Album', 'Genres']);
   const row = v.q('li.album-row[data-id=Alpha]');
   assert.ok(row.querySelector('.title-line .open.mq'), 'the title uses the shared marquee');
   assert.ok(row.querySelector('.title-line .open').classList.contains('t-headline'));
-  assert.equal(row.querySelector('.title-line .open .rmx').textContent, '· 2 tracks');
-  assert.ok(row.querySelector('.title-line > .title-len'));
+  assert.equal(row.querySelector('.title-line .open .rmx').textContent, '· 2 tracks · 7 min');
+  assert.equal(row.querySelector('.title-line > .title-len'), null);
   assert.equal(row.querySelector('.c-genres .g-txt').textContent, 'House');
   assert.equal(row.querySelector('.sub-end .bpm-badge').textContent, '120 - 126BPM');
   assert.equal(row.querySelector('.row-cover .rc-ov') !== null, true);

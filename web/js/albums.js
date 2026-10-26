@@ -26,7 +26,7 @@ import { prefs, savePrefs } from './library-data.js';
 import { addAllToQueue, playAll } from './play-all.js';
 import { scrollTarget } from './reveal.js';
 import { ROW_FLASH_MS } from './constants.js';
-import { countOf, totalTime, bpmRange, FACETS, facetValues, matchesFacets, matchesQuery, ALBUM_SORTS, albumPrefs, sortedAlbums, saveAlbumPrefs } from './albums-model.js';
+import { countOf, totalTime, albumLength, bpmRange, FACETS, facetValues, matchesFacets, matchesQuery, ALBUM_SORTS, albumPrefs, sortedAlbums, saveAlbumPrefs } from './albums-model.js';
 
 export { totalTime, bpmRange, facetValues, matchesFacets };
 
@@ -42,10 +42,14 @@ export function fetchErrorText(ex) {
   return ex.message || 'The release could not be fetched.';
 }
 
-export const headline = (a) => [`${a.artist} - ${a.title}`, a.year].filter(Boolean).join(' · ');
+function totalNode(tracks) {
+  const len = albumLength(tracks);
+  return len ? el('span', { class: 'album-total', title: len.title || null }, ` · ${len.text}`) : null;
+}
+
+export const headline =(a) => [`${a.artist} - ${a.title}`, a.year].filter(Boolean).join(' · ');
 export function albumHead(a, tag = 'span', onName = null) {
   const n = countOf(a);
-  const time = totalTime(a.tracks);
   const bpm = bpmRange(a.tracks);
   const genres = Array.isArray(a.genres) ? a.genres.filter(Boolean) : [];
   return el('div', { class: 'album-head' },
@@ -53,11 +57,10 @@ export function albumHead(a, tag = 'span', onName = null) {
       el('div', { class: 'album-head-text' },
         el(tag, { class: 'album-title t-headline' },
           onName ? el('button', { class: 'album-name-btn', type: 'button', title: 'Album info', onclick: (e) => onName(e.currentTarget) }, a.title) : a.title,
-          ` · ${n} ${plural(n, 'track', 'tracks')}`),
+          el('span', { class: 'album-meta' }, ` · ${n} ${plural(n, 'track', 'tracks')}`, totalNode(a.tracks))),
         el('span', { class: 'album-sub muted t-subhead' }, [a.artist, a.year].filter(Boolean).join(' · '))),
       el('div', { class: 'album-facts muted t-caption' },
-        time ? el('span', { class: 'album-time' }, time) : null,
-        bpm ? el('span', { class: 'album-bpm' }, bpm) : null)),
+        bpm ?el('span', { class: 'album-bpm' }, bpm) : null)),
     genres.length ? el('div', { class: 'chips album-genres' }, genres.map((g) => el('span', { class: 'chip tint' }, g))) : null);
 }
 
@@ -231,12 +234,12 @@ const bpmNumbers = (tracks) => bpmRange(tracks).replace(/ bpm$/, '');
 
 function albumDetails(a) {
   const bpm = bpmNumbers(a.tracks);
-  const time = totalTime(a.tracks);
+  const len = albumLength(a.tracks);
   const n = countOf(a);
   const items = [
     bpm ? el('span', { class: 'detail' }, el('span', { class: 'bpm-badge', title: 'Beats per minute (estimated)', 'aria-label': `BPM ${bpm}` }, bpm, el('small', { 'aria-hidden': 'true' }, 'BPM'))) : null,
     n ? el('span', { class: 'detail' }, `Tracks: ${n}`) : null,
-    time ? el('span', { class: 'detail' }, `Length: ${time}`) : null,
+    len ? el('span', { class: 'detail', title: len.title || null }, `Length: ${len.text}`) : null,
   ].filter(Boolean);
   return items.length ? el('p', { class: 'facts t-caption card-details album-facts-line' }, ...items) : null;
 }
@@ -631,7 +634,6 @@ const rowPaints = new WeakMap();
 
 function albumRow(a) {
   const n = countOf(a);
-  const time = totalTime(a.tracks);
   const bpm = bpmNumbers(a.tracks);
   const genres = Array.isArray(a.genres) ? a.genres.filter(Boolean) : [];
   const genreLine = genres.join(', ');
@@ -644,12 +646,12 @@ function albumRow(a) {
   const model = () => coverModel({ audio: true, queueable: songs.length > 0, here: hereNow(), playing: player.playing });
   const cover = coverButton(albumCoverImg(a), model(), name, { run: (action) => { if (action === 'pause' || action === 'resume') player.toggle(); else playAll(songs); } });
   const open = el('button', { class: 'open t-headline album-name-btn', type: 'button', title: 'Album info', 'aria-label': `Open: ${a.title}` },
-    el('span', { class: 'ttl' }, a.title), ' ', el('span', { class: 'rmx' }, `· ${n} ${plural(n, 'track', 'tracks')}`));
+    el('span', { class: 'ttl' }, a.title), ' ', el('span', { class: 'rmx album-meta' }, `· ${n} ${plural(n, 'track', 'tracks')}`, totalNode(a.tracks)));
   const row = el('li', { class: `song has-acts album-row${songs.length ? '' : ' unlinked'}`, 'data-id': a.id, 'data-songs': linked.map((s) => s.id).join(',') },
     el('div', { class: 'row-acts' }, queue),
     cover,
     el('div', { class: 'info album-text' },
-      el('div', { class: 'title-line' }, open, time ? el('span', { class: 'title-len t-time album-time', title: 'Length' }, time) : null),
+      el('div', { class: 'title-line' }, open),
       el('div', { class: 'sub-line' },
         el('span', { class: 'sub t-subhead album-sub' }, [a.artist, a.year].filter(Boolean).join(' · ')),
         bpm ? el('span', { class: 'sub-end' }, el('span', { class: 'bpm-badge album-bpm', title: 'Beats per minute (estimated)', 'aria-label': `BPM ${bpm}` }, bpm, el('small', { 'aria-hidden': 'true' }, 'BPM'))) : null)),
