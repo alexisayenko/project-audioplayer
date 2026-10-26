@@ -25,7 +25,7 @@ const GIT_CANDIDATES = [
   '/usr/bin/git',
   '/usr/local/bin/git',
   '/opt/homebrew/bin/git',
-  'C:\\Program Files\\Git\\cmd\\git.exe',
+  String.raw`C:\Program Files\Git\cmd\git.exe`,
 ];
 
 function buildStamp() {

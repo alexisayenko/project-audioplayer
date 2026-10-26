@@ -151,7 +151,9 @@ export class DomElement extends DomNode {
   [Symbol.for('nodejs.util.inspect.custom')]() {
     const cls = this.getAttribute?.('class');
     const id = this.getAttribute?.('id');
-    return `<${this.localName}${id ? ` id=${id}` : ''}${cls ? ` class="${cls}"` : ''}>`;
+    const idAttr = id ? ` id=${id}` : '';
+    const classAttr = cls ? ` class="${cls}"` : '';
+    return `<${this.localName}${idAttr}${classAttr}>`;
   }
 
   get children() { return this.childNodes.filter((n) => n._type === 1); }

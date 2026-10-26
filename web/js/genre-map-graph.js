@@ -121,6 +121,11 @@ export function seedPositions(graph, seed = 1, { ring = 240 } = {}) {
   return graph;
 }
 
+function hiddenBySubfamily(tree, n, subs) {
+  if (!subs || n.level <= 1) return false;
+  return tree.subfamilies.some((s) => n.fams.includes(s.family)) && !subs.has(n.subfamily);
+}
+
 export function visibleIds(tree, { family = null, libraryOnly = false, status = 'all', modifiers = [], subfamilies = null } = {}) {
   if (!tree) return null;
   const byFilter = filterIds(tree, { status, modifiers });
@@ -132,7 +137,7 @@ export function visibleIds(tree, { family = null, libraryOnly = false, status = 
     if (libraryOnly && !n.all.size) continue;
     if (byFilter && !byFilter.has(n.id)) continue;
     if (root && !ancestorIds(tree, n.id).has(root)) continue;
-    if (subs && n.level > 1 && tree.subfamilies.some((s) => n.fams.includes(s.family)) && !subs.has(n.subfamily)) continue;
+    if (hiddenBySubfamily(tree, n, subs)) continue;
     out.add(n.id);
   }
   return out;

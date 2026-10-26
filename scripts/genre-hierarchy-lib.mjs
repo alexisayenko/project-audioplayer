@@ -28,11 +28,11 @@ export function linkTargets(text) {
 }
 
 const PHRASES = [
-  [/\b(?:sub-?genre|sub-?style|sub-?category)\s+of\b/gi, "subgenre"],
-  [/\b(?:fusion|blend|combination|mix|mixture|hybrid)\s+of\b/gi, "fusion"],
-  [/\b(?:offshoot|off-shoot|derivative|spin-?off|outgrowth|development|evolution)\s+(?:of|from)\b/gi, "offshoot"],
-  [/\b(?:derived|derives|evolved|developed|emerged|originated|grew|stemmed|branched)\s+(?:directly\s+)?from\b/gi, "offshoot"],
-  [/\b(?:genre|style|form|type|kind|category|variety|branch|variant)\s+of\b/gi, "genre_of"],
+  { re: /\b(?:sub-?genre|sub-?style|sub-?category)\s+of\b/gi, kind: "subgenre" },
+  { re: /\b(?:fusion|blend|combination|mix|mixture|hybrid)\s+of\b/gi, kind: "fusion" },
+  { re: /\b(?:offshoot|off-shoot|derivative|spin-?off|outgrowth|development|evolution)\s+(?:of|from)\b/gi, kind: "offshoot" },
+  { re: /\b(?:derived|derives|evolved|developed|emerged|originated|grew|stemmed|branched)\s+(?:directly\s+)?from\b/gi, kind: "offshoot" },
+  { re: /\b(?:genre|style|form|type|kind|category|variety|branch|variant)\s+of\b/gi, kind: "genre_of" },
 ];
 const STOP_WORDS = [
   /\b(?:that|which|who|whose|characterized|characterised|originating|originated|emerged|developed|popular)\b/i,
@@ -68,7 +68,7 @@ export function parseLead(wikitext) {
   const sentence = leadSentence(wikitext);
   const out = [];
   const seen = new Set();
-  for (const [re, kind] of PHRASES) {
+  for (const { re, kind } of PHRASES) {
     re.lastIndex = 0;
     for (const m of sentence.matchAll(re)) {
       const rest = sentence.slice(m.index + m[0].length);

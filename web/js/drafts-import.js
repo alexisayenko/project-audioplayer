@@ -10,9 +10,9 @@ export const MSG_BAD_LINK = 'That does not look like a YouTube playlist link.';
 const YT_LINK = /https?:\/\/(?:www\.|m\.|music\.)?(?:youtube\.com|youtu\.be)\/[^\s<>"']+/gi;
 const VIDEO_ID = /^[A-Za-z0-9_-]{11}$/;
 const NOISE_WORDS = '(?:official )?(?:(?:music|lyric|hd|4k) )?(?:video|audio|visuali[sz]er|lyrics?)';
-const BRACKETED_NOISE = new RegExp(`\\s?[([] ?(?:${NOISE_WORDS}|official|hd|hq|4k) ?[)\\]]`, 'gi');
-const TRAILING_WORDS = 'official\\s+(?:music\\s+)?(?:video|audio)|lyrics?(?:\\s+video)?|hd|hq|4k';
-const TRAILING_NOISE = new RegExp(`(?<!\\s)(?:\\s*[|\\-–—:])?\\s*(?:${TRAILING_WORDS})\\s*$`, 'i');
+const BRACKETED_NOISE = new RegExp(String.raw`\s?[([] ?(?:${NOISE_WORDS}|official|hd|hq|4k) ?[)\]]`, 'gi');
+const TRAILING_WORDS = String.raw`official\s+(?:music\s+)?(?:video|audio)|lyrics?(?:\s+video)?|hd|hq|4k`;
+const TRAILING_NOISE = new RegExp(String.raw`(?<!\s)(?:\s*[|\-–—:])?\s*(?:${TRAILING_WORDS})\s*$`, 'i');
 const EDGE = ' \t-–—|:,;.';
 
 const squash = (s) => String(s ?? '').split(/\s+/).filter(Boolean).join(' ');

@@ -145,8 +145,7 @@ async function recordWikipedia(st) {
   const desc = (x) => `${x.title} (${x.qid})`;
   const r = mergeWikiMatches(st.vocab, labelIdx, idx, desc);
   for (const [g, m] of Object.entries(r.matches)) st.out[g].wikipedia = { title: m.item.title, wikidata: m.item.qid, match: m.match };
-  st.review.push(...tagged("wikipedia", r.review));
-  st.review.push(...nonGenreReview(st.vocab, st.out, r.review, nonGenre));
+  st.review.push(...tagged("wikipedia", r.review), ...nonGenreReview(st.vocab, st.out, r.review, nonGenre));
   st.sources.wikipedia = items.length;
 }
 
