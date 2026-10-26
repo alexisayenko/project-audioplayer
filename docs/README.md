@@ -132,6 +132,7 @@ and rules):
   store metadata and legal-page drafts
 - [`tasks/README.md`](tasks/README.md) — task spec + frontmatter
 - [`tech/README.md`](tech/README.md) — stack + decisions frame
+- [`tech/ux-parity-team.md`](tech/ux-parity-team.md) — agent team that makes two screens consistent, plus the local test app (`scripts/dev-local.sh`)
 - [`tech/genre-terminology.md`](tech/genre-terminology.md) — what "genre", "family" and "style" mean here and elsewhere, and the aspects of describing music (ADR-0034)
 - [`tech/microgenre-candidates.md`](tech/microgenre-candidates.md) — proposal: which genres could carry a `microgenre` flag, with criteria and a phase 2 sketch (task-0100)
 - [`tech/genre-research-sources.md`](tech/genre-research-sources.md) — links used for genre research (RYM, Musicmap, guides, wikis) with their trust level
