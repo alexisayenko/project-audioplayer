@@ -9,6 +9,7 @@ struct LibrarySongRow: View {
     let queued: Bool
     let waiting: Bool
     var arriving = false
+    var offline = false
     var listenedCount: Int? = nil
     var toggleQueue: (() -> Void)? = nil
     let play: () -> Void
@@ -20,54 +21,10 @@ struct LibrarySongRow: View {
     private var noAudio: Bool { !onPhone && progress == nil && track.onServer == false }
 
     var body: some View {
-        HStack(spacing: 0) {
-            Button(action: play) {
-                CoverImage(source: track.thumbnail).frame(width: cover, height: cover)
-                    .overlay {
-                        if playing {
-                            DS.Color.coverScrim
-                            Image(systemName: isPlaying ? "pause.fill" : "play.fill")
-                                .font(.system(size: DS.Icon.iconPlay)).foregroundStyle(DS.Color.surface)
-                                .accessibilityHidden(true)
-                        }
-                    }
-                    .clipShape(RoundedRectangle(cornerRadius: DS.Radius.radiusSm)).opacity(noAudio ? DS.Opacity.dim : 1)
-                    .padding(.horizontal, DS.Space.space3).padding(.vertical, DS.Space.space3).contentShape(Rectangle())
-            }.buttonStyle(LibraryPressStyle())
-            HStack(alignment: .firstTextBaseline, spacing: DS.Space.space2) {
-                VStack(alignment: .leading, spacing: DS.Space.space1) {
-                    Button(action: details) {
-                        Text(track.title).font(T.headline).foregroundStyle(DS.Color.ink).lineLimit(typeSize.isAccessibilitySize ? 3 : 2)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .opacity(noAudio ? DS.Opacity.dim : 1).contentShape(Rectangle())
-                    }.buttonStyle(LibraryPressStyle())
-                    Button(action: details) {
-                        Text(track.librarySubtitle).font(T.subhead).foregroundStyle(playing ? DS.Color.ink : DS.Color.inkMuted)
-                            .lineLimit(typeSize.isAccessibilitySize ? 2 : 1)
-                            .opacity(noAudio ? DS.Opacity.dim : 1)
-                            .frame(maxWidth: .infinity, alignment: .leading).contentShape(Rectangle())
-                    }.buttonStyle(LibraryPressStyle())
-                }.frame(maxWidth: .infinity, alignment: .leading)
-                VStack(alignment: .trailing, spacing: DS.Space.space1) {
-                    if !noAudio, let duration = track.duration, duration > 0 {
-                        Button(action: details) {
-                            Text(formatTime(duration)).font(T.time)
-                                .foregroundStyle(playing ? DS.Color.ink : DS.Color.inkMuted)
-                                .fixedSize().accessibilityHidden(true)
-                        }.buttonStyle(LibraryPressStyle())
-                    }
-                    audioState
-                    queueMarker
-                }
-            }.padding(.vertical, DS.Space.space3)
-            if let listenedCount {
-                Text(String(listenedCount)).font(T.subhead).monospacedDigit()
-                    .foregroundStyle(DS.Color.inkMuted).fixedSize()
-                    .frame(minWidth: DS.Space.space6, alignment: .trailing)
-                    .padding(.leading, DS.Space.space3).accessibilityHidden(true)
-            }
+        Group {
+            if typeSize.isAccessibilitySize { stackedLayout } else { inlineLayout }
         }
-        .padding(.trailing, DS.Space.space3).frame(maxWidth: .infinity, minHeight: cover + DS.Space.space3 * 2)
+        .frame(maxWidth: .infinity, minHeight: cover + DS.Space.space3 * 2)
         .background {
             (playing ? DS.Color.accentTint : DS.Color.surface).contentShape(Rectangle()).onTapGesture(perform: details)
         }
@@ -75,17 +32,104 @@ struct LibrarySongRow: View {
         .accessibilityAddTraits(arriving ? [] : .isButton).accessibilityAddTraits(playing ? .isSelected : [])
         .accessibilityAction { if !arriving { play() } }
     }
-    @ViewBuilder private var audioState: some View {
+
+    private var inlineLayout: some View {
+        HStack(spacing: 0) {
+            coverButton
+            HStack(alignment: .firstTextBaseline, spacing: DS.Space.space2) {
+                textColumn
+                VStack(alignment: .trailing, spacing: DS.Space.space1) {
+                    durationButton
+                    audioState(fullWidth: false)
+                    queueMarker
+                }
+            }.padding(.vertical, DS.Space.space3)
+            playCount.padding(.leading, DS.Space.space3)
+        }
+        .padding(.trailing, DS.Space.space3)
+    }
+
+    private var stackedLayout: some View {
+        VStack(alignment: .leading, spacing: DS.Space.space2) {
+            HStack(alignment: .top, spacing: DS.Space.space3) {
+                coverButton
+                textColumn
+            }
+            HStack(spacing: DS.Space.space3) {
+                durationButton
+                audioState(fullWidth: true)
+                queueMarker
+                playCount
+            }
+        }.padding(DS.Space.space3)
+    }
+
+    private var coverButton: some View {
+        Button(action: play) {
+            CoverImage(source: track.thumbnail).frame(width: cover, height: cover)
+                .overlay {
+                    if playing {
+                        DS.Color.coverScrim
+                        Image(systemName: isPlaying ? "pause.fill" : "play.fill")
+                            .font(.system(size: DS.Icon.iconPlay)).foregroundStyle(DS.Color.surface)
+                            .accessibilityHidden(true)
+                    }
+                }
+                .clipShape(RoundedRectangle(cornerRadius: DS.Radius.radiusSm)).opacity(noAudio ? DS.Opacity.dim : 1)
+                .padding(typeSize.isAccessibilitySize ? 0 : DS.Space.space3).contentShape(Rectangle())
+        }.buttonStyle(LibraryPressStyle())
+    }
+
+    private var textColumn: some View {
+        VStack(alignment: .leading, spacing: DS.Space.space1) {
+            Button(action: details) {
+                Text(track.title).font(T.headline).foregroundStyle(DS.Color.ink).lineLimit(typeSize.isAccessibilitySize ? 3 : 2)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .opacity(noAudio ? DS.Opacity.dim : 1).contentShape(Rectangle())
+            }.buttonStyle(LibraryPressStyle())
+            Button(action: details) {
+                Text(track.librarySubtitle).font(T.subhead).foregroundStyle(playing ? DS.Color.ink : DS.Color.inkMuted)
+                    .lineLimit(typeSize.isAccessibilitySize ? 2 : 1)
+                    .opacity(noAudio ? DS.Opacity.dim : 1)
+                    .frame(maxWidth: .infinity, alignment: .leading).contentShape(Rectangle())
+            }.buttonStyle(LibraryPressStyle())
+        }.frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    @ViewBuilder private var durationButton: some View {
+        if !noAudio, let duration = track.duration, duration > 0 {
+            Button(action: details) {
+                Text(formatTime(duration)).font(T.time)
+                    .foregroundStyle(playing ? DS.Color.ink : DS.Color.inkMuted)
+                    .fixedSize().accessibilityHidden(true)
+            }.buttonStyle(LibraryPressStyle())
+        }
+    }
+
+    @ViewBuilder private var playCount: some View {
+        if let listenedCount, listenedCount > 0 {
+            HStack(spacing: DS.Space.space1) {
+                Image(systemName: "headphones").font(.system(size: DS.Icon.iconInline))
+                Text(String(listenedCount)).font(T.subhead).monospacedDigit()
+            }
+            .foregroundStyle(DS.Color.inkMuted).fixedSize().accessibilityHidden(true)
+        }
+    }
+
+    @ViewBuilder private func audioState(fullWidth: Bool) -> some View {
         if !onPhone, let progress {
             Button(action: details) {
                 Text(waiting ? "Waiting…" : "Downloading \(Int(min(1, max(0, progress)) * 100))%")
                     .font(T.caption).foregroundStyle(DS.Color.accentInk).lineLimit(typeSize.isAccessibilitySize ? 2 : 1)
                     .fixedSize(horizontal: !typeSize.isAccessibilitySize, vertical: true).frame(minHeight: DS.Space.hit)
             }.buttonStyle(LibraryPressStyle())
+        } else if !onPhone && !noAudio && offline {
+            Text("Offline").font(T.caption).foregroundStyle(DS.Color.inkMuted)
+                .frame(maxWidth: fullWidth ? .infinity : nil, minHeight: DS.Space.hit)
         } else if !onPhone && !noAudio {
             Button(action: download) {
                 Text("Download").font(T.caption.weight(.semibold)).foregroundStyle(DS.Color.accentInk)
-                    .padding(.horizontal, DS.Space.space3).frame(minHeight: DS.Component.iconButton)
+                    .padding(.horizontal, DS.Space.space3).frame(maxWidth: fullWidth ? .infinity : nil, minHeight: DS.Component.iconButton)
                     .overlay(Capsule().strokeBorder(DS.Color.accentInk, lineWidth: DS.Stroke.strokeThin))
                     .frame(minHeight: DS.Space.hit).contentShape(Rectangle())
             }.buttonStyle(LibraryPressStyle())
@@ -117,7 +161,8 @@ struct LibrarySongRow: View {
         if let progress {
             return waiting ? "waiting for the server" : "downloading \(Int(progress * 100)) percent"
         }
-        return noAudio ? "no audio yet" : "on server"
+        if noAudio { return "no audio yet" }
+        return offline ? "on server, offline" : "on server"
     }
     private var playState: String {
         if !playing { return "" }

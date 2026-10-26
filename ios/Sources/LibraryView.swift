@@ -73,6 +73,7 @@ struct LibraryView: View {
                             .padding(.horizontal, DS.Space.space4).padding(.bottom, DS.Space.space4)
                             .frame(maxWidth: .infinity)
                         }
+                        .dockClearance()
                         .coordinateSpace(name: "library.scroll")
                         .scrollDismissesKeyboard(.interactively).onPreferenceChange(LibraryScrollOffset.self, perform: scrolled)
                         .refreshable { await refresh() }
@@ -220,7 +221,11 @@ struct LibraryView: View {
                 if !signedIn { Button("Sign in") { openSettings?() }.buttonStyle(DSButtonStyle(kind: .outline)) }
             }
         } else if matches.isEmpty && arriving.isEmpty {
-            LibraryEmpty(title: "No songs found", symbol: "magnifyingglass", detail: "Try a different search or clear the filters.") { EmptyView() }
+            LibraryEmpty(title: "No songs found", symbol: "magnifyingglass", detail: "Try a different search or clear the filters.") {
+                if query.narrowing {
+                    Button("Clear filters") { hideKeyboard(); query.clear() }.buttonStyle(DSButtonStyle(kind: .outline))
+                }
+            }
         } else {
             LazyVStack(spacing: 0) {
                 ForEach(arriving) { track in
@@ -244,7 +249,7 @@ struct LibraryView: View {
         let current = player.current?.id == track.id
         let progress = (server.transfers[track.id] ?? anon.transfers[track.id])?.progress
         return LibrarySongRow(track: track, progress: progress, onPhone: onPhone, playing: current, isPlaying: player.isPlaying,
-                              queued: queued, waiting: server.waiting.contains(track.id),
+                              queued: queued, waiting: server.waiting.contains(track.id), offline: signedIn && server.reachable == false,
                               listenedCount: signedIn && listening.loaded ? listening.entries[track.id]?.listened?.all ?? 0 : nil,
                               toggleQueue: onPhone && !current ? { toggleQueued(track) } : nil,
                               play: { hideKeyboard(); play(track, in: matches) },

@@ -28,6 +28,7 @@ struct PlaylistsView: View {
                 VStack(spacing: DS.Space.space3) { content }
                     .padding(.horizontal, DS.Space.space4).padding(.top, DS.Space.space3).padding(.bottom, DS.Space.space4)
             }
+            .dockClearance()
             .refreshable { await store.refresh(settings) }
             .safeAreaInset(edge: .top, spacing: 0) { header }
             .dsGround().toolbar(.hidden, for: .navigationBar)

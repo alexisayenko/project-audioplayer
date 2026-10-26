@@ -77,6 +77,7 @@ struct AlbumsView: View {
             ScrollView {
                 content.padding(.horizontal, DS.Space.space4).padding(.bottom, DS.Space.space4)
             }
+            .dockClearance()
             .refreshable { await store.refresh(settings) }
             .scrollDismissesKeyboard(.interactively)
             .safeAreaInset(edge: .top, spacing: 0) { pinned }
@@ -131,7 +132,9 @@ struct AlbumsView: View {
         } else if store.albums.isEmpty {
             LibraryEmpty(title: "No albums yet", symbol: "square.stack", detail: "Add an album on the web (Library, Albums, Add album). It appears here, ready to play and download.") { EmptyView() }
         } else if shown.isEmpty {
-            LibraryEmpty(title: "No albums found", symbol: "magnifyingglass", detail: "Try a different search or clear the filter.") { EmptyView() }
+            LibraryEmpty(title: "No albums found", symbol: "magnifyingglass", detail: "Try a different search or clear the filter.") {
+                Button("Clear filters") { search = ""; onPhoneOnly = false }.buttonStyle(DSButtonStyle(kind: .outline))
+            }
         } else {
             VStack(spacing: DS.Space.space3) {
                 if store.failure != nil { offlineNote }

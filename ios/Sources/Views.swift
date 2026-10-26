@@ -25,6 +25,29 @@ enum AppTab: Hashable, CaseIterable {
     }
 }
 
+private struct DockHeightKey: EnvironmentKey {
+    static let defaultValue: CGFloat = 0
+}
+
+extension EnvironmentValues {
+    /// Height of the floating mini player while it is shown, else 0.
+    var dockHeight: CGFloat {
+        get { self[DockHeightKey.self] }
+        set { self[DockHeightKey.self] = newValue }
+    }
+}
+
+private struct DockClearance: ViewModifier {
+    @Environment(\.dockHeight) private var dock
+
+    func body(content: Content) -> some View { content.contentMargins(.bottom, dock, for: .scrollContent) }
+}
+
+extension View {
+    /// Lets the last rows of a scroll view rise above the mini player; screens inside a NavigationStack do not receive the root's bottom inset.
+    func dockClearance() -> some View { modifier(DockClearance()) }
+}
+
 struct RootView: View {
     @EnvironmentObject var player: PlayerService
     @EnvironmentObject var settings: Settings
@@ -40,6 +63,10 @@ struct RootView: View {
     @State private var menuOpen = false
     @State private var selectTick = 0
     @State private var expandedDock = false
+    @State private var keyboardUp = false
+    @State private var dockHeight: CGFloat = 0
+
+    private var showsDock: Bool { tab != .playback && player.current != nil && !keyboardUp }
 
     var body: some View {
         ZStack {
@@ -55,12 +82,13 @@ struct RootView: View {
         .environmentObject(albumDownloader)
         .environment(\.openMenu, { menuOpen = true })
         .environment(\.openSettings, { tab = .settings })
+        .environment(\.dockHeight, showsDock ? dockHeight : 0)
         .accessibilityHidden(menuOpen)
         .safeAreaInset(edge: .bottom, spacing: 0) {
-            if tab != .playback, player.current != nil {
+            if showsDock {
                 MiniPlayer(open: { tab = .playback }, onExpand: { expandedDock = true })
                     .padding(.horizontal, DS.Space.space4).padding(.top, DS.Space.space2).padding(.bottom, DS.Space.space2)
-                    .ignoresSafeArea(.keyboard)
+                    .measuredHeight($dockHeight)
                     .accessibilityHidden(menuOpen)
             }
         }
@@ -79,6 +107,8 @@ struct RootView: View {
             }
         }
         .sensoryFeedback(.selection, trigger: selectTick)
+        .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)) { _ in keyboardUp = true }
+        .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillHideNotification)) { _ in keyboardUp = false }
         .sheet(isPresented: $expandedDock) {
             PlaybackView()
                 .presentationDetents([.large])
@@ -137,20 +167,27 @@ struct MiniPlayer: View {
     let open: () -> Void
     let onExpand: () -> Void
     @ScaledMetric(relativeTo: .title3) private var icon: CGFloat = 22
-    @ScaledMetric(relativeTo: .body) private var cover: CGFloat = 44
+    @ScaledMetric(relativeTo: .body) private var scaledCover: CGFloat = 44
+    @Environment(\.dynamicTypeSize) private var typeSize
+
+    private var compact: Bool { typeSize.isAccessibilitySize }
+    private var cover: CGFloat { compact ? DS.Space.hit : scaledCover }
+    private var glyph: CGFloat { compact ? DS.Icon.iconPlay : icon }
 
     var body: some View {
         VStack(spacing: 0) {
-            Button(action: onExpand) {
-                Capsule().fill(DS.Color.inkFaint)
-                    .frame(width: 36, height: 4)
-                    .frame(maxWidth: .infinity)
-                    .frame(minHeight: DS.Space.hit)
-                    .contentShape(Rectangle())
+            if !compact {
+                Button(action: onExpand) {
+                    Capsule().fill(DS.Color.inkFaint)
+                        .frame(width: 36, height: 4)
+                        .frame(maxWidth: .infinity)
+                        .frame(minHeight: DS.Space.hit)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Expand player")
+                .accessibilityHint("Opens Now Playing")
             }
-            .buttonStyle(.plain)
-            .accessibilityLabel("Expand player")
-            .accessibilityHint("Opens Now Playing")
 
             HStack(spacing: DS.Space.space3) {
                 CoverImage(source: player.current?.thumbnail)
@@ -158,17 +195,19 @@ struct MiniPlayer: View {
                     .clipShape(RoundedRectangle(cornerRadius: DS.Radius.radiusSm, style: .continuous))
                     .accessibilityHidden(true)
                 VStack(alignment: .leading, spacing: 0) {
-                    Text(player.current?.title ?? "").font(T.headline).foregroundStyle(DS.Color.ink).lineLimit(1)
-                    Text(player.current?.artist ?? "").font(T.caption).foregroundStyle(DS.Color.inkMuted).lineLimit(1)
+                    Text(player.current?.title ?? "").font(T.headline).foregroundStyle(DS.Color.ink).lineLimit(compact ? 2 : 1)
+                    if !compact {
+                        Text(player.current?.artist ?? "").font(T.caption).foregroundStyle(DS.Color.inkMuted).lineLimit(1)
+                    }
                 }
                 Spacer(minLength: 0)
                 Button { player.toggle() } label: {
-                    Image(systemName: player.isPlaying ? "pause.fill" : "play.fill").font(.system(size: icon))
+                    Image(systemName: player.isPlaying ? "pause.fill" : "play.fill").font(.system(size: glyph))
                         .foregroundStyle(DS.Color.ink).frame(minWidth: DS.Space.hit, minHeight: DS.Space.hit)
                 }
                 .accessibilityLabel(player.isPlaying ? "Pause" : "Play")
                 Button { player.next() } label: {
-                    Image(systemName: "forward.end.fill").font(.system(size: icon))
+                    Image(systemName: "forward.end.fill").font(.system(size: glyph))
                         .foregroundStyle(DS.Color.ink).frame(minWidth: DS.Space.hit, minHeight: DS.Space.hit)
                 }
                 .accessibilityLabel("Next song")
@@ -181,20 +220,26 @@ struct MiniPlayer: View {
         .clipShape(RoundedRectangle(cornerRadius: DS.Radius.radiusCard, style: .continuous))
         .dsFloat(radius: DS.Radius.radiusCard)
         .accessibilityElement(children: .contain)
+        .accessibilityAction(named: "Expand player") { onExpand() }
     }
 }
 
 private struct MiniProgress: View {
     @EnvironmentObject var player: PlayerService
     @EnvironmentObject var clock: PlaybackClock
+    @Environment(\.colorScheme) private var scheme
 
     var body: some View {
         GeometryReader { geo in
             Rectangle().fill(.clear)
                 .overlay(alignment: .topLeading) {
-                    Rectangle().fill(DS.Color.accent)
-                        .frame(width: geo.size.width * min(1, clock.position / max(clock.duration, 1)), height: 3)
-                        .padding(.top, DS.Space.space1)
+                    ZStack(alignment: .leading) {
+                        Rectangle().fill(DS.Color.surfaceSunken)
+                        Rectangle().fill(scheme.strongFill)
+                            .frame(width: geo.size.width * min(1, clock.position / max(clock.duration, 1)))
+                    }
+                    .frame(height: DS.Stroke.strokeProgress)
+                    .padding(.top, DS.Space.space1)
                 }
                 .contentShape(Rectangle())
                 .highPriorityGesture(SpatialTapGesture().onEnded { tap in
