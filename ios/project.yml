@@ -33,7 +33,11 @@ targets:
   AudioPlayerTests:
     type: bundle.unit-test
     platform: iOS
-    sources: [Tests]
+    sources:
+      - Tests
+      - path: ../server/tests/fixtures
+        includes: [token_cases.json, url_clean_cases.json, tag_cases.json]
+        buildPhase: resources
     dependencies:
       - target: AudioPlayer
     settings:

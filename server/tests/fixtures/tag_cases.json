@@ -1,0 +1,58 @@
+{
+  "split_tag": [
+    {"tag": "genre:house", "key": "genre", "value": "house"},
+    {"tag": "plain", "key": "", "value": "plain"},
+    {"tag": ":x", "key": "", "value": ":x"},
+    {"tag": "a:b:c", "key": "a", "value": "b:c"},
+    {"tag": "genre:", "key": "genre", "value": ""},
+    {"tag": "", "key": "", "value": ""}
+  ],
+  "decade_tag": [
+    {"year": 1949, "tag": null},
+    {"year": 1950, "tag": "decade:50s"},
+    {"year": 1959, "tag": "decade:50s"},
+    {"year": 1960, "tag": "decade:60s"},
+    {"year": 1999, "tag": "decade:90s"},
+    {"year": 2000, "tag": "decade:00s"},
+    {"year": 2019, "tag": "decade:10s"},
+    {"year": 2020, "tag": "decade:20s"},
+    {"year": 1900, "tag": null},
+    {"year": 0, "tag": null},
+    {"year": null, "tag": null}
+  ],
+  "decade_rank": [
+    {"tag": "decade:50s", "rank": 50},
+    {"tag": "decade:90s", "rank": 90},
+    {"tag": "decade:00s", "rank": 100},
+    {"tag": "decade:10s", "rank": 110},
+    {"tag": "decade:49s", "rank": 149},
+    {"tag": "genre:house", "rank": 999},
+    {"tag": "plain", "rank": 999},
+    {"tag": "decade:xs", "rank": 999}
+  ],
+  "complete_tag": [
+    {"input": "", "output": ""},
+    {"input": "   ", "output": ""},
+    {"input": "house", "output": "house"},
+    {"input": "  house  ", "output": "house"},
+    {"input": "genre:house", "output": "genre:house"},
+    {"input": " genre : house ", "output": "genre : house"},
+    {"input": "genre:", "output": ""},
+    {"input": "genre: ", "output": ""},
+    {"input": ":house", "output": ""},
+    {"input": " :house", "output": ""},
+    {"input": ":", "output": ""},
+    {"input": "a:b:c", "output": "a:b:c"}
+  ],
+  "split_input": [
+    {"input": "", "tags": [], "rest": ""},
+    {"input": "a, b", "tags": ["a", "b"], "rest": ""},
+    {"input": "a,b,", "tags": ["a", "b"], "rest": ""},
+    {"input": ",,,", "tags": [], "rest": ""},
+    {"input": "genre:house, country:de", "tags": ["genre:house", "country:de"], "rest": ""},
+    {"input": "genre:, x", "tags": ["x"], "rest": "genre:"},
+    {"input": "a,genre:", "tags": ["a"], "rest": "genre:"},
+    {"input": "genre:, :x", "tags": [], "rest": "genre:, :x"},
+    {"input": "  a  ,  genre : house  ", "tags": ["a", "genre : house"], "rest": ""}
+  ]
+}

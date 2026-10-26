@@ -261,6 +261,16 @@ account; no `altool`, no ASC API key. Build number: date-based
 last upload (20261034 on 2026-10-25). `ios/Config/Secrets.xcconfig`
 (Google client IDs, git-ignored) must exist before `xcodegen`.
 
+iOS unit tests (not part of `scripts/check.sh`, which runs no Swift; run them before an archive and after any change to `ios/Sources`):
+
+```sh
+cd ios && xcodegen && xcodebuild test -project AudioPlayer.xcodeproj -scheme AudioPlayer \
+  -destination 'platform=iOS Simulator,name=iPhone 17' CODE_SIGNING_ALLOWED=NO
+xcodebuild build -project AudioPlayer.xcodeproj -scheme ElectrophoneMac -destination 'platform=macOS' CODE_SIGNING_ALLOWED=NO
+```
+
+`AudioPlayerTests` bundles `token_cases.json`, `url_clean_cases.json` and `tag_cases.json` from `server/tests/fixtures`, the same files the server and web tests read (IOS-108).
+
 ## Secrets and credentials
 
 - **Locally:** one file per credential,
