@@ -13,7 +13,10 @@ struct PlaybackView: View {
     @State private var showShare = false
     @State private var toast: String?
     @State private var editing: ServerSong?
+    @State private var playlistSongs: [String] = []
+    @EnvironmentObject private var settings: Settings
 
+    private var signedIn: Bool { ServerLink.hasCredentials(settings) }
     private var current: Track? { player.current }
     private var menuSize: CGFloat { min(max(menuHit, DS.Space.hit), DS.Space.hit * 1.5) }
 
@@ -66,6 +69,9 @@ struct PlaybackView: View {
         }
         .sheet(isPresented: $showQueue) { QueueSheet() }
         .sheet(item: $editing) { SongEditView(song: $0) }
+        .sheet(isPresented: Binding(get: { !playlistSongs.isEmpty }, set: { if !$0 { playlistSongs = [] } })) {
+            PlaylistPickerSheet(songIDs: playlistSongs) { toast = $0 }
+        }
         .sheet(isPresented: $showShare) {
             if let t = current { ShareSheet(track: t, position: player.position, duration: player.duration) }
         }
@@ -76,6 +82,12 @@ struct PlaybackView: View {
             Button { showQueue = true } label: { Label("Queue", systemImage: "list.bullet") }
             Button { showTags = true } label: { Label("Add songs by tag", systemImage: "tag") }
             if let t = current { Button { editing = ServerSong(t) } label: { Label("Song details", systemImage: "info.circle") } }
+            if signedIn, let t = current, t.localOnly != true {
+                Button { playlistSongs = [t.id] } label: { Label("Add to playlist", systemImage: "music.note.list") }
+            }
+            if signedIn, !player.queue.isEmpty {
+                Button { playlistSongs = player.queue.map(\.id) } label: { Label("Save queue as playlist", systemImage: "text.badge.plus") }
+            }
             Button { showShare = true } label: { Label("Share link", systemImage: "square.and.arrow.up") }
                 .disabled(current.map { !SongShare.isValidID($0.id) } ?? true)
             Button { player.skip(by: -5) } label: { Label("Back 5 seconds", systemImage: "gobackward.5") }

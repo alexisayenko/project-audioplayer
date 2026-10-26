@@ -17,6 +17,7 @@ struct SongDetailsView: View {
     @Environment(\.dynamicTypeSize) private var typeSize
     @State private var editing: ServerSong?
     @State private var share = false
+    @State private var addingToPlaylist = false
     @State private var confirmDelete = false
     @State private var deleting = false
     @State private var didDelete = false
@@ -49,12 +50,14 @@ struct SongDetailsView: View {
                     }
                     .padding(.horizontal, DS.Space.space4).padding(.vertical, DS.Space.space4)
                 }
+                .dockClearance()
                 .safeAreaInset(edge: .top, spacing: 0) { header(track) }
                 .confirmationDialog("Delete \"\(track.title)\" from the library?", isPresented: $confirmDelete, titleVisibility: .visible) {
                     Button("Delete from library", role: .destructive) { Task { await delete(track) } }
                 } message: {
                     Text(signedIn && track.localOnly != true ? "Removes the song from your library, on the server and on this iPhone." : "Removes the song and its audio from this iPhone.")
                 }
+                .sheet(isPresented: $addingToPlaylist) { PlaylistPickerSheet(songIDs: [id]) { notify($0) } }
                 .sheet(isPresented: $share) {
                     ShareSheet(track: track, position: current ? player.position : 0, duration: track.duration ?? 0)
                 }
@@ -208,6 +211,7 @@ struct SongDetailsView: View {
                     if added { tick += 1 }; notify(added ? "Added to queue" : "Already in queue")
                 }
             }
+            if signedIn && track.localOnly != true { action("Add to playlist", "music.note.list") { addingToPlaylist = true } }
             action("Share link", "square.and.arrow.up") { share = true }
             if !library.contains(id) && track.onServer != false && !transferring && signedIn {
                 action("Download", "arrow.down.circle") { download(track) }
