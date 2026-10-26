@@ -67,7 +67,7 @@ def test_idempotent_marker_and_second_run_changes_nothing(datadir):
     assert mr.run() == 1
     snap = (path.read_bytes(), (datadir / "genre_references.json").read_bytes())
     assert mr.run() == 0
-    assert (path.read_bytes(), (datadir / "genre_references.json").read_bytes()) == snap
+    assert snap == (path.read_bytes(), (datadir / "genre_references.json").read_bytes())
     assert json.loads(mr.marker_path(OWNER).read_text(encoding="utf-8"))["converted"] == 1
 
 

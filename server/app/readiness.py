@@ -136,6 +136,8 @@ def run_worker(steps: list[tuple[str, Callable[[], object]]], state: Readiness |
         state.done()
     except BaseException as exc:
         state.fail(repr(exc))
+        if isinstance(exc, (KeyboardInterrupt, SystemExit)):
+            raise
 
 
 def start_worker(steps: list[tuple[str, Callable[[], object]]], state: Readiness | None = None) -> threading.Thread | None:

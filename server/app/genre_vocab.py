@@ -459,7 +459,7 @@ def _entry_flags(k: str, v: dict[str, Any], name: str, subfamilies: dict[str, di
     return status, fusion, display
 
 
-def _parse_entry(k: str, v: Any, name: str, families: dict[str, list[str]], modifiers: dict[str, dict[str, str]], subfamilies: dict[str, dict[str, Any]]) -> dict[str, Any]:
+def _parse_entry(k: str, v: Any, name: str, modifiers: dict[str, dict[str, str]], subfamilies: dict[str, dict[str, Any]]) -> dict[str, Any]:
     if not isinstance(v, dict):
         raise ValueError(f"{name}: entry {k!r} is not an object")
     who = f"entry {k!r}"
@@ -660,7 +660,7 @@ def parse_all(doc: Any) -> tuple[dict[str, dict[str, Any]], dict[str, dict[str, 
     modifiers = _parse_modifiers(doc, name)
     entries = {k: v for k, v in doc.items() if k not in ENTRY_BLOCKS}
     subfamilies = parse_subfamilies(doc)
-    levels = {k: _parse_entry(k, v, name, synonyms, modifiers, subfamilies) for k, v in entries.items()}
+    levels = {k: _parse_entry(k, v, name, modifiers, subfamilies) for k, v in entries.items()}
     forms = _parse_forms(doc, modifiers, name)
     taken = {k for k in forms if k in levels}
     if taken:

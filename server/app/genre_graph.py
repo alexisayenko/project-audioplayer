@@ -518,8 +518,8 @@ def table_families(label: str, keys: Any = ()) -> tuple[str, ...]:
     for text in (label, *sorted(keys)):
         colour = genre_vocab.group_colour(text)
         if colour:
-            return (colour,)
-    return ()
+            return tuple([colour])
+    return tuple()
 
 
 def own_anchor(label: str, keys: Any = ()) -> str | None:

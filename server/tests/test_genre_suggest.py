@@ -66,7 +66,7 @@ def test_the_same_recording_prodigy_remaster_prunes_breakbeat_beside_big_beat():
     d = decide(CASES["prodigy_voodoo_people_remaster"]["groups"])
     assert "breakbeat" not in d.applied
     assert "breakbeat" not in names(d)
-    assert {"big beat", "techno"} == set(d.applied)
+    assert set(d.applied) == {"big beat", "techno"}
 
 
 def test_r1_every_suggestion_carries_its_sources_and_a_reason_in_evidence_order():

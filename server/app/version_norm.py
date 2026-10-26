@@ -12,8 +12,8 @@ _REMASTER = re.compile(
     rf"(?<![\w-])(?:(?P<before>{_YEAR})(?:\s+|\s*[,(]\s*))?{_CORE}(?:\s*[,(]?\s*(?P<after>{_YEAR})\)?)?(?:\s+(?:version|edition))?(?![\w-])",
     re.I,
 )
-_PART_SPLIT = re.compile(r"\s*[,;]\s*")
-_WRAPPED = re.compile(r"[(\[]\s*([^()\[\]]+?)\s*[)\]]")
+_PART_SPLIT = re.compile(r"[,;]")
+_WRAPPED = re.compile(r"[(\[]([^()\[\]]+)[)\]]")
 
 
 def _canonical(m: re.Match[str]) -> str:
@@ -23,16 +23,30 @@ def _canonical(m: re.Match[str]) -> str:
 
 def _part(p: str) -> str:
     wrapped = _WRAPPED.fullmatch(p)
-    if wrapped and _REMASTER.fullmatch(wrapped.group(1)):
-        p = wrapped.group(1)
+    inner = wrapped.group(1).strip() if wrapped else ""
+    if wrapped and _REMASTER.fullmatch(inner):
+        p = inner
     return _REMASTER.sub(_canonical, p)
+
+
+def _split_parts(token: str) -> list[str]:
+    pieces = _PART_SPLIT.split(token)
+    last = len(pieces) - 1
+    out = []
+    for i, piece in enumerate(pieces):
+        if i:
+            piece = piece.lstrip()
+        if i < last:
+            piece = piece.rstrip()
+        out.append(piece)
+    return out
 
 
 def normalize_version(text: str) -> str:
     """The version label with every remaster phrase spelled `<year> remaster` or `remaster`; any other text is returned unchanged. When the label has several parts ("Radio Edit, 2011 Remastered") the parts are rejoined in the pill style ("Radio Edit - 2011 remaster")."""
     if not isinstance(text, str) or not text.strip():
         return text
-    parts = [p for token in split_tokens(text) for p in _PART_SPLIT.split(token) if p]
+    parts = [p for token in split_tokens(text) for p in _split_parts(token) if p]
     out = [_part(p) for p in parts]
     if out == parts:
         return text

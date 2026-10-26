@@ -19,17 +19,19 @@ BEST_MIN_SCORE = 0.7
 BEST_MARGIN = 0.1
 SUBSTRING_SCORE = 0.6
 MAX_SELECTED = 200
-_NOISE_GROUP = re.compile(r"\s*[\(\[]\s*(?:(?:full|complete|entire|whole)\s+)?(?:album|lp|ep)(?:\s+(?:stream|version|playlist))?\s*[\)\]]", re.I)
-_NOISE_TAIL = re.compile(r"[\s\-–—:|]+(?:full|complete|entire|whole)\s+(?:album|lp|ep)(?:\s+stream)?\s*$", re.I)
-_SEP = re.compile(r"\s+[-–—]\s+")
-_TOPIC = re.compile(r"\s+-\s+topic$", re.I)
-_BRACKETS = re.compile(r"\s*[\(\[]([^\)\]]*)[\)\]]")
+_NOISE_GROUP = re.compile(r"(?<!\s)\s*[\(\[]\s*(?:(?:full|complete|entire|whole)\s+)?(?:album|lp|ep)(?:\s+(?:stream|version|playlist))?\s*[\)\]]", re.I)
+_NOISE_TAIL = re.compile(r"(?<![\s\-–—:|])[\s\-–—:|]+(?:full|complete|entire|whole)\s+(?:album|lp|ep)(?:\s+stream)?\s*$", re.I)
+_SEP = re.compile(r"(?<!\s)\s+[-–—]\s+")
+_TOPIC = re.compile(r"(?<!\s)\s+-\s+topic$", re.I)
+_BRACKETS = re.compile(r"(?<!\s)\s*[\(\[]([^\)\]]*)[\)\]]")
 _IGNORED_BRACKET = re.compile(r"^\s*(?:mono|stereo|bonus track|\d{4}\s+(?:mix|version))\s*$", re.I)
 _YEAR = re.compile(r"(?<![\w])((?:19|20)\d{2})(?![\w])")
 _DESC_YEAR = re.compile(r"(?:released?|release date|℗|©|year)\D{0,15}((?:19|20)\d{2})(?!\d)", re.I)
-_TRAIL_SQUARE = re.compile(r"\s*\[[^\]]*\]\s*$")
-_TRAIL_ROUND = re.compile(r"\s*\(\s*((?:19|20)\d{2}|(?:\d{4}\s+)?re-?master(?:ed)?(?:\s+\d{4})?)\s*\)\s*$", re.I)
-_TRAIL_YEAR = re.compile(r"[\s,\-–—]+(?:19|20)\d{2}$")
+_TRAIL_SQUARE = re.compile(r"(?<!\s)\s*\[[^\]]*\]\s*$")
+_ROUND_YEAR = r"(?:19|20)\d{2}"
+_ROUND_REMASTER = r"(?:\d{4}\s+)?re-?master(?:ed)?(?:\s+\d{4})?"
+_TRAIL_ROUND = re.compile(rf"(?<!\s)\s*\(\s*({_ROUND_YEAR}|{_ROUND_REMASTER})\s*\)\s*$", re.I)
+_TRAIL_YEAR = re.compile(r"(?<![\s,\-–—])[\s,\-–—]+(?:19|20)\d{2}$")
 
 
 def guess_year(title: Any, description: Any = None) -> int | None:

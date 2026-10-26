@@ -53,7 +53,7 @@ def test_every_user_and_second_run_changes_nothing(datadir):
     assert mv.run() == 2
     snap = (a.read_bytes(), b.read_bytes())
     assert mv.run() == 0
-    assert (a.read_bytes(), b.read_bytes()) == snap
+    assert snap == (a.read_bytes(), b.read_bytes())
     assert stored(b)["b"]["version"]["name"] == "2009 remaster"
 
 

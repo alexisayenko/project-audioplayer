@@ -15,7 +15,7 @@ from . import buildinfo
 
 KEEP_TYPES = {"feat"}
 MAX_TEXT = 110
-SUBJECT = re.compile(r"^(\w+)(?:\(([^)]*)\))?!?:\s*(.+)$")
+SUBJECT = re.compile(r"^(\w+)(?:\(([^)]*)\))?!?:\s*+(.+)$")
 SKIP_SCOPES = {"data", "studio"}
 STUDIO_TAG = "studio"
 STUDIO_TEXT = re.compile(
