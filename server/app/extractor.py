@@ -199,6 +199,25 @@ def preview(video_id: str) -> dict[str, Any]:
     return meta_from_info(video_id, info)
 
 
+def video_details(video_id: str) -> dict[str, Any]:
+    """One YouTube video read without downloading: title, uploader, duration, thumbnail, description and chapters."""
+    opts = {"quiet": True, "noplaylist": True, "skip_download": True, "socket_timeout": 25}
+    with yt_dlp.YoutubeDL(opts) as ydl:
+        info = ydl.extract_info(watch_url(video_id), download=False)
+    if not isinstance(info, dict):
+        raise ValueError("video not found")
+    chapters = [c for c in info.get("chapters") or [] if isinstance(c, dict)]
+    return {
+        "id": video_id,
+        "title": str(info.get("title") or ""),
+        "uploader": str(info.get("uploader") or info.get("channel") or ""),
+        "duration": info.get("duration"),
+        "thumbnail": cover_url(video_id),
+        "description": str(info.get("description") or ""),
+        "chapters": chapters,
+    }
+
+
 def meta_from_info(video_id: str, info: dict[str, Any]) -> dict[str, Any]:
     """The preview fields of one YouTube video from what yt-dlp reports (a full page or a flat playlist entry)."""
     raw_artist = info.get("artist") or info.get("creator") or info.get("uploader") or info.get("channel") or ""

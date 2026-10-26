@@ -28,6 +28,11 @@ class AlbumPreviewRequest(BaseModel):
     url: str = Field(min_length=1, max_length=2000)
 
 
+class AlbumVideoTextRequest(BaseModel):
+    url: str = Field(min_length=1, max_length=2000)
+    text: str = Field(max_length=60000)
+
+
 class AlbumPatchRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 

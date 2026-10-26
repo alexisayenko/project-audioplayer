@@ -343,7 +343,7 @@ def build(payload: dict[str, Any], existing: set[str]) -> dict[str, Any]:
 
 
 def summary(a: dict[str, Any]) -> dict[str, Any]:
-    return {**{k: a[k] for k in ("cover", "coverUrl", "coverFrom") if k in a}, "id": a["id"], "title": a.get("title", ""), "artist": a.get("artist", ""), "year": a.get("year"), "genres": a.get("genres") or [], "rymUrl": a.get("rymUrl"), "links": full_links(a), "trackCount": len(a.get("tracks") or []), "tracks": [{k: t.get(k) for k in ("no", "title", "durationS", "songId")} for t in a.get("tracks") or [] if isinstance(t, dict)], "created_at": a.get("created_at")}
+    return {**{k: a[k] for k in ("cover", "coverUrl", "coverFrom", "type") if k in a}, "id": a["id"], "title": a.get("title", ""), "artist": a.get("artist", ""), "year": a.get("year"), "genres": a.get("genres") or [], "rymUrl": a.get("rymUrl"), "links": full_links(a), "trackCount": len(a.get("tracks") or []), "tracks": [{k: t.get(k) for k in ("no", "title", "durationS", "songId")} for t in a.get("tracks") or [] if isinstance(t, dict)], "created_at": a.get("created_at")}
 
 
 def without_dangling(album: dict[str, Any], song_ids: set[Any]) -> dict[str, Any]:
