@@ -148,8 +148,19 @@ export class DomElement extends DomNode {
     this.innerHTML = '';
   }
 
+  [Symbol.for('nodejs.util.inspect.custom')]() {
+    const cls = this.getAttribute?.('class');
+    const id = this.getAttribute?.('id');
+    return `<${this.localName}${id ? ` id=${id}` : ''}${cls ? ` class="${cls}"` : ''}>`;
+  }
+
   get children() { return this.childNodes.filter((n) => n._type === 1); }
   get firstElementChild() { return this.children[0] || null; }
+  get lastElementChild() { return this.children.at(-1) || null; }
+  get nextElementSibling() {
+    const sibs = this.parentNode ? this.parentNode.children : [];
+    return sibs[sibs.indexOf(this) + 1] || null;
+  }
   get textContent() { return this.childNodes.map((c) => c.textContent).join(''); }
   set textContent(v) { this.childNodes.forEach((c) => { c.parentNode = null; }); this.childNodes = []; if (v !== '' && v != null) this.append(new Text(v)); }
   get offsetHeight() { return 40; }
@@ -301,7 +312,30 @@ export function makeEvent(type, init = {}) {
   return { type, bubbles: false, defaultPrevented: false, _stop: false, preventDefault() { this.defaultPrevented = true; }, stopPropagation() { this._stop = true; }, stopImmediatePropagation() { this._stop = true; }, ...init };
 }
 
+// A failing test skips its cleanup and leaves poll timers behind; unref'd long timers and intervals keep node from hanging after the run.
+const LONG_TIMER_MS = 1000;
+
+function unrefLongTimers() {
+  if (globalThis.setTimeout.__unrefLong) return;
+  const nativeTimeout = globalThis.setTimeout;
+  const nativeInterval = globalThis.setInterval;
+  const timeout = (fn, ms, ...args) => {
+    const t = nativeTimeout(fn, ms, ...args);
+    if (ms >= LONG_TIMER_MS) t?.unref?.();
+    return t;
+  };
+  timeout.__unrefLong = true;
+  const interval = (fn, ms, ...args) => {
+    const t = nativeInterval(fn, ms, ...args);
+    t?.unref?.();
+    return t;
+  };
+  globalThis.setTimeout = timeout;
+  globalThis.setInterval = interval;
+}
+
 export function installDom({ ids = [] } = {}) {
+  unrefLongTimers();
   const listeners = new Map();
   const doc = new DomElement('#document');
   doc.activeElement = null;
