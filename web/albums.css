@@ -37,10 +37,15 @@
   .album-row .album-genres { grid-column: 4 / 5; align-self: center; }
   .album-row .album-acts { grid-column: 5 / 6; flex-wrap: nowrap; }
 }
-.album-info-tracks .album-track { row-gap: var(--space-1); }
-.album-linked, .album-link-btn { grid-column: 2 / -1; display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); min-width: 0; }
-.album-link-btn { justify-content: flex-start; padding-left: 0; }
 .album-linked-name { overflow-wrap: anywhere; min-width: 0; }
 .songs.album-link-list .song.album-link-row { display: block; height: auto; min-height: 0; padding: var(--space-2) var(--space-3); cursor: pointer; }
 .album-link-row .title-line { display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-3); }
 .album-link-row .title-len { flex: none; margin-left: auto; color: var(--muted); }
+.album-info-tracks .album-track { display: block; }
+.album-row-btn { display: grid; grid-template-columns: 2.5ch minmax(0, 1fr) auto; align-items: baseline; gap: var(--space-2); width: 100%; min-height: var(--hit); padding: 0; border: 0; background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.album-row-btn:hover .album-name, .album-row-btn:focus-visible .album-name { color: var(--accent-ink); }
+.album-track.open .album-name { color: var(--accent-ink); }
+.album-panel[hidden] { display: none; }
+.album-panel { padding: 0 0 var(--space-2) calc(2.5ch + var(--space-2)); }
+.album-linked { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); min-width: 0; }
+.album-link-btn { padding-left: 0; }

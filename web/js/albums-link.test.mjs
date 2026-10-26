@@ -122,3 +122,37 @@ test('a linked song with unknown length shows a dash', async () => {
   v.dlg.close();
   assert.equal(candidateMeta(store.songs[0]), 'Derango');
 });
+
+test('track accordion: collapsed by default, one open at a time, toggle, accessible buttons', async () => {
+  const v = await open(() => ok(ALBUM));
+  const lis = () => [...v.dlg.querySelectorAll('.album-info-tracks li')];
+  const state = () => lis().map((li) => [li.querySelector('.album-row-btn').getAttribute('aria-expanded'), li.querySelector('.album-panel').hidden]);
+  assert.deepEqual(state(), [['false', true], ['false', true], ['false', true]]);
+  for (const li of lis()) {
+    const b = li.querySelector('.album-row-btn');
+    assert.equal(b.tagName, 'BUTTON');
+    assert.equal(b.getAttribute('aria-controls'), li.querySelector('.album-panel').id);
+  }
+  fire(lis()[0].querySelector('.album-row-btn'), 'click');
+  assert.deepEqual(state(), [['true', false], ['false', true], ['false', true]]);
+  fire(lis()[2].querySelector('.album-row-btn'), 'click');
+  assert.deepEqual(state(), [['false', true], ['false', true], ['true', false]]);
+  fire(lis()[2].querySelector('.album-row-btn'), 'click');
+  assert.deepEqual(state(), [['false', true], ['false', true], ['false', true]]);
+  v.dlg.close();
+});
+
+test('linking inside an open panel keeps that panel open', async () => {
+  const linked = { ...ALBUM, tracks: [{ ...TRACKS[0], songId: 's1' }, TRACKS[1], TRACKS[2]] };
+  const v = await open((u, o) => (o.method === 'PUT' ? ok(linked) : ok(ALBUM)));
+  fire(v.dlg.querySelectorAll('.album-row-btn')[0], 'click');
+  fire(v.dlg.querySelector('.album-link-btn'), 'click');
+  const pop = document.getElementById('pl-dialog');
+  fire(pop.querySelector('li.song .open'), 'click');
+  for (let i = 0; i < 5; i++) await flush();
+  const first = v.dlg.querySelectorAll('.album-info-tracks li')[0];
+  assert.equal(first.querySelector('.album-row-btn').getAttribute('aria-expanded'), 'true');
+  assert.equal(first.querySelector('.album-panel').hidden, false);
+  assert.ok(first.querySelector('.album-unlink'));
+  v.dlg.close();
+});
