@@ -156,7 +156,7 @@ test('header total, "N albums match", Clear filters, and the shared filter sheet
 test('Play all and Add all to queue use the linked songs of the filtered albums in list order', async () => {
   const v = await open();
   const btn = (text) => [...v.pane.querySelectorAll('.sort-actions button')].find((b) => b.textContent.includes(text));
-  assert.equal(btn('Play all').textContent, 'Play all 2');
+  assert.equal(btn('Play all').textContent, 'Play all 2 linked');
   assert.equal(btn('Add all').hidden, true);
   document.getElementById('toast').textContent = '';
   fire(btn('Play all'), 'click');
@@ -164,6 +164,7 @@ test('Play all and Add all to queue use the linked songs of the filtered albums 
   assert.equal(player.queuePosition('s1').pos < player.queuePosition('s2').pos, true);
   typeSearch(v, 'alpha');
   assert.equal(btn('Add all').hidden, false);
+  assert.equal(btn('Add all').textContent, 'Add all 2 linked to queue');
   fire(btn('Add all'), 'click');
   assert.match(document.getElementById('toast').textContent, /Added|already in queue/);
 });
@@ -173,7 +174,7 @@ test('whole-row click opens the info box; the queue button and cover do not', as
   const dlg = document.getElementById('song-card');
   fire(v.q('li.album-row .info'), 'click');
   assert.equal(dlg.open, true);
-  assert.match(dlg.querySelector('h2').textContent, /Zed - Bravo/);
+  assert.equal(dlg.querySelector('h2').textContent, 'Bravo');
   dlg.close();
   fire(v.q('li.album-row .row-acts button'), 'click');
   assert.equal(dlg.open, false);
@@ -216,8 +217,8 @@ test('Edit dialog: fields, only changed keys sent, genres from the vocabulary fi
   const labels = [...dlg.querySelectorAll('.field > label')].map((l) => l.textContent);
   assert.deepEqual(labels.slice(0, 3), ['Title', 'Artist', 'Year']);
   assert.ok(dlg.querySelector('.chip-field'));
-  assert.ok(dlg.querySelector('.album-delete.danger'));
-  assert.ok(dlg.querySelector('.album-delete-all.danger'));
+  assert.deepEqual([...dlg.querySelectorAll('.row.end > button')].map((b) => b.textContent), ['Delete album', 'Save']);
+  assert.deepEqual([...dlg.querySelectorAll('.album-edit-links label')].map((l) => l.textContent), ['Discogs', 'Rate Your Music', 'YouTube', 'Wikipedia']);
   const inputs = [...dlg.querySelectorAll('.field > input')];
   inputs[0].value = ' Alpha 2 ';
   inputs[2].value = '2001';
@@ -258,4 +259,110 @@ test('Edit dialog: nothing changed makes no request; invalid year and 422 bad_fi
   assert.match(artistErr.textContent, /artist is not valid/);
   assert.equal(dlg.open, true);
   dlg.close();
+});
+
+test('rows follow the Songs table: header row, title with muted count, duration at the right, genres as text, BPM badge', async () => {
+  const v = await open();
+  const head = v.q('.group .table-head');
+  assert.deepEqual([...head.querySelectorAll('span')].map((x) => x.textContent), ['', 'Album', 'Genres']);
+  const row = v.q('li.album-row[data-id=Alpha]');
+  assert.ok(row.querySelector('.title-line .open.mq'), 'the title uses the shared marquee');
+  assert.ok(row.querySelector('.title-line .open').classList.contains('t-headline'));
+  assert.equal(row.querySelector('.title-line .open .rmx').textContent, '· 2 tracks');
+  assert.ok(row.querySelector('.title-line > .title-len'));
+  assert.equal(row.querySelector('.c-genres .g-txt').textContent, 'House');
+  assert.equal(row.querySelector('.sub-end .bpm-badge').textContent, '120 - 126BPM');
+  assert.equal(row.querySelector('.row-cover .rc-ov') !== null, true);
+});
+
+test('cover of the playing album toggles play and pause; other covers start the album', async () => {
+  const v = await open();
+  const alpha = v.q('li.album-row[data-id=Alpha]');
+  player.playNow('s1');
+  for (let i = 0; i < 3; i++) await flush();
+  assert.ok(alpha.querySelector('.row-cover').classList.contains('persist'));
+  assert.match(alpha.querySelector('.row-cover').getAttribute('aria-label'), /^(Pause|Play) album Alpha/);
+  assert.equal(v.q('li.album-row[data-id=Bravo] .row-cover').classList.contains('persist'), false);
+});
+
+test('Show playing: shown while an album song plays; hidden by filters offers a Show action', async () => {
+  const v = await open();
+  const btn = [...v.pane.querySelectorAll('.toolbar button')].find((b) => b.textContent.includes('Show playing'));
+  player.playNow('s1');
+  for (let i = 0; i < 3; i++) await flush();
+  assert.equal(btn.hidden, false);
+  const origScroll = globalThis.window?.scrollTo;
+  window.scrollTo = () => {};
+  fire(btn, 'click');
+  assert.ok(v.q('li.album-row[data-id=Alpha]').classList.contains('flash'));
+  typeSearch(v, 'bravo');
+  document.getElementById('toast').textContent = '';
+  fire(btn, 'click');
+  assert.match(document.getElementById('toast').textContent, /Album is hidden by the current filters/);
+  fire(document.querySelector('#toast .toast-act'), 'click');
+  assert.equal(v.names().length, 3);
+  window.scrollTo = origScroll;
+});
+
+test('match summary lists the selected genres and years after the count', async () => {
+  const v = await open();
+  model.albumPrefs.sel.genres.add('House');
+  typeSearch(v, 'a');
+  assert.match(v.q('.sortbar [role=status]').textContent, /albums? match(es)? · House/);
+});
+
+test('Edit dialog: links are four fields; one Save sends only the changed keys with the fields; bad_link shows under the field and keeps typed text', async () => {
+  const dlg = document.getElementById('edit-dialog');
+  const album = { ...A, links: { discogs: 'https://www.discogs.com/release/1' } };
+  let calls = stubFetch((u, o) => (o.method === 'PATCH' ? ok({ ...album, links: { discogs: 'https://www.discogs.com/release/1', youtube: 'https://www.youtube.com/playlist?list=PL1' } }) : ok({})));
+  let saved = null;
+  openAlbumEdit(album, (full) => { saved = full; });
+  const key = (k) => dlg.querySelector(`input[data-key="${k}"]`);
+  assert.equal(key('discogs').value, 'https://www.discogs.com/release/1');
+  key('youtube').value = ' https://www.youtube.com/playlist?list=PL1 ';
+  dlg.querySelector('input[aria-label=Title]').value = 'Alpha 3';
+  fire(dlg.querySelector('form'), 'submit');
+  for (let i = 0; i < 5; i++) await flush();
+  const patch = calls.find((c) => c.opts.method === 'PATCH');
+  assert.deepEqual(JSON.parse(patch.opts.body), { title: 'Alpha 3', links: { youtube: 'https://www.youtube.com/playlist?list=PL1' } });
+  assert.equal(saved.links.youtube, 'https://www.youtube.com/playlist?list=PL1');
+
+  openAlbumEdit(album, () => {});
+  key('discogs').value = '';
+  fire(dlg.querySelector('form'), 'submit');
+  for (let i = 0; i < 5; i++) await flush();
+  assert.deepEqual(JSON.parse(calls.filter((c) => c.opts.method === 'PATCH')[1].opts.body), { links: { discogs: null } });
+
+  calls = stubFetch((u, o) => (o.method === 'PATCH' ? { status: 422, body: { error: 'bad_link', key: 'wikipedia' } } : ok({})));
+  openAlbumEdit(album, () => {});
+  key('wikipedia').value = 'junk';
+  fire(dlg.querySelector('form'), 'submit');
+  for (let i = 0; i < 5; i++) await flush();
+  const err = key('wikipedia').parentNode.querySelector('.msg.error');
+  assert.equal(err.hidden, false);
+  assert.equal(err.textContent, 'This is not a valid Wikipedia address.');
+  assert.equal(key('wikipedia').value, 'junk');
+  assert.equal(dlg.open, true);
+  assert.equal(dlg.querySelector('form button[type=submit]').disabled, false);
+  dlg.close();
+});
+
+test('the list payload carries the tracks: no per-album request; a list without tracks falls back to the single fetch', async () => {
+  reset();
+  const pane = document.createElement('div');
+  document.body.append(pane);
+  let calls = stubFetch((u) => (u === '/albums' ? ok(ALL.map((a) => ({ ...a, trackCount: a.tracks.length }))) : ok({})));
+  let unmount = mountAlbums(pane, '');
+  await unmount.ready;
+  assert.deepEqual(calls.map((c) => c.url), ['/albums']);
+  assert.equal(pane.querySelectorAll('li.album-row').length, 3);
+  assert.equal(pane.querySelector('li.album-row[data-id=Alpha] .bpm-badge').textContent, '120 - 126BPM');
+  unmount();
+  const pane2 = document.createElement('div');
+  document.body.append(pane2);
+  calls = stubFetch((u) => (u === '/albums' ? ok(ALL.map(({ tracks, ...r }) => ({ ...r, trackCount: tracks.length }))) : ok(ALL.find((a) => u === `/albums/${a.id}`) || {})));
+  unmount = mountAlbums(pane2, '');
+  await unmount.ready;
+  assert.equal(calls.filter((c) => c.url !== '/albums').length, 3);
+  unmount();
 });

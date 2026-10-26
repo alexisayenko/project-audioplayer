@@ -8,18 +8,25 @@ import { playlistsOn } from './playlists-store.js';
 import { openPlaylistPicker } from './lazy-ui.js';
 import { el, fmtTime, plural, toast } from './dom.js';
 import { icon } from './icons.js';
+import { genreChip } from './genre-chip.js';
+import { loadGenreTree } from './genre-tree.js';
+import { songMatches } from './song-match.js';
 import { playlistLink, MIX_MESSAGE, PRIVATE_MESSAGE } from './playlist-link.js';
 import { startDownloads, mountDownloadStatus } from './albums-youtube.js';
 import { dialogHead } from './edit-dialog.js';
 import { artistLine, titleLine, displayLine, albumsOf, albumOf, releasedYear } from './credits.js';
 import { openPlDialog, closePlDialog } from './playlist-dialogs.js';
 import { searchBox } from './search-box.js';
-import { isRowControl } from './row-cover.js';
-import { openFilterSheet, openGenreCard } from './lazy-ui.js';
+import { isRowControl, coverModel, coverButton, paintCover } from './row-cover.js';
+import { openFilterSheet, openSongCard } from './lazy-ui.js';
+import { marquee } from './marquee.js';
+import { hasAudio } from './playable.js';
+import { autoDownloadOn } from './autodl.js';
 import { cachedTree } from './genre-tree.js';
-import { resolveNode } from './genre-levels.js';
 import { prefs, savePrefs } from './library-data.js';
 import { addAllToQueue, playAll } from './play-all.js';
+import { scrollTarget } from './reveal.js';
+import { ROW_FLASH_MS } from './constants.js';
 import { countOf, totalTime, bpmRange, FACETS, facetValues, matchesFacets, matchesQuery, ALBUM_SORTS, albumPrefs, sortedAlbums, saveAlbumPrefs } from './albums-model.js';
 
 export { totalTime, bpmRange, facetValues, matchesFacets };
@@ -116,47 +123,13 @@ export function mergeLinks(prev, next) {
   return { ...next, links };
 }
 
-function linksEditor(album, onSaved, onCancel, drafts = {}) {
+function linkFields(album) {
   const have = albumLinks(album);
-  const fields = LINK_KEYS.map(({ key, label, placeholder }) => {
-    const input = el('input', { type: 'text', class: 'album-link-input', placeholder, 'aria-label': label, 'data-key': key, autocomplete: 'off', inputMode: 'url', value: drafts[key] ?? (have[key] || '') });
-    input.addEventListener('input', () => { drafts[key] = input.value; });
+  return LINK_KEYS.map(({ key, label, placeholder }) => {
+    const input = el('input', { type: 'text', class: 'album-link-input', placeholder, 'aria-label': label, 'data-key': key, autocomplete: 'off', inputMode: 'url', value: have[key] || '' });
     const err = el('p', { class: 'msg error t-caption', role: 'alert', hidden: true });
-    return { key, label, input, err, node: el('div', { class: 'field album-link-field' }, el('label', { class: 't-caption muted' }, label), input, err) };
+    return { key, label, input, err, have: have[key] || '', node: el('div', { class: 'field album-link-field' }, el('label', { class: 't-caption muted' }, label), input, err) };
   });
-  const save = el('button', { class: 'btn fill small', type: 'submit' }, 'Save');
-  const cancel = el('button', { class: 'btn outline small', type: 'button', onclick: onCancel }, 'Cancel');
-  const general = el('p', { class: 'msg error t-caption', role: 'alert', hidden: true });
-  const form = el('form', { class: 'album-links-form' }, ...fields.map((f) => f.node), general, el('div', { class: 'album-links-actions' }, cancel, save));
-  form.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const links = {};
-    for (const f of fields) {
-      f.err.hidden = true;
-      const next = f.input.value.trim();
-      if (next !== (have[f.key] || '')) links[f.key] = next || null;
-    }
-    general.hidden = true;
-    if (!Object.keys(links).length) { onCancel(); return; }
-    save.disabled = true;
-    try {
-      const full = await api.patchAlbum(album.id, { links });
-      for (const k of Object.keys(drafts)) delete drafts[k];
-      onSaved(full);
-    } catch (ex) {
-      const key = ex.data?.key ?? ex.data?.detail?.key;
-      const bad = fields.find((f) => f.key === key);
-      if ((ex.status === 422 || ex.code === 'bad_link') && bad) {
-        bad.err.textContent = linkErrorText(bad.label);
-        bad.err.hidden = false;
-      } else {
-        general.textContent = ex.message;
-        general.hidden = false;
-      }
-      save.disabled = false;
-    }
-  });
-  return form;
 }
 
 const fold = (s) => String(s ?? '').normalize('NFD').replaceAll(/\p{M}/gu, '').toLowerCase().trim();
@@ -167,8 +140,15 @@ export function candidateMeta(s) {
   return [artistLine(s), albumOf(s), year ? String(year) : ''].filter(Boolean).join(' · ');
 }
 
+const takenIds = (album, track) => new Set((album.tracks || []).filter((t) => t.no !== track.no && t.songId).map((t) => t.songId));
+
+export function searchSongs(album, track, query, songs = store.songs) {
+  const taken = takenIds(album, track);
+  return songs.filter((s) => !taken.has(s.id) && songMatches(s, query));
+}
+
 export function linkCandidates(album, track, songs = store.songs) {
-  const taken = new Set((album.tracks || []).filter((t) => t.no !== track.no && t.songId).map((t) => t.songId));
+  const taken = takenIds(album, track);
   const title = fold(track.title);
   const artist = fold(album.artist);
   const albumName = fold(album.title);
@@ -187,7 +167,7 @@ export function linkCandidates(album, track, songs = store.songs) {
 
 function openLinkPopup(album, track, onDone) {
   const err = el('p', { class: 'msg error', role: 'alert', hidden: true });
-  const list = linkCandidates(album, track);
+  const slot = el('div', { class: 'album-link-results' });
   const pick = async (s, buttons) => {
     err.hidden = true;
     for (const b of buttons) b.disabled = true;
@@ -201,37 +181,50 @@ function openLinkPopup(album, track, onDone) {
       for (const b of buttons) b.disabled = false;
     }
   };
-  const buttons = [];
-  const body = list.length
-    ? el('ul', { class: 'songs album-link-list' }, list.map((s) => {
-      const full = titleLine(s);
-      const meta = candidateMeta(s);
-      const b = el('button', { class: 'open t-headline', type: 'button', title: [full, meta].filter(Boolean).join(' - '), onclick: () => pick(s, buttons) }, full);
-      buttons.push(b);
-      const row = el('li', { class: `song album-link-row${player.current?.id === s.id ? ' current' : ''}`, 'data-id': s.id },
-        el('div', { class: 'info' },
-          el('div', { class: 'title-line' }, b, el('span', { class: 'title-len t-time', title: 'Length' }, songLength(s))),
-          el('div', { class: 'sub-line' }, el('span', { class: 'sub t-subhead' }, meta))));
-      row.addEventListener('click', (e) => { if (e.target !== b && !b.disabled) b.click(); });
-      return row;
-    }))
-    : el('p', { class: 'muted t-subhead' }, 'No matching songs in your library');
+  const paintList = (query) => {
+    const text = query.trim();
+    const list = text ? searchSongs(album, track, text) : linkCandidates(album, track);
+    const buttons = [];
+    slot.replaceChildren(list.length
+      ? el('ul', { class: 'songs album-link-list' }, list.map((s) => {
+        const full = titleLine(s);
+        const meta = candidateMeta(s);
+        const b = el('button', { class: 'open t-headline', type: 'button', title: [full, meta].filter(Boolean).join(' - '), onclick: () => pick(s, buttons) }, full);
+        buttons.push(b);
+        const row = el('li', { class: `song album-link-row${player.current?.id === s.id ? ' current' : ''}`, 'data-id': s.id },
+          el('div', { class: 'info' },
+            el('div', { class: 'title-line' }, b, el('span', { class: 'title-len t-time', title: 'Length' }, songLength(s))),
+            el('div', { class: 'sub-line' }, el('span', { class: 'sub t-subhead' }, meta))));
+        row.addEventListener('click', (e) => { if (e.target !== b && !b.disabled) b.click(); });
+        return row;
+      }))
+      : el('p', { class: 'muted t-subhead' }, 'No matching songs in your library'));
+  };
+  const search = searchBox({ placeholder: 'Search your songs', label: 'Search your songs', onChange: paintList });
+  paintList('');
   const sub = `${track.no}. ${track.title}${Number.isFinite(track.durationS) ? ` (${lengthText(track.durationS)})` : ''}`;
-  openPlDialog('Link song', dialogHead('Link song', sub, closePlDialog), err, body);
+  openPlDialog('Link song', dialogHead('Link song', sub, closePlDialog), search.node, err, slot);
 }
 
-function genreChip(g) {
-  if (!resolveNode(g, cachedTree())) return el('span', { class: 'tag ns t-caption', title: `genre:${g}` }, g);
-  const chip = el('button', { class: 'tag ns t-caption genre-chip-btn', type: 'button', title: `Open the genre card: ${g}`, 'data-genre': g, onclick: () => openGenreCard(g, chip) }, g);
-  return chip;
+const bpmNumbers = (tracks) => bpmRange(tracks).replace(/ bpm$/, '');
+
+function albumDetails(a) {
+  const bpm = bpmNumbers(a.tracks);
+  const time = totalTime(a.tracks);
+  const n = countOf(a);
+  const items = [
+    bpm ? el('span', { class: 'detail' }, el('span', { class: 'bpm-badge', title: 'Beats per minute (estimated)', 'aria-label': `BPM ${bpm}` }, bpm, el('small', { 'aria-hidden': 'true' }, 'BPM'))) : null,
+    n ? el('span', { class: 'detail' }, `Tracks: ${n}`) : null,
+    time ? el('span', { class: 'detail' }, `Length: ${time}`) : null,
+  ].filter(Boolean);
+  return items.length ? el('p', { class: 'facts t-caption card-details album-facts-line' }, ...items) : null;
 }
 
 export function openAlbumCard(album, opener = null) {
   const dlg = document.getElementById('song-card');
   const close = () => dlg.close();
   let cur = album;
-  let editingLinks = false;
-  const linkDrafts = {};
+  let buttons = null;
 
   let openNo = null;
   const rowKeys = (e) => {
@@ -260,14 +253,19 @@ export function openAlbumCard(album, opener = null) {
     const on = openNo === t.no;
     let panel;
     if (t.songId) {
-      const unlink = el('button', { type: 'button', class: 'x album-unlink', title: 'Unlink song', 'aria-label': `Unlink song from track ${t.no}`, onclick: async (e) => {
+      const unlink = el('button', { type: 'button', class: 'icon sq-btn album-unlink', title: 'Unlink song', 'aria-label': `Unlink song from track ${t.no}`, onclick: async (e) => {
         const btn = e.currentTarget;
         btn.disabled = true;
         try { paint(await api.unlinkTrack(cur.id, t.no)); } catch (ex) { btn.disabled = false; toast(ex.message); }
       } }, icon('unlink', 'inline'));
-      panel = el('span', { class: 'album-linked t-caption' },
-        el('span', { class: 'album-linked-name' }, linked ? displayLine(linked) : 'Linked song'),
-        el('span', { class: 'album-len muted' }, songLength(linked)), unlink);
+      const name = linked
+        ? el('button', { type: 'button', class: 'link-btn t-caption album-linked-name', title: 'Song info', onclick: (e) => { void openSongCard(linked, e.currentTarget); } }, displayLine(linked))
+        : el('span', { class: 'album-linked-name' }, 'Linked song');
+      const play = linked && hasAudio(linked)
+        ? el('button', { type: 'button', class: 'icon sq-btn album-play', title: 'Play', 'aria-label': `Play: ${displayLine(linked)}`, onclick: () => player.playNow(linked.id) }, icon('play', 'inline'))
+        : null;
+      panel = el('span', { class: 'album-linked t-caption' }, name,
+        el('span', { class: 'album-len muted' }, songLength(linked)), play, unlink);
     } else {
       panel = el('button', { type: 'button', class: 'link-btn t-caption album-link-btn', onclick: () => openLinkPopup(cur, t, paint) }, 'Link song');
     }
@@ -282,30 +280,33 @@ export function openAlbumCard(album, opener = null) {
   function paint(next) {
     if (next) { cur = next; window.dispatchEvent(new Event(ALBUMS_CHANGED)); }
     const closeBtn = el('button', { type: 'button', class: 'card-close', title: 'Close', 'aria-label': 'Close', onclick: close }, icon('clear', 'nav'));
-    const art = el('div', { class: 'card-art album-art' }, el('span', { class: 'cover-mark', 'aria-hidden': 'true' }, icon('coverPlaceholder')), closeBtn);
-    const editBtn = el('button', { class: 'link-btn t-caption album-edit-links', type: 'button', 'aria-expanded': String(editingLinks), onclick: () => { editingLinks = !editingLinks; paint(); } }, 'Edit links');
-    const linkRow = el('div', { class: 'album-links' }, linkIconRow(albumLinks(cur)), editBtn);
+    const links = albumLinks(cur);
     const genres = Array.isArray(cur.genres) ? cur.genres.filter(Boolean) : [];
     const tracks = cur.tracks || [];
+    const sub = [cur.artist, cur.year].filter(Boolean).join(' · ');
+    buttons = albumButtons(cur, { box: true, onEdit: () => openAlbumEdit(cur, (full) => paint(mergeLinks(cur, full)), close) });
     dlg.replaceChildren(...[
       el('span', { class: 'grab', 'aria-hidden': 'true' }),
-      art,
-      el('div', { class: 'card-head' },
-        el('h2', { id: 'song-card-title', class: 't-title' }, [cur.artist, cur.title].filter(Boolean).join(' - ')),
-        el('p', { class: 'card-sub t-subhead album-facts-line' }, albumFacts(cur))),
-      genres.length ? el('div', { class: 'chips album-genres' }, genres.map(genreChip)) : null,
-      linkRow,
-      editingLinks ? linksEditor(cur, (full) => { editingLinks = false; paint(mergeLinks(cur, full)); }, () => { editingLinks = false; for (const k of Object.keys(linkDrafts)) delete linkDrafts[k]; paint(); }, linkDrafts) : null,
-      el('div', { class: 'card-actions album-card-actions' }, el('div', { class: 'card-icons' }, albumButtons(cur, { box: true, onEdit: () => openAlbumEdit(cur, (full) => paint(full), close) }).all)),
+      closeBtn,
+      el('div', { class: 'card-head album-card-head' },
+        el('h2', { id: 'song-card-title', class: 't-title' }, cur.title),
+        sub ? el('p', { class: 'card-sub t-subhead' }, sub) : null),
+      albumDetails(cur),
+      genres.length ? el('div', { class: 'chip-groups card-tags' }, el('div', { class: 'chip-groups', role: 'group', 'aria-label': 'Genres' },
+        el('div', { class: 'chip-group card-genre-line' }, genres.map((g) => genreChip(g))))) : null,
+      Object.keys(links).length ? el('div', { class: 'album-links' }, linkIconRow(links)) : null,
+      buttons.all.length ? el('div', { class: 'card-actions album-card-actions' }, el('div', { class: 'card-icons' }, buttons.all)) : null,
       tracks.length ? el('ol', { class: 'album-tracks album-info-tracks' }, tracks.map(trackRow)) : null].filter(Boolean));
   }
 
   dlg.setAttribute('tabindex', '-1');
   paint();
+  const off = player.onChange(() => buttons?.repaint());
   dlg.onclick = (e) => { if (e.target === dlg) close(); };
-  dlg.addEventListener('close', () => { dlg.replaceChildren(); if (opener?.isConnected) opener.focus(); }, { once: true });
+  dlg.addEventListener('close', () => { off(); dlg.replaceChildren(); if (opener?.isConnected) opener.focus(); }, { once: true });
   if (!dlg.open) dlg.showModal();
   dlg.focus();
+  if (!cachedTree()) loadGenreTree().then((t) => { if (t && dlg.open && dlg.querySelector('.album-card-head')) paint(); });
 }
 
 export const GENRE_MAX = 20;
@@ -337,6 +338,64 @@ function genreEditor(initial) {
   return { node: field.node, get: () => tags.map((t) => t.slice(6)), commit: field.commit };
 }
 
+const linkedIds = (a) => (a.tracks || []).filter((t) => t.songId).map((t) => t.songId);
+
+function busy(ui, on) { for (const b of ui.buttons) b.disabled = on; }
+
+async function deleteOnly(album, ui) {
+  busy(ui, true);
+  try {
+    await api.deleteAlbum(album.id);
+    ui.close();
+    toast(`Deleted "${album.title}"`);
+    window.dispatchEvent(new Event(ALBUMS_CHANGED));
+    ui.onDone();
+  } catch (ex) {
+    ui.err.textContent = ex.message;
+    ui.err.hidden = false;
+    busy(ui, false);
+  }
+}
+
+async function deleteWithSongs(album, ui) {
+  const ids = linkedIds(album);
+  busy(ui, true);
+  ui.err.hidden = true;
+  let done = 0;
+  try {
+    for (const id of ids) {
+      try { await api.remove(id); } catch (ex) { if (ex.status !== 404) throw ex; } // NOSONAR songs go one at a time
+      done += 1;
+    }
+  } catch (ex) {
+    await store.refresh().catch(() => {});
+    window.dispatchEvent(new Event(ALBUMS_CHANGED));
+    ui.err.textContent = `Deleted ${done} of ${ids.length} songs: ${ex.message}`;
+    ui.err.hidden = false;
+    busy(ui, false);
+    return;
+  }
+  try {
+    await api.deleteAlbum(album.id);
+  } catch (ex) {
+    await store.refresh().catch(() => {});
+    ui.err.textContent = `Deleted ${done} of ${ids.length} songs, but the album could not be removed: ${ex.message}`;
+    ui.err.hidden = false;
+    busy(ui, false);
+    return;
+  }
+  await store.refresh().catch(() => {});
+  ui.close();
+  toast(`Deleted "${album.title}" and ${done} ${plural(done, 'song', 'songs')}`);
+  window.dispatchEvent(new Event(ALBUMS_CHANGED));
+  ui.onDone();
+}
+
+const withSongsText = (album) => {
+  const n = linkedIds(album).length;
+  return `Delete album '${album.title}' and ${n} ${plural(n, 'song', 'songs')} from your library? This cannot be undone.`;
+};
+
 function confirmDeleteAlbum(album, onDone) {
   const err = el('p', { class: 'msg error', role: 'alert', hidden: true });
   const del = el('button', { type: 'submit', class: 'btn danger' }, 'Delete album');
@@ -345,79 +404,53 @@ function confirmDeleteAlbum(album, onDone) {
     el('p', { class: 't-body' }, 'Your songs stay in the library.'),
     err,
     el('div', { class: 'row end' }, del));
-  form.addEventListener('submit', async (e) => {
+  form.addEventListener('submit', (e) => {
     e.preventDefault();
-    del.disabled = true;
-    try {
-      await api.deleteAlbum(album.id);
-      closePlDialog();
-      onDone();
-    } catch (ex) {
-      err.textContent = ex.message;
-      err.hidden = false;
-      del.disabled = false;
-    }
+    void deleteOnly(album, { err, buttons: [del], close: closePlDialog, onDone });
   });
   openPlDialog('Delete album?', form);
   del.focus();
 }
 
-const linkedIds = (a) => (a.tracks || []).filter((t) => t.songId).map((t) => t.songId);
-
 function confirmDeleteAlbumAndSongs(album, onDone) {
-  const ids = linkedIds(album);
   const err = el('p', { class: 'msg error', role: 'alert', hidden: true });
   const del = el('button', { type: 'submit', class: 'btn danger' }, 'Delete album and songs');
   const form = el('form', { method: 'dialog' },
     dialogHead('Delete album and its songs?', album.title, closePlDialog),
-    el('p', { class: 't-body' }, `Delete album '${album.title}' and ${ids.length} ${plural(ids.length, 'song', 'songs')} from your library? This cannot be undone.`),
+    el('p', { class: 't-body' }, withSongsText(album)),
     err,
     el('div', { class: 'row end' }, del));
-  form.addEventListener('submit', async (e) => {
+  form.addEventListener('submit', (e) => {
     e.preventDefault();
-    del.disabled = true;
-    err.hidden = true;
-    let done = 0;
-    try {
-      for (const id of ids) {
-        try { await api.remove(id); } catch (ex) { if (ex.status !== 404) throw ex; } // NOSONAR songs go one at a time
-        done += 1;
-      }
-    } catch (ex) {
-      await store.refresh().catch(() => {});
-      window.dispatchEvent(new Event(ALBUMS_CHANGED));
-      err.textContent = `Deleted ${done} of ${ids.length} songs: ${ex.message}`;
-      err.hidden = false;
-      del.disabled = false;
-      return;
-    }
-    try {
-      await api.deleteAlbum(album.id);
-    } catch (ex) {
-      await store.refresh().catch(() => {});
-      err.textContent = `Deleted ${done} of ${ids.length} songs, but the album could not be removed: ${ex.message}`;
-      err.hidden = false;
-      del.disabled = false;
-      return;
-    }
-    await store.refresh().catch(() => {});
-    closePlDialog();
-    toast(`Deleted "${album.title}" and ${done} ${plural(done, 'song', 'songs')}`);
-    window.dispatchEvent(new Event(ALBUMS_CHANGED));
-    onDone();
+    void deleteWithSongs(album, { err, buttons: [del], close: closePlDialog, onDone });
   });
   openPlDialog('Delete album and its songs?', form);
   del.focus();
 }
 
 function plainDeleteButton(album, onDone) {
-  return el('button', { class: 'btn danger small album-delete', type: 'button', onclick: () => confirmDeleteAlbum(album, () => { toast(`Deleted "${album.title}"`); window.dispatchEvent(new Event(ALBUMS_CHANGED)); onDone(); }) }, icon('trash', 'inline'), 'Delete album');
+  return el('button', { class: 'btn danger small album-delete', type: 'button', onclick: () => confirmDeleteAlbum(album, onDone) }, icon('trash', 'inline'), 'Delete album');
 }
 
 function deleteWithSongsButton(album, onDone) {
   if (!linkedIds(album).length) return null;
   return el('button', { class: 'btn danger small album-delete-all', type: 'button', onclick: () => confirmDeleteAlbumAndSongs(album, onDone) },
-    icon('trash', 'inline'), 'Delete album and its tracks from the library');
+    icon('trash', 'inline'), 'Delete album and its songs from the library');
+}
+
+function deleteStep(album, dlg, onDone) {
+  const ids = linkedIds(album);
+  const err = el('p', { class: 'msg error', role: 'alert', hidden: true });
+  const ui = { err, buttons: [], close: () => dlg.close(), onDone };
+  const only = el('button', { type: 'button', class: 'btn danger album-delete', onclick: () => { void deleteOnly(album, ui); } }, 'Delete album');
+  const both = ids.length ? el('button', { type: 'button', class: 'btn danger album-delete-all', onclick: () => { void deleteWithSongs(album, ui); } }, 'Delete album and its songs') : null;
+  ui.buttons.push(only, ...(both ? [both] : []));
+  dlg.replaceChildren(el('form', { method: 'dialog', class: 'album-delete-step' },
+    dialogHead('Delete album?', album.title, () => dlg.close()),
+    el('p', { class: 't-body' }, ids.length ? `Keep its ${ids.length} ${plural(ids.length, 'song', 'songs')} in the library, or delete them with the album. Deleting songs cannot be undone.` : 'Your songs stay in the library.'),
+    err,
+    el('div', { class: 'row end album-delete-choice' }, only, both)));
+  only.focus();
 }
 
 export const EDIT_LABELS = { title: 'Title', artist: 'Artist', year: 'Year', genres: 'Genres' };
@@ -431,6 +464,7 @@ export function openAlbumEdit(album, onSaved, closeCard = () => {}) {
     year: el('input', { type: 'text', 'aria-label': 'Year', inputMode: 'numeric', autocomplete: 'off', value: album.year ? String(album.year) : '' }),
   };
   const genres = genreEditor(album.genres);
+  const links = linkFields(album);
   const errs = {};
   const field = (key) => {
     errs[key] = el('p', { class: 'msg error t-caption', role: 'alert', hidden: true });
@@ -439,19 +473,20 @@ export function openAlbumEdit(album, onSaved, closeCard = () => {}) {
   errs.genres = el('p', { class: 'msg error t-caption', role: 'alert', hidden: true });
   const general = el('p', { class: 'msg error', role: 'alert', hidden: true });
   const showErr = (key, text) => { const e = errs[key]; if (e) { e.textContent = text; e.hidden = false; } else { general.textContent = text; general.hidden = false; } };
-  const done = () => { close(); closeCard(); };
   const save = el('button', { type: 'submit', class: 'btn primary glow' }, 'Save');
   const form = el('form', { method: 'dialog', class: 'album-edit' },
     dialogHead('Edit album', [album.artist, album.title].filter(Boolean).join(' - '), close),
     field('title'), field('artist'), field('year'),
     el('div', {}, genres.node, errs.genres),
+    el('div', { class: 'album-edit-links' }, links.map((f) => f.node)),
     general,
-    el('div', { class: 'row album-edit-deletes' }, plainDeleteButton(album, done), deleteWithSongsButton(album, done)),
-    el('div', { class: 'row end' }, el('button', { type: 'button', class: 'btn outline', onclick: close }, 'Cancel'), save));
+    el('div', { class: 'row end' },
+      el('button', { type: 'button', class: 'btn danger del-left', onclick: () => deleteStep(album, dlg, closeCard) }, 'Delete album'),
+      save));
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
     genres.commit();
-    for (const x of Object.values(errs)) x.hidden = true;
+    for (const x of [...Object.values(errs), ...links.map((f) => f.err)]) x.hidden = true;
     general.hidden = true;
     const body = {};
     const title = inputs.title.value.trim();
@@ -465,6 +500,12 @@ export function openAlbumEdit(album, onSaved, closeCard = () => {}) {
     if (year !== (album.year || null)) body.year = year;
     const next = genres.get();
     if (JSON.stringify(next) !== JSON.stringify(album.genres || [])) body.genres = next;
+    const changed = {};
+    for (const f of links) {
+      const v = f.input.value.trim();
+      if (v !== f.have) changed[f.key] = v || null;
+    }
+    if (Object.keys(changed).length) body.links = changed;
     if (!Object.keys(body).length) { close(); return; }
     save.disabled = true;
     try {
@@ -474,7 +515,9 @@ export function openAlbumEdit(album, onSaved, closeCard = () => {}) {
       onSaved(full);
     } catch (ex) {
       const key = ex.data?.key ?? ex.data?.detail?.key;
-      if ((ex.status === 422 || ex.code === 'bad_field') && EDIT_LABELS[key]) showErr(key, `This ${EDIT_LABELS[key].toLowerCase()} is not valid.`);
+      const bad = links.find((f) => f.key === key);
+      if ((ex.status === 422 || ex.code === 'bad_link') && bad) { bad.err.textContent = linkErrorText(bad.label); bad.err.hidden = false; }
+      else if ((ex.status === 422 || ex.code === 'bad_field') && EDIT_LABELS[key]) showErr(key, `This ${EDIT_LABELS[key].toLowerCase()} is not valid.`);
       else showErr('', ex.message);
       save.disabled = false;
     }
@@ -491,54 +534,103 @@ const loadFail = (retry) => el('div', { class: 'state card' },
 
 export const linkedSongs = (tracks) => (tracks || []).filter((t) => t.songId).map((t) => store.get(t.songId)).filter(Boolean);
 
-function albumButtons(a, { box = false, onEdit = null } = {}) {
-  const songs = linkedSongs(a.tracks);
-  const off = !songs.length;
-  const btn = (name, label, run, cls = '', disabled = off) => el('button', {
-    class: `${box ? 'icon round' : 'icon sq-btn'} album-act ${cls}`.trim(), type: 'button', disabled,
-    title: disabled ? 'No songs linked yet' : label, 'aria-label': `${label}: ${a.title}`, onclick: run,
+function playAlbumNext(songs) {
+  if (!player.current) { playAll(songs); return; }
+  let n = 0;
+  for (const s of [...songs].reverse()) {
+    const r = player.playNext(s.id);
+    if (r === 'next' || r === 'now') n += 1;
+  }
+  toast(n ? `Playing ${n} ${plural(n, 'song', 'songs')} next` : 'Not available to play');
+}
+
+const queuedOf = (songs) => songs.filter((s) => player.inQueue(s.id)).length;
+
+function paintQueue(btn, a, songs, box) {
+  const n = queuedOf(songs);
+  const all = songs.length > 0 && n === songs.length;
+  const label = all ? 'Remove from queue' : 'Add to queue';
+  let tip = 'Add to queue';
+  if (all) tip = `In the queue, ${n} of ${songs.length} ${plural(songs.length, 'song', 'songs')}. Click to remove`;
+  else if (n) tip = `${n} of ${songs.length} songs in the queue. Click to add the rest`;
+  btn.classList.toggle('on', all);
+  btn.title = tip;
+  btn.setAttribute('aria-label', `${label}: ${a.title}`);
+  btn.setAttribute('aria-pressed', String(all));
+  btn.replaceChildren(icon(all ? 'playlist' : 'listAdd', box ? 'nav' : 'inline'));
+}
+
+export const playableSongs = (songs) => songs.filter((s) => hasAudio(s) || autoDownloadOn());
+
+export function albumButtons(a, { box = false, onEdit = null } = {}) {
+  const songs = playableSongs(linkedSongs(a.tracks));
+  const make = (name, label, run, cls = '') => el('button', {
+    class: `${box ? 'icon round' : 'icon sq-btn'} album-act ${cls}`.trim(), type: 'button',
+    title: label, 'aria-label': `${label}: ${a.title}`, onclick: run,
   }, icon(name, box ? 'nav' : 'inline'));
-  const queue = btn('listAdd', 'Add to queue', () => addAllToQueue(songs), 'act-queue album-queue');
-  const rest = [
-    playlistsOn() ? btn('playlistPlus', 'Add to playlist...', (e) => { void openPlaylistPicker(songs, e.currentTarget); }, 'act-pl') : null,
+  let queue = null;
+  if (songs.length) {
+    queue = make('listAdd', 'Add to queue', (e) => {
+      e.stopPropagation();
+      if (songs.length === queuedOf(songs)) {
+        for (const s of songs) player.toggleInPlaylist(s.id);
+        toast(`Removed ${songs.length} ${plural(songs.length, 'song', 'songs')} from queue`);
+      } else addAllToQueue(songs);
+      paintQueue(queue, a, songs, box);
+    }, `act-queue album-queue${box ? ' pl-toggle' : ''}`);
+    paintQueue(queue, a, songs, box);
+  }
+  const all = [
+    box && songs.length ? make('play', 'Play album', () => playAll(songs), 'act-play') : null,
+    box && songs.length ? make('playPlus', 'Play next', () => playAlbumNext(songs), 'act-next') : null,
+    queue,
+    songs.length && playlistsOn() ? make('playlistPlus', 'Add to playlist...', (e) => { void openPlaylistPicker(songs, e.currentTarget); }, 'act-pl') : null,
     can('edit') && onEdit ? el('button', { class: 'icon round album-act act-edit', type: 'button', title: 'Edit', 'aria-label': `Edit: ${a.title}`, onclick: onEdit }, icon('pencil', 'nav')) : null,
   ].filter(Boolean);
-  return { queue, all: [queue, ...rest] };
+  return { queue, all, repaint: () => { if (queue) paintQueue(queue, a, songs, box); } };
 }
+
+const rowPaints = new WeakMap();
 
 function albumRow(a) {
   const n = countOf(a);
   const time = totalTime(a.tracks);
-  const bpm = bpmRange(a.tracks);
+  const bpm = bpmNumbers(a.tracks);
   const genres = Array.isArray(a.genres) ? a.genres.filter(Boolean) : [];
-  const songs = linkedSongs(a.tracks);
-  const { queue } = albumButtons(a);
-  const cover = el('button', {
-    class: 'row-cover album-cover', type: 'button', disabled: !songs.length,
-    title: songs.length ? 'Play album' : 'No songs linked yet', 'aria-label': `Play album: ${a.title}`,
-    onclick: () => playAll(songs),
-  }, el('span', { class: 'cover-mark', 'aria-hidden': 'true' }, icon('coverPlaceholder')));
-  const row = el('li', { class: 'song has-acts album-row', 'data-id': a.id, 'data-songs': songs.map((s) => s.id).join(',') },
+  const genreLine = genres.join(', ');
+  const linked = linkedSongs(a.tracks);
+  const songs = playableSongs(linked);
+  const ids = new Set(linked.map((s) => s.id));
+  const { queue, repaint } = albumButtons(a);
+  const name = `album ${a.title}`;
+  const hereNow = () => !!player.current && ids.has(player.current.id);
+  const model = () => coverModel({ audio: true, queueable: songs.length > 0, here: hereNow(), playing: player.playing });
+  const cover = coverButton(null, model(), name, { run: (action) => { if (action === 'pause' || action === 'resume') player.toggle(); else playAll(songs); } });
+  const open = el('button', { class: 'open t-headline album-name-btn', type: 'button', title: 'Album info', 'aria-label': `Open: ${a.title}` },
+    el('span', { class: 'ttl' }, a.title), ' ', el('span', { class: 'rmx' }, `· ${n} ${plural(n, 'track', 'tracks')}`));
+  const row = el('li', { class: `song has-acts album-row${songs.length ? '' : ' unlinked'}`, 'data-id': a.id, 'data-songs': linked.map((s) => s.id).join(',') },
     el('div', { class: 'row-acts' }, queue),
     cover,
     el('div', { class: 'info album-text' },
-      el('div', { class: 'title-line album-title' },
-        el('button', { class: 'open album-name-btn', type: 'button', title: 'Album info' }, `${a.title} · ${n} ${plural(n, 'track', 'tracks')}`),
-        time ? el('span', { class: 'title-len t-time album-time', title: 'Length' }, time) : null),
-      el('div', { class: 'sub-line' }, el('span', { class: 'sub t-subhead album-sub' }, [a.artist, a.year].filter(Boolean).join(' · ')))),
-    el('div', { class: 'album-facts muted t-caption' },
-      bpm ? el('span', { class: 'album-bpm' }, bpm) : null),
-    el('div', { class: 'chips album-genres' }, genres.map((g) => el('span', { class: 'chip tint' }, g))));
+      el('div', { class: 'title-line' }, open, time ? el('span', { class: 'title-len t-time album-time', title: 'Length' }, time) : null),
+      el('div', { class: 'sub-line' },
+        el('span', { class: 'sub t-subhead album-sub' }, [a.artist, a.year].filter(Boolean).join(' · ')),
+        bpm ? el('span', { class: 'sub-end' }, el('span', { class: 'bpm-badge album-bpm', title: 'Beats per minute (estimated)', 'aria-label': `BPM ${bpm}` }, bpm, el('small', { 'aria-hidden': 'true' }, 'BPM'))) : null)),
+    el('div', { class: 'c-genres t-subhead' }, el('span', { class: 'g-txt', title: genreLine || null }, genreLine)));
+  let was = null;
+  rowPaints.set(row, () => {
+    const here = hereNow();
+    row.classList.toggle('current', here);
+    if (here) row.setAttribute('aria-current', 'true'); else row.removeAttribute('aria-current');
+    paintCover(cover, model(), name);
+    repaint();
+    if (here !== was) { was = here; marquee(open, { auto: here, host: row }); }
+  });
   return row;
 }
 
 function paintCurrent(list) {
-  const cur = player.current?.id;
-  for (const li of list.querySelectorAll('li.album-row')) {
-    const on = !!cur && (li.dataset.songs || '').split(',').includes(cur);
-    li.classList.toggle('current', on);
-    if (on) li.setAttribute('aria-current', 'true'); else li.removeAttribute('aria-current');
-  }
+  for (const li of list.querySelectorAll('li.album-row')) rowPaints.get(li)?.();
 }
 
 export const ALBUMS_CHANGED = 'albums-changed';
@@ -968,7 +1060,10 @@ export function mountAlbums(pane, id = albumIdOf(location.hash)) {
     const clearFilters = el('button', { class: 'btn outline small', type: 'button', hidden: true, 'aria-label': 'Clear the search and all filters' }, icon('clear', 'inline'), 'Clear filters');
     const playAllBtn = el('button', { class: 'btn outline small', type: 'button', hidden: true });
     const addAllBtn = el('button', { class: 'btn outline small', type: 'button', hidden: true });
-    const toolbar = el('div', { class: 'toolbar', hidden: true }, searchField.node, cats);
+    const showPlaying = el('button', { class: 'btn outline small', type: 'button', hidden: true, 'aria-label': 'Show the album of the playing song in the list' }, icon('crosshair', 'inline'), 'Show playing');
+    const toolbar = el('div', { class: 'toolbar', hidden: true }, searchField.node, showPlaying, cats);
+    const head = el('div', { class: 'table-head t-eyebrow', 'aria-hidden': 'true' },
+      el('span'), el('span', {}, 'Album'), el('span', { class: 'c-genres' }, 'Genres'));
     const sortbar = el('div', { class: 'sortbar', hidden: true },
       el('label', { class: 'sort t-headline' }, sort, icon('chevron', 'inline')), reverse,
       summary, el('div', { class: 'sort-actions' }, clearFilters, playAllBtn, addAllBtn));
@@ -986,9 +1081,8 @@ export function mountAlbums(pane, id = albumIdOf(location.hash)) {
     const filtered = () => !!(prefs.query.trim() || sel.genres.size || sel.years.size);
     const songsOf = () => shown.flatMap((a) => linkedSongs(a.tracks));
     const visible = () => sortedAlbums(all.filter((a) => matchesQuery(a, prefs.query) && matchesFacets(a, sel)));
-    playAllBtn.addEventListener('click', () => playAll(songsOf()));
-    addAllBtn.addEventListener('click', () => addAllToQueue(songsOf()));
-    clearFilters.addEventListener('click', () => {
+    const albumOfSong = (id, from) => from.find((a) => linkedIds(a).includes(id)) || null;
+    const clearAll = () => {
       prefs.query = '';
       sel.genres.clear();
       sel.years.clear();
@@ -997,12 +1091,34 @@ export function mountAlbums(pane, id = albumIdOf(location.hash)) {
       savePrefs();
       saveAlbumPrefs();
       paintAll();
+    };
+    function scrollToAlbum(albumId) {
+      const row = [...listSlot.querySelectorAll('li.album-row')].find((r) => r.dataset.id === albumId);
+      if (!row) return;
+      const r = row.getBoundingClientRect();
+      const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+      window.scrollTo({
+        top: scrollTarget({ rowTop: r.top, rowHeight: r.height, scrollY: window.scrollY, viewportH: window.innerHeight, docH: document.documentElement.scrollHeight }),
+        behavior: reduce ? 'auto' : 'smooth',
+      });
+      row.classList.add('flash');
+      setTimeout(() => row.classList.remove('flash'), ROW_FLASH_MS);
+    }
+    showPlaying.addEventListener('click', () => {
+      const id = player.current?.id;
+      const album = id ? albumOfSong(id, all) : null;
+      if (!album) return;
+      if (shown.includes(album)) { scrollToAlbum(album.id); return; }
+      toast('Album is hidden by the current filters', { label: 'Show', run: () => { clearAll(); scrollToAlbum(album.id); } });
     });
+    playAllBtn.addEventListener('click', () => playAll(songsOf()));
+    addAllBtn.addEventListener('click', () => addAllToQueue(songsOf()));
+    clearFilters.addEventListener('click', clearAll);
 
     async function loadList() {
       let albums;
       try { albums = await api.albums(); } catch { if (!gone) listSlot.replaceChildren(loadFail(loadList)); return; }
-      const full = await Promise.all(albums.map((a) => api.album(a.id).then((d) => ({ ...a, ...d }), () => a)));
+      const full = await Promise.all(albums.map((a) => (Array.isArray(a.tracks) ? a : api.album(a.id).then((d) => ({ ...a, ...d }), () => a))));
       if (gone) return;
       all = full;
       paintAll();
@@ -1030,12 +1146,14 @@ export function mountAlbums(pane, id = albumIdOf(location.hash)) {
         return b;
       }));
       const songs = songsOf();
-      summary.textContent = all.length && filtered() ? `${shown.length} ${plural(shown.length, 'album matches', 'albums match')}` : '';
+      const picked = [...sel.genres, ...sel.years].slice(0, 3);
+      summary.textContent = all.length && filtered() ? `${shown.length} ${plural(shown.length, 'album matches', 'albums match')}${picked.length ? ` · ${picked.join(', ')}` : ''}` : '';
+      showPlaying.hidden = !(player.current && albumOfSong(player.current.id, all));
       clearFilters.hidden = !(all.length && filtered());
       playAllBtn.hidden = !songs.length;
-      playAllBtn.textContent = `Play all ${songs.length}`;
+      playAllBtn.textContent = `Play all ${songs.length} linked`;
       addAllBtn.hidden = !(filtered() && songs.length);
-      addAllBtn.textContent = `Add all ${songs.length} to queue`;
+      addAllBtn.textContent = `Add all ${songs.length} linked to queue`;
       if (!all.length) {
         listSlot.replaceChildren(el('div', { class: 'state card' },
           el('p', { class: 't-headline' }, 'No albums yet'),
@@ -1054,9 +1172,13 @@ export function mountAlbums(pane, id = albumIdOf(location.hash)) {
         if (album) openAlbumCard(album, row.querySelector('.open'));
       });
       paintCurrent(list);
-      listSlot.replaceChildren(el('div', { class: 'group album-group' }, list));
+      listSlot.replaceChildren(el('div', { class: 'group album-group' }, head, list));
     }
-    cleanups.push(player.onChange(() => { const ul = listSlot.querySelector('ul.album-list'); if (ul) paintCurrent(ul); }));
+    cleanups.push(player.onChange(() => {
+      const ul = listSlot.querySelector('ul.album-list');
+      if (ul) paintCurrent(ul);
+      showPlaying.hidden = !(player.current && albumOfSong(player.current.id, all));
+    }));
     await loadList();
   }
 

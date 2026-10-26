@@ -27,8 +27,8 @@ async function open(handler, album = ALBUM) {
   return { calls, dlg: document.getElementById('song-card'), album };
 }
 const submit = async (form) => { fire(form, 'submit'); for (let i = 0; i < 5; i++) await flush(); };
-const editBtn = (dlg) => dlg.querySelector('.album-edit-links');
-const input = (dlg, key) => dlg.querySelector(`.album-links-form input[data-key="${key}"]`);
+const openEdit = (v) => { fire(v.dlg.querySelector('.act-edit'), 'click'); return document.getElementById('edit-dialog'); };
+const input = (edit, key) => edit.querySelector(`.album-edit-links input[data-key="${key}"]`);
 
 test('albumLinks reads the four keys, ignores bad values, keeps the legacy fallbacks', () => {
   assert.deepEqual(albumLinks({ links: { discogs: DISCOGS, rateyourmusic: RYM, youtube: 'https://youtu.be/x', wikipedia: 'not a url' } }), { discogs: DISCOGS, rateyourmusic: RYM, youtube: 'https://youtu.be/x' });
@@ -37,7 +37,7 @@ test('albumLinks reads the four keys, ignores bad values, keeps the legacy fallb
   assert.equal(LINK_KEYS.length, 4);
 });
 
-test('the info box row shows one icon per set link in a new tab, plus an Edit links toggle; the old RYM field is gone', async () => {
+test('the info box row shows one icon per set link in a new tab; no Edit links toggle, no inline form, no old RYM field', async () => {
   const album = { ...ALBUM, links: { discogs: DISCOGS, rateyourmusic: RYM, youtube: 'https://www.youtube.com/playlist?list=PL1', wikipedia: 'https://en.wikipedia.org/wiki/Tumult' } };
   const v = await open(() => ok(album));
   const row = v.dlg.querySelector('.album-links');
@@ -47,46 +47,43 @@ test('the info box row shows one icon per set link in a new tab, plus an Edit li
     assert.equal(a.getAttribute('target'), '_blank');
     assert.match(a.getAttribute('rel'), /noopener/);
   }
-  assert.ok(editBtn(v.dlg));
+  assert.equal(v.dlg.querySelector('.album-edit-links'), null);
   assert.equal(v.dlg.querySelector('form.album-rym'), null);
   assert.equal(v.dlg.querySelector('.album-links-form'), null);
+  assert.equal([...v.dlg.querySelectorAll('button')].some((b) => b.textContent === 'Edit links'), false);
   v.dlg.close();
 });
 
-test('with no links only the Edit links toggle shows', async () => {
+test('with no links the info box shows no link row', async () => {
   const v = await open(() => ok(ALBUM));
-  assert.equal(v.dlg.querySelectorAll('.album-links .svc').length, 0);
-  assert.ok(editBtn(v.dlg));
+  assert.equal(v.dlg.querySelector('.album-links'), null);
   v.dlg.close();
 });
 
-test('Edit links reveals four labelled visible inputs with Save and Cancel; Cancel hides them', async () => {
+test('the Edit dialog has four labelled link inputs, prefilled, after Title, Artist, Year and Genres', async () => {
   const v = await open(() => ok({ ...ALBUM, links: { ...NO_LINKS, discogs: DISCOGS } }));
-  fire(editBtn(v.dlg), 'click');
-  const form = v.dlg.querySelector('.album-links-form');
-  assert.ok(form);
-  const inputs = [...form.querySelectorAll('input')];
+  const edit = openEdit(v);
+  const inputs = [...edit.querySelectorAll('.album-edit-links input')];
   assert.deepEqual(inputs.map((i) => i.getAttribute('aria-label')), ['Discogs', 'Rate Your Music', 'YouTube', 'Wikipedia']);
   assert.equal(inputs[0].value, DISCOGS);
   assert.ok(inputs.every((i) => i.tagName === 'INPUT' && i.getAttribute('placeholder')));
-  const buttons = [...form.querySelectorAll('button')].map((b) => b.textContent);
-  assert.deepEqual(buttons, ['Cancel', 'Save']);
-  fire([...form.querySelectorAll('button')][0], 'click');
-  assert.equal(v.dlg.querySelector('.album-links-form'), null);
+  assert.deepEqual([...edit.querySelectorAll('.row.end > button')].map((b) => b.textContent), ['Delete album', 'Save']);
+  edit.close();
   v.dlg.close();
 });
 
-test('Save sends only the changed keys, empty clears with null, and the row repaints', async () => {
+test('Save sends only the changed keys in one PATCH, empty clears with null, and the info box repaints', async () => {
   const saved = { ...ALBUM, links: { ...NO_LINKS, rateyourmusic: RYM } };
   const v = await open((u, o) => (o.method === 'PATCH' ? ok(saved) : ok({ ...ALBUM, links: { ...NO_LINKS, discogs: DISCOGS } })));
-  fire(editBtn(v.dlg), 'click');
-  input(v.dlg, 'rateyourmusic').value = `  ${RYM} `;
-  input(v.dlg, 'discogs').value = '';
-  await submit(v.dlg.querySelector('.album-links-form'));
-  const patch = v.calls.find((c) => c.opts.method === 'PATCH');
-  assert.equal(patch.url, '/albums/alb_1');
-  assert.deepEqual(JSON.parse(patch.opts.body), { links: { rateyourmusic: RYM, discogs: null } });
-  assert.equal(v.dlg.querySelector('.album-links-form'), null);
+  const edit = openEdit(v);
+  input(edit, 'rateyourmusic').value = `  ${RYM} `;
+  input(edit, 'discogs').value = '';
+  await submit(edit.querySelector('form'));
+  const patches = v.calls.filter((c) => c.opts.method === 'PATCH');
+  assert.equal(patches.length, 1);
+  assert.equal(patches[0].url, '/albums/alb_1');
+  assert.deepEqual(JSON.parse(patches[0].opts.body), { links: { rateyourmusic: RYM, discogs: null } });
+  assert.equal(edit.open, false);
   assert.equal(v.dlg.querySelector('.album-links .svc-rateyourmusic').getAttribute('href'), RYM);
   assert.equal(v.dlg.querySelector('.album-links .svc-discogs'), null);
   v.dlg.close();
@@ -94,25 +91,26 @@ test('Save sends only the changed keys, empty clears with null, and the row repa
 
 test('Save with nothing changed makes no request', async () => {
   const v = await open(() => ok(ALBUM));
-  fire(editBtn(v.dlg), 'click');
-  await submit(v.dlg.querySelector('.album-links-form'));
+  const edit = openEdit(v);
+  await submit(edit.querySelector('form'));
   assert.equal(v.calls.some((c) => c.opts.method === 'PATCH'), false);
-  assert.equal(v.dlg.querySelector('.album-links-form'), null);
+  assert.equal(edit.open, false);
   v.dlg.close();
 });
 
 test('422 bad_link shows the error under that field and keeps the typed text', async () => {
   const v = await open((u, o) => (o.method === 'PATCH' ? { status: 422, body: { error: 'bad_link', key: 'youtube' } } : ok(ALBUM)));
-  fire(editBtn(v.dlg), 'click');
-  input(v.dlg, 'youtube').value = 'https://example.com/x';
-  await submit(v.dlg.querySelector('.album-links-form'));
-  const field = input(v.dlg, 'youtube').parentNode;
-  const err = field.querySelector('.msg.error');
+  const edit = openEdit(v);
+  input(edit, 'youtube').value = 'https://example.com/x';
+  await submit(edit.querySelector('form'));
+  const err = input(edit, 'youtube').parentNode.querySelector('.msg.error');
   assert.equal(err.hidden, false);
   assert.equal(err.textContent, linkErrorText('YouTube'));
-  assert.equal(input(v.dlg, 'youtube').value, 'https://example.com/x');
-  assert.equal(input(v.dlg, 'discogs').parentNode.querySelector('.msg.error').hidden, true);
-  assert.equal(v.dlg.querySelector('.album-links-form button[type=submit]').disabled, false);
+  assert.equal(input(edit, 'youtube').value, 'https://example.com/x');
+  assert.equal(input(edit, 'discogs').parentNode.querySelector('.msg.error').hidden, true);
+  assert.equal(edit.querySelector('button[type=submit]').disabled, false);
+  assert.equal(edit.open, true);
+  edit.close();
   v.dlg.close();
 });
 
@@ -140,53 +138,35 @@ test('Add Album preview keeps one optional Rate Your Music field, sent as links.
   assert.deepEqual(posts[1].links, { rateyourmusic: RYM });
 });
 
-test('regression: link inputs are real text inputs and the sheet button rule cannot stretch Save', async () => {
+test('regression: the link fields are full-width text inputs in the Edit dialog, which is not a sheet', async () => {
   const v = await open(() => ok(ALBUM));
-  fire(editBtn(v.dlg), 'click');
-  const fieldInputs = [...v.dlg.querySelectorAll('.album-link-field input')];
-  assert.equal(fieldInputs.length, 4);
+  const edit = openEdit(v);
+  assert.equal(edit.querySelectorAll('.album-link-field input').length, 4);
+  assert.equal(edit.classList.contains('sheet'), false);
   const { readFileSync } = await import('node:fs');
   const css = readFileSync(new URL('../albums.css', import.meta.url), 'utf8');
-  assert.match(css, /\.album-links-actions \.btn \{[^}]*width: auto/);
   assert.match(css, /\.album-link-field input \{[^}]*width: 100%/);
+  assert.match(css, /\.album-delete-choice \.btn \{[^}]*width: auto/);
+  edit.close();
   v.dlg.close();
 });
 
-test('YouTube link: prefilled, kept after saving another key, merged when the reply omits it, and typed text survives a repaint', async () => {
+test('YouTube link: prefilled in the Edit dialog, kept in the info box after saving another key, merged when the reply omits it', async () => {
   const YT = 'https://www.youtube.com/playlist?list=PLabc123';
-  const withYt = { ...ALBUM, links: { ...NO_LINKS, youtube: YT }, tracks: [{ no: 1, title: 'Intro', durationS: 65, songId: 'u1' }] };
+  const withYt = { ...ALBUM, links: { ...NO_LINKS, youtube: YT } };
   const afterRym = { ...withYt, links: { discogs: null, rateyourmusic: RYM, wikipedia: null } };
-  const unlinked = { ...withYt, tracks: [{ no: 1, title: 'Intro', durationS: 65, songId: null }] };
-  const v = await open((u, o) => {
-    if (o.method === 'PATCH') return ok(afterRym);
-    if (o.method === 'DELETE') return ok(unlinked);
-    return ok(withYt);
-  });
+  const v = await open((u, o) => (o.method === 'PATCH' ? ok(afterRym) : ok(withYt)));
   assert.equal(v.dlg.querySelector('.svc-youtube').getAttribute('href'), YT);
-  fire(editBtn(v.dlg), 'click');
-  assert.equal(input(v.dlg, 'youtube').value, YT);
-
-  input(v.dlg, 'discogs').value = 'https://www.discogs.com/release/9';
-  fire(input(v.dlg, 'discogs'), 'input');
-  fire(v.dlg.querySelector('.album-row-btn'), 'click');
-  fire(v.dlg.querySelector('.album-unlink'), 'click');
-  for (let i = 0; i < 5; i++) await flush();
-  assert.equal(input(v.dlg, 'discogs').value, 'https://www.discogs.com/release/9', 'typed but unsaved text survives an unrelated repaint');
-  assert.equal(input(v.dlg, 'youtube').value, YT);
-
-  input(v.dlg, 'discogs').value = '';
-  fire(input(v.dlg, 'discogs'), 'input');
-  input(v.dlg, 'rateyourmusic').value = RYM;
-  await submit(v.dlg.querySelector('.album-links-form'));
+  const edit = openEdit(v);
+  assert.equal(input(edit, 'youtube').value, YT);
+  input(edit, 'rateyourmusic').value = RYM;
+  await submit(edit.querySelector('form'));
   assert.deepEqual(JSON.parse(v.calls.find((c) => c.opts.method === 'PATCH').opts.body), { links: { rateyourmusic: RYM } });
   assert.equal(v.dlg.querySelector('.album-links .svc-youtube').getAttribute('href'), YT, 'a reply that omits the key does not drop it');
-
-  fire(editBtn(v.dlg), 'click');
-  assert.equal(input(v.dlg, 'youtube').value, YT);
-  assert.equal(input(v.dlg, 'rateyourmusic').value, RYM);
-  fire([...v.dlg.querySelectorAll('.album-links-form button')][0], 'click');
-  fire(editBtn(v.dlg), 'click');
-  assert.equal(input(v.dlg, 'discogs').value, '', 'Cancel throws the typed text away');
+  const again = openEdit(v);
+  assert.equal(input(again, 'youtube').value, YT);
+  assert.equal(input(again, 'rateyourmusic').value, RYM);
+  again.close();
   v.dlg.close();
 });
 

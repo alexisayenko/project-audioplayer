@@ -8,13 +8,14 @@ import { cachedListening, getListening, invalidateListening, hasListening, liste
 import { autodl, autoDownloadOn } from './autodl.js';
 import { downloadSong } from './download.js';
 import { editDialog } from './edit-dialog.js';
-import { changeCover, openGenreCard, openPlaylistPicker } from './lazy-ui.js';
+import { changeCover, openPlaylistPicker } from './lazy-ui.js';
+import { genreChip } from './genre-chip.js';
 import { playlistsOn } from './playlists-store.js';
 import { creditParts, subtitle, titleNodes, detailsLines, yearFact, albumOf, albumsOf, displayLine } from './credits.js';
 import { icon } from './icons.js';
 import { bpmLabel, liveBpmLabel, LIVE_IDLE } from './bpm-label.js';
 import { visibleTags, tagGroups, tagLabel, splitTag } from './tagname.js';
-import { genreLines, resolveNode } from './genre-levels.js';
+import { genreLines } from './genre-levels.js';
 import { cachedTree, loadGenreTree } from './genre-tree.js';
 import { serviceIcons } from './service-icons.js';
 import { storedLinkStates } from './song-links.js';
@@ -127,12 +128,6 @@ export function referenceBadge(songId) {
   const marks = songMarks(songId);
   if (!marks.length) return null;
   return el('p', { class: 'ref-badge t-caption', title: `Reference track for ${marksTip(marks)}` }, icon('star', 'inline'), ...marks.map((m) => el('span', { class: 'ref-badge-item' }, `${m.genre}: ${roleLabel(m.role)}`)));
-}
-
-function genreChip(g) {
-  if (!resolveNode(g, cachedTree())) return el('span', { class: 'tag ns t-caption', title: `genre:${g}` }, g);
-  const chip = el('button', { class: 'tag ns t-caption genre-chip-btn', type: 'button', title: `Open the genre card: ${g}`, 'data-genre': g, onclick: () => openGenreCard(g, chip) }, g);
-  return chip;
 }
 
 function genreRows(lines) {

@@ -175,11 +175,14 @@ test('card header: album and track count, artist and year, total time, bpm of li
   const full = { ...ALBUM, genres: ['Techno', 'Ambient'], tracks: [{ no: 1, title: 'A', durationS: 60, songId: 's1' }, { no: 2, title: 'B', durationS: 3600, songId: 's2' }, { no: 3, title: 'C', durationS: 5, songId: null }] };
   const v = setup((u) => (u === '/albums' ? ok([ROW]) : ok(full)));
   await v.unmount.ready;
-  assert.match(v.q('.album-title').textContent, /^Tumult · 3 tracks/);
+  assert.match(v.q('.title-line .open').textContent, /^Tumult · 3 tracks/);
+  assert.equal(v.q('.title-line .open .ttl').textContent, 'Tumult');
+  assert.equal(v.q('.title-line .open .rmx').textContent, '· 3 tracks');
   assert.equal(v.q('.album-sub').textContent, 'Derango · 2004');
   assert.equal(v.q('.album-time').textContent, '1:01:05');
-  assert.equal(v.q('.album-bpm').textContent, '120 - 128 bpm');
-  assert.deepEqual([...v.pane.querySelectorAll('.album-genres .chip')].map((c) => c.textContent), ['Techno', 'Ambient']);
+  assert.equal(v.q('.sub-line .sub-end .bpm-badge').textContent, '120 - 128BPM');
+  assert.equal(v.q('.c-genres .g-txt').textContent, 'Techno, Ambient');
+  assert.equal(v.q('.album-facts'), null);
   store.songs = [];
   assert.equal(bpmRange(full.tracks), '');
 });
@@ -189,6 +192,7 @@ test('header omits bpm and chips when nothing is linked or genres are missing', 
   await v.unmount.ready;
   assert.equal(v.q('.album-bpm'), null);
   assert.equal(v.pane.querySelectorAll('.album-row .chip').length, 0);
+  assert.equal(v.q('.c-genres .g-txt').textContent, '');
 });
 
 test('facet helpers: distinct values with counts, any within a facet, all across facets', () => {
@@ -224,27 +228,32 @@ test('facet pills: hidden without albums; Genres and Years counts; picking filte
   assert.equal(v.pane.querySelectorAll('.album-row').length, 2);
 });
 
-test('album card queue button: disabled with no linked track, queues linked songs in track order', async () => {
+test('album row queue button: omitted with no playable song, queues linked songs in track order, toggles', async () => {
   const { store } = await import('./store.js');
   store.songs = [{ id: 'q1', title: 'One', artist: 'X', file: 'q1.mp3', duration: 60 }, { id: 'q2', title: 'Two', artist: 'X', file: 'q2.mp3', duration: 60 }];
   const none = setup((u) => (u === '/albums' ? ok([ROW]) : ok(ALBUM)));
   await none.unmount.ready;
-  const off = none.q('.album-queue');
-  assert.equal(off.disabled, true);
-  assert.equal(off.title, 'No songs linked yet');
-  assert.ok(off.classList.contains('act-queue') && off.classList.contains('sq-btn'));
+  assert.equal(none.q('.album-queue'), null);
+  assert.equal(none.q('.row-acts').children.length, 0);
 
   const linked = { ...ALBUM, tracks: [{ no: 1, title: 'B', durationS: 1, songId: 'q2' }, { no: 2, title: 'gap', durationS: 1, songId: null }, { no: 3, title: 'A', durationS: 1, songId: 'q1' }] };
   const v = setup((u) => (u === '/albums' ? ok([ROW]) : ok(linked)));
   await v.unmount.ready;
   const btn = v.q('.album-queue');
-  assert.equal(btn.disabled, false);
+  assert.ok(btn.classList.contains('act-queue') && btn.classList.contains('sq-btn'));
   assert.equal(btn.title, 'Add to queue');
+  assert.equal(btn.getAttribute('aria-pressed'), 'false');
   assert.equal(v.q('.album-row').firstChild, v.q('.row-acts'));
   assert.ok(v.q('.album-row .row-acts').contains(btn));
   fire(btn, 'click');
   assert.ok(player.queuePosition('q2').pos < player.queuePosition('q1').pos);
   assert.match(document.getElementById('toast').textContent, /Added 2 songs/);
+  assert.equal(btn.getAttribute('aria-pressed'), 'true');
+  assert.ok(btn.classList.contains('on'));
+  fire(btn, 'click');
+  assert.equal(player.inQueue('q1') || player.inQueue('q2'), false);
+  assert.match(document.getElementById('toast').textContent, /Removed 2 songs from queue/);
+  assert.equal(btn.getAttribute('aria-pressed'), 'false');
 });
 
 test('tapping the album name opens the info box; Esc/close and backdrop close it', async () => {
@@ -256,13 +265,15 @@ test('tapping the album name opens the info box; Esc/close and backdrop close it
   fire(v.q('.album-name-btn'), 'click');
   const dlg = document.getElementById('song-card');
   assert.equal(dlg.open, true);
-  assert.equal(dlg.querySelector('h2').textContent, 'Derango - Tumult');
-  assert.equal(dlg.querySelector('.album-facts-line').textContent, '2 tracks · 100 - 140 bpm · 4:25 · 2004');
-  assert.deepEqual([...dlg.querySelectorAll('.album-genres .tag')].map((c) => c.textContent), ['Techno']);
+  assert.equal(dlg.querySelector('h2').textContent, 'Tumult');
+  assert.equal(dlg.querySelector('.card-sub').textContent, 'Derango · 2004');
+  assert.equal(dlg.querySelector('.card-details').textContent, '100 - 140BPMTracks: 2Length: 4:25');
+  assert.equal(dlg.querySelector('.card-art'), null);
+  assert.deepEqual([...dlg.querySelectorAll('.card-genre-line .tag')].map((c) => c.textContent), ['Techno']);
   assert.equal(dlg.querySelector('.svc-discogs').getAttribute('href'), 'https://www.discogs.com/release/545650-Derango-Tumult');
   assert.equal(dlg.querySelector('.svc-youtube'), null);
   assert.deepEqual([...dlg.querySelectorAll('.album-info-tracks li')].map((li) => li.textContent), ['1.Intro1:05-', '2.Noise3:20-']);
-  assert.ok(dlg.querySelector('.card-art .card-close'));
+  assert.ok(dlg.querySelector('.card-close'));
   fire(dlg.querySelector('.card-close'), 'click');
   assert.equal(dlg.open, false);
 });
@@ -273,14 +284,14 @@ test('info box on the album page title; no links or genres row when there is no 
   await v.unmount.ready;
   fire(v.q('h2 .album-name-btn'), 'click');
   const dlg = document.getElementById('song-card');
-  assert.equal(dlg.querySelector('.album-genres'), null);
+  assert.equal(dlg.querySelector('.card-genre-line'), null);
   assert.equal(dlg.querySelector('.svc-discogs').getAttribute('href'), 'https://www.discogs.com/release/545650');
-  assert.doesNotMatch(dlg.querySelector('.album-facts-line').textContent, /bpm/);
+  assert.doesNotMatch(dlg.querySelector('.card-details')?.textContent || '', /BPM/);
   dlg.close();
   assert.deepEqual(albumLinks({ source: 'https://evil.example/x' }), {});
 });
 
-test('info box action row: queue, playlist and edit only; disabled without linked songs; no unimplemented buttons', async () => {
+test('info box action row: Play album, Play next, queue toggle, playlist, edit; no disabled buttons; no unimplemented ones', async () => {
   const { store } = await import('./store.js');
   store.songs = [{ id: 'z1', title: 'One', artist: 'X', file: 'z1.mp3', duration: 60 }];
   const dlg = document.getElementById('song-card');
@@ -288,26 +299,29 @@ test('info box action row: queue, playlist and edit only; disabled without linke
   const none = setup((u) => (u === '/albums' ? ok([ROW]) : ok(ALBUM)));
   await none.unmount.ready;
   fire(none.q('.album-name-btn'), 'click');
-  const names0 = [...dlg.querySelectorAll('.album-act')].map((b) => b.getAttribute('aria-label').split(':')[0]);
-  assert.equal(names0.includes('Play next') || names0.includes('Share link') || names0.includes('Download'), false);
-  for (const b of dlg.querySelectorAll('.album-act')) {
-    if (b.classList.contains('act-edit')) assert.equal(b.disabled, false);
-    else assert.ok(b.disabled && b.title === 'No songs linked yet');
-  }
+  const names0 = [...dlg.querySelectorAll('.card-icons button')].map((b) => b.getAttribute('aria-label').split(':')[0]);
+  assert.deepEqual(names0, ['Edit']);
   dlg.close();
 
   const v = setup((u) => (u === '/albums' ? ok([ROW]) : ok(linked)));
   await v.unmount.ready;
   fire(v.q('.album-name-btn'), 'click');
-  const acts = [...dlg.querySelectorAll('.album-act')];
+  const acts = [...dlg.querySelectorAll('.card-icons button')];
   const names = acts.map((b) => b.getAttribute('aria-label').split(':')[0]);
-  assert.deepEqual(names, ['Add to queue', 'Add to playlist...', 'Edit'].filter((n) => names.includes(n)));
-  assert.equal(names[0], 'Add to queue');
+  assert.deepEqual(names.slice(0, 3), ['Play album', 'Play next', 'Add to queue']);
   assert.ok(names.includes('Edit'));
+  assert.equal(names.includes('Share link') || names.includes('Download'), false);
   assert.ok(acts.every((b) => !b.disabled));
   document.getElementById('toast').textContent = '';
-  fire(acts[0], 'click');
+  const queue = acts[2];
+  assert.ok(queue.classList.contains('pl-toggle'));
+  fire(queue, 'click');
   assert.match(document.getElementById('toast').textContent, /Added 1 song/);
+  assert.equal(queue.getAttribute('aria-pressed'), 'true');
+  fire(queue, 'click');
+  assert.equal(queue.getAttribute('aria-pressed'), 'false');
+  fire(acts[0], 'click');
+  assert.match(document.getElementById('toast').textContent, /Playing 1 song/);
   dlg.close();
 });
 
@@ -344,11 +358,11 @@ test('preview genres use the song-form genre field: vocabulary suggestions, remo
   assert.equal(GENRE_MAX, 20);
 });
 
-test('cards show genre chips without remove buttons', async () => {
+test('rows show genres as plain muted text like Songs, no chips', async () => {
   const v = setup((u) => (u === '/albums' ? ok([ROW]) : ok({ ...ALBUM, genres: ['Techno'] })));
   await v.unmount.ready;
-  assert.equal(v.pane.querySelectorAll('.album-genres .chip').length, 1);
-  assert.equal(v.pane.querySelectorAll('.album-genres .x').length, 0);
+  assert.equal(v.pane.querySelectorAll('.album-row .chip').length, 0);
+  assert.equal(v.q('.album-row .c-genres .g-txt').textContent, 'Techno');
 });
 
 test('the list row keeps ONLY the queue button; the cover plays the linked songs', async () => {
@@ -359,7 +373,7 @@ test('the list row keeps ONLY the queue button; the cover plays the linked songs
   await none.unmount.ready;
   const cover0 = none.q('.album-row .row-cover');
   assert.equal(cover0.disabled, true);
-  assert.equal(cover0.title, 'No songs linked yet');
+  assert.ok(none.q('.album-row').classList.contains('unlinked'));
 
   const v = setup((u) => (u === '/albums' ? ok([ROW]) : ok(linked)));
   await v.unmount.ready;
@@ -428,7 +442,7 @@ test('Delete album and its tracks: first error stops, shows Deleted M of N and k
   dlg.close();
 });
 
-test('the info box has no delete buttons; the pencil opens the Edit dialog that has both', async () => {
+test('the info box has no delete buttons; the pencil opens the Edit dialog whose Delete album step offers both', async () => {
   const { store } = await import('./store.js');
   store.songs = [{ id: 'x1', file: 'x1.mp3' }];
   const full = { ...ALBUM, genres: ['Techno'], tracks: [{ no: 1, title: 'A', durationS: 1, songId: 'x1' }] };
@@ -441,8 +455,14 @@ test('the info box has no delete buttons; the pencil opens the Edit dialog that 
   fire(dlg.querySelector('.act-edit'), 'click');
   const edit = document.getElementById('edit-dialog');
   assert.equal(edit.open, true);
-  assert.ok(edit.querySelector('.album-delete.danger'));
-  assert.ok(edit.querySelector('.album-delete-all.danger'));
+  const footer = [...edit.querySelectorAll('.row.end > button')];
+  assert.deepEqual(footer.map((x) => x.textContent), ['Delete album', 'Save']);
+  assert.ok(footer[0].classList.contains('danger') && footer[0].classList.contains('del-left'));
+  assert.equal(edit.querySelector('.album-delete-choice'), null);
+  fire(footer[0], 'click');
+  assert.match(edit.querySelector('h2').textContent, /Delete album?/);
+  const choice = [...edit.querySelectorAll('.album-delete-choice button')];
+  assert.deepEqual(choice.map((x) => x.textContent), ['Delete album', 'Delete album and its songs']);
   edit.close();
   dlg.close();
 });

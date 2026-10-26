@@ -48,17 +48,22 @@ test('candidate meta: Artist · Album · year, unknown parts omitted', () => {
   assert.equal(candidateMeta(SONGS[3]), 'DERANGO');
 });
 
-test('unlinked track shows Link song; the popup lists entries with title attribute, no text input', async () => {
+test('unlinked track shows Link song; the popup has a search field and lists entries with title attribute', async () => {
   const v = await open(() => ok(ALBUM));
   const rows = [...v.dlg.querySelectorAll('.album-info-tracks li')];
   assert.equal(rows.length, 3);
   assert.ok(rows[0].querySelector('.album-link-btn'));
   assert.equal(rows[1].querySelector('.album-link-btn'), null);
   assert.match(rows[1].querySelector('.album-linked').textContent, /Derango - Noise3:21/);
+  assert.equal(rows[1].querySelector('button.album-linked-name').textContent, 'Derango - Noise');
+  assert.ok(rows[1].querySelector('.album-play.sq-btn'));
+  assert.ok(rows[1].querySelector('.album-unlink.sq-btn'));
+  assert.equal(rows[1].querySelector('.album-unlink').classList.contains('x'), false);
   fire(rows[0].querySelector('.album-link-btn'), 'click');
   const pop = document.getElementById('pl-dialog');
   assert.equal(pop.open, true);
-  assert.equal(pop.querySelectorAll('input').length, 0);
+  assert.equal(pop.querySelectorAll('input').length, 1);
+  assert.equal(pop.querySelector('input').type, 'search');
   const items = [...pop.querySelectorAll('li.song')];
   assert.equal(items.length, 3);
   assert.equal(items[0].querySelector('.open').textContent, 'Intro');
@@ -66,6 +71,16 @@ test('unlinked track shows Link song; the popup lists entries with title attribu
   assert.equal(items[0].querySelector('.title-len').textContent, '1:06');
   assert.equal(items[1].querySelector('.title-len').textContent, '-');
   assert.equal(items[0].querySelector('.bpm-badge'), null);
+  const box = pop.querySelector('input');
+  box.value = 'another';
+  fire(box, 'input');
+  assert.deepEqual([...pop.querySelectorAll('li.song')].map((li) => li.dataset.id), ['s5']);
+  box.value = 'zzzz';
+  fire(box, 'input');
+  assert.match(pop.textContent, /No matching songs in your library/);
+  box.value = '';
+  fire(box, 'input');
+  assert.equal(pop.querySelectorAll('li.song').length, 3);
   pop.close();
   v.dlg.close();
 });

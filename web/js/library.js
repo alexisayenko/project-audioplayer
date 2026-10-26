@@ -133,7 +133,7 @@ export function renderLibrary(root) {
   }
 
   const addSong = can('add') ? el('button', { class: 'btn primary glow', type: 'button', onclick: (e) => openAdd(undefined, e.currentTarget) }, icon('plus', 'action'), 'Add song') : null;
-  const addAlbum = can('add') ? el('button', { class: 'btn primary glow', type: 'button', hidden: true, onclick: (e) => { const o = e.currentTarget; void loadUi('albums').then((m) => m.openAddAlbum(o)); } }, 'Add Album', icon('plus', 'action')) : null;
+  const addAlbum = can('add') ? el('button', { class: 'btn primary glow', type: 'button', hidden: true, onclick: (e) => { const o = e.currentTarget; void loadUi('albums').then((m) => m.openAddAlbum(o)); } }, icon('plus', 'action'), 'Add album') : null;
   root.append(
     el('header', { class: 'page-head lib-head' },
       el('div', { class: 'page-title' },

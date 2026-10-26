@@ -57,7 +57,7 @@ test('#/library/albums shows the Albums view', async () => {
   await flush();
   await flush();
   const head = [...v.root.querySelectorAll('.head-actions button')];
-  assert.equal(head.find((b) => b.textContent.includes('Add Album')).hidden, false);
+  assert.equal(head.find((b) => b.textContent.includes('Add album')).hidden, false);
   assert.equal(head.find((b) => b.textContent.includes('Add song')).hidden, true);
   assert.equal(v.root.querySelector('h1').textContent, 'Albums');
   assert.equal(v.total(), '');
@@ -129,7 +129,7 @@ test('the Add song button is hidden on the Albums view only', async () => {
   assert.equal(hiddenOn('#/library/drafts'), false);
   assert.equal(hiddenOn('#/library/albums'), true);
   assert.equal(hiddenOn('#/library/albums/alb_1'), true);
-  const albumBtn = (hash) => { const v = setup({ hash }); const b = [...v.root.querySelectorAll('.head-actions button')].find((x) => x.textContent.includes('Add Album')); const h = b.hidden; v.cleanup(); return h; };
+  const albumBtn = (hash) => { const v = setup({ hash }); const b = [...v.root.querySelectorAll('.head-actions button')].find((x) => x.textContent.includes('Add album')); const h = b.hidden; v.cleanup(); return h; };
   assert.equal(albumBtn(''), true);
   assert.equal(albumBtn('#/library/drafts'), true);
   assert.equal(albumBtn('#/library/albums'), false);
