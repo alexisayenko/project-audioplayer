@@ -7,7 +7,7 @@ globalThis.location = { hash: '', href: 'http://localhost/', host: 'localhost' }
 const { initPlayer } = await import('./player.js');
 initPlayer();
 const { player } = await import('./player.js');
-const { mountAlbums, albumIdOf, totalTime, bpmRange, albumLinks, facetValues, matchesFacets, fetchErrorText } = await import('./albums.js');
+const { mountAlbums, albumIdOf, totalTime, bpmRange, addGenres, GENRE_MAX, albumLinks, facetValues, matchesFacets, fetchErrorText } = await import('./albums.js');
 
 const PREVIEW = { title: 'Tumult', artist: 'Derango', year: 2004, source: 'discogs:545650', tracks: [{ no: 1, title: 'Intro', durationS: 65 }, { no: 2, title: 'Noise', durationS: null }] };
 const ALBUM = { id: 'alb_1', title: 'Tumult', artist: 'Derango', year: 2004, source: 'discogs:545650', tracks: [{ no: 1, title: 'Intro', durationS: 65, songId: null }, { no: 2, title: 'Noise', durationS: 200, songId: null }] };
@@ -75,7 +75,7 @@ test('Add Album fetches the preview, Create posts it and the card joins the list
   assert.ok([...v.pane.querySelectorAll('button')].some((b) => b.textContent === 'Cancel'));
   fire(create, 'click');
   await flush(); await flush(); await flush();
-  assert.deepEqual(JSON.parse(v.calls.find((c) => c.url === '/albums' && c.opts.method === 'POST').opts.body), PREVIEW);
+  assert.deepEqual(JSON.parse(v.calls.find((c) => c.url === '/albums' && c.opts.method === 'POST').opts.body), { ...PREVIEW, genres: [] });
   assert.equal(v.q('.album-preview'), null);
   assert.equal(v.pane.querySelectorAll('.album-card').length, 1);
 });
@@ -288,4 +288,42 @@ test('card action row: song-row order, disabled without linked songs, picker wir
     assert.equal(document.getElementById('toast').textContent, 'Not implemented yet');
     document.getElementById('toast').textContent = '';
   }
+});
+
+test('addGenres trims, dedupes case-insensitively and caps at 20', () => {
+  assert.deepEqual(addGenres(['Techno'], ' techno, House ,, Ambient'), ['Techno', 'House', 'Ambient']);
+  const many = addGenres([], Array.from({ length: 30 }, (_, i) => `g${i}`).join(','));
+  assert.equal(many.length, GENRE_MAX);
+});
+
+test('preview genre chips are editable and Create sends the edited list; cards stay read-only', async () => {
+  const withGenres = { ...PREVIEW, genres: ['Techno', 'Dub'] };
+  const v = setup((u, o) => {
+    if (u === '/albums/preview') return ok(withGenres);
+    if (u === '/albums' && o.method === 'POST') return ok({ ...ALBUM, genres: ['Techno', 'Ambient'] }, 201);
+    return ok([]);
+  });
+  await v.unmount.ready;
+  await submitUrl(v, 'https://www.discogs.com/release/1');
+  const chips = () => [...v.pane.querySelectorAll('.album-preview .album-genres .chip')].map((c) => c.textContent);
+  assert.deepEqual(chips(), ['Techno', 'Dub']);
+  fire([...v.pane.querySelectorAll('.album-preview .x')].find((b) => b.getAttribute('aria-label') === 'Remove Dub'), 'click');
+  assert.deepEqual(chips(), ['Techno']);
+  const input = v.q('.album-genre-input');
+  input.value = 'ambient';
+  fire(input, 'keydown', { key: 'Enter' });
+  input.value = 'TECHNO,';
+  fire(input, 'input');
+  assert.deepEqual(chips(), ['Techno', 'ambient']);
+  fire([...v.pane.querySelectorAll('button')].find((b) => b.textContent === 'Create'), 'click');
+  await flush(); await flush();
+  const post = v.calls.find((c) => c.url === '/albums' && c.opts.method === 'POST');
+  assert.deepEqual(JSON.parse(post.opts.body).genres, ['Techno', 'ambient']);
+});
+
+test('cards show genre chips without remove buttons', async () => {
+  const v = setup((u) => (u === '/albums' ? ok([ROW]) : ok({ ...ALBUM, genres: ['Techno'] })));
+  await v.unmount.ready;
+  assert.equal(v.pane.querySelectorAll('.album-genres .chip').length, 1);
+  assert.equal(v.pane.querySelectorAll('.album-genres .x').length, 0);
 });

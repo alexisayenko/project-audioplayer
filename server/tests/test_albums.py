@@ -109,7 +109,7 @@ def test_create_revalidates(client, discogs, patch):
 def test_create_clamps_genres(client, discogs):
     body = {**preview(client).json(), "genres": ["a", "A", " b ", 5] + [str(i) for i in range(20)]}
     got = client.post("/albums", json=body, headers=H).json()["genres"]
-    assert got[:3] == ["a", "b", "5"] and len(got) == 8
+    assert got[:3] == ["a", "b", "5"] and len(got) == 20
 
 
 def test_bad_durations_and_year_are_nulled(client, discogs):

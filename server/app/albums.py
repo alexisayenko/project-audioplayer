@@ -17,7 +17,7 @@ from .jsonio import write_json_atomic
 MAX_ALBUMS = 2000
 MAX_TRACKS = 500
 MAX_TEXT = 300
-MAX_GENRES = 8
+MAX_GENRES = 20
 ID_RE = re.compile(r"alb_[0-9a-f]{8}")
 _URL = re.compile(r"https://(?:www\.)?discogs\.com/(?:[a-z]{2}(?:-[A-Z]{2})?/)?(release|master)/(\d+)(?:[-/?#].*)?")
 _POS = re.compile(r"\s+")

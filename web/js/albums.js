@@ -112,6 +112,40 @@ export function openAlbumCard(album, opener = null) {
   dlg.focus();
 }
 
+export const GENRE_MAX = 20;
+
+export function addGenres(list, raw) {
+  const out = [...list];
+  for (const g of String(raw).split(',').map((p) => p.trim()).filter(Boolean)) {
+    if (out.length >= GENRE_MAX) break;
+    if (!out.some((x) => x.toLocaleLowerCase() === g.toLocaleLowerCase())) out.push(g);
+  }
+  return out;
+}
+
+function genreEditor(initial, onChange) {
+  let genres = addGenres([], (initial || []).join(','));
+  const chips = el('div', { class: 'chips album-genres' });
+  const input = el('input', { type: 'text', class: 'album-genre-input', placeholder: 'Add a genre', 'aria-label': 'Add a genre', autocomplete: 'off' });
+  const paint = () => {
+    chips.replaceChildren(...genres.map((g) => el('span', { class: 'chip tint' }, g,
+      el('button', { type: 'button', class: 'x', 'aria-label': `Remove ${g}`, onclick: () => { genres = genres.filter((x) => x !== g); paint(); onChange(genres); } }, icon('clear', 'inline')))));
+    chips.hidden = !genres.length;
+    input.disabled = genres.length >= GENRE_MAX;
+  };
+  const commit = () => {
+    if (!input.value.trim()) return;
+    genres = addGenres(genres, input.value);
+    input.value = '';
+    paint();
+    onChange(genres);
+  };
+  input.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); commit(); } });
+  input.addEventListener('input', () => { if (input.value.includes(',')) commit(); });
+  paint();
+  return { node: el('div', { class: 'album-genre-edit chip-field' }, chips, input), get: () => genres };
+}
+
 const FACETS = [
   { id: 'genres', name: 'Genres', of: (a) => (Array.isArray(a.genres) ? a.genres.filter(Boolean) : []) },
   { id: 'years', name: 'Years', of: (a) => (a.year ? [String(a.year)] : []) },
@@ -255,13 +289,14 @@ export function mountAlbums(pane, id = albumIdOf(location.hash)) {
     const clearPreview = () => { preview = null; previewSlot.replaceChildren(); };
 
     function paintPreview() {
+      const editor = genreEditor(preview.genres, () => {});
       const create = el('button', { class: 'btn primary', type: 'button' }, 'Create');
       const cancel = el('button', { class: 'btn outline', type: 'button', onclick: () => { clearPreview(); err.hidden = true; } }, 'Cancel');
       create.addEventListener('click', async () => {
         err.hidden = true;
         create.disabled = true;
         try {
-          const made = await api.createAlbum(preview);
+          const made = await api.createAlbum({ ...preview, genres: editor.get() });
           clearPreview();
           url.value = '';
           toast(`Added "${made.title}"`);
@@ -275,7 +310,8 @@ export function mountAlbums(pane, id = albumIdOf(location.hash)) {
         }
       });
       previewSlot.replaceChildren(el('div', { class: 'card album-card album-preview' },
-        albumHead(preview),
+        albumHead({ ...preview, genres: [] }),
+        editor.node,
         trackList(preview.tracks || []),
         el('div', { class: 'row end' }, cancel, create)));
     }
