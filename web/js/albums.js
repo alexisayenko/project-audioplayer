@@ -85,6 +85,36 @@ export function albumFacts(a) {
   return [`${n} ${plural(n, 'track', 'tracks')}`, bpm, totalTime(a.tracks), a.year ? String(a.year) : ''].filter(Boolean).join(' · ');
 }
 
+export const RYM_ERROR = 'Use a rateyourmusic.com album or release address.';
+const rymHref = (u) => (typeof u === 'string' && /^https?:\/\/\S+$/i.test(u.trim()) ? u.trim() : '');
+
+function rymBadge(url) {
+  return el('a', { class: 'svc svc-rym on', href: url, target: '_blank', rel: 'noopener', title: 'RateYourMusic', 'aria-label': 'RateYourMusic' },
+    el('span', { class: 't-caption', 'aria-hidden': 'true' }, 'RYM'));
+}
+
+function rymForm(album, onSaved) {
+  const input = el('input', { type: 'text', placeholder: 'https://rateyourmusic.com/release/album/...', 'aria-label': 'RateYourMusic link', autocomplete: 'off', inputMode: 'url', value: album.rymUrl || '' });
+  const save = el('button', { class: 'btn fill small', type: 'submit' }, 'Save');
+  const err = el('p', { class: 'msg error t-caption', role: 'alert', hidden: true });
+  const form = el('form', { class: 'album-rym' },
+    el('label', { class: 't-caption muted' }, 'RateYourMusic link'),
+    el('div', { class: 'well' }, input, save), err);
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    err.hidden = true;
+    save.disabled = true;
+    try {
+      onSaved(await api.patchAlbum(album.id, { rymUrl: input.value.trim() || null }));
+    } catch (ex) {
+      err.textContent = ex.status === 422 || ex.code === 'bad_rym_url' ? RYM_ERROR : ex.message;
+      err.hidden = false;
+      save.disabled = false;
+    }
+  });
+  return form;
+}
+
 const fold = (s) => String(s ?? '').normalize('NFD').replaceAll(/\p{M}/gu, '').toLowerCase().trim();
 const songLength = (s) => (Number.isFinite(s?.duration) && s.duration > 0 ? fmtTime(s.duration) : '-');
 
@@ -193,8 +223,10 @@ export function openAlbumCard(album, opener = null) {
     const closeBtn = el('button', { type: 'button', class: 'card-close', title: 'Close', 'aria-label': 'Close', onclick: close }, icon('clear', 'nav'));
     const art = el('div', { class: 'card-art album-art' }, el('span', { class: 'cover-mark', 'aria-hidden': 'true' }, icon('coverPlaceholder')), closeBtn);
     const links = albumLinks(cur);
-    const svc = Object.keys(links).length ? serviceIcons({ onlyOn: true }) : null;
+    const rym = rymHref(cur.rymUrl);
+    const svc = Object.keys(links).length || rym ? serviceIcons({ onlyOn: true }) : null;
     svc?.setState(links);
+    if (rym) svc.node.append(rymBadge(rym));
     const genres = Array.isArray(cur.genres) ? cur.genres.filter(Boolean) : [];
     const tracks = cur.tracks || [];
     dlg.replaceChildren(...[
@@ -205,6 +237,7 @@ export function openAlbumCard(album, opener = null) {
         el('p', { class: 'card-sub t-subhead album-facts-line' }, albumFacts(cur))),
       genres.length ? el('div', { class: 'chips album-genres' }, genres.map((g) => el('span', { class: 'tag ns t-caption' }, g))) : null,
       svc?.node,
+      rymForm(cur, paint),
       el('div', { class: 'card-actions album-card-actions' }, el('div', { class: 'card-icons' }, albumButtons(cur, true).all), plainDeleteButton(cur, close), deleteWithSongsButton(cur, close)),
       tracks.length ? el('ol', { class: 'album-tracks album-info-tracks' }, tracks.map(trackRow)) : null].filter(Boolean));
   }
@@ -447,6 +480,7 @@ export function openAddAlbum(opener = null) {
   function paintPreview(preview) {
     const editor = genreEditor(preview.genres);
     const time = totalTime(preview.tracks);
+    const rymInput = el('input', { type: 'text', placeholder: 'RateYourMusic link (optional)', 'aria-label': 'RateYourMusic link', autocomplete: 'off', inputMode: 'url' });
     const create = el('button', { class: 'btn primary glow', type: 'button' }, icon('plus', 'nav'), 'Create');
     const back = el('button', { class: 'btn outline', type: 'button', onclick: () => { body.replaceChildren(); say(''); form.hidden = false; url.focus(); } }, 'Back');
     create.addEventListener('click', async () => {
@@ -454,7 +488,8 @@ export function openAddAlbum(opener = null) {
       say('');
       create.disabled = true;
       try {
-        const made = await api.createAlbum({ ...preview, genres: editor.get() });
+        const rymUrl = rymInput.value.trim();
+        const made = await api.createAlbum({ ...preview, genres: editor.get(), ...(rymUrl ? { rymUrl } : {}) });
         dlg.close();
         toast(`Added "${made.title}"`);
         window.dispatchEvent(new Event(ALBUMS_CHANGED));
@@ -472,6 +507,7 @@ export function openAddAlbum(opener = null) {
         el('div', { class: 't-headline album-headline' }, [`${preview.artist} - ${preview.title}`, preview.year].filter(Boolean).join(' · ')),
         time ? el('div', { class: 't-time muted album-time' }, time) : null),
       editor.node,
+      el('div', { class: 'field album-rym' }, el('label', { class: 't-caption muted' }, 'RateYourMusic link (optional)'), rymInput),
       trackList(preview.tracks || []),
       el('div', { class: 'add-foot' }, back, create)));
   }

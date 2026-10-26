@@ -82,7 +82,7 @@ def test_create_list_get_delete_roundtrip(client, discogs, tmp_path):
     assert album["created_at"]
     assert stored(tmp_path)[0]["id"] == album["id"]
     assert client.get("/albums", headers=H).json() == [
-        {"id": album["id"], "title": "Tumult", "artist": "Derango", "year": 2004, "genres": ["Electronic", "Rock", "Hardcore", "Breakbeat"], "trackCount": 5, "created_at": album["created_at"]}]
+        {"id": album["id"], "title": "Tumult", "artist": "Derango", "year": 2004, "genres": ["Electronic", "Rock", "Hardcore", "Breakbeat"], "rymUrl": None, "trackCount": 5, "created_at": album["created_at"]}]
     assert client.get(f"/albums/{album['id']}", headers=H).json() == album
     assert client.delete(f"/albums/{album['id']}", headers=H).status_code == 200
     assert client.get("/albums", headers=H).json() == []
@@ -212,3 +212,51 @@ def test_link_is_per_user_and_needs_a_login(multi, discogs):
     assert c.delete(f"/albums/{album['id']}/tracks/1/song", headers=b).status_code == 404
     assert link(c, album, 1, VID, {}).status_code == 401
     assert c.delete(f"/albums/{album['id']}/tracks/1/song").status_code == 401
+
+
+RYM = "https://rateyourmusic.com/release/album/derango/tumult/"
+
+
+@pytest.mark.parametrize("value,expected", [
+    (RYM, RYM),
+    ("https://www.rateyourmusic.com/release/album/derango/tumult/?x=1#top", RYM),
+    ("  https://rateyourmusic.com/album/foo ", "https://rateyourmusic.com/album/foo"),
+    ("", None), (None, None), ("   ", None),
+])
+def test_clean_rym_accepts(value, expected):
+    assert albums.clean_rym(value) == expected
+
+
+@pytest.mark.parametrize("value", [
+    "http://rateyourmusic.com/release/a", "https://evil.com/release/a", "https://rateyourmusic.com.evil.com/release/a",
+    "https://rateyourmusic.com/artist/x", "https://rateyourmusic.com/", "https://rateyourmusic.com/release/" + "a" * 300, 5,
+])
+def test_clean_rym_rejects(value):
+    with pytest.raises(albums.AlbumError) as e:
+        albums.clean_rym(value)
+    assert (e.value.status, e.value.code) == (422, "bad_rym_url")
+
+
+def test_rym_on_create_patch_list_and_get(client, discogs, tmp_path):
+    base = preview(client).json()
+    assert base["rymUrl"] is None
+    assert client.post("/albums", json={**base, "rymUrl": "https://x.com/release/a"}, headers=H).json()["detail"] == "bad_rym_url"
+    album = client.post("/albums", json={**base, "rymUrl": RYM + "?q=1"}, headers=H).json()
+    assert album["rymUrl"] == RYM
+    assert client.get("/albums", headers=H).json()[0]["rymUrl"] == RYM
+    r = client.patch(f"/albums/{album['id']}", json={"rymUrl": "https://rateyourmusic.com/release/album/x/y/"}, headers=H)
+    assert r.status_code == 200 and r.json()["rymUrl"].endswith("/x/y/") and r.json()["tracks"]
+    assert client.get(f"/albums/{album['id']}", headers=H).json()["rymUrl"].endswith("/x/y/")
+    assert client.patch(f"/albums/{album['id']}", json={"rymUrl": "nope"}, headers=H).status_code == 422
+    assert client.patch(f"/albums/{album['id']}", json={"rymUrl": ""}, headers=H).json()["rymUrl"] is None
+    assert client.patch(f"/albums/{album['id']}", json={"rymUrl": RYM}, headers=H).status_code == 200
+    assert client.patch(f"/albums/{album['id']}", json={"rymUrl": None}, headers=H).json()["rymUrl"] is None
+    assert stored(tmp_path)[0]["rymUrl"] is None
+    assert client.patch("/albums/alb_00000000", json={"rymUrl": None}, headers=H).status_code == 404
+    assert client.patch(f"/albums/{album['id']}", json={"rymUrl": None}).status_code == 401
+
+
+def test_rym_missing_or_bad_in_file_reads_null(tmp_path):
+    path = tmp_path / "albums.json"
+    path.write_text(json.dumps({"albums": [{"id": "alb_00000001", "tracks": []}, {"id": "alb_00000002", "tracks": [], "rymUrl": "http://evil"}]}), encoding="utf-8")
+    assert [a["rymUrl"] for a in albums.load(path)] == [None, None]

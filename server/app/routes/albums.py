@@ -8,7 +8,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from fastapi.concurrency import run_in_threadpool
 
 from .. import albums, deps, library, users
-from ..schemas import AlbumLinkRequest, AlbumPreviewRequest
+from ..schemas import AlbumLinkRequest, AlbumPatchRequest, AlbumPreviewRequest
 
 router = APIRouter()
 User = Annotated[dict[str, Any], Depends(deps.require_token)]
@@ -70,6 +70,21 @@ def _found(items: list[dict[str, Any]], album_id: str) -> dict[str, Any]:
 @router.get("/albums/{album_id}", responses=deps.responses(404))
 def get_album(album_id: str, user: User):
     return _found(_snapshot(user["uid"]), album_id)
+
+
+@router.patch("/albums/{album_id}", responses=deps.responses(404, 422))
+def patch_album(album_id: str, body: AlbumPatchRequest, user: User):
+    try:
+        rym = albums.clean_rym(body.rymUrl)
+    except albums.AlbumError as exc:
+        _raise(exc)
+    uid = user["uid"]
+    with deps.tx(uid, "albums patch"):
+        items = albums.load(deps.albums_path(uid))
+        album = _found(items, album_id)
+        album["rymUrl"] = rym
+        albums.save(deps.albums_path(uid), items)
+        return album
 
 
 @router.delete("/albums/{album_id}", responses=deps.responses(404))

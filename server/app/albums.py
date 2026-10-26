@@ -36,6 +36,20 @@ def parse_url(value: Any) -> tuple[str, int]:
     return match.group(1), int(match.group(2))
 
 
+_RYM = re.compile(r"https://(?:www\.)?rateyourmusic\.com(/(?:release|album)/[^?#\s]*)(?:[?#].*)?")
+
+
+def clean_rym(value: Any) -> str | None:
+    """A RateYourMusic release link normalised (https, no www, no query or fragment); empty or None is None; anything else raises 422 bad_rym_url."""
+    if value is None or (isinstance(value, str) and not value.strip()):
+        return None
+    text = value.strip() if isinstance(value, str) else ""
+    match = _RYM.fullmatch(text) if len(text) <= 300 else None
+    if not match:
+        raise AlbumError(422, "bad_rym_url")
+    return f"https://rateyourmusic.com{match.group(1)}"
+
+
 def parse_duration(value: Any) -> int | None:
     parts = str(value or "").strip().split(":")
     if not 1 < len(parts) <= 3 or not all(p.isdigit() for p in parts):
@@ -111,6 +125,7 @@ def preview(url: Any) -> dict[str, Any]:
         "artist": _artists(detail)[:MAX_TEXT],
         "year": timeutil.valid_year(detail.get("year")) if detail.get("year") else None,
         "genres": _genres(detail),
+        "rymUrl": None,
         "source": {"type": "discogs", "id": str(ident), "url": f"https://www.discogs.com/release/{ident}"},
         "tracks": tracks,
     }
@@ -143,6 +158,7 @@ def validate(body: Any) -> dict[str, Any]:
         "artist": str(body.get("artist") or "").strip()[:MAX_TEXT],
         "year": timeutil.valid_year(year) if isinstance(year, int) and not isinstance(year, bool) else None,
         "genres": genres,
+        "rymUrl": clean_rym(body.get("rymUrl")),
         "source": {"type": "discogs", "id": ident, "url": f"https://www.discogs.com/release/{ident}"},
         "tracks": tracks,
     }
@@ -155,6 +171,13 @@ def new_id(existing: set[str]) -> str:
             return value
 
 
+def _stored_rym(value: Any) -> str | None:
+    try:
+        return clean_rym(value)
+    except AlbumError:
+        return None
+
+
 def load(path: Path) -> list[dict[str, Any]]:
     try:
         raw = json.loads(path.read_text(encoding="utf-8"))
@@ -162,7 +185,7 @@ def load(path: Path) -> list[dict[str, Any]]:
         return []
     items = raw.get("albums") if isinstance(raw, dict) else None
     good = [a for a in (items if isinstance(items, list) else []) if isinstance(a, dict) and isinstance(a.get("id"), str) and isinstance(a.get("tracks", []), list)]
-    return [{**a, "genres": _genres({"genres": a["genres"] if isinstance(a.get("genres"), list) else []})} for a in good]
+    return [{**a, "rymUrl": _stored_rym(a.get("rymUrl")), "genres": _genres({"genres": a["genres"] if isinstance(a.get("genres"), list) else []})} for a in good]
 
 
 def save(path: Path, albums: list[dict[str, Any]]) -> None:
@@ -179,11 +202,11 @@ def find_source(albums: list[dict[str, Any]], source: dict[str, Any]) -> dict[st
 
 def build(payload: dict[str, Any], existing: set[str]) -> dict[str, Any]:
     tracks = [{**t, "songId": None} for t in payload["tracks"]]
-    return {"id": new_id(existing), **{k: payload[k] for k in ("title", "artist", "year", "genres", "source")}, "tracks": tracks, "created_at": timeutil.now_utc()}
+    return {"id": new_id(existing), **{k: payload[k] for k in ("title", "artist", "year", "genres", "rymUrl", "source")}, "tracks": tracks, "created_at": timeutil.now_utc()}
 
 
 def summary(a: dict[str, Any]) -> dict[str, Any]:
-    return {"id": a["id"], "title": a.get("title", ""), "artist": a.get("artist", ""), "year": a.get("year"), "genres": a.get("genres") or [], "trackCount": len(a.get("tracks") or []), "created_at": a.get("created_at")}
+    return {"id": a["id"], "title": a.get("title", ""), "artist": a.get("artist", ""), "year": a.get("year"), "genres": a.get("genres") or [], "rymUrl": a.get("rymUrl"), "trackCount": len(a.get("tracks") or []), "created_at": a.get("created_at")}
 
 
 def without_dangling(album: dict[str, Any], song_ids: set[Any]) -> dict[str, Any]:

@@ -28,6 +28,10 @@ class AlbumPreviewRequest(BaseModel):
     url: str = Field(min_length=1, max_length=2000)
 
 
+class AlbumPatchRequest(BaseModel):
+    rymUrl: str | None = Field(default=None, max_length=2000)
+
+
 class AlbumLinkRequest(BaseModel):
     songId: str = Field(min_length=1, max_length=64)
 
