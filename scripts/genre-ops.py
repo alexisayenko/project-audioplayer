@@ -174,42 +174,42 @@ def _changed_row(k: str, o: dict | None, w: dict | None) -> str | None:
     return None
 
 
-def _review_checks(P, old_all: dict, new_all: dict, new_groups: dict) -> None:
+def _review_checks(emit, old_all: dict, new_all: dict, new_groups: dict) -> None:
     gone = sorted(set(old_all) - set(new_all))
-    P(f"- CHECK every genre still exists exactly once (as a genre or a promoted genre): {'OK' if not gone else 'FAIL missing ' + ', '.join(gone)}")
+    emit(f"- CHECK every genre still exists exactly once (as a genre or a promoted genre): {'OK' if not gone else 'FAIL missing ' + ', '.join(gone)}")
     lost = sorted(k for k, v in new_all.items() if not v["families"])
-    P(f"- CHECK no genre lost its place (every genre has at least one level 1 ancestor): {'OK' if not lost else 'FAIL ' + ', '.join(lost)}")
+    emit(f"- CHECK no genre lost its place (every genre has at least one level 1 ancestor): {'OK' if not lost else 'FAIL ' + ', '.join(lost)}")
     bad = sorted(k for k in new_all if k in {g.lower() for g in new_groups} or k in {s.lower() for g in new_groups.values() for s in g["synonyms"]})
-    P(f"- CHECK no group (or group synonym) is a genre: {'OK' if not bad else 'FAIL ' + ', '.join(bad)}")
+    emit(f"- CHECK no group (or group synonym) is a genre: {'OK' if not bad else 'FAIL ' + ', '.join(bad)}")
 
 
 def review(base: dict, new: dict, base_name: str) -> str:
     out: list[str] = []
-    P = out.append
+    emit = out.append
     old_e, old_f, _, _ = gv.parse_all(base)
     new_e, new_f, _, _ = gv.parse_all(new)
     old_all, new_all = {**old_e, **old_f}, {**new_e, **new_f}
     _, new_groups = gv.parse_groups(base), gv.parse_groups(new)
-    P(f"# Genre data review: working tree against {base_name}\n")
-    P(f"- genres below level 1: {len(old_e)} -> {len(new_e)}; promoted level 1 genres: {len(old_f)} -> {len(new_f)} ({', '.join(new_f) or '-'}); groups: {', '.join(new_groups) or '-'}")
-    _review_checks(P, old_all, new_all, new_groups)
+    emit(f"# Genre data review: working tree against {base_name}\n")
+    emit(f"- genres below level 1: {len(old_e)} -> {len(new_e)}; promoted level 1 genres: {len(old_f)} -> {len(new_f)} ({', '.join(new_f) or '-'}); groups: {', '.join(new_groups) or '-'}")
+    _review_checks(emit, old_all, new_all, new_groups)
     oc = collections.Counter(v["level"] for v in old_all.values())
     nc = collections.Counter(v["level"] for v in new_all.values())
-    P("\n## Level distribution (every genre, promoted ones are level 1)\n\n| level | before | after |\n|---|---|---|")
+    emit("\n## Level distribution (every genre, promoted ones are level 1)\n\n| level | before | after |\n|---|---|---|")
     for lvl in sorted(set(oc) | set(nc)):
-        P(f"| {lvl} | {oc.get(lvl, 0)} | {nc.get(lvl, 0)} |")
+        emit(f"| {lvl} | {oc.get(lvl, 0)} | {nc.get(lvl, 0)} |")
     fo, fn = _famcount(old_e), _famcount(new_e)
-    P("\n## Genres below each level 1 name (a genre under several is counted in each)\n\n| level 1 name | before | after |\n|---|---|---|")
+    emit("\n## Genres below each level 1 name (a genre under several is counted in each)\n\n| level 1 name | before | after |\n|---|---|---|")
     for f in dict.fromkeys([*fo, *fn]):
-        P(f"| {f} | {fo.get(f, '-')} | {fn.get(f, '-')} |")
-    P("\n## Changed genres (old parents / level -> new parents / level)\n\n| genre | before | after | notes |\n|---|---|---|---|")
+        emit(f"| {f} | {fo.get(f, '-')} | {fn.get(f, '-')} |")
+    emit("\n## Changed genres (old parents / level -> new parents / level)\n\n| genre | before | after | notes |\n|---|---|---|---|")
     rows = [r for r in (_changed_row(k, old_all.get(k), new_all.get(k)) for k in dict.fromkeys([*old_all, *new_all])) if r]
     out.extend(rows)
-    P(f"\nChanged rows: {len(rows)}.")
+    emit(f"\nChanged rows: {len(rows)}.")
     moved = collections.Counter((old_all[k]["level"], new_all[k]["level"]) for k in old_all if k in new_all and old_all[k]["level"] != new_all[k]["level"])
-    P("Level moves (old -> new: genres): " + (", ".join(f"L{a}->L{b}: {c}" for (a, b), c in sorted(moved.items())) or "none"))
+    emit("Level moves (old -> new: genres): " + (", ".join(f"L{a}->L{b}: {c}" for (a, b), c in sorted(moved.items())) or "none"))
     multi = sorted(k for k, v in new_all.items() if len(v["families"]) >= 2)
-    P(f"\nGenres under two or more level 1 names (equal parents): {len(multi)}")
+    emit(f"\nGenres under two or more level 1 names (equal parents): {len(multi)}")
     return "\n".join(out) + "\n"
 
 
