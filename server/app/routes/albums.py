@@ -7,8 +7,8 @@ from typing import Annotated, Any
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.concurrency import run_in_threadpool
 
-from .. import albums, deps, users
-from ..schemas import AlbumPreviewRequest
+from .. import albums, deps, library, users
+from ..schemas import AlbumLinkRequest, AlbumPreviewRequest
 
 router = APIRouter()
 User = Annotated[dict[str, Any], Depends(deps.require_token)]
@@ -20,7 +20,9 @@ def _raise(exc: albums.AlbumError):
 
 def _snapshot(uid: str) -> list[dict[str, Any]]:
     with users.user_lock(uid):
-        return albums.load(deps.albums_path(uid))
+        items = albums.load(deps.albums_path(uid))
+        ids = {s.get("id") for s in library.load(deps.library_path(uid))} if any(t.get("songId") for a in items for t in a["tracks"]) else set()
+    return [albums.without_dangling(a, ids) for a in items]
 
 
 @router.post("/albums/preview", responses=deps.responses(400, 404, 502, 503))
@@ -78,3 +80,38 @@ def delete_album(album_id: str, user: User):
         found = _found(items, album_id)
         albums.save(deps.albums_path(uid), [a for a in items if a is not found])
     return {"deleted": album_id}
+
+
+def _track(album: dict[str, Any], no: int) -> dict[str, Any]:
+    for t in album["tracks"]:
+        if t.get("no") == no:
+            return t
+    raise HTTPException(status_code=404, detail="track_not_found")
+
+
+@router.put("/albums/{album_id}/tracks/{no}/song", responses=deps.responses(404, 409, 422))
+def link_song(album_id: str, no: int, body: AlbumLinkRequest, user: User):
+    uid = user["uid"]
+    with deps.tx(uid, "albums link"):
+        items = albums.load(deps.albums_path(uid))
+        album = _found(items, album_id)
+        track = _track(album, no)
+        if body.songId not in {s.get("id") for s in library.load(deps.library_path(uid))}:
+            raise HTTPException(status_code=404, detail="song_not_found")
+        other = next((t for t in album["tracks"] if t is not track and t.get("songId") == body.songId), None)
+        if other:
+            raise HTTPException(status_code=409, detail={"code": "already_linked", "no": other["no"]})
+        track["songId"] = body.songId
+        albums.save(deps.albums_path(uid), items)
+        return album
+
+
+@router.delete("/albums/{album_id}/tracks/{no}/song", responses=deps.responses(404))
+def unlink_song(album_id: str, no: int, user: User):
+    uid = user["uid"]
+    with deps.tx(uid, "albums unlink"):
+        items = albums.load(deps.albums_path(uid))
+        album = _found(items, album_id)
+        _track(album, no)["songId"] = None
+        albums.save(deps.albums_path(uid), items)
+        return album

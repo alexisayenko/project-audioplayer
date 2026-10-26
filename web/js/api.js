@@ -303,6 +303,8 @@ export const api = {
   album: (id) => request('GET', `/albums/${q(id)}`),
   albumPreview: (url) => request('POST', '/albums/preview', { url }),
   createAlbum: (body) => request('POST', '/albums', body),
+  linkTrack: (id, no, songId) => request('PUT', `/albums/${q(id)}/tracks/${q(no)}/song`, { songId }),
+  unlinkTrack: (id, no) => request('DELETE', `/albums/${q(id)}/tracks/${q(no)}/song`),
   deleteAlbum: (id) => request('DELETE', `/albums/${q(id)}`),
   playlists: () => request('GET', '/playlists').then((d) => (Array.isArray(d?.playlists) ? d.playlists : [])),
   playlistDetail: (id) => request('GET', `/playlists/${q(id)}`),

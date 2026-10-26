@@ -5,7 +5,7 @@ from pathlib import Path
 import pytest
 
 from app import albums, discogs_lookup, gitstore
-from tests.test_library import H, OWNER_UID, client  # noqa: F401
+from tests.test_library import H, OWNER_UID, VID, VID2, add, client  # noqa: F401
 from tests.test_users import ALICE, BOB, key, multi, who  # noqa: F401
 
 RELEASE = json.loads((Path(__file__).parent / "fixtures" / "discogs_release_545650.json").read_text(encoding="utf-8"))
@@ -157,3 +157,58 @@ def test_sync_loader_check_and_watch_list():
     assert check(rel, json.dumps({"albums": {}})) == "not an album list"
     assert check(rel, "[]") == "not an object"
     assert check(rel, "{") == "not valid JSON"
+
+
+def made_album(client):
+    return client.post("/albums", json=preview(client).json(), headers=H).json()
+
+
+def link(client, album, no, song, headers=H):
+    return client.put(f"/albums/{album['id']}/tracks/{no}/song", json={"songId": song}, headers=headers)
+
+
+def test_link_and_unlink_a_song(client, discogs, tmp_path):
+    assert add(client).status_code == 202
+    album = made_album(client)
+    r = link(client, album, 2, VID)
+    assert r.status_code == 200 and r.json()["tracks"][1]["songId"] == VID
+    assert client.get(f"/albums/{album['id']}", headers=H).json()["tracks"][1]["songId"] == VID
+    assert stored(tmp_path)[0]["tracks"][1]["songId"] == VID
+    assert link(client, album, 2, VID).status_code == 200
+    r = client.delete(f"/albums/{album['id']}/tracks/2/song", headers=H)
+    assert r.status_code == 200 and r.json()["tracks"][1]["songId"] is None
+
+
+def test_link_errors(client, discogs):
+    add(client)
+    add(client, VID2)
+    album = made_album(client)
+    assert link(client, album, 1, "zzzzzzzzzzz").json()["detail"] == "song_not_found"
+    assert link(client, album, 9, VID).json()["detail"] == "track_not_found"
+    assert client.delete(f"/albums/{album['id']}/tracks/9/song", headers=H).json()["detail"] == "track_not_found"
+    assert link(client, {"id": "alb_00000000"}, 1, VID).status_code == 404
+    assert link(client, album, 1, VID).status_code == 200
+    r = link(client, album, 3, VID)
+    assert (r.status_code, r.json()["detail"]) == (409, {"code": "already_linked", "no": 1})
+    assert link(client, album, 3, VID2).status_code == 200
+    assert client.put(f"/albums/{album['id']}/tracks/1/song", json={}, headers=H).status_code == 422
+
+
+def test_deleted_songs_read_as_unlinked(client, discogs, tmp_path):
+    add(client)
+    album = made_album(client)
+    link(client, album, 1, VID)
+    assert client.delete(f"/songs/{VID}", headers=H).status_code == 204
+    assert client.get(f"/albums/{album['id']}", headers=H).json()["tracks"][0]["songId"] is None
+    assert stored(tmp_path)[0]["tracks"][0]["songId"] == VID
+    assert link(client, album, 2, VID).status_code == 404
+
+
+def test_link_is_per_user_and_needs_a_login(multi, discogs):
+    c = multi
+    a, b = who(c, ALICE), who(c, BOB)
+    album = c.post("/albums", json=c.post("/albums/preview", json={"url": URL}, headers=a).json(), headers=a).json()
+    assert link(c, album, 1, VID, b).status_code == 404
+    assert c.delete(f"/albums/{album['id']}/tracks/1/song", headers=b).status_code == 404
+    assert link(c, album, 1, VID, {}).status_code == 401
+    assert c.delete(f"/albums/{album['id']}/tracks/1/song").status_code == 401

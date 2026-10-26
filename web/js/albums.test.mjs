@@ -257,7 +257,7 @@ test('tapping the album name opens the info box; Esc/close and backdrop close it
   assert.deepEqual([...dlg.querySelectorAll('.album-genres .tag')].map((c) => c.textContent), ['Techno']);
   assert.equal(dlg.querySelector('.svc-discogs').getAttribute('href'), 'https://www.discogs.com/release/545650-Derango-Tumult');
   assert.equal(dlg.querySelector('.svc-youtube'), null);
-  assert.deepEqual([...dlg.querySelectorAll('.album-info-tracks li')].map((li) => li.textContent), ['1.Intro1:05', '2.Noise3:20']);
+  assert.deepEqual([...dlg.querySelectorAll('.album-info-tracks li')].map((li) => li.textContent), ['1.Intro1:05-', '2.Noise3:20-']);
   assert.ok(dlg.querySelector('.card-art .card-close'));
   fire(dlg.querySelector('.card-close'), 'click');
   assert.equal(dlg.open, false);

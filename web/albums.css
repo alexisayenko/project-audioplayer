@@ -37,3 +37,10 @@
   .album-row .album-genres { grid-column: 4 / 5; align-self: center; }
   .album-row .album-acts { grid-column: 5 / 6; flex-wrap: nowrap; }
 }
+.album-info-tracks .album-track { row-gap: var(--space-1); }
+.album-linked, .album-link-btn { grid-column: 2 / -1; display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); min-width: 0; }
+.album-link-btn { justify-content: flex-start; padding-left: 0; }
+.album-linked-name { overflow-wrap: anywhere; min-width: 0; }
+.songs.album-link-list .song.album-link-row { display: block; height: auto; min-height: 0; padding: var(--space-2) var(--space-3); cursor: pointer; }
+.album-link-row .title-line { display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-3); }
+.album-link-row .title-len { flex: none; margin-left: auto; color: var(--muted); }

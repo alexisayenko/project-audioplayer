@@ -28,6 +28,10 @@ class AlbumPreviewRequest(BaseModel):
     url: str = Field(min_length=1, max_length=2000)
 
 
+class AlbumLinkRequest(BaseModel):
+    songId: str = Field(min_length=1, max_length=64)
+
+
 class DownloadRequest(BaseModel):
     video_id: str
     trim: TrimIn | None = None

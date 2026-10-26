@@ -184,3 +184,9 @@ def build(payload: dict[str, Any], existing: set[str]) -> dict[str, Any]:
 
 def summary(a: dict[str, Any]) -> dict[str, Any]:
     return {"id": a["id"], "title": a.get("title", ""), "artist": a.get("artist", ""), "year": a.get("year"), "genres": a.get("genres") or [], "trackCount": len(a.get("tracks") or []), "created_at": a.get("created_at")}
+
+
+def without_dangling(album: dict[str, Any], song_ids: set[Any]) -> dict[str, Any]:
+    """A copy whose `songId`s of songs missing from the library read as null (nothing is written)."""
+    tracks = [{**t, "songId": t.get("songId") if t.get("songId") in song_ids else None} for t in album["tracks"] if isinstance(t, dict)]
+    return {**album, "tracks": tracks}

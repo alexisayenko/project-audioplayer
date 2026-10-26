@@ -9,6 +9,7 @@ import { openPlaylistPicker } from './lazy-ui.js';
 import { el, fmtTime, plural, toast } from './dom.js';
 import { icon } from './icons.js';
 import { dialogHead } from './edit-dialog.js';
+import { artistLine, titleLine, displayLine, albumsOf, albumOf, releasedYear } from './credits.js';
 import { openPlDialog, closePlDialog } from './playlist-dialogs.js';
 
 export const albumIdOf = (hash) => {
@@ -84,30 +85,117 @@ export function albumFacts(a) {
   return [`${n} ${plural(n, 'track', 'tracks')}`, bpm, totalTime(a.tracks), a.year ? String(a.year) : ''].filter(Boolean).join(' · ');
 }
 
+const fold = (s) => String(s ?? '').normalize('NFD').replaceAll(/\p{M}/gu, '').toLowerCase().trim();
+const songLength = (s) => (Number.isFinite(s?.duration) && s.duration > 0 ? fmtTime(s.duration) : '-');
+
+export function candidateMeta(s) {
+  const year = releasedYear(s);
+  return [artistLine(s), albumOf(s), year ? String(year) : ''].filter(Boolean).join(' · ');
+}
+
+export function linkCandidates(album, track, songs = store.songs) {
+  const taken = new Set((album.tracks || []).filter((t) => t.no !== track.no && t.songId).map((t) => t.songId));
+  const title = fold(track.title);
+  const artist = fold(album.artist);
+  const albumName = fold(album.title);
+  const scored = [];
+  for (const s of songs) {
+    if (taken.has(s.id)) continue;
+    const titleEq = fold(titleLine(s)) === title || fold(s.title) === title;
+    const who = fold(artistLine(s));
+    const artistEq = !!artist && !!who && (who === artist || who.includes(artist) || artist.includes(who));
+    const inAlbum = !!albumName && albumsOf(s).some((x) => fold(x) === albumName);
+    if (!((titleEq && artistEq) || inAlbum)) continue;
+    scored.push({ s, rank: (titleEq ? 0 : 4) + (artistEq ? 0 : 2) + (inAlbum ? 0 : 1) });
+  }
+  return scored.sort((a, b) => a.rank - b.rank || fold(a.s.title).localeCompare(fold(b.s.title))).map((x) => x.s);
+}
+
+function openLinkPopup(album, track, onDone) {
+  const err = el('p', { class: 'msg error', role: 'alert', hidden: true });
+  const list = linkCandidates(album, track);
+  const pick = async (s, buttons) => {
+    err.hidden = true;
+    for (const b of buttons) b.disabled = true;
+    try {
+      const full = await api.linkTrack(album.id, track.no, s.id);
+      closePlDialog();
+      onDone(full);
+    } catch (ex) {
+      err.textContent = ex.status === 409 || ex.code === 'already_linked' ? 'This track is already linked.' : ex.message;
+      err.hidden = false;
+      for (const b of buttons) b.disabled = false;
+    }
+  };
+  const buttons = [];
+  const body = list.length
+    ? el('ul', { class: 'songs album-link-list' }, list.map((s) => {
+      const full = titleLine(s);
+      const meta = candidateMeta(s);
+      const b = el('button', { class: 'open t-headline', type: 'button', title: [full, meta].filter(Boolean).join(' - '), onclick: () => pick(s, buttons) }, full);
+      buttons.push(b);
+      const row = el('li', { class: `song album-link-row${player.current?.id === s.id ? ' current' : ''}`, 'data-id': s.id },
+        el('div', { class: 'info' },
+          el('div', { class: 'title-line' }, b, el('span', { class: 'title-len t-time', title: 'Length' }, songLength(s))),
+          el('div', { class: 'sub-line' }, el('span', { class: 'sub t-subhead' }, meta))));
+      row.addEventListener('click', (e) => { if (e.target !== b && !b.disabled) b.click(); });
+      return row;
+    }))
+    : el('p', { class: 'muted t-subhead' }, 'No matching songs in your library');
+  const sub = `${track.no}. ${track.title}${Number.isFinite(track.durationS) ? ` (${lengthText(track.durationS)})` : ''}`;
+  openPlDialog('Link song', dialogHead('Link song', sub, closePlDialog), err, body);
+}
+
 export function openAlbumCard(album, opener = null) {
   const dlg = document.getElementById('song-card');
   const close = () => dlg.close();
-  const closeBtn = el('button', { type: 'button', class: 'card-close', title: 'Close', 'aria-label': 'Close', onclick: close }, icon('clear', 'nav'));
-  const art = el('div', { class: 'card-art album-art' }, el('span', { class: 'cover-mark', 'aria-hidden': 'true' }, icon('coverPlaceholder')), closeBtn);
-  const links = albumLinks(album);
-  const svc = Object.keys(links).length ? serviceIcons({ onlyOn: true }) : null;
-  svc?.setState(links);
-  const genres = Array.isArray(album.genres) ? album.genres.filter(Boolean) : [];
-  const tracks = album.tracks || [];
-  dlg.setAttribute('tabindex', '-1');
-  dlg.replaceChildren(...[
-    el('span', { class: 'grab', 'aria-hidden': 'true' }),
-    art,
-    el('div', { class: 'card-head' },
-      el('h2', { id: 'song-card-title', class: 't-title' }, [album.artist, album.title].filter(Boolean).join(' - ')),
-      el('p', { class: 'card-sub t-subhead album-facts-line' }, albumFacts(album))),
-    genres.length ? el('div', { class: 'chips album-genres' }, genres.map((g) => el('span', { class: 'tag ns t-caption' }, g))) : null,
-    svc?.node,
-    el('div', { class: 'card-actions album-card-actions' }, el('div', { class: 'card-icons' }, albumButtons(album, true).all), plainDeleteButton(album, close), deleteWithSongsButton(album, close)),
-    tracks.length ? el('ol', { class: 'album-tracks album-info-tracks' }, tracks.map((t) => el('li', { class: 'album-track' },
+  let cur = album;
+
+  function trackRow(t) {
+    const linked = t.songId ? store.get(t.songId) : null;
+    const base = [
       el('span', { class: 'album-no muted t-caption' }, `${t.no}.`),
       el('span', { class: 'album-name t-subhead' }, t.title),
-      el('span', { class: 'album-len muted t-caption' }, lengthText(t.durationS))))) : null].filter(Boolean));
+      el('span', { class: 'album-len muted t-caption' }, lengthText(t.durationS))];
+    let extra = null;
+    if (t.songId) {
+      const unlink = el('button', { type: 'button', class: 'x album-unlink', title: 'Unlink song', 'aria-label': `Unlink song from track ${t.no}`, onclick: async (e) => {
+        const btn = e.currentTarget;
+        btn.disabled = true;
+        try { paint(await api.unlinkTrack(cur.id, t.no)); } catch (ex) { btn.disabled = false; toast(ex.message); }
+      } }, icon('clear', 'inline'));
+      extra = el('span', { class: 'album-linked t-caption' },
+        el('span', { class: 'album-linked-name' }, linked ? displayLine(linked) : 'Linked song'),
+        el('span', { class: 'album-len muted' }, songLength(linked)), unlink);
+    } else {
+      extra = el('button', { type: 'button', class: 'link-btn t-caption album-link-btn', onclick: () => openLinkPopup(cur, t, paint) }, 'Link song');
+    }
+    return el('li', { class: 'album-track' }, ...base, extra);
+  }
+
+  function paint(next) {
+    if (next) { cur = next; window.dispatchEvent(new Event(ALBUMS_CHANGED)); }
+    const closeBtn = el('button', { type: 'button', class: 'card-close', title: 'Close', 'aria-label': 'Close', onclick: close }, icon('clear', 'nav'));
+    const art = el('div', { class: 'card-art album-art' }, el('span', { class: 'cover-mark', 'aria-hidden': 'true' }, icon('coverPlaceholder')), closeBtn);
+    const links = albumLinks(cur);
+    const svc = Object.keys(links).length ? serviceIcons({ onlyOn: true }) : null;
+    svc?.setState(links);
+    const genres = Array.isArray(cur.genres) ? cur.genres.filter(Boolean) : [];
+    const tracks = cur.tracks || [];
+    dlg.replaceChildren(...[
+      el('span', { class: 'grab', 'aria-hidden': 'true' }),
+      art,
+      el('div', { class: 'card-head' },
+        el('h2', { id: 'song-card-title', class: 't-title' }, [cur.artist, cur.title].filter(Boolean).join(' - ')),
+        el('p', { class: 'card-sub t-subhead album-facts-line' }, albumFacts(cur))),
+      genres.length ? el('div', { class: 'chips album-genres' }, genres.map((g) => el('span', { class: 'tag ns t-caption' }, g))) : null,
+      svc?.node,
+      el('div', { class: 'card-actions album-card-actions' }, el('div', { class: 'card-icons' }, albumButtons(cur, true).all), plainDeleteButton(cur, close), deleteWithSongsButton(cur, close)),
+      tracks.length ? el('ol', { class: 'album-tracks album-info-tracks' }, tracks.map(trackRow)) : null].filter(Boolean));
+  }
+
+  dlg.setAttribute('tabindex', '-1');
+  paint();
   dlg.onclick = (e) => { if (e.target === dlg) close(); };
   dlg.addEventListener('close', () => { dlg.replaceChildren(); if (opener?.isConnected) opener.focus(); }, { once: true });
   if (!dlg.open) dlg.showModal();
