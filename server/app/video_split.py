@@ -39,17 +39,22 @@ def new_job_id() -> str:
     return f"split_{secrets.token_hex(6)}"
 
 
+def _percent(job: dict[str, Any], status: Any, done: int, total: int) -> int:
+    if status == "downloading":
+        return int(round(float(job.get("progress") or 0.0) * 100))
+    if status == "queued":
+        return 0
+    if status == "done":
+        return 100
+    return int(100 * done / total) if total else 0
+
+
 def public(job: dict[str, Any]) -> dict[str, Any]:
     """Status body of `GET /jobs/{jobId}`: state queued|downloading|splitting|done|error, counts, the current track, the failed tracks."""
     status = job.get("status")
     total = int(job.get("total") or 0)
     done = int(job.get("done") or 0)
-    if status in ("queued", "downloading"):
-        percent = int(round(float(job.get("progress") or 0.0) * 100)) if status == "downloading" else 0
-    elif status == "splitting":
-        percent = int(100 * done / total) if total else 0
-    else:
-        percent = 100 if status == "done" else int(100 * done / total) if total else 0
+    percent = _percent(job, status, done, total)
     body: dict[str, Any] = {
         "jobId": job.get("job_id"),
         "state": status,
@@ -82,6 +87,19 @@ def estimate_bytes(seconds: float) -> int:
     return int(max(seconds, 0.0) * OUTPUT_BYTES_PER_SECOND)
 
 
+def _check_cut(track: dict[str, Any], previous: float, video_seconds: float | None) -> float:
+    start, end = track.get("start"), track.get("end")
+    if not isinstance(start, (int, float)) or isinstance(start, bool) or start < 0:
+        raise Problem(422, "bad_tracklist", "A track has a wrong start time.")
+    if end is not None and (not isinstance(end, (int, float)) or isinstance(end, bool) or end <= start):
+        raise Problem(422, "bad_tracklist", "A track must end after it starts.")
+    if start < previous:
+        raise Problem(422, "bad_tracklist", "Tracks must not overlap.")
+    if video_seconds is not None and start >= video_seconds:
+        raise Problem(422, "bad_tracklist", "A track starts after the end of the video.")
+    return float(end) if end is not None else float(start)
+
+
 def check_request(video_seconds: float | None, tracks: list[dict[str, Any]]) -> None:
     """422 before anything is created: the limits of the owner decisions (4 hours, 100 tracks) and a consistent cut list."""
     if not tracks:
@@ -92,16 +110,7 @@ def check_request(video_seconds: float | None, tracks: list[dict[str, Any]]) -> 
         raise Problem(413, "video_too_long", "video longer than 4 hours")
     previous = 0.0
     for t in tracks:
-        start, end = t.get("start"), t.get("end")
-        if not isinstance(start, (int, float)) or isinstance(start, bool) or start < 0:
-            raise Problem(422, "bad_tracklist", "A track has a wrong start time.")
-        if end is not None and (not isinstance(end, (int, float)) or isinstance(end, bool) or end <= start):
-            raise Problem(422, "bad_tracklist", "A track must end after it starts.")
-        if start < previous:
-            raise Problem(422, "bad_tracklist", "Tracks must not overlap.")
-        if video_seconds is not None and start >= video_seconds:
-            raise Problem(422, "bad_tracklist", "A track starts after the end of the video.")
-        previous = float(end) if end is not None else float(start)
+        previous = _check_cut(t, previous, video_seconds)
     ids = [t.get("songId") for t in tracks]
     if len(set(ids)) != len(ids) or not all(isinstance(i, str) and _SONG_ID.fullmatch(i) for i in ids):
         raise Problem(422, "bad_tracklist", "Every track needs its own song.")
@@ -334,6 +343,53 @@ def _label(track: dict[str, Any]) -> str:
     return f"{artists} - {track.get('title')}" if artists else str(track.get("title") or track["songId"])
 
 
+def _split_one(uid: str, owner: bool, stage: Path, source: Path, source_seconds: float, track: dict[str, Any], album: dict[str, Any],
+               fades: bool, cover: bytes | None) -> None:
+    song_id = track["songId"]
+    _room(owner, deps.audio_dir(uid), stage, estimate_bytes((track.get("end") or source_seconds) - track["start"]))
+    if library.find_song(deps.load_songs(uid), song_id) is None:
+        raise Problem(404, "unknown_song", deps.UNKNOWN_SONG)
+    produced = stage / f"{song_id}.cut.m4a"
+    seconds = _cut_one(source, produced, source_seconds, track, album, fades, track["pos"])
+    value = _detect_bpm(produced, song_id)
+    _attach(uid, song_id, produced, seconds, value, _store_cover(uid, song_id, cover) if cover is not None else None)
+
+
+def _failure(track: dict[str, Any], exc: Exception) -> dict[str, Any]:
+    isproblem = isinstance(exc, Problem)
+    return {"songId": track["songId"], "title": track.get("title"), "error": exc.detail if isproblem else short_error(exc), "error_code": exc.code if isproblem else None}
+
+
+def _run_tracks(uid: str, owner: bool, job: dict[str, Any], stage: Path, source: Path, source_seconds: float, tracks: list[dict[str, Any]],
+                album: dict[str, Any], fades: bool, cover: bytes | None, total: int, failed: list[dict[str, Any]]) -> None:
+    for index, track in enumerate(tracks):
+        job["current"] = _label(track)
+        try:
+            _split_one(uid, owner, stage, source, source_seconds, track, album, fades, cover)
+            job["done"] += 1
+        except Exception as exc:
+            (stage / f"{track['songId']}.cut.m4a").unlink(missing_ok=True)
+            entry = _failure(track, exc)
+            failed.append(entry)
+            job["failed"] = list(failed)
+            if entry["error_code"] in ("library_full_bytes", "server_full"):
+                failed.extend(_failure(rest, exc) for rest in tracks[index + 1:])
+                job["failed"] = list(failed)
+                break
+        job["progress"] = round(job["done"] / total, 3) if total else 1.0
+
+
+def _finish(job: dict[str, Any], failed: list[dict[str, Any]], total: int) -> None:
+    job["current"] = None
+    if failed and job["done"] == 0:
+        first = failed[0]
+        job.update(status="error", error=first["error"], code=first["error_code"])
+        return
+    job.update(status="done", progress=1.0)
+    if failed:
+        job["message"] = f"{job['done']} of {total} tracks have audio, {len(failed)} failed"
+
+
 def run_split(uid: str, owner: bool, job_id: str, video_id: str, tracks: list[dict[str, Any]], album: dict[str, Any], fades: bool,
               source_url: str | None, thumbnail: str | None, total: int) -> None:
     """The worker: download once, cut each track, attach each file. A failed track does not stop the others; the staging folder is removed unless a track failed (then it is kept for a retry, for an hour)."""
@@ -348,38 +404,8 @@ def run_split(uid: str, owner: bool, job_id: str, video_id: str, tracks: list[di
             raise RuntimeError("the downloaded audio has no length")
         job.update(status="splitting", progress=0.0)
         cover = _fetch_thumbnail(video_id, stage, info.get("thumbnail") or thumbnail)
-        jpeg_ok = cover is not None
-        for index, track in enumerate(tracks):
-            job["current"] = _label(track)
-            song_id = track["songId"]
-            try:
-                _room(owner, deps.audio_dir(uid), stage, estimate_bytes((track.get("end") or source_seconds) - track["start"]))
-                if library.find_song(deps.load_songs(uid), song_id) is None:
-                    raise Problem(404, "unknown_song", deps.UNKNOWN_SONG)
-                produced = stage / f"{song_id}.cut.m4a"
-                seconds = _cut_one(source, produced, float(source_seconds), track, album, fades, track["pos"])
-                value = _detect_bpm(produced, song_id)
-                _attach(uid, song_id, produced, seconds, value, _store_cover(uid, song_id, cover) if jpeg_ok else None)
-                job["done"] += 1
-            except Exception as exc:
-                (stage / f"{song_id}.cut.m4a").unlink(missing_ok=True)
-                code = exc.code if isinstance(exc, Problem) else None
-                failed.append({"songId": song_id, "title": track.get("title"), "error": exc.detail if isinstance(exc, Problem) else short_error(exc), "error_code": code})
-                job["failed"] = list(failed)
-                if code in ("library_full_bytes", "server_full"):
-                    for rest in tracks[index + 1:]:
-                        failed.append({"songId": rest["songId"], "title": rest.get("title"), "error": exc.detail, "error_code": code})
-                    job["failed"] = list(failed)
-                    break
-            job["progress"] = round(job["done"] / total, 3) if total else 1.0
-        job["current"] = None
-        if failed and job["done"] == 0:
-            first = failed[0]
-            job.update(status="error", error=first["error"], code=first["error_code"])
-        else:
-            job.update(status="done", progress=1.0)
-            if failed:
-                job["message"] = f"{job['done']} of {total} tracks have audio, {len(failed)} failed"
+        _run_tracks(uid, owner, job, stage, source, float(source_seconds), tracks, album, fades, cover, total, failed)
+        _finish(job, failed, total)
     except Exception as exc:
         job["current"] = None
         _fail_job(job, exc)

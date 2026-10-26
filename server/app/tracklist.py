@@ -23,7 +23,7 @@ W_TOTAL = "The total time in the text differs from the video length"
 
 _TIME = re.compile(r"(\d{1,3}):([0-5]\d)(?::([0-5]\d))?(?![\d:])")
 _NUM_HASH = re.compile(r"#\s*(\d{1,3})\s*[.):\-–—]?\s*")
-_NUM_TRACK = re.compile(r"track\s*#?\s*(\d{1,3})\s*[:.)\-–—]?\s*", re.I)
+_NUM_TRACK = re.compile(r"track\s*(?:#\s*)?(\d{1,3})\s*(?:[:.)\-–—]\s*)?", re.I)
 _NUM_DOT = re.compile(r"(\d{1,3})\s*[.)](?!\d)\s*")
 _NUM_DASH = re.compile(r"(\d{1,3})\s+[-–—]\s+")
 _SEP = re.compile(r"\s[-–—|]\s")
@@ -223,6 +223,26 @@ def _read_text(text: str) -> tuple[list[str], list[str], str, str | None, list[s
     return artists, _unique(found["featuredArtists"]), found["title"].strip(), (version or "").strip() or None, warnings
 
 
+def _read_entry(i: int, e: _Entry) -> Track:
+    track = Track(index=i, start=float(e.start), end=None, raw_line=e.raw, artists=[], title="", track_no=e.number if e.number is not None else i + 1)
+    if e.text:
+        track.artists, track.featured, track.title, track.version, track.warnings = _read_text(e.text)
+    if not track.title:
+        track.title = e.text
+        track.warnings.append(W_UNREADABLE)
+    return track
+
+
+def _is_valid(track: Track, last_valid: Track | None, limit: float | None) -> bool:
+    if limit is not None and track.start >= limit:
+        track.warnings.append(W_PAST_END)
+        return False
+    if last_valid is not None and track.start <= last_valid.start:
+        track.warnings.append(W_ORDER)
+        return False
+    return True
+
+
 def _build(entries: list[_Entry], duration: float | None, fallback_end: float | None = None) -> TracklistResult:
     result = TracklistResult()
     if len(entries) < 2:
@@ -235,17 +255,8 @@ def _build(entries: list[_Entry], duration: float | None, fallback_end: float | 
     last_valid: Track | None = None
     valid: list[Track] = []
     for i, e in enumerate(entries):
-        track = Track(index=i, start=float(e.start), end=None, raw_line=e.raw, artists=[], title="", track_no=e.number if e.number is not None else i + 1)
-        if e.text:
-            track.artists, track.featured, track.title, track.version, track.warnings = _read_text(e.text)
-        if not track.title:
-            track.title = e.text
-            track.warnings.append(W_UNREADABLE)
-        if limit is not None and track.start >= limit:
-            track.warnings.append(W_PAST_END)
-        elif last_valid is not None and track.start <= last_valid.start:
-            track.warnings.append(W_ORDER)
-        else:
+        track = _read_entry(i, e)
+        if _is_valid(track, last_valid, limit):
             last_valid = track
             valid.append(track)
         result.tracks.append(track)

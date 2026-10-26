@@ -268,3 +268,15 @@ Owner plan "fix all sonar issues", `ios/Sources` and `ios/MacSources`. Open Swif
 | swift:S3661 / S1940 | `try?` on the job id regex (fails closed); NaN-safe comparisons in `LiveBPM` |
 
 Checked: both schemes build (`AudioPlayer` for the iOS Simulator, `ElectrophoneMac` for macOS) and the 34 existing unit tests pass.
+
+## Album-from-video cleanup 2026-10-26
+
+The analysis of `c982fbf` (20:48 UTC, the then `origin/main`) left 53 open issues (52 code smells, 1 vulnerability): 40 `python:S9073` composite assertions in `test_video_split.py`, `test_tracklist.py` and `test_albums_video.py`; in the new album-from-video code `python:S3776` x5 (`_build`, `_clean_track`, `public`, `check_request`, `run_split`), `S8786` x2, `S4790` (`sha1` of non-secret ids), `S3358`, `S1172`; in Swift `S117` x2 (init labels in `AnonAPI.swift`) and `S1301`. Refactor only, no behaviour change.
+
+| Rule | Fix |
+|---|---|
+| python:S3776 / S3358 | `video_split.py`: `_percent`, `_check_cut`, `_split_one`, `_run_tracks`, `_finish`; `tracklist.py`: `_read_entry`, `_is_valid`; `album_video.py`: `_clean_times` |
+| python:S8786 | the topic suffix pattern gets the same lookbehind as `album_youtube._TOPIC`; `_NUM_TRACK` has no adjacent optional whitespace runs |
+| python:S4790 / S1172 | `usedforsecurity=False` on the two ids; unused `vid` removed from `_clean_album` |
+| python:S9073 | one assertion per condition |
+| swift:S117 / S1301 | `errorCode` and `expiresAt` init labels (no caller used them); `if case` instead of a one-case `switch` |

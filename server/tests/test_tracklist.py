@@ -35,14 +35,18 @@ def test_reference_fixture():
     assert [t.track_no for t in got.tracks] == list(range(1, 14))
     assert got.warnings == []
     by_no = {t.track_no: t for t in got.tracks}
-    assert by_no[2].artists == ["Offlabel"] and by_no[2].title == "X-Plora"
+    assert by_no[2].artists == ["Offlabel"]
+    assert by_no[2].title == "X-Plora"
     assert by_no[4].artists == ["Guwanej", "Rustlerfari"]
     assert by_no[5].artists == ["Immanu-El", "Nioka"]
-    assert by_no[8].artists == ["San and Tac"] and by_no[8].warnings == ["Check the artist"]
-    assert by_no[9].artists == ["Teorema"] and by_no[9].title == "If"
+    assert by_no[8].artists == ["San and Tac"]
+    assert by_no[8].warnings == ["Check the artist"]
+    assert by_no[9].artists == ["Teorema"]
+    assert by_no[9].title == "If"
     assert by_no[10].artists == ["Eeriegeist", "Astronom"]
     assert by_no[11].artists == ["Klaada", "Blastbit"]
-    assert by_no[12].artists == ["Shanti"] and by_no[12].title == "Wychwood Haunted"
+    assert by_no[12].artists == ["Shanti"]
+    assert by_no[12].title == "Wychwood Haunted"
     assert by_no[13].artists == ["Bocara", "Blend"]
     assert sum(1 for t in got.tracks if t.warnings) == 1
 
@@ -75,9 +79,11 @@ def test_chapters_become_tracks():
     got = tracklist.from_chapters(chapters, 600)
     assert [t.start for t in got.tracks] == [0, 180, 400]
     assert [t.end for t in got.tracks] == [180, 400, 600]
-    assert got.tracks[0].artists == ["Artist A"] and got.tracks[0].track_no == 1
+    assert got.tracks[0].artists == ["Artist A"]
+    assert got.tracks[0].track_no == 1
     assert got.tracks[1].version == "C Remix"
-    assert got.tracks[2].artists == [] and got.tracks[2].title == "Intro"
+    assert got.tracks[2].artists == []
+    assert got.tracks[2].title == "Intro"
 
 
 def test_chapters_without_duration_end_at_the_last_chapter():
@@ -102,4 +108,6 @@ def test_chapters_flag_order_and_end():
 def test_rows_are_plain_dicts():
     got = tracklist.parse_tracklist("0:00 A feat. B - One\n3:00 C - Two", 600)
     first = tracklist.rows(got.tracks)[0]
-    assert first["artists"] == ["A"] and first["featured"] == ["B"] and first["end"] == 180
+    assert first["artists"] == ["A"]
+    assert first["featured"] == ["B"]
+    assert first["end"] == 180

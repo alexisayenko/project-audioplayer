@@ -27,7 +27,7 @@ FADED_TYPES = ("mix", "compilation")
 VARIOUS = "Various Artists"
 VARIOUS_HEADS = ("various", "various artists", "va")
 TOLERANCE_S = 1.0
-_TOPIC = re.compile(r"\s+-\s+topic$", re.I)
+_TOPIC = re.compile(r"(?<!\s)\s+-\s+topic$", re.I)
 
 
 def _bad(code: str, status: int = 422) -> HTTPException:
@@ -172,7 +172,7 @@ def preview(uid: str, owner: bool, url: Any, songs: list[dict[str, Any]], text: 
 
 def track_song_id(video_id: str, start: float) -> str:
     """The id of the song cut from `video_id` at `start`: an underscore and ten base64 characters, stable for the same cut."""
-    digest = hashlib.sha1(f"{video_id}:{start:.3f}".encode()).digest()
+    digest = hashlib.sha1(f"{video_id}:{start:.3f}".encode(), usedforsecurity=False).digest()
     return "_" + base64.urlsafe_b64encode(digest).decode()[:10]
 
 
@@ -184,10 +184,7 @@ def _names(value: Any) -> list[str]:
     return names
 
 
-def _clean_track(raw: Any, duration: float | None) -> dict[str, Any]:
-    if not isinstance(raw, dict):
-        raise _bad("bad_tracks")
-    start, end = raw.get("start"), raw.get("end")
+def _clean_times(start: Any, end: Any, duration: float | None) -> tuple[float, float]:
     if isinstance(start, bool) or isinstance(end, bool) or not isinstance(start, (int, float)) or not isinstance(end, (int, float)):
         raise _bad("bad_times")
     start, end = float(start), float(end)
@@ -195,6 +192,13 @@ def _clean_track(raw: Any, duration: float | None) -> dict[str, Any]:
         raise _bad("bad_times")
     if duration is not None and (start >= duration or end > duration + TOLERANCE_S):
         raise _bad("bad_times")
+    return start, end
+
+
+def _clean_track(raw: Any, duration: float | None) -> dict[str, Any]:
+    if not isinstance(raw, dict):
+        raise _bad("bad_tracks")
+    start, end = _clean_times(raw.get("start"), raw.get("end"), duration)
     title = raw.get("title")
     version = raw.get("version")
     number = raw.get("trackNo")
@@ -227,7 +231,7 @@ def _included(raw: Any, duration: float | None) -> list[dict[str, Any]]:
     return tracks
 
 
-def _clean_album(raw: Any, vid: str) -> dict[str, Any]:
+def _clean_album(raw: Any) -> dict[str, Any]:
     data = raw if isinstance(raw, dict) else {}
     title = str(data.get("title") or "").strip()[: albums.MAX_TEXT]
     artist = str(data.get("albumArtist") or "").strip()[: albums.MAX_TEXT]
@@ -249,7 +253,7 @@ def _clean_album(raw: Any, vid: str) -> dict[str, Any]:
 
 def _request_key(vid: str, album: dict[str, Any], tracks: list[dict[str, Any]], fades: bool) -> str:
     blob = json.dumps([vid, album["title"], album["artist"], album["type"], album["year"], fades, tracks], sort_keys=True, default=str)
-    return hashlib.sha1(blob.encode()).hexdigest()[:16]
+    return hashlib.sha1(blob.encode(), usedforsecurity=False).hexdigest()[:16]
 
 
 def _song_record(vid: str, album: dict[str, Any], track: dict[str, Any], song_id: str, duration: float | None) -> dict[str, Any]:
@@ -330,7 +334,7 @@ def create(uid: str, owner: bool, body: Any) -> dict[str, Any]:
     details = _details(vid)
     duration = _number(details["duration"])
     _check_size(duration, 0)
-    album = _clean_album(data.get("album"), vid)
+    album = _clean_album(data.get("album"))
     tracks = _included(data.get("tracks"), duration)
     fades = data["fades"] if isinstance(data.get("fades"), bool) else album["type"] in FADED_TYPES
     key = _request_key(vid, album, tracks, fades)

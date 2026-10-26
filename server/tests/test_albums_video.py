@@ -68,7 +68,8 @@ def test_preview_from_the_description_creates_nothing(client, video, tmp_path):
     assert set(data["tracks"][0]) == {"index", "start", "end", "artists", "title", "version", "trackNo", "warnings", "match"}
     assert data["warnings"] == []
     assert data["album"] == {"title": "Forest Mix", "albumArtist": "Various Artists", "type": "album", "year": 2019, "coverUrl": DETAILS["thumbnail"]}
-    assert library_ids(client) == {} and client.get("/albums", headers=H).json() == []
+    assert library_ids(client) == {}
+    assert client.get("/albums", headers=H).json() == []
 
 
 def test_preview_prefers_chapters_and_types_a_long_mix(client, video):
@@ -135,11 +136,13 @@ def test_create_makes_album_songs_and_runs_the_split(client, video, tmp_path):
     r = client.post("/albums/from-video", json=body(), headers=H)
     assert r.status_code == 202, r.text
     data = r.json()
-    assert len(data["songIds"]) == 3 and data["jobId"].startswith("split_")
+    assert len(data["songIds"]) == 3
+    assert data["jobId"].startswith("split_")
     songs = library_ids(client)
     first = songs[data["songIds"][0]]
     assert (first["title"], first["artist"], first["audio_state"], first["sourceVideoId"], first["sourceStartSec"], first["sourceEndSec"], first["duration"]) == ("One", "Alpha", "none", VID, 0, 300, 300)
-    assert first["albums"] == ["Forest Mix"] and first["sources"][0]["trim_end"] == 300
+    assert first["albums"] == ["Forest Mix"]
+    assert first["sources"][0]["trim_end"] == 300
     assert songs[data["songIds"][1]]["version"]["name"]
     album = client.get(f"/albums/{data['albumId']}", headers=H).json()
     assert (album["title"], album["artist"], album["type"], album["year"], album["source"]) == ("Forest Mix", "Various Artists", "mix", 2019, {"type": "video", "id": VID, "url": f"https://www.youtube.com/watch?v={VID}"})
@@ -147,7 +150,9 @@ def test_create_makes_album_songs_and_runs_the_split(client, video, tmp_path):
     assert album["links"]["youtube"] == f"https://youtu.be/{VID}"
     assert client.get("/albums", headers=H).json()[0]["type"] == "mix"
     [(job_id, plan)] = video["plans"]
-    assert job_id == data["jobId"] and plan["fades"] is True and plan["album"] == {"title": "Forest Mix", "albumArtist": "Various Artists", "year": 2019}
+    assert job_id == data["jobId"]
+    assert plan["fades"] is True
+    assert plan["album"] == {"title": "Forest Mix", "albumArtist": "Various Artists", "year": 2019}
     assert [(t["songId"], t["start"], t["end"], t["title"]) for t in plan["tracks"]] == [(sid, s, e, t) for sid, (s, e, t) in zip(data["songIds"], [(0, 300, "One"), (300, 630, "Two"), (630, 3600, "Three")])]
     status = client.get(f"/jobs/{data['jobId']}", headers=H).json()
     assert (status["state"], status["done"], status["total"]) == ("done", 3, 3)
@@ -162,7 +167,8 @@ def test_create_is_idempotent_and_refuses_other_tracks(client, video):
     first = client.post("/albums/from-video", json=body(), headers=H).json()
     again = client.post("/albums/from-video", json=body(), headers=H)
     assert (again.status_code, again.json()) == (202, first)
-    assert len(client.get("/albums", headers=H).json()) == 1 and len(library_ids(client)) == 3
+    assert len(client.get("/albums", headers=H).json()) == 1
+    assert len(library_ids(client)) == 3
     assert len(video["plans"]) == 1
     other = client.post("/albums/from-video", json=body([track(0, 100, "Only")]), headers=H)
     assert (other.status_code, other.json()["detail"]["code"], other.json()["detail"]["id"]) == (409, "already_exists", first["albumId"])
@@ -221,7 +227,8 @@ def test_excluded_rows_are_skipped_and_unknown_existing_is_refused(client, video
 def test_create_validates_the_tracks(client, video, rows, code):
     r = client.post("/albums/from-video", json=body(rows), headers=H)
     assert (r.status_code, r.json()["detail"]) == (422, code)
-    assert library_ids(client) == {} and client.get("/albums", headers=H).json() == []
+    assert library_ids(client) == {}
+    assert client.get("/albums", headers=H).json() == []
 
 
 @pytest.mark.parametrize("album", [{"title": ""}, {"albumArtist": ""}, {"type": "playlist"}, {"year": "x"}, {"year": 1000}, {"genres": "x"}])
@@ -289,7 +296,8 @@ def test_video_details_reads_title_description_and_chapters(monkeypatch):
 
     class FakeYDL:
         def __init__(self, opts):
-            assert opts["skip_download"] and opts["noplaylist"]
+            assert opts["skip_download"]
+            assert opts["noplaylist"]
 
         def __enter__(self):
             return self
@@ -298,7 +306,8 @@ def test_video_details_reads_title_description_and_chapters(monkeypatch):
             return False
 
         def extract_info(self, url, download):
-            assert url.endswith(VID) and not download
+            assert url.endswith(VID)
+            assert not download
             return info
 
     monkeypatch.setattr(extractor.yt_dlp, "YoutubeDL", FakeYDL)
