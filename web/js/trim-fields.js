@@ -28,6 +28,15 @@ export function formatTime(sec) {
   return h ? `${h}:${String(m).padStart(2, '0')}:${tail}` : `${m}:${tail}`;
 }
 
+function trimError(start, end, dur) {
+  if (dur !== null && end !== null && end > dur) return 'End is after the end of the track.';
+  if (dur !== null && start !== null && start >= dur) return 'Start is after the end of the track.';
+  if (start !== null && end !== null && start >= end) return 'Start must be before End.';
+  const to = end ?? dur;
+  if (to !== null && to - (start ?? 0) < MIN_CUT) return 'The cut must be at least 1 second.';
+  return null;
+}
+
 export function validateTrim(startText, endText, duration = null) {
   const a = parseTime(startText);
   const b = parseTime(endText);
@@ -36,15 +45,7 @@ export function validateTrim(startText, endText, duration = null) {
   if (!b.ok) return { error: 'End must look like 3:10 or 190.', start: null, end: null, length: null };
   const start = a.value;
   const end = b.value;
-  let error = null;
-  if (dur !== null && end !== null && end > dur) error = 'End is after the end of the track.';
-  else if (dur !== null && start !== null && start >= dur) error = 'Start is after the end of the track.';
-  else if (start !== null && end !== null && start >= end) error = 'Start must be before End.';
-  else {
-    const from = start ?? 0;
-    const to = end ?? dur;
-    if (to !== null && to - from < MIN_CUT) error = 'The cut must be at least 1 second.';
-  }
+  const error = trimError(start, end, dur);
   const from = start ?? 0;
   const to = end ?? dur;
   const length = !error && to !== null ? Math.round((to - from) * 10) / 10 : null;

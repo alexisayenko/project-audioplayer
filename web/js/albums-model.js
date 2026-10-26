@@ -53,7 +53,10 @@ export function matchesQuery(album, query) {
 const missingLast = (ax, bx, dir) => {
   const am = ax == null;
   const bm = bx == null;
-  if (am || bm) return am === bm ? 0 : am ? 1 : -1;
+  if (am || bm) {
+    if (am === bm) return 0;
+    return am ? 1 : -1;
+  }
   return dir * (ax - bx);
 };
 const text = (s) => fold(s);

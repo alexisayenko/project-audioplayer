@@ -13,7 +13,10 @@ const TABS = [['released', 'Released'], ['in_progress', 'In progress'], ['planne
 export const NO_PROGRESS = 'Nothing in progress right now.';
 
 const tasksOf = (list) => (Array.isArray(list) ? list : []).filter((t) => t && /^task-\d+$/.test(t.id))
-  .sort((a, b) => (a.id < b.id ? 1 : a.id > b.id ? -1 : 0));
+  .sort((a, b) => {
+    if (a.id === b.id) return 0;
+    return a.id < b.id ? 1 : -1;
+  });
 
 export async function loadFeatures(fetchFn = globalThis.fetch) {
   const res = await fetchFn(DATA_URL);
@@ -45,7 +48,7 @@ export function groupDays(releases) {
   const days = [];
   for (const r of releases) {
     if (!r.items.length) continue;
-    const last = days[days.length - 1];
+    const last = days.at(-1);
     if (last && last.date === r.date) {
       const seen = new Set(last.releases[0].items.map((i) => i.text));
       last.releases[0].items.push(...r.items.filter((i) => !seen.has(i.text)));
@@ -66,6 +69,12 @@ export function plannedRow(t) {
     el('div', { class: 'ft-pbody' },
       el('span', { class: 'ft-ptitle t-body' }, t.title || t.id),
       el('span', { class: 'ft-pmeta t-caption muted' }, ...(t.tags || []).map((g) => el('span', { class: 'ft-tag' }, g)))));
+}
+
+function panelFor(current, data) {
+  if (current === 'released') return releasesPanel(data.releases, data.unavailable);
+  if (current === 'planned') return plannedPanel(data.planned);
+  return plannedPanel(data.in_progress, NO_PROGRESS);
 }
 
 function releasesPanel(releases, unavailable) {
@@ -96,7 +105,13 @@ function plannedPanel(planned, empty = NO_PLANNED) {
 }
 
 function readTab() {
-  try { let v = globalThis.localStorage?.getItem(TAB_KEY); if (v === 'releases') v = 'released'; return TABS.some(([k]) => k === v) ? v : TABS[0][0]; } catch { return TABS[0][0]; }
+  try {
+    let v = globalThis.localStorage?.getItem(TAB_KEY);
+    if (v === 'releases') v = 'released';
+    return TABS.some(([k]) => k === v) ? v : TABS[0][0];
+  } catch {
+    return TABS[0][0];
+  }
 }
 function saveTab(v) { try { globalThis.localStorage?.setItem(TAB_KEY, v); } catch { /* storage may be blocked */ } }
 
@@ -114,7 +129,7 @@ export function renderFeatures(root) {
     });
     panel.setAttribute('aria-labelledby', `ft-tab-${current}`);
     if (failed) panel.replaceChildren(el('p', { class: 'muted t-body', role: 'status' }, FAIL_TEXT));
-    else if (data) panel.replaceChildren(current === 'released' ? releasesPanel(data.releases, data.unavailable) : current === 'planned' ? plannedPanel(data.planned) : plannedPanel(data.in_progress, NO_PROGRESS));
+    else if (data) panel.replaceChildren(panelFor(current, data));
     if (data) TABS.forEach(([key, label], i) => { tabs[i].textContent = `${label} ${key === 'released' ? groupDays(data.releases).length : data[key].length}`; });
   };
   const pick = (i, focus) => {

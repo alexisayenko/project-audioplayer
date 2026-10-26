@@ -126,7 +126,11 @@ export function renderPlaylistList(root) {
   }
 
   function load() {
-    playlistStore.refresh().catch((ex) => { if (gone) return; loadError = ex.message; render(); });
+    playlistStore.refresh().catch((ex) => {
+      if (gone) return;
+      loadError = ex.message;
+      render();
+    });
   }
 
   const unsub = playlistStore.subscribe(() => { if (!gone) render(); });

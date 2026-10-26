@@ -348,7 +348,7 @@ function pick(r, wc, minLag, maxLag, rate, hint, sigmaS, trace) {
 function crest(env) {
   const sorted = Float32Array.from(env).sort();
   let total = 0;
-  for (let i = 0; i < sorted.length; i += 1) total += sorted[i];
+  for (const v of sorted) total += v;
   const count = Math.max(1, Math.ceil(sorted.length * CREST_TOP));
   let top = 0;
   for (let i = sorted.length - count; i < sorted.length; i += 1) top += sorted[i];
@@ -477,7 +477,8 @@ function ioiPeaks(s) {
   for (let b = first; b < s.length - 1; b += 1) {
     if (s[b] >= IOI_PEAK_MIN * top && s[b] > 0 && s[b] >= s[b - 1] && s[b] > s[b + 1]) peaks.push({ lag: b * IOI_BIN_S, h: s[b] });
   }
-  return peaks.sort((a, b) => b.h - a.h).slice(0, IOI_PEAKS);
+  peaks.sort((a, b) => b.h - a.h);
+  return peaks.slice(0, IOI_PEAKS);
 }
 
 function ioiRefine(t, first) {

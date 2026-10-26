@@ -2,7 +2,7 @@ import { buildIndex, resolveGenre, vkey } from './genre-vocab.js';
 import { cleanSourceLinks } from './genre-source-links.js';
 import { setLevelOneNames, setSlotColours, legacySlot, OTHER_COLOR, SPARE_SLOTS } from './genre-data.js';
 
-const MODIFIER_KINDS = ['sound', 'mood', 'scene'];
+const MODIFIER_KINDS = new Set(['sound', 'mood', 'scene']);
 const spaced = (s) => String(s).trim().toLowerCase().replace(/\s+/g, ' ');
 
 export function hasLevels(vocab) {
@@ -20,11 +20,16 @@ function makeNode(id, name, level, family, extra = {}) {
 
 const byName = (a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' });
 
+function modifierList(v) {
+  if (Array.isArray(v.modifiers)) return [...v.modifiers];
+  return Array.isArray(v.flavours) ? [...v.flavours] : [];
+}
+
 function genreNode(k, v) {
   const display = typeof v.display === 'string' && v.display.trim() ? v.display.trim() : null;
   const n = makeNode(`s:${k}`, k, 0, null, {
     subfamily: typeof v.subfamily === 'string' && v.subfamily.trim() ? v.subfamily.trim() : null,
-    discogs: v.discogs !== false, fusion: v.fusion === true, related: Array.isArray(v.related) ? v.related.filter((r) => typeof r === 'string' && r) : [], sourceLinks: cleanSourceLinks(v.source_links), description: typeof (v.description ?? v.note) === 'string' ? (v.description ?? v.note).trim() : '', synonyms: [...(v.synonyms || [])], provisional: v.provisional === true, status: effectiveStatus(v), display, modifiers: Array.isArray(v.modifiers) ? [...v.modifiers] : Array.isArray(v.flavours) ? [...v.flavours] : [],
+    discogs: v.discogs !== false, fusion: v.fusion === true, related: Array.isArray(v.related) ? v.related.filter((r) => typeof r === 'string' && r) : [], sourceLinks: cleanSourceLinks(v.source_links), description: typeof (v.description ?? v.note) === 'string' ? (v.description ?? v.note).trim() : '', synonyms: [...(v.synonyms || [])], provisional: v.provisional === true, status: effectiveStatus(v), display, modifiers: modifierList(v),
   });
   n.label = n.display || k;
   return n;
@@ -176,7 +181,7 @@ export function buildTree(vocab, { fusion = true, colours = true } = {}) {
   assignFamilies(roots, byId);
   const done = assignColours(roots, hexTable(vocab), colours);
   if (colours) setLevelOneNames(names, done);
-  const modifiers = new Map(Object.entries(vocab?.modifiers || vocab?.flavours || {}).map(([key, f]) => [key, { key, name: f.name || key, kind: MODIFIER_KINDS.includes(f.kind) ? f.kind : 'sound', description: f.description || '', songs: new Set() }]));
+  const modifiers = new Map(Object.entries(vocab?.modifiers || vocab?.flavours || {}).map(([key, f]) => [key, { key, name: f.name || key, kind: MODIFIER_KINDS.has(f.kind) ? f.kind : 'sound', description: f.description || '', songs: new Set() }]));
   for (const n of byId.values()) n.modifiers = n.modifiers.filter((f) => modifiers.has(f));
   const { byKey, bySyn } = nodeLookups(byId);
   return { roots, byId, byKey, bySyn, modifiers, subfamilies: cleanSubfamilies(vocab?.subfamilies), index: buildIndex(vocab) };
@@ -427,7 +432,10 @@ export function cleanSubfamilies(list) {
     .sort((a, b) => a.order - b.order);
 }
 
-export const byCode = (a, b) => (a < b ? -1 : a > b ? 1 : 0);
+export const byCode = (a, b) => {
+  if (a === b) return 0;
+  return a < b ? -1 : 1;
+};
 
 export const pairKey = (a, b) => [a, b].sort(byCode).join('|');
 

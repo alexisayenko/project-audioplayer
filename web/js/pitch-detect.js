@@ -29,22 +29,12 @@ const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
 export function sineRmsDb(samples) {
   if (!samples?.length) return -Infinity;
   let sum = 0;
-  for (let i = 0; i < samples.length; i += 1) sum += samples[i] * samples[i];
+  for (const v of samples) sum += v * v;
   const rms = Math.sqrt(sum / samples.length);
   return rms > 0 ? 20 * Math.log10(rms) + SINE_RMS_DB : -Infinity;
 }
 
-export function detectPitch(samples, sampleRate, opts = {}) {
-  const { minHz = PITCH_MIN_HZ, maxHz = PITCH_MAX_HZ, threshold = YIN_THRESHOLD, gateDb = PITCH_GATE_DB } = opts;
-  if (!samples?.length || !(sampleRate > 0)) return null;
-  const dec = Math.max(1, Math.floor(sampleRate / PITCH_TARGET_RATE));
-  const sr = sampleRate / dec;
-  const tauMin = Math.max(2, Math.floor(sr / (maxHz * 1.02)));
-  const tauMax = Math.ceil(sr / (minHz * 0.98)) + 1;
-  const want = Math.max(PITCH_MIN_WINDOW, Math.ceil(tauMax * 1.5)) + tauMax + 1;
-  const have = Math.min(want, Math.floor(samples.length / dec));
-  const win = have - tauMax - 1;
-  if (win < tauMax) return null;
+function centeredFrame(samples, dec, have) {
   const x = new Float32Array(have);
   const from = samples.length - have * dec;
   let mean = 0;
@@ -56,8 +46,10 @@ export function detectPitch(samples, sampleRate, opts = {}) {
   }
   mean /= have;
   for (let i = 0; i < have; i += 1) x[i] -= mean;
-  if (!(sineRmsDb(x) >= gateDb)) return null;
+  return x;
+}
 
+function yinLag(x, win, tauMin, tauMax, threshold) {
   const d = new Float32Array(tauMax + 2);
   let running = 0;
   const step = (tau) => {
@@ -71,8 +63,7 @@ export function detectPitch(samples, sampleRate, opts = {}) {
     return d[tau];
   };
   let best = -1;
-  let tau = 1;
-  for (; tau <= tauMax; tau += 1) {
+  for (let tau = 1; tau <= tauMax; tau += 1) {
     if (step(tau) < threshold && tau >= tauMin) { best = tau; break; }
   }
   if (best >= 0) {
@@ -83,6 +74,24 @@ export function detectPitch(samples, sampleRate, opts = {}) {
     let low = Infinity;
     for (let t = tauMin; t <= tauMax; t += 1) if (d[t] < low) { low = d[t]; best = t; }
   }
+  return { d, best };
+}
+
+export function detectPitch(samples, sampleRate, opts = {}) {
+  const { minHz = PITCH_MIN_HZ, maxHz = PITCH_MAX_HZ, threshold = YIN_THRESHOLD, gateDb = PITCH_GATE_DB } = opts;
+  if (!samples?.length || !(sampleRate > 0)) return null;
+  const dec = Math.max(1, Math.floor(sampleRate / PITCH_TARGET_RATE));
+  const sr = sampleRate / dec;
+  const tauMin = Math.max(2, Math.floor(sr / (maxHz * 1.02)));
+  const tauMax = Math.ceil(sr / (minHz * 0.98)) + 1;
+  const want = Math.max(PITCH_MIN_WINDOW, Math.ceil(tauMax * 1.5)) + tauMax + 1;
+  const have = Math.min(want, Math.floor(samples.length / dec));
+  const win = have - tauMax - 1;
+  if (win < tauMax) return null;
+  const x = centeredFrame(samples, dec, have);
+  if (!(sineRmsDb(x) >= gateDb)) return null;
+
+  const { d, best } = yinLag(x, win, tauMin, tauMax, threshold);
   if (best < 2) return null;
   const a = d[best - 1];
   const b = d[best];
@@ -92,6 +101,16 @@ export function detectPitch(samples, sampleRate, opts = {}) {
   const freq = sr / (best + shift);
   if (!(freq >= minHz * 0.98 && freq <= maxHz * 1.02)) return null;
   return { freq, confidence: clamp(1 - b, 0, 1) };
+}
+
+function isPeakFound(freqData, k, gap, { riseDb, floorDb, offsetDb }) {
+  const top = freqData[k];
+  if (!(Number.isFinite(top) && top >= freqData[k - 1] && top >= freqData[k + 1])) return false;
+  const left = freqData[Math.max(0, k - gap)];
+  const right = freqData[Math.min(freqData.length - 1, k + gap)];
+  const around = Math.max(left, right);
+  const rise = Number.isFinite(around) ? top - around : Infinity;
+  return rise >= riseDb && top + offsetDb >= floorDb;
 }
 
 export function harmonicMarks(freqData, sampleRate, f0, opts = {}) {
@@ -109,14 +128,7 @@ export function harmonicMarks(freqData, sampleRate, f0, opts = {}) {
     let k = lo;
     for (let b = lo + 1; b <= hi; b += 1) if (freqData[b] > freqData[k]) k = b;
     const top = freqData[k];
-    let found = false;
-    if (Number.isFinite(top) && top >= freqData[k - 1] && top >= freqData[k + 1]) {
-      const left = freqData[Math.max(0, k - gap)];
-      const right = freqData[Math.min(bins - 1, k + gap)];
-      const around = Math.max(left, right);
-      const rise = Number.isFinite(around) ? top - around : Infinity;
-      found = rise >= riseDb && top + offsetDb >= floorDb;
-    }
+    const found = isPeakFound(freqData, k, gap, { riseDb, floorDb, offsetDb });
     out.push({ n, freq, found, db: Number.isFinite(top) ? top + offsetDb : -Infinity });
   }
   return out;
@@ -179,6 +191,11 @@ export function correctOctave(est, freqData, sampleRate, opts = {}) {
 const NEAR_SEMITONES = 1.5;
 const FLIP_RATIOS = [2, 3, 4];
 const near = (a, b) => Math.abs(12 * Math.log2(a / b)) <= NEAR_SEMITONES;
+
+function nextPending(pending, est) {
+  const count = pending && near(est.freq, pending.freq) ? pending.count + 1 : 1;
+  return { est, count, freq: est.freq };
+}
 const isOctaveFlip = (a, b) => FLIP_RATIOS.some((r) => near(a, b * r) || near(a * r, b));
 
 export function createPitchTracker({ minConf = PITCH_MIN_CONF, fadeMs = PITCH_FADE_MS, size = PITCH_MEDIAN, hold = OCTAVE_HOLD } = {}) {
@@ -206,7 +223,7 @@ export function createPitchTracker({ minConf = PITCH_MIN_CONF, fadeMs = PITCH_FA
         if (!hist.length || !(freq > 0) || near(est.freq, freq) || !isOctaveFlip(est.freq, freq)) {
           accept(est);
         } else {
-          pending = pending && near(est.freq, pending.freq) ? { est, count: pending.count + 1, freq: est.freq } : { est, count: 1, freq: est.freq };
+          pending = nextPending(pending, est);
           lostAt = null;
           if (pending.count >= hold) {
             hist = [];

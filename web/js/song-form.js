@@ -20,6 +20,18 @@ import { trimBlock } from './trim-block.js';
 
 const firstAlbum = (s) => (Array.isArray(s.albums) ? s.albums[0] : s.album) || '';
 
+function applyPlan(plan, { f, editor, wiki }) {
+  if (plan.album != null) f.album.value = plan.album;
+  if (plan.released != null) {
+    f.released.value = plan.released;
+    f.released.dispatchEvent(new Event('input', { bubbles: true }));
+  }
+  if (plan.tags.length) editor.addTags(plan.tags);
+  if (plan.wikipedia_song) wiki.set({ song: plan.wikipedia_song });
+  if (plan.wikipedia_artist) wiki.set({ artist: plan.wikipedia_artist });
+  if (plan.wikipedia_album) wiki.set({ album: plan.wikipedia_album });
+}
+
 export function songForm({ mode = 'add', song = {}, source = null, onChange = null } = {}) {
   const isAdd = mode === 'add';
   const initial = { ...song };
@@ -165,15 +177,7 @@ export function songForm({ mode = 'add', song = {}, source = null, onChange = nu
   };
   const applyMeta = (resp) => {
     const plan = planMetadata(resp, { album: f.album.value, released: f.released.value, versioned: credits.hasVersion(), tags: editor.peek(), ...wiki.values() });
-    if (plan.album != null) f.album.value = plan.album;
-    if (plan.released != null) {
-      f.released.value = plan.released;
-      f.released.dispatchEvent(new Event('input', { bubbles: true }));
-    }
-    if (plan.tags.length) editor.addTags(plan.tags);
-    if (plan.wikipedia_song) wiki.set({ song: plan.wikipedia_song });
-    if (plan.wikipedia_artist) wiki.set({ artist: plan.wikipedia_artist });
-    if (plan.wikipedia_album) wiki.set({ album: plan.wikipedia_album });
+    applyPlan(plan, { f, editor, wiki });
     credits.setPublished(resp?.published_year);
     credits.setSpecific(resp?.version_year ?? resp?.remix_year);
     credits.setOriginal(resp?.suggest?.artist);

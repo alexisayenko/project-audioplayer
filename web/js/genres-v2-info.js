@@ -10,6 +10,18 @@ export const V2_NO_DESCRIPTION = 'No description yet.';
 
 export const v2LevelText = (g) => (g.level === 1 ? 'Level 1 (super-genre)' : `Level ${g.level}`);
 
+function about(g) {
+  const links = shownSourceLinks(g.source_links);
+  const mm = typeof g.musicmap_url === 'string' && /^https:\/\//i.test(g.musicmap_url) ? g.musicmap_url : null;
+  const anchors = links.map((l) => el('a', {
+    href: l.url, target: '_blank', rel: 'noopener noreferrer', 'data-source': l.source, title: `${l.label}: ${g.name}`, 'aria-label': `${l.label}: ${g.name} (opens in a new tab)`,
+  }, icon(l.icon, 'inline'), l.label));
+  if (mm) anchors.push(el('a', { href: mm, target: '_blank', rel: 'noopener noreferrer', 'data-source': 'musicmap', 'aria-label': `Musicmap: ${g.name} (opens in a new tab)` }, icon('externalLink', 'inline'), 'Musicmap'));
+  return el('section', { class: 'gc-about', 'aria-label': 'Description' },
+    descriptionNode(g.description, V2_NO_DESCRIPTION),
+    anchors.length ? el('div', { class: 'gmr-links gc-links t-caption', role: 'group', 'aria-label': 'Genre sources' }, ...anchors) : null);
+}
+
 export function createV2InfoRenderer(getData, dotFor = (name) => dotClass(familyIndex(name))) {
   return function renderV2Info(name, { container, titleId = 'genre-card-title' } = {}) {
     const refs = createReferencesPanel({ compact: true });
@@ -28,18 +40,6 @@ export function createV2InfoRenderer(getData, dotFor = (name) => dotClass(family
       return el('div', { class: 'gc-head' },
         el('div', { class: 'gc-title' }, el('span', { class: dotFor(g.name), 'aria-hidden': 'true' }), el('h2', { id: titleId, class: 't-title', tabindex: '-1' }, g.name), tempoBadge(g.description)),
         el('p', { class: 'gc-meta' }, ...meta));
-    }
-
-    function about(g) {
-      const links = shownSourceLinks(g.source_links);
-      const mm = typeof g.musicmap_url === 'string' && /^https:\/\//i.test(g.musicmap_url) ? g.musicmap_url : null;
-      const anchors = links.map((l) => el('a', {
-        href: l.url, target: '_blank', rel: 'noopener noreferrer', 'data-source': l.source, title: `${l.label}: ${g.name}`, 'aria-label': `${l.label}: ${g.name} (opens in a new tab)`,
-      }, icon(l.icon, 'inline'), l.label));
-      if (mm) anchors.push(el('a', { href: mm, target: '_blank', rel: 'noopener noreferrer', 'data-source': 'musicmap', 'aria-label': `Musicmap: ${g.name} (opens in a new tab)` }, icon('externalLink', 'inline'), 'Musicmap'));
-      return el('section', { class: 'gc-about', 'aria-label': 'Description' },
-        descriptionNode(g.description, V2_NO_DESCRIPTION),
-        anchors.length ? el('div', { class: 'gmr-links gc-links t-caption', role: 'group', 'aria-label': 'Genre sources' }, ...anchors) : null);
     }
 
     function paint(text) {

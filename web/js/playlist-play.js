@@ -13,9 +13,14 @@ export function playSongs(songs, shuffled = false) {
     toast('No playable songs');
     return;
   }
-  const mode = shuffled ? ' (shuffled)' : (wasShuffle ? ' (shuffle off)' : '');
+  let mode = '';
+  if (shuffled) mode = ' (shuffled)';
+  else if (wasShuffle) mode = ' (shuffle off)';
   if (r.skipped) toast(`${r.skipped} ${plural(r.skipped, 'song', 'songs')} without audio skipped`);
-  else toast(`Playing ${r.count} ${plural(r.count, 'song', 'songs')}${mode}${r.fetching ? `, ${r.fetching} downloading` : ''}`);
+  else {
+    const fetching = r.fetching ? `, ${r.fetching} downloading` : '';
+    toast(`Playing ${r.count} ${plural(r.count, 'song', 'songs')}${mode}${fetching}`);
+  }
 }
 
 export async function playPlaylist(id) {

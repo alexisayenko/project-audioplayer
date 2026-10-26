@@ -30,7 +30,10 @@ function subLine(d) {
   if (d.duration) bits.push(fmtTime(d.duration));
   if (!bits.length) return null;
   const out = [];
-  bits.forEach((b, i) => { if (i) out.push(' · '); out.push(b); });
+  bits.forEach((b, i) => {
+    if (i) out.push(' · ');
+    out.push(b);
+  });
   return el('small', { class: 'sub t-subhead' }, out);
 }
 
@@ -104,7 +107,10 @@ export function mountDrafts(host) {
       progress.replaceChildren();
     }
     if (!r.cancelled && !r.failed && !r.errors.length) box.value = prep.rest.join('\n');
-    say(summarizeImport(r), r.failed || r.errors.length ? 'error' : r.added ? 'ok' : '');
+    let tone = '';
+    if (r.failed || r.errors.length) tone = 'error';
+    else if (r.added) tone = 'ok';
+    say(summarizeImport(r), tone);
   }
 
   async function submit() {
@@ -213,12 +219,14 @@ export function mountDrafts(host) {
     const name = titleOf(d);
     const working = busy.has(d.id);
     const joinOnly = d.inLibrary && d.playlist;
+    const addBtn = joinOnly
+      ? el('button', { class: 'btn fill small', type: 'button', disabled: working, 'aria-label': `Add to playlist ${d.playlist.title}: ${name}`, onclick: () => { void addToPlaylist(d); } }, icon('plus', 'inline'), 'Add to playlist')
+      : el('button', { class: 'btn fill small', type: 'button', 'aria-label': `Add to Library: ${name}`, onclick: () => addToLibrary(d) }, icon('plus', 'inline'), 'Add to Library');
+    const refreshBtn = canRefresh(d) ? el('button', { class: 'link-btn', type: 'button', disabled: working, 'aria-label': `Refresh: ${name}`, onclick: () => { void refresh(d); } }, working ? 'Fetching...' : 'Refresh') : null;
     return el('div', { class: 'draft-actions' },
       srcLink(d),
-      joinOnly
-        ? el('button', { class: 'btn fill small', type: 'button', disabled: working, 'aria-label': `Add to playlist ${d.playlist.title}: ${name}`, onclick: () => { void addToPlaylist(d); } }, icon('plus', 'inline'), 'Add to playlist')
-        : el('button', { class: 'btn fill small', type: 'button', 'aria-label': `Add to Library: ${name}`, onclick: () => addToLibrary(d) }, icon('plus', 'inline'), 'Add to Library'),
-      canRefresh(d) ? el('button', { class: 'link-btn', type: 'button', disabled: working, 'aria-label': `Refresh: ${name}`, onclick: () => { void refresh(d); } }, working ? 'Fetching...' : 'Refresh') : null,
+      addBtn,
+      refreshBtn,
       el('span', { class: 'draft-tools' },
         el('button', { class: 'icon', type: 'button', title: 'Edit draft', 'aria-label': `Edit draft: ${name}`, onclick: () => startEdit(d) }, icon('pencil', 'inline')),
         el('button', { class: 'icon danger', type: 'button', title: 'Delete draft', 'aria-label': `Delete draft: ${name}`, onclick: () => remove(d) }, icon('trash', 'inline'))));
@@ -229,12 +237,13 @@ export function mountDrafts(host) {
     const head = d.title
       ? el('span', { class: 'draft-title t-headline' }, titleNodes(d))
       : el('span', { class: 'draft-title t-headline muted', title: d.url || rawLine(d) }, titleOf(d));
+    const linkNote = link ? el('small', { class: 'muted t-caption' }, LINK_NOTE) : null;
     const info = editing.has(d.id)
       ? el('div', { class: 'info' }, editForm(d))
       : el('div', { class: 'info' },
         el('div', { class: 'title-line' }, head),
         subLine(d),
-        el('div', { class: 'draft-meta' }, statusMark(d), fromNote(d), link ? el('small', { class: 'muted t-caption' }, LINK_NOTE) : null));
+        el('div', { class: 'draft-meta' }, statusMark(d), fromNote(d), linkNote));
     return el('li', { class: `draft${d.inLibrary ? ' in-library' : ''}`, 'data-id': d.id }, thumb(d), info, actions(d));
   }
 

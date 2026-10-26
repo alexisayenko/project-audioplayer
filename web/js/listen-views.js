@@ -4,11 +4,12 @@ import { stepper } from './stepper.js';
 import { parseColor, mixColor } from './viz-color.js';
 import { detectPitch, correctOctave, harmonicMarks, foundList, createPitchTracker, PITCH_EVERY_MS, HARMONIC_LABEL_GAP_PX } from './pitch-detect.js';
 import {
-  BAND_COUNTS, DEFAULT_BAND_COUNT, BAND_TABLES, bandsFor, lowLaneCount, bandsHeight, bandsPhoneCapped, laneHeight, bandsLabel, bandRangeText,
+  BAND_COUNTS, DEFAULT_BAND_COUNT, BAND_TABLES, bandsFor, lowLaneCount, bandsHeight, bandsPhoneCapped, laneHeight, bandsLabel,
   LANE_UPDATE_MS, LANE_WINDOWS_S, LANE_WINDOW_LABELS, LANE_HISTORY_S, laneWindowFor, laneCaption as laneCaptionText, laneRelation, estimateLane, laneBpmText, laneConfidence, laneTitle,
 } from './beat-bands.js';
 
-export { BAND_COUNTS, DEFAULT_BAND_COUNT, BAND_TABLES, bandsFor, lowLaneCount, bandsHeight, bandRangeText };
+export { BAND_COUNTS, DEFAULT_BAND_COUNT, BAND_TABLES, bandsFor, lowLaneCount, bandsHeight };
+export { bandRangeText } from './beat-bands.js';
 
 export const MAX_RUN_MS = 10 * 60 * 1000;
 export const AUDIBLE_MAX_HZ = 20000;
@@ -340,7 +341,7 @@ export function createTrails() {
         at = null;
       }
       if (items) {
-        if (!keys || keys.length !== items.length) { keys = new Float64Array(items.length).fill(NaN); }
+        if (!keys || keys.length !== items.length) { keys = new Float64Array(items.length).fill(Number.NaN); }
         let same = true;
         for (let i = 0; i < items.length; i += 1) if (keys[i] !== items[i].freq) { same = false; keys[i] = items[i].freq; }
         if (!same) clear();
@@ -490,7 +491,10 @@ export function laneRange(levels, normalize) {
   if (!normalize || !levels.length) return { lo: DB_MIN, hi: DB_MAX };
   let lo = Infinity;
   let hi = -Infinity;
-  for (const v of levels) { if (v < lo) lo = v; if (v > hi) hi = v; }
+  for (const v of levels) {
+    if (v < lo) lo = v;
+    if (v > hi) hi = v;
+  }
   return { lo, hi: Math.max(hi, lo + LANE_MIN_SPAN_DB) };
 }
 
@@ -510,7 +514,7 @@ export function createBeatTracker(count = BANDS.length) {
         let avg = db;
         if (lane.recent.length) {
           let sum = 0;
-          for (let r = 0; r < lane.recent.length; r += 1) sum += lane.recent[r].db;
+          for (const r of lane.recent) sum += r.db;
           avg = sum / lane.recent.length;
         }
         const strength = Math.max(0, db - avg);
@@ -616,14 +620,17 @@ export function drawLiveWaveView(g, colors, scope, scale, ms = WAVE_MS) {
   for (const v of [scale, 0, -scale]) {
     const y = mid - (v / scale) * amp;
     ctx.beginPath(); ctx.moveTo(left, y); ctx.lineTo(w - pad, y); ctx.stroke();
-    ctx.fillText(v === 0 ? '0' : `${v > 0 ? '+' : '-'}${scale}`, left - 4, y);
+    const sign = v > 0 ? '+' : '-';
+    ctx.fillText(v === 0 ? '0' : `${sign}${scale}`, left - 4, y);
   }
   ctx.textBaseline = 'top';
   const step = ms / 4;
   for (let k = 0; k <= 4; k += 1) {
     const x = left + (k / 4) * plotW;
     ctx.beginPath(); ctx.moveTo(x, mid - amp); ctx.lineTo(x, mid + amp); ctx.stroke();
-    ctx.textAlign = k === 0 ? 'left' : k === 4 ? 'right' : 'center';
+    ctx.textAlign = 'center';
+    if (k === 0) ctx.textAlign = 'left';
+    else if (k === 4) ctx.textAlign = 'right';
     ctx.fillText(`${+(k * step).toFixed(1)} ms`, x, h - bottom + 3);
   }
   if (!scope) return;
@@ -698,7 +705,8 @@ export function specHover(px, geo, range, { levels = null, bars = [] } = {}) {
     if (levels?.length) db = levels[clamp(Math.floor(((px - geo.left) / geo.plotW) * levels.length), 0, levels.length - 1)];
   }
   const r = Math.round(db * 10) / 10;
-  const level = db > DB_MIN ? `${(r === 0 ? 0 : r).toFixed(1)} dB` : '-';
+  const shownDb = r === 0 ? 0 : r;
+  const level = db > DB_MIN ? `${shownDb.toFixed(1)} dB` : '-';
   return { x, freq, title, sub: `${noteInfo(freq).text} · ${level}` };
 }
 
@@ -730,7 +738,11 @@ export function drawSpecHover(g, colors, geo, hover) {
 export function trackHover(canvas, onChange) {
   const state = { x: null };
   const move = (e) => { state.x = e.clientX - canvas.getBoundingClientRect().left; onChange(); };
-  const clear = () => { if (state.x === null) return; state.x = null; onChange(); };
+  const clear = () => {
+    if (state.x === null) return;
+    state.x = null;
+    onChange();
+  };
   const release = (e) => { if (e.pointerType && e.pointerType !== 'mouse') clear(); };
   canvas.addEventListener('pointerdown', move);
   canvas.addEventListener('pointermove', move);

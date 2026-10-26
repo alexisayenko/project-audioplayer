@@ -1,5 +1,5 @@
 import { camClamp } from './viz-terrain-math.js';
-import { ROUTE_RE, isShareHash } from './share-hash.js';
+import { ROUTE_RE } from './share-hash.js';
 
 export const SHARE_VERSION = 1;
 export const SHARE_MAX_T = 86400;
@@ -10,7 +10,7 @@ const ID_RE = /^[A-Za-z0-9._-]{1,80}$/;
 
 const CAM_KEYS = ['eye', 'pitch', 'yaw'];
 
-export { isShareHash };
+export { isShareHash } from './share-hash.js';
 
 export function clampT(t, duration) {
   const n = Math.floor(Number(t));

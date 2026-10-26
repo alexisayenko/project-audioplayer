@@ -10,7 +10,7 @@ const SMOOTH_COUNT = 3;
 
 function rmsOf(samples) {
   let sum = 0;
-  for (let i = 0; i < samples.length; i += 1) sum += samples[i] * samples[i];
+  for (const v of samples) sum += v * v;
   return samples.length ? Math.sqrt(sum / samples.length) : 0;
 }
 

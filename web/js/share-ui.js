@@ -1,6 +1,5 @@
 import { player } from './player.js';
 import { el, toast, fmtTime } from './dom.js';
-import { icon } from './icons.js';
 import { displayLine } from './credits.js';
 import { vizMode } from './viz-settings.js';
 import { modeLabel } from './viz-modes.js';

@@ -47,7 +47,10 @@ export function createEndGuard({ audio, timers = { set: (fn, ms) => { const id =
   return {
     finish,
     tick,
-    stop() { if (timer !== null) timers.clear(timer); timer = null; },
+    stop() {
+      if (timer !== null) timers.clear(timer);
+      timer = null;
+    },
     get done() { return done; },
   };
 }

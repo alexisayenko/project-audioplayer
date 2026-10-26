@@ -35,6 +35,11 @@ let listSeq = 0;
 
 const fallbackIndex = () => buildIndex({ genres: libraryGenres().map((name) => ({ name, family: null, level: 'genre' })) });
 
+function rejectedHint(rejected) {
+  if (rejected.loading) return 'The genre list is still loading. Try again in a moment.';
+  return rejected.group ? `"${rejected.value}" only groups genres and is never assigned to a song. Pick a genre under it.` : '';
+}
+
 export function chipField(ns, editor, { cap } = {}) {
   const kind = cap ? { ...KINDS[ns], cap } : KINDS[ns];
   const prefix = `${ns}:`;
@@ -151,7 +156,7 @@ export function chipField(ns, editor, { cap } = {}) {
       if (mine().length >= kind.cap) { bad = true; continue; }
       editor.addTags([tag]);
     }
-    if (rejected) showHint(rejected.value, rejected.names, rejected.loading ? 'The genre list is still loading. Try again in a moment.' : rejected.group ? `"${rejected.value}" only groups genres and is never assigned to a song. Pick a genre under it.` : '');
+    if (rejected) showHint(rejected.value, rejected.names, rejectedHint(rejected));
     return bad;
   }
 

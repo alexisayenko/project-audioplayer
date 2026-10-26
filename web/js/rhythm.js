@@ -201,10 +201,17 @@ export function createRhythmCard(env = {}) {
 
   let ro = null;
   if (typeof ResizeObserver !== 'undefined') {
-    ro = new ResizeObserver(() => { if (gone) return; windows.paint(); if (!running) bands.paint(); });
+    ro = new ResizeObserver(() => {
+      if (gone) return;
+      windows.paint();
+      if (!running) bands.paint();
+    });
     ro.observe(node);
   }
-  if (typeof requestAnimationFrame === 'function') raf(() => { if (!gone && !running) bands.paint(); if (!gone) windows.paint(); });
+  if (typeof requestAnimationFrame === 'function') raf(() => {
+    if (!gone && !running) bands.paint();
+    if (!gone) windows.paint();
+  });
 
   return {
     node,

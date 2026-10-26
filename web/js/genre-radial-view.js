@@ -100,7 +100,9 @@ export function createRadialView(canvas, { onSelect, onHover, reducedMotion = fa
       if (sel) alpha = on ? 0.95 : 0.1;
       ctx.globalAlpha = alpha;
       ctx.strokeStyle = on ? colors.accent : colors.edge;
-      ctx.lineWidth = (on ? 2 : e.dotted ? 0.7 : 1) / k;
+      let lw = e.dotted ? 0.7 : 1;
+      if (on) lw = 2;
+      ctx.lineWidth = lw / k;
       ctx.setLineDash(e.dotted ? [1 / k, 3 / k] : []);
       if (e.dotted && !on) ctx.globalAlpha = alpha * 0.7;
       ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();

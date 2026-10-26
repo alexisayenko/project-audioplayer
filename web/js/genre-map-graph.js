@@ -11,7 +11,10 @@ export const mapRadius = (level, all) => {
   return level === 1 ? Math.min(28, FAMILY_MIN_R + 1.6 * c) : Math.min(MAX_R, GENRE_MIN_R + 2.3 * c);
 };
 
-export const emphasis = (own, all) => (own > 0 ? 2 : all > 0 ? 1 : 0);
+export function emphasis(own, all) {
+  if (own > 0) return 2;
+  return all > 0 ? 1 : 0;
+}
 
 export function buildMapGraph(tree) {
   if (!tree) return { nodes: [], links: [], byId: new Map() };
@@ -75,7 +78,8 @@ export function seedPositions(graph, seed = 1, { ring = 240 } = {}) {
     const base = out.get(id) ?? 0;
     list.forEach((cid, j) => {
       const c = graph.byId.get(cid);
-      const spread = list.length > 1 ? ((j + 0.5) / list.length - 0.5) * Math.PI * (depth === 0 ? 1.7 : 1.3) : 0;
+      const arc = depth === 0 ? 1.7 : 1.3;
+      const spread = list.length > 1 ? ((j + 0.5) / list.length - 0.5) * Math.PI * arc : 0;
       const ang = base + spread + (rng() - 0.5) * 0.1;
       const dist = (depth === 0 ? 50 : 34) + 5 * Math.sqrt(j + 1) + rng() * 6;
       c.x = p.x + Math.cos(ang) * dist; c.y = p.y + Math.sin(ang) * dist;
@@ -96,7 +100,7 @@ export function seedPositions(graph, seed = 1, { ring = 240 } = {}) {
 export function visibleIds(tree, { family = null, libraryOnly = false, status = 'all', modifiers = [], subfamilies = null } = {}) {
   if (!tree) return null;
   const byFilter = filterIds(tree, { status, modifiers });
-  const subs = subfamilies && subfamilies.size ? subfamilies : null;
+  const subs = subfamilies?.size ? subfamilies : null;
   if (!family && !libraryOnly && !byFilter && !subs) return null;
   const root = family ? `g:${family}` : null;
   const out = new Set();

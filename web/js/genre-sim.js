@@ -87,8 +87,17 @@ export function createSim({ nodes, links = [], seed = 1, breathing = true, charg
     const ds = Math.max(1, deg.get(l.s.id));
     const dt = Math.max(1, deg.get(l.t.id));
     const m = Math.min(ds, dt);
-    l.strength = l.tree && parentStrength ? parentStrength / Math.sqrt(m) : (l.assoc ? ASSOC_STRENGTH : l.related ? 0.15 : 1) / m;
-    l.dist = (l.assoc ? 2.5 : l.related ? 1.6 : 1) * linkDistance + l.s.r + l.t.r;
+    let kindStrength = 1;
+    let kindDist = 1;
+    if (l.assoc) {
+      kindStrength = ASSOC_STRENGTH;
+      kindDist = 2.5;
+    } else if (l.related) {
+      kindStrength = 0.15;
+      kindDist = 1.6;
+    }
+    l.strength = l.tree && parentStrength ? parentStrength / Math.sqrt(m) : kindStrength / m;
+    l.dist = kindDist * linkDistance + l.s.r + l.t.r;
     l.bias = dt / (ds + dt);
   }
   const leash = parentReaction !== null;

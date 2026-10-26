@@ -61,7 +61,7 @@ export function createGenreDock({ storage = null, narrow = () => false, onNaviga
     toggle.title = text;
     toggle.setAttribute('aria-label', collapsed && label ? `${text}: ${label} is selected` : text);
     toggle.setAttribute('aria-expanded', String(!collapsed));
-    const glyph = sheet ? (collapsed ? 'chevronUp' : 'chevron') : (collapsed ? 'chevron' : 'chevronUp');
+    const glyph = Boolean(sheet) === Boolean(collapsed) ? 'chevronUp' : 'chevron';
     toggle.replaceChildren(icon(glyph, 'nav'));
   }
 
@@ -131,7 +131,7 @@ export function createGenreDock({ storage = null, narrow = () => false, onNaviga
     const to = node.getBoundingClientRect();
     if (!to.width || (to.width === from.width && to.height === from.height)) return;
     const css = globalThis.getComputedStyle?.(globalThis.document.documentElement);
-    const ms = parseFloat(css?.getPropertyValue('--dur-base')) || 0;
+    const ms = Number.parseFloat(css?.getPropertyValue('--dur-base')) || 0;
     if (!ms) return;
     node.animate(
       [{ width: `${from.width}px`, height: `${from.height}px` }, { width: `${to.width}px`, height: `${to.height}px` }],

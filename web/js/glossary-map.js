@@ -325,7 +325,7 @@ function placeBoxes(boxes, shape, edges, domainOf) {
     const a = domainOf.get(e.from);
     const b = domainOf.get(e.to);
     if (!a || !b || a === b) continue;
-    const k = [a, b].sort().join('|');
+    const k = a < b ? `${a}|${b}` : `${b}|${a}`;
     weight.set(k, (weight.get(k) ?? 0) + 1);
   }
   const byId = new Map(boxes.map((b) => [b.id, b]));
@@ -392,7 +392,10 @@ function placeBoxes(boxes, shape, edges, domainOf) {
 
 export function layoutDomains(nodes, edges, shape = 'wide') {
   const members = {};
-  for (const n of nodes) (members[n.domain] ??= []).push(n);
+  for (const n of nodes) {
+    members[n.domain] ??= [];
+    members[n.domain].push(n);
+  }
   const boxes = [];
   for (const d of DOMAINS) {
     const list = members[d.id];

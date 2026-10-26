@@ -9,7 +9,7 @@ import { titleLine, artistLine } from './credits.js';
 import { fmtClock, parseClock, validRegion } from './loop-engine.js';
 import { fmtRemainingClock, paintElapsed, fitElapsed, elapsedButton, onTimeLeftChange } from './time-left.js';
 import { loadPeaks, drawPeaks, sizeCanvas, xToTime, timeToX } from './peaks.js';
-import { loopsOf, addLoop, renameLoop, removeLoop, sameRegion, MAX_LOOPS, MAX_NAME, FULL_TEXT } from './loops-model.js';
+import { loopsOf, addLoop, renameLoop, removeLoop, sameRegion, MAX_LOOPS, MAX_NAME } from './loops-model.js';
 
 export const TAGLINE = 'Work on a track: loop a section, mark it, keep it.';
 export const EMPTY_TEXT = 'Play a song to open it in the Studio.';
@@ -55,7 +55,6 @@ export function renderStudio(root, env = {}) {
   const loop = player.loop;
 
   let shownId = null;
-  let shownAudio = false;
   let parts = null;
   let abort = null;
   let peaks = null;
@@ -82,7 +81,8 @@ export function renderStudio(root, env = {}) {
   function note(text, kind = '') {
     if (!parts) return;
     parts.note.textContent = text;
-    parts.note.className = `stu-note t-caption${kind ? ` ${kind}` : ''}`;
+    const extra = kind ? ` ${kind}` : '';
+    parts.note.className = `stu-note t-caption${extra}`;
     clearTimeout(noteTimer);
     if (text) noteTimer = setTimeout(() => { if (parts) parts.note.textContent = ''; }, NOTE_MS);
   }
@@ -274,11 +274,18 @@ export function renderStudio(root, env = {}) {
       h.classList.add('dragging');
     });
     h.addEventListener('pointermove', (e) => { if (drag === e.pointerId) loop.move(side, at(e)); });
-    const end = (e) => { if (drag !== e.pointerId) return; drag = null; h.classList.remove('dragging'); h.releasePointerCapture?.(e.pointerId); };
+    const end = (e) => {
+      if (drag !== e.pointerId) return;
+      drag = null;
+      h.classList.remove('dragging');
+      h.releasePointerCapture?.(e.pointerId);
+    };
     h.addEventListener('pointerup', end);
     h.addEventListener('pointercancel', end);
     h.addEventListener('keydown', (e) => {
-      const dir = e.key === 'ArrowLeft' || e.key === 'ArrowDown' ? -1 : e.key === 'ArrowRight' || e.key === 'ArrowUp' ? 1 : 0;
+      let dir = 0;
+      if (e.key === 'ArrowLeft' || e.key === 'ArrowDown') dir = -1;
+      else if (e.key === 'ArrowRight' || e.key === 'ArrowUp') dir = 1;
       if (!dir) return;
       e.preventDefault();
       e.stopPropagation();
@@ -322,7 +329,10 @@ export function renderStudio(root, env = {}) {
 
   function statusText() {
     if (!parts) return;
-    parts.status.textContent = status === 'loading' ? PREPARING : status === 'unavailable' ? UNAVAILABLE : '';
+    let text = '';
+    if (status === 'loading') text = PREPARING;
+    else if (status === 'unavailable') text = UNAVAILABLE;
+    parts.status.textContent = text;
     parts.status.hidden = !parts.status.textContent;
   }
 
@@ -398,13 +408,11 @@ export function renderStudio(root, env = {}) {
     const audio = !!song && hasAudio(song);
     if (!song || !audio) {
       shownId = null;
-      shownAudio = false;
       if (view !== 'empty') { abort?.abort(); empty(); }
       return;
     }
     if (song.id !== shownId || view !== 'song') {
       shownId = song.id;
-      shownAudio = true;
       editing = -1;
       build(song);
     } else {

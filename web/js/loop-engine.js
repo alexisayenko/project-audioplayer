@@ -81,7 +81,9 @@ export function parseClock(text) {
   return Number.isFinite(t) ? round3(t) : null;
 }
 
-export function createLoop(audio, timers = { set: (fn, ms) => setTimeout(fn, ms), clear: (id) => clearTimeout(id) }, gapless = null) {
+const DEFAULT_TIMERS = { set: (fn, ms) => setTimeout(fn, ms), clear: (id) => clearTimeout(id) };
+
+export function createLoop(audio, timers = DEFAULT_TIMERS, gapless = null) {
   let region = emptyRegion();
   let on = false;
   let timer = null;
@@ -113,8 +115,17 @@ export function createLoop(audio, timers = { set: (fn, ms) => setTimeout(fn, ms)
     if (on && !audio.paused) tick();
   }
 
-  for (const ev of ['play', 'playing', 'ratechange']) audio.addEventListener(ev, () => { if (on) arm(); sync(); });
-  audio.addEventListener('seeked', () => { gapless?.noteSeeked(); if (on) arm(); sync(); });
+  for (const ev of ['play', 'playing', 'ratechange']) {
+    audio.addEventListener(ev, () => {
+      if (on) arm();
+      sync();
+    });
+  }
+  audio.addEventListener('seeked', () => {
+    gapless?.noteSeeked();
+    if (on) arm();
+    sync();
+  });
   audio.addEventListener('timeupdate', () => { if (on) tick(); });
   audio.addEventListener('pause', () => { disarm(); sync(); });
   audio.addEventListener('volumechange', sync);

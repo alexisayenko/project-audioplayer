@@ -9,7 +9,7 @@ const PART_SPLIT = /\s*[,;]\s*/;
 const WRAPPED = /^[(\[]\s*([^()[\]]+?)\s*[)\]]$/;
 
 const canonical = (...args) => {
-  const { before, after } = args[args.length - 1];
+  const { before, after } = args.at(-1);
   const year = before || after;
   return year ? `${year} remaster` : 'remaster';
 };

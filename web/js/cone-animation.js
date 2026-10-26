@@ -2,14 +2,16 @@ import { el } from './dom.js';
 import { segmented } from './segmented.js';
 import { MIN_HZ, MAX_HZ, MAX_AMP, noteInfo, fmtPct, trim, wavelengthM, fit, styleReader } from './simple-tone.js';
 import {
-  WAVES, WAVE_DEFAULT, WAVE_LABEL, WAVE_TEXT, HARM_COUNT, HARM_TICKS, HARM_TITLE, HARM_NOTE, HARM_TEXT, HARM_BOX,
-  WAVE_GLYPH, waveName, waveValue, harmonicRaw, harmonicAmps, waveGlyph, harmonicCell, harmonicLabel, createHarmonicsChart,
+  WAVES, WAVE_DEFAULT, WAVE_LABEL, WAVE_TEXT, HARM_TITLE, HARM_NOTE, HARM_TEXT,
+  waveName, waveValue, waveGlyph, createHarmonicsChart,
 } from './wave-shapes.js';
 
 export {
-  WAVES, WAVE_DEFAULT, WAVE_LABEL, WAVE_TEXT, HARM_COUNT, HARM_TICKS, HARM_TITLE, HARM_NOTE, HARM_TEXT, HARM_BOX,
-  WAVE_GLYPH, waveName, waveValue, harmonicRaw, harmonicAmps, waveGlyph, harmonicCell, harmonicLabel,
+  WAVES, WAVE_DEFAULT, WAVE_LABEL, WAVE_TEXT, HARM_TITLE, HARM_NOTE, HARM_TEXT, waveName, waveValue, waveGlyph,
 };
+export {
+  HARM_COUNT, HARM_TICKS, HARM_BOX, WAVE_GLYPH, harmonicRaw, harmonicAmps, harmonicCell, harmonicLabel,
+} from './wave-shapes.js';
 
 export const DEFAULT_FREQ = 440;
 export const DEFAULT_AMP = 0.3;
@@ -58,7 +60,10 @@ const TAU = 2 * Math.PI;
 
 const WAVE_ANTIDERIVATIVE = {
   sine: (x) => (1 - Math.cos(TAU * x)) / TAU,
-  triangle: (x) => (x < 0.25 ? 2 * x * x : x < 0.75 ? 2 * x - 2 * x * x - 0.25 : 2 * x * x - 4 * x + 2),
+  triangle: (x) => {
+    if (x < 0.25) return 2 * x * x;
+    return x < 0.75 ? 2 * x - 2 * x * x - 0.25 : 2 * x * x - 4 * x + 2;
+  },
   square: (x) => (x < 0.5 ? x : 1 - x),
   sawtooth: (x) => x * x - x,
 };
@@ -193,9 +198,9 @@ export const airDotRadius = (heat) => AIR_DOT_R * (1 + AIR_DOT_GROW * clamp(heat
 export function parseColor(text) {
   const s = String(text ?? '').trim();
   let m = /^#([0-9a-f]{3})$/i.exec(s);
-  if (m) return [...m[1]].map((c) => parseInt(c + c, 16));
+  if (m) return [...m[1]].map((c) => Number.parseInt(c + c, 16));
   m = /^#([0-9a-f]{6})/i.exec(s);
-  if (m) return [0, 2, 4].map((i) => parseInt(m[1].slice(i, i + 2), 16));
+  if (m) return [0, 2, 4].map((i) => Number.parseInt(m[1].slice(i, i + 2), 16));
   m = /^rgba?\(\s*([\d.]+)[\s,]+([\d.]+)[\s,]+([\d.]+)/i.exec(s);
   if (m) return [+m[1], +m[2], +m[3]];
   return null;
@@ -466,9 +471,9 @@ export function createConeAnimation({ frequency = DEFAULT_FREQ, amplitude = DEFA
     const g = fit(canvas);
     if (!g) return;
     drawCone(g, currentColors(), phase, amp, shape);
-    canvas.setAttribute('data-phase', phase.toFixed(4));
-    canvas.setAttribute('data-offset', coneOffset(phase, amp, shape).toFixed(4));
-    canvas.setAttribute('data-wave', shape);
+    canvas.dataset.phase = phase.toFixed(4);
+    canvas.dataset.offset = coneOffset(phase, amp, shape).toFixed(4);
+    canvas.dataset.wave = shape;
   }
 
   const animOn = () => !gone && !paused && inView && !doc?.hidden;
@@ -536,7 +541,7 @@ export function createConeAnimation({ frequency = DEFAULT_FREQ, amplitude = DEFA
   }
 
   const typed = (input, apply) => {
-    input.addEventListener('input', () => { const v = parseFloat(input.value); if (Number.isFinite(v)) apply(v); });
+    input.addEventListener('input', () => { const v = Number.parseFloat(input.value); if (Number.isFinite(v)) apply(v); });
     input.addEventListener('change', () => paintOutputs(true));
   };
   typed(freqNum, setFrequency);

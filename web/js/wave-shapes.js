@@ -21,7 +21,9 @@ export const waveName = (wave) => (WAVES.includes(wave) ? wave : WAVE_DEFAULT);
 export function waveValue(wave, u) {
   const x = u - Math.floor(u);
   switch (wave) {
-    case 'triangle': return x < 0.25 ? 4 * x : x < 0.75 ? 2 - 4 * x : 4 * x - 4;
+    case 'triangle':
+      if (x < 0.25) return 4 * x;
+      return x < 0.75 ? 2 - 4 * x : 4 * x - 4;
     case 'square': return x < 0.5 ? 1 : -1;
     case 'sawtooth': return 2 * x - 1;
     default: return Math.sin(TAU * x);
@@ -106,7 +108,7 @@ export function createHarmonicsChart() {
       bar.setAttribute('y', (base - bh).toFixed(2));
       bar.setAttribute('width', HARM_BOX.bar);
       bar.setAttribute('height', bh.toFixed(2));
-      bar.setAttribute('data-amp', a.toFixed(4));
+      bar.dataset.amp = a.toFixed(4);
     });
     svg.setAttribute('aria-label', harmonicLabel(wave, amps));
   }

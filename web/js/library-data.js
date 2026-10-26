@@ -50,7 +50,7 @@ export function loadPrefs() {
 let listening = null;
 
 export function setListening(data) {
-  listening = data && data.songs ? data : null;
+  listening = data?.songs ? data : null;
   if (listening) return;
   prefs.never = false;
   if (prefs.sort === 'listened') prefs.sort = 'added';
@@ -97,7 +97,8 @@ function matchesSelection(song, sel) {
 
 export function visibleSongs(sel = prefs.sel) {
   const q = prefs.query.trim().toLocaleLowerCase();
-  const refIds = prefs.refs ? referenceSongIds(prefs.refs === 'any' ? '' : prefs.refs) : null;
+  const refQuery = prefs.refs === 'any' ? '' : prefs.refs;
+  const refIds = prefs.refs ? referenceSongIds(refQuery) : null;
   const list = store.songs.filter((s) => {
     if (refIds && !refIds.has(s.id)) return false;
     if (!matchesSelection(s, sel)) return false;

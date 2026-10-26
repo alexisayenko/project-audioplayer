@@ -20,9 +20,14 @@ export function renderGenres(songs, listening, { sort, query, onSort, onOpen }) 
       el('button', { class: 'st-th', type: 'button', onclick: () => onSort(nextSort(sort, c.key)) }, c.label, on ? arrow : null));
   }));
 
+  const textOf = (c, r) => {
+    if (c.key === 'songs') return String(r.songs);
+    return c.key === 'listened' ? formatListened(r.listened) : formatPlays(r.plays);
+  };
+
   const cell = (c, r) => {
     if (c.key === 'genre') return el('td', {}, el('button', { class: 'st-open', type: 'button', title: `View ${r.label} in Library`, onclick: () => onOpen(r) }, r.label));
-    const text = c.key === 'songs' ? String(r.songs) : (c.key === 'listened' ? formatListened(r.listened) : formatPlays(r.plays));
+    const text = textOf(c, r);
     return el('td', { class: `${num(c)}${edge(c)}`.trim() }, text);
   };
 

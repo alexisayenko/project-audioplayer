@@ -81,7 +81,10 @@ export function discogsNote(state) {
   return state?.skipped ? `Discogs: ${SKIPPED[state.skipped] || 'skipped'}` : '';
 }
 
-const suggestedNote = (n) => (n > 0 ? `${n} suggested genre${n === 1 ? '' : 's'}` : '');
+const suggestedNote = (n) => {
+  if (!(n > 0)) return '';
+  return `${n} suggested genre${n === 1 ? '' : 's'}`;
+};
 
 export const metaMessage = (plan, state, suggested = 0) => [statusText(plan), discogsNote(state), suggestedNote(suggested)].filter(Boolean).join('. ');
 

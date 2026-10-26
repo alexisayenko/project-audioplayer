@@ -28,9 +28,10 @@ const clean = (v) => String(v ?? '').trim().toLowerCase();
 
 export function suggestedGenres(resp, have = []) {
   const taken = new Set(have.map((t) => String(t).toLowerCase()));
+  const originals = Array.isArray(resp?.original_genres) ? resp.original_genres : [];
   const raw = Array.isArray(resp?.genre_suggestions)
     ? resp.genre_suggestions
-    : (Array.isArray(resp?.original_genres) ? resp.original_genres : [])
+    : originals
       .filter((t) => typeof t === 'string' && /^genre:\S/i.test(t))
       .map((t) => ({ genre: t.slice(t.indexOf(':') + 1), sources: ['original'], reason: 'original' }));
   const seen = new Set();

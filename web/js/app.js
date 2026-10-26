@@ -1,7 +1,7 @@
 import './input-modality.js';
 import { api, isSignedIn, session, startup } from './api.js';
 import { isGuest, setGuest, streamable, syncBanner } from './guest.js';
-import { el, toast } from './dom.js';
+import { toast } from './dom.js';
 import { player as playerApi, initPlayer, pausePlayer } from './player.js';
 import { lazyVisualizer } from './viz-lazy.js';
 import { lazyRoute } from './lazy-route.js';
@@ -99,7 +99,7 @@ function route() {
   }
   firstRoute = false;
   if (name.startsWith('playlists/')) name = 'playlists';
-  const navName = /^library\/albums\//.test(name) ? 'library/albums' : name;
+  const navName = name.startsWith('library/albums/') ? 'library/albums' : name;
   if (/^library\/(albums(\/[^/]+)?|drafts)$/.test(name)) name = 'library';
   if (name === 'genres-rework') {
     name = 'genres';

@@ -1,7 +1,7 @@
 import { api } from './api.js';
 import { store } from './store.js';
 import { player } from './player.js';
-import { el, fmtTime, toast } from './dom.js';
+import { el, fmtTime } from './dom.js';
 import { hasAudio, sourceLink } from './playable.js';
 import { can, isGuest } from './guest.js';
 import { cachedListening, getListening, invalidateListening, hasListening, listeningRows, formatTotal, formatDay, WINDOWS } from './listening-stats.js';
@@ -96,7 +96,7 @@ function fullRow(line, song) {
   };
   const nodes = partNodes(song, line);
   if (typeof nodes[0] === 'string') {
-    const at = line.search(/\S+$/);
+    const at = lastWordStart(line);
     nodes.splice(0, 1, line.slice(0, at), line.slice(at));
   }
   const glued = (n) => !/^\s|\s$/.test(typeof n === 'string' ? n : n.textContent || 'x');
@@ -164,11 +164,14 @@ function actionRow(song) {
   const btn = (label, run, cls = 'btn outline') => el('button', { class: cls, type: 'button', onclick: run }, label);
   const ib = (label, name, run, cls = 'icon round') => el('button', { class: cls, type: 'button', title: label, 'aria-label': label, onclick: run }, icon(name, 'nav'));
   const qp = queued ? player.queuePosition(song.id) : null;
-  const plLabel = queued ? `In queue${qp ? `, position ${qp.pos} of ${qp.total}` : ''} - click to remove` : 'Add to queue';
+  const qpText = qp ? `, position ${qp.pos} of ${qp.total}` : '';
+  const plLabel = queued ? `In queue${qpText} - click to remove` : 'Add to queue';
+  const queueToggle = () => el('button', { class: `icon round pl-toggle${queued ? ' on' : ''}`, type: 'button', title: plLabel, 'aria-label': plLabel, 'aria-pressed': String(queued), onclick: () => toggleQueue(song) }, icon(queued ? 'playlist' : 'listAdd', 'nav'));
+  const pickerBtn = () => el('button', { class: 'icon round', type: 'button', title: 'Add to playlist...', 'aria-label': 'Add to playlist...', 'aria-haspopup': 'dialog', onclick: (e) => { void openPlaylistPicker(song, e.currentTarget); } }, icon('playlistPlus', 'nav'));
   const icons = [
     queueable ? ib('Play next', 'playPlus', () => playNextInQueue(song)) : null,
-    queueable ? el('button', { class: `icon round pl-toggle${queued ? ' on' : ''}`, type: 'button', title: plLabel, 'aria-label': plLabel, 'aria-pressed': String(queued), onclick: () => toggleQueue(song) }, icon(queued ? 'playlist' : 'listAdd', 'nav')) : null,
-    playlistsOn() ? el('button', { class: 'icon round', type: 'button', title: 'Add to playlist...', 'aria-label': 'Add to playlist...', 'aria-haspopup': 'dialog', onclick: (e) => { void openPlaylistPicker(song, e.currentTarget); } }, icon('playlistPlus', 'nav')) : null,
+    queueable ? queueToggle() : null,
+    playlistsOn() ? pickerBtn() : null,
     ib('Share link', 'share', () => openShareDialog(song)),
     downloadIcon(song, audio, view, ib),
     can('edit') ? ib('Edit', 'pencil', () => editDialog(song)) : null,
@@ -176,6 +179,12 @@ function actionRow(song) {
   return el('div', { class: 'card-actions' },
     icons.length ? el('div', { class: 'card-icons' }, ...icons) : null,
     !audio && !can('fetch') && link ? btn(link.label, () => window.open(link.url, '_blank', 'noopener')) : null);
+}
+
+function lastWordStart(line) {
+  let at = line.length;
+  while (at > 0 && !/\s/.test(line[at - 1])) at -= 1;
+  return at === line.length ? -1 : at;
 }
 
 const SIDE_KEYS = new Set(['country']);
@@ -219,7 +228,7 @@ function bpmView(stored, songId) {
 }
 
 function paintBpmBadge(btn) {
-  const v = bpmView(btn.getAttribute('data-stored'), btn.getAttribute('data-id'));
+  const v = bpmView(btn.dataset.stored, btn.dataset.id);
   btn.firstChild.data = v.text;
   btn.setAttribute('aria-pressed', String(v.on));
   btn.setAttribute('aria-label', v.label);
@@ -273,7 +282,12 @@ function listeningBlock(songId) {
   const seen = cachedListening();
   if (seen) show(seen);
   getListening().then(show, () => { if (!seen) box.remove(); });
-  const reshow = () => { if (!box.isConnected) return false; const c = cachedListening(); if (c) show(c); return true; };
+  const reshow = () => {
+    if (!box.isConnected) return false;
+    const c = cachedListening();
+    if (c) show(c);
+    return true;
+  };
   const refresh = () => { if (reshow()) getListening().then(show, () => {}); };
   const unsubs = [];
   const stop = () => unsubs.forEach((u) => u());

@@ -170,6 +170,11 @@ export function harmonicLabelSteps(pitch) {
   return { names, hz: names * Math.max(1, Math.ceil(54 / (pitch * names))) };
 }
 
+function release(p) {
+  try { p.src.stop(); } catch { /* not started */ }
+  try { p.src.disconnect(); } catch { /* gone */ }
+}
+
 export function createClickEngine(ctx, { destination = ctx.destination, rate = DEFAULTS.rate, amp = DEFAULTS.amp, fade = FADE_S } = {}) {
   const sr = ctx.sampleRate;
   const master = ctx.createGain();
@@ -215,11 +220,6 @@ export function createClickEngine(ctx, { destination = ctx.destination, rate = D
     if (k === harmonics) return;
     harmonics = k;
     osc.setPeriodicWave(wave(k));
-  }
-
-  function release(p) {
-    try { p.src.stop(); } catch { /* not started */ }
-    try { p.src.disconnect(); } catch { /* gone */ }
   }
 
   function retime() {
@@ -483,7 +483,9 @@ export function createClicksCard(env = {}) {
 
   function say(key) {
     state = key;
-    stateOut.textContent = key === 'playing' ? (params.continuous ? 'Playing until you press Stop' : `Playing for ${trim(live?.length ?? params.length, 2)} s`) : TEXT[key];
+    let text = TEXT[key];
+    if (key === 'playing') text = params.continuous ? 'Playing until you press Stop' : `Playing for ${trim(live?.length ?? params.length, 2)} s`;
+    stateOut.textContent = text;
     stateOut.classList.toggle('error', key === 'unsupported' || key === 'failed');
   }
 
@@ -603,7 +605,7 @@ export function createClicksCard(env = {}) {
   }
 
   const typed = (input, apply) => {
-    input.addEventListener('input', () => { const v = parseFloat(input.value); if (Number.isFinite(v)) apply(v); });
+    input.addEventListener('input', () => { const v = Number.parseFloat(input.value); if (Number.isFinite(v)) apply(v); });
     input.addEventListener('change', () => paintOutputs(true));
   };
   typed(rateNum, (v) => change({ rate: v }));

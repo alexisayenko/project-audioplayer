@@ -1,4 +1,4 @@
-import { estimateIntervals, IOI_MIN_CONFIDENCE, MIN_PERIODS } from './live-bpm.js';
+import { estimateIntervals, MIN_PERIODS } from './live-bpm.js';
 import { liveBpmLabel } from './bpm-label.js';
 
 export const BAND_COUNTS = [4, 6, 8, 12, 16, 24];
@@ -75,7 +75,7 @@ export const bandsLabel = (bands) => bands.map((b) => `${b.name} ${b.range}`).jo
 
 export const LANE_UPDATE_MS = 1000;
 export const LANE_START_SLACK_S = 0.05;
-export const LANE_MIN_CONFIDENCE = IOI_MIN_CONFIDENCE;
+export { IOI_MIN_CONFIDENCE as LANE_MIN_CONFIDENCE } from './live-bpm.js';
 export const LANE_RATIO_TOLERANCE = 0.03;
 export const LANE_WINDOWS_S = Object.freeze([1, 4, 8, 15, 30]);
 export const LANE_WINDOW_DEFAULT_S = 4;
@@ -124,5 +124,7 @@ export const laneConfidence = (res) => (res ? Math.round(100 * Math.min(1, Math.
 export function laneTitle(band, res, rel, windowS = LANE_WINDOW_DEFAULT_S) {
   if (!res) return `${band.name} ${band.range}: ${laneNoDataTip(windowS)}`;
   const base = `${band.name} ${band.range}: ${liveBpmLabel(res.bpm)} BPM, confidence ${laneConfidence(res)} percent`;
-  return rel.kind === 'none' ? base : `${base}, ${rel.chip ? `${rel.chip}: ${rel.tip}` : rel.tip}`;
+  if (rel.kind === 'none') return base;
+  const relText = rel.chip ? `${rel.chip}: ${rel.tip}` : rel.tip;
+  return `${base}, ${relText}`;
 }

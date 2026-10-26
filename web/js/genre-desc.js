@@ -35,7 +35,8 @@ function tempoMainOf(text) {
 export function tempoBadge(text) {
   const bpm = BPM_VALUE.exec(tempoMainOf(text));
   if (!bpm) return null;
-  const spoken = `${bpm[1] ? `${bpm[1]} ` : ''}${bpm[2]} BPM`;
+  const lead = bpm[1] ? `${bpm[1]} ` : '';
+  const spoken = `${lead}${bpm[2]} BPM`;
   return el('span', { class: 'bpm-badge gc-bpm', role: 'img', title: 'Beats per minute', 'aria-label': `Tempo ${spoken}` },
     bpm[2].replace(/\s+/g, ''), el('small', { 'aria-hidden': 'true' }, 'BPM'));
 }

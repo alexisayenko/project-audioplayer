@@ -5,11 +5,11 @@ import { chipField } from './chip-field.js';
 import { serviceIcons } from './service-icons.js';
 import { can } from './guest.js';
 import { playlistsOn } from './playlists-store.js';
-import { openPlaylistPicker } from './lazy-ui.js';
+import { openPlaylistPicker, openFilterSheet, openSongCard } from './lazy-ui.js';
 import { el, fmtTime, plural, toast } from './dom.js';
 import { icon } from './icons.js';
 import { genreChip } from './genre-chip.js';
-import { loadGenreTree } from './genre-tree.js';
+import { loadGenreTree, cachedTree } from './genre-tree.js';
 import { songMatches } from './song-match.js';
 import { playlistLink, MIX_MESSAGE, PRIVATE_MESSAGE } from './playlist-link.js';
 import { startDownloads, mountDownloadStatus } from './albums-youtube.js';
@@ -19,11 +19,9 @@ import { artistLine, titleLine, displayLine, albumsOf, albumOf, releasedYear } f
 import { openPlDialog, closePlDialog } from './playlist-dialogs.js';
 import { searchBox } from './search-box.js';
 import { isRowControl, coverModel, coverButton, paintCover } from './row-cover.js';
-import { openFilterSheet, openSongCard } from './lazy-ui.js';
 import { marquee } from './marquee.js';
 import { hasAudio } from './playable.js';
 import { autoDownloadOn } from './autodl.js';
-import { cachedTree } from './genre-tree.js';
 import { prefs, savePrefs } from './library-data.js';
 import { addAllToQueue, playAll } from './play-all.js';
 import { scrollTarget } from './reveal.js';
@@ -69,6 +67,17 @@ const trackLine = (t) => el('li', { class: 'album-track' },
   el('span', { class: 'album-name t-subhead' }, t.title),
   el('span', { class: 'album-len muted t-caption' }, lengthText(t.durationS)));
 const trackList = (tracks) => el('ol', { class: 'album-tracks' }, tracks.map(trackLine));
+
+function matchMark(c, m) {
+  if (!c) return null;
+  if (m) return el('span', { class: 'album-match t-caption' }, `→ ${m.no}. ${m.title}`);
+  return el('span', { class: 'album-match album-nomatch muted t-caption' }, 'no match');
+}
+
+function searchErrorText(code) {
+  if (!code) return '';
+  return code === 'discogs_unavailable' ? 'Discogs is not available right now.' : 'The Discogs search failed.';
+}
 
 const httpUrl = (v) => (typeof v === 'string' && /^https?:\/\/\S+$/i.test(v.trim()) ? v.trim() : null);
 
@@ -119,7 +128,7 @@ const linkIconRow = (links) => {
 };
 
 export function mergeLinks(prev, next) {
-  const links = { ...(next.links || {}) };
+  const links = { ...next.links };
   for (const { key } of LINK_KEYS) if (links[key] === undefined && prev.links?.[key]) links[key] = prev.links[key];
   return { ...next, links };
 }
@@ -163,7 +172,8 @@ export function linkCandidates(album, track, songs = store.songs) {
     if (!((titleEq && artistEq) || inAlbum)) continue;
     scored.push({ s, rank: (titleEq ? 0 : 4) + (artistEq ? 0 : 2) + (inAlbum ? 0 : 1) });
   }
-  return scored.sort((a, b) => a.rank - b.rank || fold(a.s.title).localeCompare(fold(b.s.title))).map((x) => x.s);
+  scored.sort((a, b) => a.rank - b.rank || fold(a.s.title).localeCompare(fold(b.s.title)));
+  return scored.map((x) => x.s);
 }
 
 function openLinkPopup(album, track, onDone) {
@@ -203,7 +213,8 @@ function openLinkPopup(album, track, onDone) {
   };
   const search = searchBox({ placeholder: 'Search your songs', label: 'Search your songs', onChange: paintList });
   paintList('');
-  const sub = `${track.no}. ${track.title}${Number.isFinite(track.durationS) ? ` (${lengthText(track.durationS)})` : ''}`;
+  const dur = Number.isFinite(track.durationS) ? ` (${lengthText(track.durationS)})` : '';
+  const sub = `${track.no}. ${track.title}${dur}`;
   openPlDialog('Link song', dialogHead('Link song', sub, closePlDialog), search.node, err, slot);
 }
 
@@ -234,7 +245,9 @@ export function openAlbumCard(album, opener = null) {
     const at = rows.indexOf(e.currentTarget);
     if (at < 0) return;
     e.preventDefault();
-    const next = e.key === 'Home' ? 0 : e.key === 'End' ? rows.length - 1 : Math.max(0, Math.min(rows.length - 1, at + (e.key === 'ArrowDown' ? 1 : -1)));
+    let next = Math.max(0, Math.min(rows.length - 1, at + (e.key === 'ArrowDown' ? 1 : -1)));
+    if (e.key === 'Home') next = 0;
+    else if (e.key === 'End') next = rows.length - 1;
     rows[next].focus();
   };
   const panelId = (t) => `album-panel-${cur.id}-${t.no}`;
@@ -665,7 +678,8 @@ export function candidateLines(c) {
   const tracks = c.trackCount ? `${c.trackCount} ${plural(c.trackCount, 'track', 'tracks')}` : '';
   const sub = [c.year, tracks].filter(Boolean).join(' · ');
   const labels = list(c.labels).join(', ');
-  const label = labels ? `${labels}${c.catno ? ` (${c.catno})` : ''}` : (c.catno ? String(c.catno) : '');
+  const catnoText = c.catno ? String(c.catno) : '';
+  const label = labels ? `${labels}${catnoText ? ` (${c.catno})` : ''}` : catnoText;
   const meta = [list(c.formats).join(', '), label, c.country].filter(Boolean).join(' · ');
   return { head, sub, meta };
 }
@@ -727,7 +741,7 @@ export function candidatePayload(c, playlistUrl) {
     ...(c.source && typeof c.source === 'object' ? { source: c.source } : {}),
     ...(Number.isInteger(c.discogsId) ? { discogsId: c.discogsId } : {}),
     tracks: Array.isArray(c.tracks) ? c.tracks : [],
-    links: { ...(c.links || {}), discogs: c.url, youtube: playlistUrl },
+    links: { ...c.links, discogs: c.url, youtube: playlistUrl },
   };
 }
 
@@ -740,7 +754,10 @@ export function openAddAlbum(opener = null) {
   const form = el('form', { class: 'well' }, url, fetchBtn);
   const message = el('div', { role: 'alert' });
   const body = el('div', { class: 'add-body' });
-  const say = (text, link) => message.replaceChildren(text ? el('p', { class: 'msg error' }, text, ...(link ? [' ', link] : [])) : '');
+  const say = (text, link) => {
+    const tail = link ? [' ', link] : [];
+    message.replaceChildren(text ? el('p', { class: 'msg error' }, text, ...tail) : '');
+  };
   let live = true;
   let yt = null;
   let owner = false;
@@ -765,7 +782,7 @@ export function openAddAlbum(opener = null) {
         create.disabled = false;
         if (ex.status === 409 && errorCode(ex) === 'already_exists') {
           const existing = ex.data?.id ?? ex.data?.detail?.id;
-          say('This album already exists.', existing ? el('button', { class: 'link-btn t-caption', type: 'button', onclick: () => { void api.album(existing).then((full) => { dlg.close(); openAlbumCard(full); }, (ex2) => say(ex2.message)); } }, 'Open it') : null);
+          say('This album already exists.', existing ? el('button', { class: 'link-btn t-caption', type: 'button', onclick: () => { void api.album(existing).then((full) => { dlg.close(); openAlbumCard(full); }, (error_) => say(error_.message)); } }, 'Open it') : null);
         } else say(ex.message || 'The album could not be created.');
       }
     });
@@ -896,7 +913,7 @@ export function openAddAlbum(opener = null) {
       create.disabled = false;
       if (ex.status === 409 && errorCode(ex) === 'already_exists') {
         const existing = ex.data?.id ?? ex.data?.detail?.id;
-        say('This album already exists.', existing ? el('button', { class: 'link-btn t-caption', type: 'button', onclick: () => { void api.album(existing).then((full) => { dlg.close(); openAlbumCard(full); }, (ex2) => say(ex2.message)); } }, 'Open it') : null);
+        say('This album already exists.', existing ? el('button', { class: 'link-btn t-caption', type: 'button', onclick: () => { void api.album(existing).then((full) => { dlg.close(); openAlbumCard(full); }, (error_) => say(error_.message)); } }, 'Open it') : null);
       } else say(youtubeErrorText(ex));
     }
   }
@@ -914,8 +931,10 @@ export function openAddAlbum(opener = null) {
     } else if (yt.candidates.length) {
       const open = el('a', { class: 'btn outline small album-open-discogs', href: c?.url || '#', target: '_blank', rel: 'noopener' }, 'Open on Discogs');
       const change = el('button', { class: 'link-btn t-caption album-change', type: 'button', 'aria-expanded': String(yt.expanded), onclick: () => { yt.expanded = !yt.expanded; renderYt(); } }, yt.expanded ? 'Hide list' : 'Change');
+      let radios = c ? [candidateRadio(c, yt.sel, true)] : [];
+      if (yt.expanded) radios = yt.candidates.map((x, i) => el('div', { class: 'album-cand-item' }, candidateRadio(x, i, i === yt.sel)));
       box.append(el('div', { class: 'album-picked', role: 'radiogroup', 'aria-label': 'Discogs release' },
-        ...(yt.expanded ? yt.candidates.map((x, i) => el('div', { class: 'album-cand-item' }, candidateRadio(x, i, i === yt.sel))) : (c ? [candidateRadio(c, yt.sel, true)] : []))),
+        ...radios),
         el('div', { class: 'album-picker-actions' }, change, ...(c ? [open] : [])));
     } else {
       box.append(el('p', { class: 'muted t-subhead' }, yt.searchError || 'No matching releases found.'));
@@ -966,7 +985,7 @@ export function openAddAlbum(opener = null) {
         el('span', { class: 'album-yt-title t-subhead' }, t.title),
         t.songId ? el('span', { class: 'chip tint album-in-library' }, 'In library') : null,
         el('span', { class: 'album-len muted t-caption' }, lengthText(t.durationS)),
-        c ? (m ? el('span', { class: 'album-match t-caption' }, `→ ${m.no}. ${m.title}`) : el('span', { class: 'album-match album-nomatch muted t-caption' }, 'no match')) : null));
+        matchMark(c, m)));
     });
     const create = el('button', { class: 'btn primary glow', type: 'button' }, icon('plus', 'nav'), toDownload > 0 ? `Create album and download ${toDownload} ${plural(toDownload, 'track', 'tracks')}` : 'Create album');
     create.disabled = selected.length === 0 && !c;
@@ -996,7 +1015,7 @@ export function openAddAlbum(opener = null) {
       yt = {
         url: address, playlist: r.playlist || {}, guess, tracks, candidates,
         sel: candidates.length ? Math.max(0, best) : -1,
-        searchError: r.searchError ? (r.searchError === 'discogs_unavailable' ? 'Discogs is not available right now.' : 'The Discogs search failed.') : '',
+        searchError: searchErrorText(r.searchError),
         expanded: false, searching: false, manual: new Set(), checked: {},
         searchArtist: guess.artist || '', searchAlbum: guess.album || '',
         fb: { title: guess.album || r.playlist?.title || '', artist: guess.artist || '', year: guess.year ? String(guess.year) : '' },
@@ -1123,7 +1142,12 @@ export function mountAlbums(pane, id = albumIdOf(location.hash)) {
 
     async function loadList() {
       let albums;
-      try { albums = await api.albums(); } catch { if (!gone) listSlot.replaceChildren(loadFail(loadList)); return; }
+      try {
+        albums = await api.albums();
+      } catch {
+        if (!gone) listSlot.replaceChildren(loadFail(loadList));
+        return;
+      }
       const full = await Promise.all(albums.map((a) => (Array.isArray(a.tracks) ? a : api.album(a.id).then((d) => ({ ...a, ...d }), () => a))));
       if (gone) return;
       all = full;
@@ -1131,7 +1155,7 @@ export function mountAlbums(pane, id = albumIdOf(location.hash)) {
     }
 
     function paintAll() {
-      for (const f of FACETS) for (const v of [...sel[f.id]]) if (!facetValues(all, f).some((x) => x.value === v)) sel[f.id].delete(v);
+      for (const f of FACETS) for (const v of sel[f.id]) if (!facetValues(all, f).some((x) => x.value === v)) sel[f.id].delete(v);
       saveAlbumPrefs();
       shown = visible();
       toolbar.hidden = !all.length;
@@ -1153,7 +1177,8 @@ export function mountAlbums(pane, id = albumIdOf(location.hash)) {
       }));
       const songs = songsOf();
       const picked = [...sel.genres, ...sel.years].slice(0, 3);
-      summary.textContent = all.length && filtered() ? `${shown.length} ${plural(shown.length, 'album matches', 'albums match')}${picked.length ? ` · ${picked.join(', ')}` : ''}` : '';
+      const pickedText = picked.length ? ` · ${picked.join(', ')}` : '';
+      summary.textContent = all.length && filtered() ? `${shown.length} ${plural(shown.length, 'album matches', 'albums match')}${pickedText}` : '';
       showPlaying.hidden = !(player.current && albumOfSong(player.current.id, all));
       clearFilters.hidden = !(all.length && filtered());
       playAllBtn.hidden = !songs.length;

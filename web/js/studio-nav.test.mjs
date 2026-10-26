@@ -37,7 +37,7 @@ test('WEB-150: #/studio is a lazy route that hands the player to the page, and i
 });
 
 test('PLY-160: the dock has the Loop chip host next to the connection note', () => {
-  assert.match(read('../index.html'), /<span id="mini-loop" class="loop-chip t-caption" role="status" aria-live="polite" hidden><\/span>/);
+  assert.match(read('../index.html'), /<output id="mini-loop" class="loop-chip t-caption" aria-live="polite" hidden><\/output>/);
 });
 
 test('WEB-012: below 400 px the tab bar drops its gaps and side margins so eight 44 px entries fit 360 px', () => {

@@ -49,6 +49,16 @@ function viewInLibrary(n, tree) {
   else location.hash = '#/library';
 }
 
+function about(n) {
+  const desc = genreDescription(n);
+  const links = n.group ? [] : shownSourceLinks(n.sourceLinks);
+  return el('section', { class: 'gc-about', 'aria-label': 'Description' },
+    descriptionNode(desc, NO_DESCRIPTION),
+    links.length ? el('div', { class: 'gmr-links gc-links t-caption', role: 'group', 'aria-label': 'Genre sources' }, ...links.map((l) => el('a', {
+      href: l.url, target: '_blank', rel: 'noopener noreferrer', 'data-source': l.source, title: `${l.label}: ${n.label}`, 'aria-label': `${l.label}: ${n.label} (opens in a new tab)`,
+    }, icon(l.icon, 'inline'), l.short || l.label))) : null);
+}
+
 export function renderGenreInfo(name, { onNavigate, container, onLibrary, onMap, titleId = 'genre-card-title' } = {}) {
   const refs = createReferencesPanel();
   let current = name;
@@ -71,16 +81,6 @@ export function renderGenreInfo(name, { onNavigate, container, onLibrary, onMap,
       el('div', { class: 'gc-title' }, el('span', { class: dotClass(slot < 0 ? OTHER_COLOR : slot), 'aria-hidden': 'true' }), el('h2', { id: titleId, class: 't-title', tabindex: '-1' }, n.label), tempoBadge(genreDescription(n))),
       el('p', { class: 'gc-meta' }, ...meta),
       n.synonyms?.length ? el('p', { class: 'gc-synonyms t-caption muted' }, `Also called: ${n.synonyms.join(', ')}`) : null);
-  }
-
-  function about(n) {
-    const desc = genreDescription(n);
-    const links = n.group ? [] : shownSourceLinks(n.sourceLinks);
-    return el('section', { class: 'gc-about', 'aria-label': 'Description' },
-      descriptionNode(desc, NO_DESCRIPTION),
-      links.length ? el('div', { class: 'gmr-links gc-links t-caption', role: 'group', 'aria-label': 'Genre sources' }, ...links.map((l) => el('a', {
-        href: l.url, target: '_blank', rel: 'noopener noreferrer', 'data-source': l.source, title: `${l.label}: ${n.label}`, 'aria-label': `${l.label}: ${n.label} (opens in a new tab)`,
-      }, icon(l.icon, 'inline'), l.short || l.label))) : null);
   }
 
   function sits(n) {

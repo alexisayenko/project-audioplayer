@@ -51,6 +51,11 @@ export function eraSpan(era) {
   return '';
 }
 
+const artistYear = (e) => {
+  const year = e.year ? ` · ${e.year}` : '';
+  return `${e.artist}${year}`;
+};
+
 export function createReferencesPanel({ compact = false } = {}) {
   const node = el('section', { class: compact ? 'ref-panel is-compact' : 'ref-panel', 'aria-label': 'Eras and reference tracks', hidden: true });
   let genre = null;
@@ -142,7 +147,7 @@ export function createReferencesPanel({ compact = false } = {}) {
       el('div', { class: 'info' },
         el('div', { class: 'title-line' }, titleNode(e), trailingNode(e)),
         el('div', { class: 'sub-line' },
-          el('small', { class: 'sub t-subhead', title: `${e.artist}${e.year ? ` · ${e.year}` : ''}` }, el('span', { class: 'ref-artist' }, e.artist), e.year ? el('span', { class: 'ref-year' }, ` · ${e.year}`) : null),
+          el('small', { class: 'sub t-subhead', title: artistYear(e) }, el('span', { class: 'ref-artist' }, e.artist), e.year ? el('span', { class: 'ref-year' }, ` · ${e.year}`) : null),
           el('span', { class: 'ref-role t-caption' }, roleLabel(e.role)))));
   }
 
@@ -152,7 +157,7 @@ export function createReferencesPanel({ compact = false } = {}) {
       coverNode(e),
       el('div', { class: 'info' },
         el('div', { class: 'title-line' }, titleNode(e), ...srcLinks(e)),
-        el('div', { class: 'sub-line' }, el('small', { class: 'sub t-subhead' }, `${e.artist}${e.year ? ` · ${e.year}` : ''}`)),
+        el('div', { class: 'sub-line' }, el('small', { class: 'sub t-subhead' }, artistYear(e))),
         actionNode(e),
         e.note ? el('p', { class: 'ref-note t-caption muted' }, e.note) : null),
       el('span', { class: 'ref-role t-caption' }, roleLabel(e.role)));

@@ -77,7 +77,7 @@ function nearArc(s, n, a) {
 }
 
 function near(s, n) {
-  const nb = [...(s.env.adj.get(n.id) || [])].map((id) => s.env.byId.get(id)).filter(s.ready);
+  const nb = [...(s.env.adj.get(n.id) || [])].map((id) => s.env.byId.get(id)).filter((m) => s.ready(m));
   if (!nb.length) return false;
   n.x = sum(nb.map((m) => m.x)) / nb.length + ((n.id.length % 7) - 3);
   n.y = sum(nb.map((m) => m.y)) / nb.length + ((n.id.length % 5) - 2);

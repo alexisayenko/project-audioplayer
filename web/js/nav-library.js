@@ -20,7 +20,8 @@ export function saveLibraryView(navName) {
 }
 
 export function libraryHashFor(view) {
-  return view === 'albums' ? '#/library/albums' : view === 'drafts' ? '#/library/drafts' : '#/library';
+  if (view === 'albums') return '#/library/albums';
+  return view === 'drafts' ? '#/library/drafts' : '#/library';
 }
 
 /** The hash to open instead of a bare #/library on the first load: the last chosen sub-item, or null for Songs. */

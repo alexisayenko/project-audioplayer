@@ -31,7 +31,9 @@ export function trimBlock({ start = null, end = null, hint = null, duration = nu
 
   const paint = ({ show = false } = {}) => {
     const r = validateTrim(s.inp.value, e.inp.value, duration);
-    const marker = r.start ? ` · cut from ${formatTime(r.start)}` : r.end ? ` · cut to ${formatTime(r.end)}` : '';
+    let marker = '';
+    if (r.start) marker = ` · cut from ${formatTime(r.start)}`;
+    else if (r.end) marker = ` · cut to ${formatTime(r.end)}`;
     summary.textContent = `${BASE}${marker}`;
     len.textContent = r.length !== null ?`Length: ${formatTime(r.length)}` : '';
     if (show || r.error) {

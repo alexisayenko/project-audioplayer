@@ -51,6 +51,18 @@ export function sizeCanvas(canvas, width, height, dpr = 1) {
   return ratio;
 }
 
+function columnExtremes(peaks, x, cols) {
+  const from = Math.floor((x * peaks.buckets) / cols);
+  const to = Math.max(from + 1, Math.floor(((x + 1) * peaks.buckets) / cols));
+  let lo = 0;
+  let hi = 0;
+  for (let i = from; i < to && i < peaks.buckets; i++) {
+    if (peaks.min[i] < lo) lo = peaks.min[i];
+    if (peaks.max[i] > hi) hi = peaks.max[i];
+  }
+  return { lo, hi };
+}
+
 export function drawPeaks(ctx, peaks, o) {
   const { width, height, dpr = 1, region = null, playhead = null, duration = peaks?.duration ?? 0, colors } = o;
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -68,14 +80,7 @@ export function drawPeaks(ctx, peaks, o) {
   } else {
     const cols = Math.max(1, Math.floor(width));
     for (let x = 0; x < cols; x++) {
-      const from = Math.floor((x * peaks.buckets) / cols);
-      const to = Math.max(from + 1, Math.floor(((x + 1) * peaks.buckets) / cols));
-      let lo = 0;
-      let hi = 0;
-      for (let i = from; i < to && i < peaks.buckets; i++) {
-        if (peaks.min[i] < lo) lo = peaks.min[i];
-        if (peaks.max[i] > hi) hi = peaks.max[i];
-      }
+      const { lo, hi } = columnExtremes(peaks, x, cols);
       const top = mid - (hi / 127) * (mid - 2);
       const bottom = mid - (lo / 127) * (mid - 2);
       const inside = region && x + 0.5 >= x0 && x + 0.5 <= x1;

@@ -42,21 +42,26 @@ export function addSongsPanel({ held, onAdd }) {
   input.setAttribute('aria-expanded', 'false');
   input.setAttribute('autocomplete', 'off');
 
+  function foundMeta(s, audio) {
+    if (!audio) return el('span', { class: 'pl-found-meta t-caption', title: 'Not downloaded yet' }, 'No audio');
+    return s.duration ? el('span', { class: 'pl-found-meta t-time', title: 'Length' }, fmtTime(s.duration)) : null;
+  }
+
   function row(s, i) {
     const full = titleLine(s);
     const sub = subtitle(s);
     const audio = hasAudio(s);
+    const subLabel = sub ? `, ${sub}` : '';
     return el('li', {
       class: `pl-found${audio ? '' : ' no-audio'}${i === active ? ' active' : ''}`,
       id: `${base}-${i}`, role: 'option', 'aria-selected': String(i === active), 'data-id': s.id,
-      'aria-label': `${full}${sub ? `, ${sub}` : ''}${audio ? '' : ', no audio'}`,
+      'aria-label': `${full}${subLabel}${audio ? '' : ', no audio'}`,
     },
     coverTile(s),
     el('span', { class: 'pl-found-info' },
       el('span', { class: 'pl-found-title t-headline' }, full),
       sub ? el('span', { class: 'pl-found-sub muted t-subhead' }, sub) : null),
-    audio ? (s.duration ? el('span', { class: 'pl-found-meta t-time', title: 'Length' }, fmtTime(s.duration)) : null)
-      : el('span', { class: 'pl-found-meta t-caption', title: 'Not downloaded yet' }, 'No audio'),
+    foundMeta(s, audio),
     el('button', { class: 'icon pl-found-add', type: 'button', tabindex: -1, 'aria-hidden': 'true', title: 'Add to this playlist' }, icon('plus', 'inline')));
   }
 

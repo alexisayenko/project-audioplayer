@@ -121,13 +121,18 @@ export function agoText(ms) {
 }
 
 export function timeTicks(spanS) {
-  const step = spanS <= 60 ? 15 : spanS <= 120 ? 30 : 60;
+  let step = 60;
+  if (spanS <= 60) step = 15;
+  else if (spanS <= 120) step = 30;
   const out = [];
   for (let s = 0; s <= spanS; s += step) out.push(s);
   return out;
 }
 
-export const timeTickText = (s) => (s === 0 ? 'now' : s < 60 ? `-${s} s` : `-${s / 60} min`);
+export function timeTickText(s) {
+  if (s === 0) return 'now';
+  return s < 60 ? `-${s} s` : `-${s / 60} min`;
+}
 
 export function graphGeo(w, h) {
   const { left, right, top, bottom } = GRAPH_PAD;
@@ -174,7 +179,9 @@ function drawAxes(g, pal, geo, range, spanS) {
     ctx.strokeStyle = css(pal.line, 0.6);
     ctx.beginPath(); ctx.moveTo(Math.round(x) + 0.5, geo.top); ctx.lineTo(Math.round(x) + 0.5, geo.top + geo.plotH); ctx.stroke();
     ctx.fillStyle = css(pal.muted);
-    ctx.textAlign = s === 0 ? 'right' : s === spanS ? 'left' : 'center';
+    ctx.textAlign = 'center';
+    if (s === 0) ctx.textAlign = 'right';
+    else if (s === spanS) ctx.textAlign = 'left';
     ctx.fillText(timeTickText(s), x, geo.top + geo.plotH + 14);
   }
 }

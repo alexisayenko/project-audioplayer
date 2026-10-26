@@ -71,7 +71,10 @@ export function groupByEra(entries, eras, { owner = false } = {}) {
   return groups.filter((g) => !g.era || g.entries.length || owner);
 }
 
-export const entryLine = (e) => `${e.artist} - ${e.title}${e.year ? ` (${e.year})` : ''}`;
+export const entryLine = (e) => {
+  const year = e.year ? ` (${e.year})` : '';
+  return `${e.artist} - ${e.title}${year}`;
+};
 
 let all = null;
 let owner = false;
@@ -162,6 +165,14 @@ export function cleanSources(rows) {
   return { sources: out, error: '' };
 }
 
+const eraYear = (t) => (/^\d{4}$/.test(t) ? Number.parseInt(t, 10) : Number.NaN);
+
+function eraYearError(name, start, end) {
+  if (Number.isNaN(start) || Number.isNaN(end)) return `Years in "${name}" must be four digits.`;
+  if (start != null && end != null && end < start) return `"${name}" ends before it starts.`;
+  return '';
+}
+
 export function cleanEras(rows) {
   const out = [];
   for (const r of rows || []) {
@@ -172,11 +183,10 @@ export function cleanEras(rows) {
     const sourceRows = r?.sources || [];
     if (!name && !startText && !endText && !note && !sourceRows.some((x) => String(x?.url || '').trim())) continue;
     if (!name) return { eras: [], error: 'Every era needs a name.' };
-    const year = (t) => (/^\d{4}$/.test(t) ? Number.parseInt(t, 10) : NaN);
-    const start = startText ? year(startText) : null;
-    const end = endText ? year(endText) : null;
-    if (Number.isNaN(start) || Number.isNaN(end)) return { eras: [], error: `Years in "${name}" must be four digits.` };
-    if (start != null && end != null && end < start) return { eras: [], error: `"${name}" ends before it starts.` };
+    const start = startText ? eraYear(startText) : null;
+    const end = endText ? eraYear(endText) : null;
+    const yearError = eraYearError(name, start, end);
+    if (yearError) return { eras: [], error: yearError };
     const cleaned = cleanSources(sourceRows);
     if (cleaned.error) return { eras: [], error: cleaned.error };
     out.push({

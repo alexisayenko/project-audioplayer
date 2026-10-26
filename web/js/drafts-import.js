@@ -9,8 +9,8 @@ export const MSG_BAD_LINK = 'That does not look like a YouTube playlist link.';
 
 const YT_LINK = /https?:\/\/(?:www\.|m\.|music\.)?(?:youtube\.com|youtu\.be)\/[^\s<>"']+/gi;
 const VIDEO_ID = /^[A-Za-z0-9_-]{11}$/;
-const NOISE = '(?:official\\s+)?(?:(?:music|lyric|hd|4k)\\s+)?(?:video|audio|visuali[sz]er|lyrics?)|official|hd|hq|4k|audio|video|lyrics?';
-const BRACKETED_NOISE = new RegExp(`\\s*[\\(\\[]\\s*(?:${NOISE})\\s*[\\)\\]]`, 'gi');
+const NOISE = String.raw`(?:official\s+)?(?:(?:music|lyric|hd|4k)\s+)?(?:video|audio|visuali[sz]er|lyrics?)|official|hd|hq|4k|audio|video|lyrics?`;
+const BRACKETED_NOISE = new RegExp(String.raw`\s*[\(\[]\s*(?:${NOISE})\s*[\)\]]`, 'gi');
 const TRAILING_NOISE = /\s*[|\-–—:]?\s*(?:official\s+(?:music\s+)?(?:video|audio)|lyrics?(?:\s+video)?|hd|hq|4k)\s*$/i;
 const EDGE = ' \t-–—|:,;.';
 
@@ -181,7 +181,10 @@ export function summarizeImport(r) {
   const skipped = [];
   if (r.duplicates) skipped.push(`skipped ${r.duplicates} already in your Drafts`);
   if (r.unavailable) skipped.push(`${r.unavailable} unavailable`);
-  if (r.total || skipped.length || !r.errors.length) parts.push(`${[`Added ${r.added}`, ...skipped].join(', ')}.`);
+  if (r.total || skipped.length || !r.errors.length) {
+    const added = [`Added ${r.added}`, ...skipped].join(', ');
+    parts.push(`${added}.`);
+  }
   if (r.inLibrary) parts.push(`${r.inLibrary} already in your Library, kept as drafts so the playlist can include them.`);
   if (r.cancelled) parts.push(`Cancelled after ${r.done} of ${r.total}: the ${r.added} added ${plural(r.added, 'draft is', 'drafts are')} kept.`);
   if (r.failed) parts.push(`Stopped after ${r.done} of ${r.total}: ${r.failed}`);

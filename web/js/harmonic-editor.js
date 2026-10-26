@@ -127,7 +127,7 @@ export function createHarmonicEditor(handlers) {
 
   function locate(ev) {
     const r = svg.getBoundingClientRect?.();
-    if (!r || !r.width || !r.height) return null;
+    if (!r?.width || !r.height) return null;
     const k = edWidth(state.count, state.cell) / r.width;
     const x = (ev.clientX - r.left) * k;
     const y = (ev.clientY - r.top) * (ED.h / r.height);
@@ -170,7 +170,10 @@ export function createHarmonicEditor(handlers) {
   svg.addEventListener('pointerup', end);
   svg.addEventListener('pointercancel', end);
   svg.addEventListener('lostpointercapture', end);
-  svg.addEventListener('pointerleave', (ev) => { if (!drag) showReadout(-1); end(ev); });
+  svg.addEventListener('pointerleave', (ev) => {
+    if (!drag) showReadout(-1);
+    end(ev);
+  });
 
   const chips = PRESETS.filter((p) => p.group !== 'action').map((p) => ({
     id: p.id,
@@ -196,7 +199,7 @@ export function createHarmonicEditor(handlers) {
   const playBuild = check('pb', PLAY_BUILD_LABEL, (b) => handlers.onPlayBuild(b));
   const buildOut = el('output', { class: 'hm-note t-subhead', htmlFor: `${uid}-bu` });
   const buildRange = el('input', { id: `${uid}-bu`, class: 'slider hm-range', type: 'range', min: '1', max: String(MAX_HARMONICS), step: '1', value: String(MAX_HARMONICS) });
-  buildRange.addEventListener('input', () => { const n = parseInt(buildRange.value, 10); if (Number.isFinite(n)) handlers.onBuild(n); });
+  buildRange.addEventListener('input', () => { const n = Number.parseInt(buildRange.value, 10); if (Number.isFinite(n)) handlers.onBuild(n); });
   const build = el('div', { class: 'hm-field he-build' },
     el('div', { class: 'sm-lab' }, el('label', { htmlFor: `${uid}-bu` }, BUILD_LABEL), buildOut),
     buildRange,

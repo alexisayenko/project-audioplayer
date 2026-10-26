@@ -4,7 +4,10 @@
 @media (hover: hover) { .ft-tab:hover { background-image: linear-gradient(var(--hover-wash), var(--hover-wash)); } }
 .ft-panel { min-width: 0; }
 .ft-list { display: grid; gap: var(--space-4); margin: 0; padding: 0; list-style: none; }
-.ft-plan { min-width: 0; padding: var(--space-4); background: var(--surface); border-radius: var(--radius-card); box-shadow: var(--shadow-card); }
+.ft-plan {
+  min-width: 0; padding: var(--space-4); background: var(--surface); border-radius: var(--radius-card); box-shadow: var(--shadow-card);
+  display: grid; grid-template-columns: auto minmax(0, 1fr); gap: var(--space-3); align-items: baseline;
+}
 .ft-days { display: grid; gap: var(--space-6); }
 .ft-day { min-width: 0; padding: var(--space-4); background: var(--surface); border-radius: var(--radius-card); box-shadow: var(--shadow-card); }
 .ft-dayhead { margin: 0 0 var(--space-3); color: var(--ink); }
@@ -17,7 +20,6 @@
 .ft-item { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: var(--space-3); align-items: baseline; color: var(--ink); overflow-wrap: anywhere; }
 .ft-task { display: block; width: 9ch; color: var(--accent-ink); font-family: var(--font-mono); white-space: nowrap; }
 .ft-text, .ft-pbody { min-width: 0; }
-.ft-plan { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: var(--space-3); align-items: baseline; }
 .ft-pbody { display: grid; gap: var(--space-1); }
 .ft-ptitle { color: var(--ink); overflow-wrap: anywhere; }
 .ft-pmeta { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--space-2); }

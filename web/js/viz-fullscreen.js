@@ -1,7 +1,7 @@
 import { HIDE_CONTROLS_MS } from './viz-constants.js';
-import { SKIP_KEY_TARGETS, isVizKey } from './viz-keys.js';
+import { SKIP_KEY_TARGETS } from './viz-keys.js';
 
-export { isVizKey };
+export { isVizKey } from './viz-keys.js';
 
 export function isVizModeKey(e, { open, route }) {
   if (e.repeat || e.ctrlKey || e.metaKey || e.altKey) return false;

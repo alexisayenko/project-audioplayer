@@ -15,7 +15,8 @@ const labelOf = (c) => c.label || ({ discogs: 'Discogs', wikipedia: 'Wikipedia',
 export function sourceNote(album) {
   if (album.coverFrom === 'album') {
     const s = album.cover?.source;
-    return `Own cover${s ? ` (${{ discogs: 'Discogs', wikipedia: 'Wikipedia', youtube: 'YouTube', url: 'an address', upload: 'an upload' }[s] || s})` : ''}`;
+    const from = s ? ` (${{ discogs: 'Discogs', wikipedia: 'Wikipedia', youtube: 'YouTube', url: 'an address', upload: 'an upload' }[s] || s})` : '';
+    return `Own cover${from}`;
   }
   if (album.coverFrom === 'song') return 'Showing the cover of the first linked song';
   return 'No cover yet';

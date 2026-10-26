@@ -22,7 +22,8 @@ const PREVIEW_ONLY = 'Preview only \u2014 SoundCloud Go+ track, can\'t be downlo
 export function openAdd(opts) {
   if (!can('add')) return;
   const draft = opts?.draft ?? null;
-  const plan = draft ? addPlan(draft) : opts?.url ? { url: opts.url, credits: null, note: opts.note || '' } : null;
+  const urlPlan = opts?.url ? { url: opts.url, credits: null, note: opts.note || '' } : null;
+  const plan = draft ? addPlan(draft) : urlPlan;
   const query = !plan && typeof opts?.query === 'string' ? opts.query.trim() : '';
   const note = plan?.note ?? (query ? opts.note || '' : '');
   const dlg = document.getElementById('add-dialog');

@@ -60,7 +60,7 @@ export function createAnnealer({ xs, ys, radii, segs, fixed = null, seed = 5, te
   };
 
   const free = [];
-  for (let i = 0; i < N; i++) if (!fixed || !fixed[i]) free.push(i);
+  for (let i = 0; i < N; i++) if (!fixed?.[i]) free.push(i);
   let current = countCrossingsXY(xs, ys, segs);
   let temp = temperature;
   let hot = [];
@@ -69,7 +69,7 @@ export function createAnnealer({ xs, ys, radii, segs, fixed = null, seed = 5, te
     const set = new Set();
     for (let k = 0; k < S; k++) {
       if (crossOf(k) > 0) {
-        for (const v of segs[k]) if (!fixed || !fixed[v]) set.add(v);
+        for (const v of segs[k]) if (!fixed?.[v]) set.add(v);
       }
     }
     hot = [...set];
@@ -80,14 +80,17 @@ export function createAnnealer({ xs, ys, radii, segs, fixed = null, seed = 5, te
     if (moves % 400 === 0) refreshHot();
     moves++;
     let i = hot.length && rng() < 0.8 ? hot[Math.floor(rng() * hot.length)] : Math.floor(rng() * N);
-    if (fixed && fixed[i]) { if (!free.length) return false; i = free[Math.floor(rng() * free.length)]; }
+    if (fixed?.[i]) {
+      if (!free.length) return false;
+      i = free[Math.floor(rng() * free.length)];
+    }
     const nb = nbrs[i];
     const mode = rng();
     const group = [i];
     if (mode >= 0.7) {
       for (const k of inc[i]) {
         const c = segs[k][0] === i ? segs[k][1] : -1;
-        if (c >= 0 && inc[c].length === 1 && (!fixed || !fixed[c]) && group.length < 40) group.push(c);
+        if (c >= 0 && inc[c].length === 1 && !fixed?.[c] && group.length < 40) group.push(c);
       }
     }
     for (const g of group) inGroup[g] = 1;
@@ -101,8 +104,8 @@ export function createAnnealer({ xs, ys, radii, segs, fixed = null, seed = 5, te
     let dy = 0;
     const x0 = xs[i];
     const y0 = ys[i];
-    let tx = x0;
-    let ty = y0;
+    let tx;
+    let ty;
     if (mode < 0.3 && nb.length >= 2) {
       const a = nb[Math.floor(rng() * nb.length)];
       const b = nb[Math.floor(rng() * nb.length)];
@@ -156,6 +159,9 @@ export function createAnnealer({ xs, ys, radii, segs, fixed = null, seed = 5, te
       }
       return changed;
     },
-    run(count) { for (let k = 0; k < count; k++) move(); return current; },
+    run(count) {
+      for (let k = 0; k < count; k++) move();
+      return current;
+    },
   };
 }

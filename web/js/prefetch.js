@@ -15,7 +15,10 @@ export function readTier2(doc = document) {
 }
 
 const once = (target, names, ms, setTimer = setTimeout) => new Promise((resolve) => {
-  const done = () => { for (const n of names) target.removeEventListener(n, done); resolve(); };
+  const done = () => {
+    for (const n of names) target.removeEventListener(n, done);
+    resolve();
+  };
   for (const n of names) target.addEventListener(n, done, { once: true });
   setTimer(done, ms);
 });

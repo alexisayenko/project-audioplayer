@@ -104,7 +104,7 @@ export function checkFeatures(list = FEATURES) {
   const problems = [];
   let last = '9999-99-99';
   list.forEach((f, i) => {
-    const at = `#${i} ${f && f.title}`;
+    const at = `#${i} ${f?.title}`;
     if (!f || typeof f.title !== 'string' || !f.title.trim()) problems.push(`${at}: title`);
     else if (!STATUSES.includes(f.status)) problems.push(`${at}: status`);
     else if (!AREAS.includes(f.area)) problems.push(`${at}: area`);
@@ -122,7 +122,7 @@ export function checkFeatures(list = FEATURES) {
 export function groupFeatures(list = FEATURES) {
   const days = [];
   for (const f of list.filter((x) => x.status === 'released')) {
-    const last = days[days.length - 1];
+    const last = days.at(-1);
     if (last && last.date === f.date) last.items.push(f);
     else days.push({ date: f.date, items: [f] });
   }

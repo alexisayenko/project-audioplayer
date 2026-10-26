@@ -158,7 +158,12 @@ export function createTreeLayout(graph, { seed = 1, sweeps = 4 } = {}) {
     }
     return c;
   };
-  const wrap = (d) => { let x = d; while (x > Math.PI) x -= 2 * Math.PI; while (x < -Math.PI) x += 2 * Math.PI; return x; };
+  const wrap = (d) => {
+    let x = d;
+    while (x > Math.PI) x -= 2 * Math.PI;
+    while (x < -Math.PI) x += 2 * Math.PI;
+    return x;
+  };
 
   const cross = new Map();
   for (const [a, b] of crossLinks) {
@@ -188,7 +193,11 @@ export function createTreeLayout(graph, { seed = 1, sweeps = 4 } = {}) {
   }
 
   function orderFamilies() {
-    const rootOf = (i) => { let x = i; while (parentOf[x] >= 0) x = parentOf[x]; return x; };
+    const rootOf = (i) => {
+      let x = i;
+      while (parentOf[x] >= 0) x = parentOf[x];
+      return x;
+    };
     const list = orders.get(ROOT);
     const w = new Map();
     for (const [a, b] of crossLinks) {

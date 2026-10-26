@@ -56,6 +56,17 @@ const swatch = (color, family) => {
 
 const countLabel = (n) => `${n} ${plural(n, 'song', 'songs')}`;
 
+function documentVisible() {
+  return document.visibilityState !== 'hidden';
+}
+
+function openGenre(row) {
+  filterByTags([genreTag(row)]);
+  prefs.never = false;
+  prefs.view = 'songs';
+  location.hash = '#/library';
+}
+
 export function renderStats(root) {
   let points = [];
   let skipped = 0;
@@ -252,10 +263,6 @@ export function renderStats(root) {
     listeningBox.replaceChildren(renderListening(listening, store.songs, (s) => { void openSong(s); }));
   }
 
-  function documentVisible() {
-    return document.visibilityState !== 'hidden';
-  }
-
   function syncListeningPoll() {
     if (listeningPollTimer) clearTimeout(listeningPollTimer);
     listeningPollTimer = 0;
@@ -304,13 +311,6 @@ export function renderStats(root) {
       if (listeningPollTimer) clearTimeout(listeningPollTimer);
       listeningPollTimer = 0;
     }
-  }
-
-  function openGenre(row) {
-    filterByTags([genreTag(row)]);
-    prefs.never = false;
-    prefs.view = 'songs';
-    location.hash = '#/library';
   }
 
   function paintGenreTable() {

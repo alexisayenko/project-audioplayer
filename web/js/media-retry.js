@@ -83,8 +83,10 @@ export function createMediaRetry({ audio, onChange = () => {}, onGone = () => {}
     if (!RETRYABLE.has(audio.error?.code)) { onGone(); return; }
     if (timer !== null) return;
     if (attempt === 0 && state === 'ok') begin(current);
-    else if (current === src) { if (audio.currentTime > 0) at = audio.currentTime; schedule(); }
-    else begin(current);
+    else if (current === src) {
+      if (audio.currentTime > 0) at = audio.currentTime;
+      schedule();
+    } else begin(current);
   });
   function recovered() {
     if (state === 'ok' && attempt === 0) return;

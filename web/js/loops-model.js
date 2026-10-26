@@ -1,4 +1,4 @@
-import { MIN_LOOP, validRegion } from './loop-engine.js';
+import { validRegion } from './loop-engine.js';
 
 export const MAX_LOOPS = 20;
 export const MAX_NAME = 40;
@@ -46,4 +46,4 @@ export function sameRegion(a, b) {
   return !!a && !!b && Math.abs(a.start - b.start) < 0.005 && Math.abs(a.end - b.end) < 0.005;
 }
 
-export const MIN_LENGTH = MIN_LOOP;
+export { MIN_LOOP as MIN_LENGTH } from './loop-engine.js';

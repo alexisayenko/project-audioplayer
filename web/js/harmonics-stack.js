@@ -94,7 +94,9 @@ export function stackModel(harmonics, { rows = ROWS_DEFAULT, freq, highlightN, p
   const all = harmonics.filter((h) => h.amp > EPS).sort((a, b) => a.n - b.n);
   const count = Math.max(1, Math.round(Number.isFinite(rows) ? rows : ROWS_DEFAULT));
   const first = harmonics.find((h) => h.cycles > 0);
-  const base = freq > 0 ? freq : first ? first.freqHz / first.cycles : 0;
+  let base = 0;
+  if (freq > 0) base = freq;
+  else if (first) base = first.freqHz / first.cycles;
   const byN = new Map(all.map((h) => [h.n, h]));
   const shown = base > 0 ? Array.from({ length: count }, (_, i) => byN.get(i + 1) ?? makeHarmonic(i + 1, (i + 1) * base, 0)) : all.slice(0, count);
   const limit = Number.isFinite(partialSumN) ? partialSumN : Infinity;
@@ -142,7 +144,8 @@ export function sumLabels(model, narrow = false) {
 export function sumNote(model) {
   if (!model.total) return 'There are no harmonics: all amplitudes are zero, which is silence.';
   const zeros = model.shown.filter((h) => !(h.amp > EPS)).length;
-  const head = `Showing H1 to H${model.shown.length}${zeros ? `; the ${zeros} at 0 % are flat lines` : ''}.`;
+  const flat = zeros ? `; the ${zeros} at 0 % are flat lines` : '';
+  const head = `Showing H1 to H${model.shown.length}${flat}.`;
   if (model.truncated) return `${head} The bold Sum adds the ${model.active.length} rows shown; the faint line is the sum of all ${model.pool.length} harmonics.`;
   if (model.cut) return `${head} The Sum adds only the first ${model.partialSumN} harmonics (Build up).`;
   return `${head} The Sum adds all ${model.total} nonzero harmonic${model.total === 1 ? '' : 's'}.`;
@@ -432,7 +435,7 @@ export function createStackCard(env = {}) {
   let io = null;
   if (typeof IntersectionObserver !== 'undefined') {
     io = new IntersectionObserver((entries) => {
-      visible = entries.length ? entries[entries.length - 1].isIntersecting : true;
+      visible = entries.length ? entries.at(-1).isIntersecting : true;
       syncLoop();
     });
     io.observe(view);

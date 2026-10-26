@@ -40,7 +40,8 @@ export function initMiniCompact() {
     on = !on;
     setMiniCompact(on);
     storeSet(MINI_COMPACT_KEY, on ? '1' : '0');
-    const next = on ? $(shown($('side-mini-open')) ? 'side-mini-open' : 'side-mini-play') : $('mini-compact');
+    let next = $('mini-compact');
+    if (on) next = $(shown($('side-mini-open')) ? 'side-mini-open' : 'side-mini-play');
     next?.focus();
   };
   for (const id of COMPACT_BUTTONS) $(id).addEventListener('click', flip);
@@ -134,7 +135,7 @@ export function updateDl(song) {
   for (const node of $('queue-list').querySelectorAll('[data-dl]')) paintDl(node, node.dataset.dl);
 }
 
-let lastTimes = [0, NaN];
+let lastTimes = [0, Number.NaN];
 
 export function paintTimes(cur, dur) {
   lastTimes = [cur, dur];

@@ -79,7 +79,7 @@ export function insertId(ids, id, index) {
 
 export function exportName(filename, name) {
   if (filename) return filename;
-  const stem = name.replace(/[\\/:*?"<>|\u0000-\u001f]/g, ' ').split(/\s+/).join(' ').trim().slice(0, 100);
+  const stem = name.replace(/[\\/:*?"<>|\u0000-\u001f]/g, ' ').replaceAll(/\s+/g, ' ').trim().slice(0, 100);
   return `${stem || 'playlist'}.txt`;
 }
 
@@ -88,7 +88,8 @@ export function queueNotes({ added = 0, already = 0, skipped = 0, fetching = 0 }
   if (already) parts.push(`${already} already in queue`);
   if (fetching) parts.push(`${fetching} downloading`);
   if (skipped) parts.push(`${skipped} ${plural(skipped, 'song', 'songs')} without audio skipped`);
-  return `Added ${added} ${plural(added, 'song', 'songs')} to the queue${parts.length ? ` (${parts.join(', ')})` : ''}`;
+  const extra = parts.length ? ` (${parts.join(', ')})` : '';
+  return `Added ${added} ${plural(added, 'song', 'songs')} to the queue${extra}`;
 }
 
 export function addedText(name, { added, skipped }, asked) {

@@ -101,15 +101,18 @@ export function clampParams(p = {}) {
   };
 }
 
-export const oscGain = (wave, amp, rms = 0) => (wave === CUSTOM
-  ? customGain(amp, rms, MAX_AMP)
-  : amp > 0 ? Math.min(MAX_AMP, (amp * loudnessScale(waveName(wave))) / oscNorm(wave)) : 0);
+const presetGain = (wave, amp) => (amp > 0 ? Math.min(MAX_AMP, (amp * loudnessScale(waveName(wave))) / oscNorm(wave)) : 0);
+
+export const oscGain = (wave, amp, rms = 0) => (wave === CUSTOM ? customGain(amp, rms, MAX_AMP) : presetGain(wave, amp));
 
 export const shapeLevel = (wave, amp, rms = 0) => (wave === CUSTOM ? oscGain(wave, amp, rms) : oscGain(wave, amp) * oscNorm(wave));
 
 export const shapePowerPct = (wave, peak, rms = 0) => (wave === CUSTOM ? 200 * (peak * rms) ** 2 : wavePowerPct(waveName(wave), peak));
 
-export const shapeAt = (wave, u) => (wave === 'sine' || !WAVES.includes(wave) ? Math.sin(2 * Math.PI * u) : waveValue(wave, wave === 'sawtooth' ? u + 0.5 : u));
+export function shapeAt(wave, u) {
+  if (wave === 'sine' || !WAVES.includes(wave)) return Math.sin(2 * Math.PI * u);
+  return waveValue(wave, wave === 'sawtooth' ? u + 0.5 : u);
+}
 
 export function sliderToHz(pos) {
   const f = MIN_HZ * (MAX_HZ / MIN_HZ) ** (clamp(pos, 0, 1000) / 1000);
@@ -180,7 +183,7 @@ export function pickCycleLabel(freq, maxWidth, measure, narrow) {
   const all = cycleLabels(freq);
   const from = narrow ? 1 : 0;
   for (let i = from; i < all.length; i += 1) if (measure(all[i]) <= maxWidth) return all[i];
-  return all[all.length - 1];
+  return all.at(-1);
 }
 
 export function scopeGeometry(w, h, bracket = true) {
@@ -279,6 +282,23 @@ export function fit(canvas) {
   return { ctx, w, h };
 }
 
+function tickAlign(frac) {
+  if (frac === 0) return 'left';
+  return frac >= 1 ? 'right' : 'center';
+}
+
+function drawAmpGuides({ ctx, w }, colors, amp, { left, pad, mid, scale }) {
+  ctx.save();
+  ctx.globalAlpha = 0.5;
+  ctx.strokeStyle = colors.fill;
+  ctx.setLineDash?.([4, 3]);
+  for (const sign of [1, -1]) {
+    const y = mid - sign * amp * scale;
+    ctx.beginPath(); ctx.moveTo(left, y); ctx.lineTo(w - pad, y); ctx.stroke();
+  }
+  ctx.restore();
+}
+
 export function drawScope(g, colors, series, need, p, view) {
   const { ctx, w, h } = g;
   const { ticks, bracket = true, tickText } = view;
@@ -299,20 +319,10 @@ export function drawScope(g, colors, series, need, p, view) {
   for (const t of ticks) {
     const x = left + t.frac * plotW;
     ctx.beginPath(); ctx.moveTo(x, mid - scale); ctx.lineTo(x, mid + scale); ctx.stroke();
-    ctx.textAlign = t.frac === 0 ? 'left' : t.frac >= 1 ? 'right' : 'center';
+    ctx.textAlign = tickAlign(t.frac);
     ctx.fillText(tickText ? tickText(t) : `${fmtMs(t.ms)} ms`, x, h - bottom + 3);
   }
-  if (p.amp > 0) {
-    ctx.save();
-    ctx.globalAlpha = 0.5;
-    ctx.strokeStyle = colors.fill;
-    ctx.setLineDash?.([4, 3]);
-    for (const sign of [1, -1]) {
-      const y = mid - sign * p.amp * scale;
-      ctx.beginPath(); ctx.moveTo(left, y); ctx.lineTo(w - pad, y); ctx.stroke();
-    }
-    ctx.restore();
-  }
+  if (p.amp > 0) drawAmpGuides(g, colors, p.amp, { left, pad, mid, scale });
   const trace = (data) => {
     const n = data.length;
     if (n < 2) return;
@@ -572,9 +582,14 @@ export function createSimpleCard(env = {}) {
     paintWindow();
   }
 
+  function playingText() {
+    if (params.continuous) return 'Playing until you press Stop';
+    return `Playing for ${trim(live?.length ?? params.length, 2)} s`;
+  }
+
   function say(key) {
     state = key;
-    stateOut.textContent = key === 'playing' ? (params.continuous ? 'Playing until you press Stop' : `Playing for ${trim(live?.length ?? params.length, 2)} s`) : TEXT[key];
+    stateOut.textContent = key === 'playing' ? playingText() : TEXT[key];
     stateOut.classList.toggle('error', key === 'unsupported' || key === 'failed');
   }
 
@@ -850,7 +865,7 @@ export function createSimpleCard(env = {}) {
   }
 
   const typed = (input, apply) => {
-    input.addEventListener('input', () => { const v = parseFloat(input.value); if (Number.isFinite(v)) apply(v); });
+    input.addEventListener('input', () => { const v = Number.parseFloat(input.value); if (Number.isFinite(v)) apply(v); });
     input.addEventListener('change', () => paintOutputs(true));
   };
   typed(freqNum, (v) => change({ freq: v }));

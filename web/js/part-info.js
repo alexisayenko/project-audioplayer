@@ -73,7 +73,7 @@ export function artistInfoStub(name) {
 
 export function infoRows(kind, info) {
   const rows = [];
-  const add = (label, value) => { if (value && value.length) rows.push({ label, value }); };
+  const add = (label, value) => { if (value?.length) rows.push({ label, value }); };
   if (kind === 'artist') {
     add('Country', info.country);
     add('Genres', info.genres);
