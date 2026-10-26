@@ -28,14 +28,12 @@ def _stored(playlist_id: str, items: list[dict[str, Any]]) -> dict[str, Any]:
     return found
 
 
-def _read(uid: str, playlist_id: str | None = None) -> tuple[list[dict[str, Any]], set[str]]:
+def _read(uid: str) -> tuple[list[dict[str, Any]], set[str]]:
     with users.user_lock(uid):
         items = playlists.load(deps.playlists_path(uid))
         known = _known(uid)
     for item in items:
         playlists.prune(item, known)
-    if playlist_id is not None:
-        _stored(playlist_id, items)
     return items, known
 
 
@@ -63,7 +61,7 @@ def create_playlist(req: PlaylistCreateRequest, user: User):
 
 @router.get("/playlists/{playlist_id}", responses=deps.responses(404))
 def get_playlist(playlist_id: str, user: User):
-    items, _ = _read(user["uid"], playlist_id)
+    items, _ = _read(user["uid"])
     return playlists.detail(_stored(playlist_id, items))
 
 
@@ -143,8 +141,8 @@ def put_order(playlist_id: str, req: PlaylistSongsRequest, user: User):
 @router.get("/playlists/{playlist_id}/export", response_class=PlainTextResponse, responses=deps.responses(404))
 def export_playlist(playlist_id: str, user: User):
     uid = user["uid"]
-    items, _ = _read(uid, playlist_id)
-    item = _stored(playlist_id, items)
+    items, _ = _read(uid)
+    item =_stored(playlist_id, items)
     text = playlists.export_text(item, deps.load_songs(uid))
     return PlainTextResponse(text, media_type="text/plain; charset=utf-8",
                              headers={"Content-Disposition": library.content_disposition(playlists.file_name(item["name"]))})

@@ -10,6 +10,7 @@ import threading
 import time
 from collections import deque
 from collections.abc import Callable
+from itertools import islice
 from pathlib import Path
 from typing import Any
 
@@ -515,11 +516,8 @@ def table_families(label: str, keys: Any = ()) -> tuple[str, ...]:
         name = vocab_name(text)
         if name:
             return _colours(name)
-    for text in (label, *sorted(keys)):
-        colour = genre_vocab.group_colour(text)
-        if colour:
-            return tuple([colour])
-    return tuple()
+    colours = filter(None, map(genre_vocab.group_colour, (label, *sorted(keys))))
+    return tuple(islice(colours, 1))
 
 
 def own_anchor(label: str, keys: Any = ()) -> str | None:
