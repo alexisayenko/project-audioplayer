@@ -1686,7 +1686,7 @@ What shipped, newest first. One line each; the web UI and server are live at htt
 
 ## 2026-10-23 (genres structure v2, docs, to deploy)
 
-- Docs: ADR-0045 and task-0096 for genres structure v2 in parallel with v1 (Musicmap super-genres and clusters; first step the six EDM / Dance super-genres; GEN-102..GEN-105, DATA-197).
+- Docs: ADR-0045 and task-0096 for genres structure v2 in parallel with v1 (Musicmap super-genres and clusters; first step the six EDM / Dance super-genres; GEN-102..GEN-105, GEN-113..GEN-116, DATA-197, DATA-207).
 
-- Web and server: genres structure v2, a separate structure built in parallel (task-0094, GEN-102 to GEN-105, API-226, DATA-197): `GET /genres/v2` serves `server/data/genres_v2.json` (first only the six Musicmap EDM / Dance super-genres: Breakbeat, Drum 'n' Bass, Hardcore, House, Techno, Trance, no children); `#/genres2` shows only these circles in one cluster colour with the dock showing the mapped v1 description, sources and reference tracks; v1 vocabulary, graph and `#/genres` unchanged (to deploy).
+- Web and server: genres structure v2, a separate structure built in parallel (task-0094, GEN-113 to GEN-116, API-226, DATA-207): `GET /genres/v2` serves `server/data/genres_v2.json` (first only the six Musicmap EDM / Dance super-genres: Breakbeat, Drum 'n' Bass, Hardcore, House, Techno, Trance, no children); `#/genres2` shows only these circles in one cluster colour with the dock showing the mapped v1 description, sources and reference tracks; v1 vocabulary, graph and `#/genres` unchanged (to deploy).
 - Genres structure v2: clusters carry Musicmap colours (`colour`, EDM / Dance #D52633); the six circles, chips and dock dot use the cluster colour in light and dark mode instead of the Rock chart slot (to deploy).
