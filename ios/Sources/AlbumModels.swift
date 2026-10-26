@@ -83,12 +83,11 @@ enum AlbumLogic {
         album.tracks.filter { $0.songId.map(libraryIDs.contains) ?? false }.count
     }
 
-    /// Complete when every track is linked (JA), else "Partial N of M".
+    /// "In library N of M": a counter beside "On phone N of M", so the two read as one pair; complete (JA) when N equals M.
     static func statusText(_ album: Album, libraryIDs: Set<String>) -> String {
         let total = album.tracks.count
-        let linked = linkedCount(album, libraryIDs: libraryIDs)
         guard total > 0 else { return "No tracks" }
-        return linked == total ? "Complete" : "Partial \(linked) of \(total)"
+        return "In library \(linkedCount(album, libraryIDs: libraryIDs)) of \(total)"
     }
 
     static func isComplete(_ album: Album, libraryIDs: Set<String>) -> Bool {

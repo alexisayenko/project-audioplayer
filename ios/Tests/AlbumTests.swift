@@ -28,10 +28,11 @@ final class AlbumTests: XCTestCase {
 
     func testStatusIsCompleteOnlyWhenEveryTrackIsLinkedToALibrarySong() {
         let a = album(tracks: [AlbumTrack(no: 1, title: "One", songId: "s1"), AlbumTrack(no: 2, title: "Two", songId: "s2"), AlbumTrack(no: 3, title: "Three")])
-        XCTAssertEqual(AlbumLogic.statusText(a, libraryIDs: ["s1", "s2"]), "Partial 2 of 3")
-        XCTAssertEqual(AlbumLogic.statusText(a, libraryIDs: ["s1"]), "Partial 1 of 3")
+        XCTAssertEqual(AlbumLogic.statusText(a, libraryIDs: ["s1", "s2"]), "In library 2 of 3")
+        XCTAssertEqual(AlbumLogic.statusText(a, libraryIDs: ["s1"]), "In library 1 of 3")
+        XCTAssertFalse(AlbumLogic.isComplete(a, libraryIDs: ["s1", "s2"]))
         let full = album(tracks: [AlbumTrack(no: 1, title: "One", songId: "s1"), AlbumTrack(no: 2, title: "Two", songId: "s2")])
-        XCTAssertEqual(AlbumLogic.statusText(full, libraryIDs: ["s1", "s2"]), "Complete")
+        XCTAssertEqual(AlbumLogic.statusText(full, libraryIDs: ["s1", "s2"]), "In library 2 of 2")
         XCTAssertTrue(AlbumLogic.isComplete(full, libraryIDs: ["s1", "s2"]))
         XCTAssertEqual(AlbumLogic.statusText(album(tracks: []), libraryIDs: []), "No tracks")
     }
