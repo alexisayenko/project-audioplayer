@@ -30,7 +30,6 @@ _CLOSER = re.compile(r"[\)\]]")
 _IGNORED_BRACKET = re.compile(r"^\s*(?:mono|stereo|bonus track|\d{4}\s+(?:mix|version))\s*$", re.I)
 _YEAR = re.compile(r"(?<![\w])((?:19|20)\d{2})(?![\w])")
 _DESC_YEAR = re.compile(r"(?:released?|release date|℗|©|year)\D{0,15}((?:19|20)\d{2})(?!\d)", re.I)
-_TRAIL_SQUARE = re.compile(r"(?<!\s)\s*\[[^\]]*\]\s*$")
 _ROUND_YEAR = r"(?:19|20)\d{2}"
 _ROUND_REMASTER = r"(?:\d{4}\s+)?re-?master(?:ed)?(?:\s+\d{4})?"
 _TRAIL_ROUND = re.compile(rf"(?<!\s)\s*\(\s*({_ROUND_YEAR}|{_ROUND_REMASTER})\s*\)\s*$", re.I)
@@ -44,11 +43,20 @@ def guess_year(title: Any, description: Any = None) -> int | None:
     return timeutil.valid_year(int(found.group(1))) if found else None
 
 
+def _strip_trail_square(text: str) -> str:
+    end = len(text.rstrip())
+    if not end or text[end - 1] != "]":
+        return text
+    close = end - 1
+    opener = text.find("[", text.rfind("]", 0, close) + 1, close)
+    return text if opener < 0 else text[: len(text[:opener].rstrip())]
+
+
 def _clean_album(text: str) -> str:
     previous = None
     while previous != text and text:
         previous = text
-        text = _TRAIL_SQUARE.sub("", text)
+        text = _strip_trail_square(text)
         text = _TRAIL_ROUND.sub("", text)
         if not re.fullmatch(r"(?:19|20)\d{2}", text.strip()):
             text = _TRAIL_YEAR.sub("", text)

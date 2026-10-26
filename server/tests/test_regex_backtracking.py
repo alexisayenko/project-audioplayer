@@ -37,12 +37,22 @@ def test_adversarial_inputs_stay_linear():
 def test_album_title_patterns_stay_linear():
     n = 20000
     texts = (" " * n + "x", "x" + " " * n, "x" + " - " * n, "x" + " , " * n, "x" + " (" * n, "x" + " [" * n)
-    for name in ("_NOISE_GROUP", "_NOISE_TAIL", "_SEP", "_TOPIC", "_TRAIL_SQUARE", "_TRAIL_ROUND", "_TRAIL_YEAR"):
+    for name in ("_NOISE_GROUP", "_NOISE_TAIL", "_SEP", "_TOPIC", "_TRAIL_ROUND", "_TRAIL_YEAR"):
         pattern = getattr(album_youtube, name)
         for text in texts:
             assert elapsed(lambda: pattern.sub("", text)) < 1, (name, text[:6])
+    for text in texts + ("[" * n, "[]" * n, "]" * n, "x" + " [a]" * n):
+        assert elapsed(lambda: album_youtube._strip_trail_square(text)) < 1, text[:6]
     for text in texts:
         assert elapsed(lambda: album_youtube._strip_brackets(text)) < 1, text[:6]
+
+
+def test_strip_trail_square_matches_the_old_pattern():
+    import re
+    old = re.compile(r"(?<!\s)\s*\[[^\]]*\]\s*$")
+    cases = ["", " ", "[", "]", "[]", " []", "a[b]", "a [b] ", "a [b]\n", "[a][b]", "a [b] [c]", "a [b]]", "a ]b[", "a [[b]", "a [b] ", "  [x]", "[x] y", "a [b] c]", "[a [b] ]", "x [] []"]
+    for text in cases:
+        assert album_youtube._strip_trail_square(text) == old.sub("", text), repr(text)
 
 
 def test_strip_brackets_cases():
