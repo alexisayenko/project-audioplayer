@@ -2,6 +2,13 @@
 
 What shipped, newest first. One line each; the web UI and server are live at https://electrophone.cc. Everything listed here is deployed except the sections marked "built, not deployed" (the 2026-10-14 release went out once the SSH access in [task-0027](tasks/task-0027.md) was restored; the live visualizer files match `origin/main` as of 2026-10-15). Why: [tech/decisions.md](tech/decisions.md); runbook: [tech/deploy.md](tech/deploy.md).
 
+## 2026-10-26 (JS test fixes; web and studio deployed)
+
+- Tests (owner plan "fix all tests"): all 260 web test files pass (3020 cases, about 85 s in 8-file batches), and the scripts tests pass; a failing test no longer hangs `node --test` (the fake DOM unrefs long timers and intervals, so the process exits at once and an assertion on an element prints a short form instead of the whole tree).
+- Fix (web): the Statistics selection panel no longer shows the text "null" when playlists are off; `#/genres-rework` keeps the Genres map item highlighted after its redirect.
+- Fix (studio Features): the finished tasks task-0114 and task-0106 are listed as Released, not In progress.
+- Tests: stale expectations now derive from the data or the formulas (genre children, glossary map zoom, harmonics axis and band levels, trail ghosts, popover arrow, Studio menu); the Google sign-in test waits for the script instead of fixed flushes.
+
 ## 2026-10-26 (Task note written: add an album from a time-coded YouTube video; docs only, nothing built or deployed)
 
 - Docs: [task-0038](tasks/task-0038.md) gains "Phase 1B: add an album from a time-coded YouTube video" (tracklist parser with the pasted example as the reference fixture, editable preview table, one download split into per-track files with ffmpeg as decided by the owner, split job, API, phases, open questions JM to JQ) and planned spec rows ADD-193 to ADD-197, CAT-059, CAT-060, LIB-252, API-264 to API-267, IOS-103.
