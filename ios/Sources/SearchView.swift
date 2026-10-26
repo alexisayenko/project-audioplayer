@@ -71,7 +71,7 @@ struct SearchView: View {
         HStack(spacing: DS.Space.space3) {
             HStack(spacing: 10) {
                 Image(systemName: "magnifyingglass").foregroundStyle(DS.Color.inkMuted).accessibilityHidden(true)
-                TextField("Songs, artists", text: $query)
+                TextField("Songs, artists", text: $query, prompt: dsPrompt("Songs, artists"))
                     .font(T.body).foregroundStyle(DS.Color.ink).submitLabel(.search)
                     .autocorrectionDisabled().focused($focused)
                     .onSubmit { Task { await search(force: true) } }

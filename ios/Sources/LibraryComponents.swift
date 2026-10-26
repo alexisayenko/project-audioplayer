@@ -272,7 +272,7 @@ struct LibraryEmpty<Actions: View>: View {
 struct LibraryPrimaryStyle: ButtonStyle {
     @Environment(\.isEnabled) private var enabled
     func makeBody(configuration: Configuration) -> some View {
-        configuration.label.font(T.headline).foregroundStyle(enabled ? DS.Color.onAccent : DS.Color.inkFaint)
+        configuration.label.font(T.headline).foregroundStyle(enabled ? DS.Color.onAccent : DS.Color.inkMuted)
             .padding(.horizontal, DS.Space.space5).frame(minHeight: DS.Space.hit)
             .background {
                 if enabled { Capsule().fill(DS.Color.accent).dsShadow(DS.Shadow.depthGlow) }

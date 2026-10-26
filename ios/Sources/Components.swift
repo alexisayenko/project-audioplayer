@@ -39,6 +39,9 @@ extension View {
     func dsCaption() -> some View { font(T.caption).foregroundStyle(DS.Color.inkMuted) }
 }
 
+/// Placeholder text of a field: ink-muted (4.6:1 on the sunken field), never the system's fainter grey.
+func dsPrompt(_ text: String) -> Text { Text(text).foregroundStyle(DS.Color.inkMuted) }
+
 struct DSTextField: View {
     let label: String
     @Binding var text: String
@@ -46,7 +49,7 @@ struct DSTextField: View {
     var plainURL = false
 
     var body: some View {
-        TextField(label, text: $text).keyboardType(keyboard)
+        TextField(label, text: $text, prompt: dsPrompt(label)).keyboardType(keyboard)
             .textInputAutocapitalization(plainURL ? .never : nil).autocorrectionDisabled(plainURL)
             .dsField()
     }
@@ -488,7 +491,7 @@ struct TransportTray: View {
     }
 }
 
-/// A flat horizontal bar: sunken track, accent fill, round paper thumb. Draggable.
+/// A flat horizontal bar: sunken track, strong-fill progress (3:1 on the ground by day), round paper thumb with a ring. Draggable.
 struct DSSlider: View {
     @Binding var value: Double
     var range: ClosedRange<Double> = 0...1
@@ -506,8 +509,9 @@ struct DSSlider: View {
             let x = track * frac
             ZStack(alignment: .leading) {
                 Capsule().fill(DS.Color.surfaceSunken).frame(height: 6)
-                Capsule().fill(DS.Color.accent).frame(width: x + 8, height: 6)
+                Capsule().fill(scheme.strongFill).frame(width: x + 8, height: 6)
                 Circle().fill(scheme == .dark ? DS.Color.ink : DS.Color.surface).frame(width: 16, height: 16)
+                    .overlay(Circle().strokeBorder(scheme.strongFill, lineWidth: DS.Stroke.strokeFocus))
                     .shadow(color: DS.Color.vinyl.opacity(0.3), radius: 2, y: 1)
                     .offset(x: x)
             }
@@ -568,7 +572,7 @@ struct TagEditor: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: DS.Space.space3) {
-            TextField("Add a tag (plain or key:value)", text: $input)
+            TextField("Add a tag (plain or key:value)", text: $input, prompt: dsPrompt("Add a tag (plain or key:value)"))
                 .textInputAutocapitalization(.never).autocorrectionDisabled()
                 .submitLabel(.done)
                 .onSubmit(commit)
@@ -663,7 +667,7 @@ struct NamespaceField: View {
                 .padding(.vertical, DS.Space.space1)
             }
             if mine.count < cap {
-                TextField(placeholder, text: $input)
+                TextField(placeholder, text: $input, prompt: dsPrompt(placeholder))
                     .textInputAutocapitalization(key == "country" ? .words : .never).autocorrectionDisabled()
                     .submitLabel(.done).onSubmit { commit() }
                     .focused($focused)

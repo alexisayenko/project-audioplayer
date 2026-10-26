@@ -157,7 +157,7 @@ struct TokenField: View {
             ForEach(shown, id: \.index) { item in
                 if editing == item.index { editor } else { pill(item.index, item.text) }
             }
-            TextField("", text: $pending, prompt: shown.isEmpty && editing == nil ? Text(kind.label) : nil)
+            TextField("", text: $pending, prompt: shown.isEmpty && editing == nil ? Text(kind.label).foregroundStyle(DS.Color.inkMuted) : nil)
                 .accessibilityLabel(kind.label)
                 .focused($focus, equals: .entry)
                 .frame(minHeight: 36)

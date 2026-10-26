@@ -100,11 +100,11 @@ private struct LiveBPMCard: View {
         Button { mic.toggle() } label: {
             Text(mic.running ? "Stop" : "Start")
                 .font(T.subhead.weight(.semibold))
-                .foregroundStyle(mic.running ? DS.Color.accentInk : scheme.onStrong)
+                .foregroundStyle(mic.running ? DS.Color.accentInk : DS.Color.onAccent)
                 .padding(.horizontal, DS.Space.space5)
                 .frame(minWidth: 96, minHeight: DS.Space.hit)
                 .background {
-                    if mic.running { Capsule().stroke(DS.Color.accentInk, lineWidth: 1.5) } else { Capsule().fill(scheme.strongFill) }
+                    if mic.running { Capsule().stroke(DS.Color.accentInk, lineWidth: 1.5) } else { Capsule().fill(DS.Color.accent) }
                 }
                 .contentShape(Capsule())
         }

@@ -38,7 +38,7 @@ struct WikiLinkField: View {
     }
 
     var body: some View {
-        TextField(title, text: $text, prompt: Text("Article name or link"))
+        TextField(title, text: $text, prompt: dsPrompt("Article name or link"))
             .keyboardType(.URL).textInputAutocapitalization(.never).autocorrectionDisabled(true)
             .submitLabel(.done).focused($focused).dsField()
             .onSubmit(commit)

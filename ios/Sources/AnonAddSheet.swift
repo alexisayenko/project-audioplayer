@@ -83,7 +83,7 @@ struct AnonAddSheet: View {
     private var linkField: some View {
         VStack(alignment: .leading, spacing: DS.Space.space1) {
             HStack(spacing: DS.Space.space2) {
-                TextField("YouTube or SoundCloud link", text: $url)
+                TextField("YouTube or SoundCloud link", text: $url, prompt: dsPrompt("YouTube or SoundCloud link"))
                     .textInputAutocapitalization(.never).autocorrectionDisabled().keyboardType(.URL)
                     .submitLabel(.go).font(T.subhead).frame(minHeight: 44).foregroundStyle(DS.Color.ink)
                     .onSubmit { start() }

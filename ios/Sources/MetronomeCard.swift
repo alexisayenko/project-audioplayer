@@ -74,7 +74,7 @@ struct MetronomeCard: View {
     private var tempoReadout: some View {
         VStack(spacing: DS.Space.space1) {
             if editing {
-                TextField("BPM", text: $draft, prompt: Text(String(model.bpm)).foregroundColor(DS.Color.inkFaint))
+                TextField("BPM", text: $draft, prompt: dsPrompt(String(model.bpm)))
                     .keyboardType(.numberPad).multilineTextAlignment(.center)
                     .font(T.display).monospacedDigit().foregroundStyle(DS.Color.ink)
                     .focused($focused)
@@ -157,20 +157,19 @@ struct MetronomeCard: View {
     }
 }
 
-/// The wide pill for Start and Stop: strong fill, or an outline while running.
+/// The wide pill for Start and Stop: the lit accent fill with on-accent label (the primary button of every screen), or an outline while running.
 struct ToolPrimaryButton: View {
     let title: String
     let symbol: String
     var filled = true
     let action: () -> Void
-    @Environment(\.colorScheme) private var scheme
 
     var body: some View {
         Button(action: action) {
             Label(title, systemImage: symbol).font(T.subhead.weight(.semibold))
-                .foregroundStyle(filled ? scheme.onStrong : DS.Color.accentInk)
+                .foregroundStyle(filled ? DS.Color.onAccent : DS.Color.accentInk)
                 .frame(maxWidth: .infinity, minHeight: DS.Space.hit)
-                .background(Capsule().fill(filled ? scheme.strongFill : Color.clear))
+                .background(Capsule().fill(filled ? DS.Color.accent : Color.clear))
                 .overlay(Capsule().stroke(DS.Color.accentInk, lineWidth: filled ? 0 : 1.5))
                 .contentShape(Capsule())
         }

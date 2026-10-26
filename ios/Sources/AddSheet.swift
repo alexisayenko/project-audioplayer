@@ -166,7 +166,7 @@ struct AddSheet: View {
     private var linkField: some View {
         VStack(alignment: .leading, spacing: DS.Space.space1) {
             HStack(spacing: DS.Space.space2) {
-                TextField("YouTube or SoundCloud link", text: $flow.url)
+                TextField("YouTube or SoundCloud link", text: $flow.url, prompt: dsPrompt("YouTube or SoundCloud link"))
                     .textInputAutocapitalization(.never).autocorrectionDisabled().keyboardType(.URL)
                     .submitLabel(.go).font(T.subhead).frame(minHeight: 44).foregroundStyle(DS.Color.ink)
                     .onSubmit { fetch() }
