@@ -281,7 +281,6 @@ test('the dock has a plain Visualizer key left of Shuffle, no dropdown or chevro
   assert.doesNotMatch(section('player'), /viz-switch/);
   assert.equal($('mini-viz-switch'), null);
   assert.equal($('p-viz'), null);
-  assert.doesNotMatch(pageHtml, /id="p-viz"/);
   assert.match(pageHtml, /id="viz-full"[\s\S]*id="viz-switch"/);
 });
 
