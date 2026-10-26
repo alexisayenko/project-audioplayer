@@ -126,6 +126,13 @@ function hiddenBySubfamily(tree, n, subs) {
   return tree.subfamilies.some((s) => n.fams.includes(s.family)) && !subs.has(n.subfamily);
 }
 
+function passesRules(tree, n, { libraryOnly, byFilter, root, subs }) {
+  if (libraryOnly && !n.all.size) return false;
+  if (byFilter && !byFilter.has(n.id)) return false;
+  if (root && !ancestorIds(tree, n.id).has(root)) return false;
+  return !hiddenBySubfamily(tree, n, subs);
+}
+
 export function visibleIds(tree, { family = null, libraryOnly = false, status = 'all', modifiers = [], subfamilies = null } = {}) {
   if (!tree) return null;
   const byFilter = filterIds(tree, { status, modifiers });
@@ -133,12 +140,9 @@ export function visibleIds(tree, { family = null, libraryOnly = false, status = 
   if (!family && !libraryOnly && !byFilter && !subs) return null;
   const root = family ? `g:${family}` : null;
   const out = new Set();
+  const rules = { libraryOnly, byFilter, root, subs };
   for (const n of tree.byId.values()) {
-    if (libraryOnly && !n.all.size) continue;
-    if (byFilter && !byFilter.has(n.id)) continue;
-    if (root && !ancestorIds(tree, n.id).has(root)) continue;
-    if (hiddenBySubfamily(tree, n, subs)) continue;
-    out.add(n.id);
+    if (passesRules(tree, n, rules)) out.add(n.id);
   }
   return out;
 }
