@@ -17,6 +17,10 @@ What shipped, newest first. One line each; the web UI and server are live at htt
 
 - Docs: [task-0120](tasks/task-0120.md) "Complete albums: browse and download full albums" (Album as a new, light, derived entity; Library sub-navigation Songs, Albums, Artists, Drafts; completeness from MusicBrainz or Discogs; iOS album download within the quotas; phases 0 to 7; open questions JA to JL), [ADR-0050](tech/decisions.md) (proposed; narrows ADR-0039), and planned spec rows LIB-220 to LIB-229, CAT-050 to CAT-057, DATA-202 to DATA-204, API-241 to API-247, IOS-098 to IOS-102.
 
+## 2026-10-26 (JS tests pruned, tests only, nothing deployed)
+
+- Pruned JS tests (owner decision "prune tests"): 4 files removed or merged and 33 cases removed or merged; web and scripts suite 264 files and 3057 cases before, 262 files and 3024 after, no new failing file. Dead code: `studio-tabs.js` and its 2 cases. Hard-coded counts replaced by invariants in the glossary, genre, clicks-tone, studio-site and nav-order tests. Terrain characterisation keeps 4 golden digests plus the quality-2 one and a repeatability case per style (was 36 digests). The three credit regex suites are one `credits-regex.test.mjs` (13 patterns, 26 cases kept). Exact duplicate cases dropped from reveal-register, queue-property and viz-mode-ui and the dock Loop chip markup case from studio-nav. Source-text CSS cases without a behavioural twin (mini-compact, side-toggle-edge) stay.
+
 ## 2026-10-26 (Sidebar: the selected sub-item and the expanded group survive a reload, deployed as `77d972b`)
 
 - Web (owner request 2026-10-26, WEB-131, LIB-159; the nav-expanded, sidebar-state, nav-help and nav-library-persist tests pass, checked in the built-in browser): after a reload the Library group is expanded with the active item (Songs, Albums or Drafts) selected and the Library parent active, and the Help group is expanded on a Help page; a group toggled by hand is remembered in `localStorage` `electrophone.sidebar.expanded` (blocked storage is tolerated), the active route's group is always forced open. Cause: the menu groups ignored the first route on purpose and always started collapsed.
