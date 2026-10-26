@@ -49,3 +49,8 @@
 .album-rym { display: grid; gap: var(--space-1); margin: var(--space-3) 0; }
 .album-rym input { width: 100%; }
 .svc-rym { padding: 0 var(--space-2); font-weight: 600; }
+.album-dl-status { margin: 0 0 var(--space-2); }
+.album-search { display: flex; flex-wrap: wrap; gap: var(--space-2); align-items: center; }
+.album-search input { flex: 1 1 8rem; min-width: 0; }
+.album-cands { margin: var(--space-3) 0; }
+.album-cand { text-align: left; width: 100%; }

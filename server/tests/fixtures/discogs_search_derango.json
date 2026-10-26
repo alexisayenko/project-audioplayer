@@ -1,0 +1,9 @@
+{
+  "results": [
+    {"id": 111, "type": "release", "title": "Someone Else - Tumult", "year": "1999"},
+    {"id": 545650, "type": "release", "title": "Derango - Tumult", "year": "2004"},
+    {"id": 222, "type": "release", "title": "Derango - Tumult (Remixes)", "year": "2005"},
+    {"id": 545650, "type": "release", "title": "Derango - Tumult", "year": "2004"},
+    {"id": 333, "type": "master", "title": "Derango - Tumult", "year": "2004"}
+  ]
+}

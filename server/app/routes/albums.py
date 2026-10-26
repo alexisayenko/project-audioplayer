@@ -7,8 +7,8 @@ from typing import Annotated, Any
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.concurrency import run_in_threadpool
 
-from .. import albums, deps, library, users
-from ..schemas import AlbumLinkRequest, AlbumPatchRequest, AlbumPreviewRequest
+from .. import album_youtube, albums, deps, library, users
+from ..schemas import AlbumLinkRequest, AlbumPatchRequest, AlbumPreviewRequest, AlbumSearchRequest
 
 router = APIRouter()
 User = Annotated[dict[str, Any], Depends(deps.require_token)]
@@ -33,7 +33,7 @@ async def preview_album(req: AlbumPreviewRequest, user: User):
         _raise(exc)
 
 
-def _create(uid: str, payload: dict[str, Any]) -> dict[str, Any]:
+def _create(uid: str, payload: dict[str, Any], song_ids: Any = None) -> dict[str, Any]:
     with deps.tx(uid, "albums add"):
         items = albums.load(deps.albums_path(uid))
         dup = albums.find_source(items, payload["source"])
@@ -42,8 +42,11 @@ def _create(uid: str, payload: dict[str, Any]) -> dict[str, Any]:
         if len(items) >= albums.MAX_ALBUMS:
             raise HTTPException(status_code=409, detail="album_limit")
         item = albums.build(payload, {a["id"] for a in items})
+        linked = album_youtube.auto_link(item, song_ids, library.load(deps.library_path(uid))) if isinstance(song_ids, list) else None
         albums.save(deps.albums_path(uid), [item, *items])
-        return item
+        if linked is None:
+            return item
+        return {**item, "linked": linked, "unlinked": len(item["tracks"]) - linked}
 
 
 @router.post("/albums", status_code=201, responses=deps.responses(409, 422))
@@ -52,7 +55,18 @@ async def add_album(body: dict[str, Any], user: User):
         payload = albums.validate(body)
     except albums.AlbumError as exc:
         _raise(exc)
-    return await run_in_threadpool(_create, user["uid"], payload)
+    return await run_in_threadpool(_create, user["uid"], payload, body.get("songIds"))
+
+
+@router.post("/albums/youtube/start", responses=deps.responses(400, 404, 409, 429, 502))
+async def youtube_start(req: AlbumPreviewRequest, user: User):
+    songs = await run_in_threadpool(deps.load_songs, user["uid"])
+    return await run_in_threadpool(album_youtube.start, user["uid"], user["owner"], req.url, songs)
+
+
+@router.post("/albums/discogs-search", responses=deps.responses(502, 503))
+async def discogs_search(req: AlbumSearchRequest, user: User):
+    return await run_in_threadpool(album_youtube.search, req.artist, req.album, req.trackCount, req.durationsS)
 
 
 @router.get("/albums")

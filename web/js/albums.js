@@ -8,6 +8,8 @@ import { playlistsOn } from './playlists-store.js';
 import { openPlaylistPicker } from './lazy-ui.js';
 import { el, fmtTime, plural, toast } from './dom.js';
 import { icon } from './icons.js';
+import { playlistLink, MIX_MESSAGE, PRIVATE_MESSAGE } from './playlist-link.js';
+import { startDownloads, mountDownloadStatus } from './albums-youtube.js';
 import { dialogHead } from './edit-dialog.js';
 import { artistLine, titleLine, displayLine, albumsOf, albumOf, releasedYear } from './credits.js';
 import { openPlDialog, closePlDialog } from './playlist-dialogs.js';
@@ -466,31 +468,53 @@ function albumRow(a) {
 
 export const ALBUMS_CHANGED = 'albums-changed';
 
+const countOfList = (x) => (Array.isArray(x) ? x.length : Number(x) || 0);
+
+export function youtubeErrorText(ex) {
+  if (ex.status === 400 || ex.code === 'bad_url') return 'This is not a valid YouTube playlist link.';
+  if (ex.status === 404 || ex.code === 'not_found') return 'YouTube has no playlist at this address, or it is private.';
+  if (ex.status === 502 || ex.code === 'youtube_failed') return 'YouTube could not be read right now. Try again later.';
+  return ex.message || 'The playlist could not be read.';
+}
+
 export function openAddAlbum(opener = null) {
   const dlg = document.getElementById('add-dialog');
-  const url = el('input', { type: 'text', placeholder: 'Discogs release address, https://www.discogs.com/release/...', 'aria-label': 'Discogs release address', autocomplete: 'off', inputMode: 'url' });
+  const url = el('input', { type: 'text', placeholder: 'Discogs release or YouTube playlist address', 'aria-label': 'Discogs release or YouTube playlist address', autocomplete: 'off', inputMode: 'url' });
   const fetchBtn = el('button', { class: 'btn fill small', type: 'submit' }, 'Fetch');
   const form = el('form', { class: 'well' }, url, fetchBtn);
   const message = el('div', { role: 'alert' });
   const body = el('div', { class: 'add-body' });
   const say = (text, link) => message.replaceChildren(text ? el('p', { class: 'msg error' }, text, ...(link ? [' ', link] : [])) : '');
   let live = true;
+  let yt = null;
+
+  function backToStart() {
+    say('');
+    if (yt) { showCandidates(); return; }
+    body.replaceChildren();
+    form.hidden = false;
+    url.focus();
+  }
 
   function paintPreview(preview) {
     const editor = genreEditor(preview.genres);
     const time = totalTime(preview.tracks);
     const rymInput = el('input', { type: 'text', placeholder: 'RateYourMusic link (optional)', 'aria-label': 'RateYourMusic link', autocomplete: 'off', inputMode: 'url' });
     const create = el('button', { class: 'btn primary glow', type: 'button' }, icon('plus', 'nav'), 'Create');
-    const back = el('button', { class: 'btn outline', type: 'button', onclick: () => { body.replaceChildren(); say(''); form.hidden = false; url.focus(); } }, 'Back');
+    const back = el('button', { class: 'btn outline', type: 'button', onclick: backToStart }, 'Back');
     create.addEventListener('click', async () => {
       editor.commit();
       say('');
       create.disabled = true;
       try {
         const rymUrl = rymInput.value.trim();
-        const made = await api.createAlbum({ ...preview, genres: editor.get(), ...(rymUrl ? { rymUrl } : {}) });
+        const made = await api.createAlbum({ ...preview, genres: editor.get(), ...(rymUrl ? { rymUrl } : {}), ...(yt ? { songIds: yt.songIds } : {}) });
         dlg.close();
-        toast(`Added "${made.title}"`);
+        if (yt) {
+          const linked = countOfList(made.linked);
+          const unlinked = countOfList(made.unlinked);
+          toast(`Album created, ${linked} ${plural(linked, 'song', 'songs')} linked, ${unlinked} not matched`);
+        } else toast(`Added "${made.title}"`);
         window.dispatchEvent(new Event(ALBUMS_CHANGED));
       } catch (ex) {
         create.disabled = false;
@@ -511,10 +535,7 @@ export function openAddAlbum(opener = null) {
       el('div', { class: 'add-foot' }, back, create)));
   }
 
-  form.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const address = url.value.trim();
-    if (!address) { say('Paste a Discogs release address.'); url.focus(); return; }
+  async function loadPreview(address) {
     say('');
     body.replaceChildren();
     fetchBtn.disabled = true;
@@ -522,10 +543,87 @@ export function openAddAlbum(opener = null) {
       const preview = await api.albumPreview(address);
       if (live) paintPreview(preview);
     } catch (ex) {
-      if (live) say(fetchErrorText(ex));
+      if (live) {
+        say(fetchErrorText(ex));
+        if (yt) showCandidates();
+      }
     } finally {
       fetchBtn.disabled = false;
     }
+  }
+
+  function showCandidates(search = null) {
+    const n = yt.songs.length;
+    const artist = el('input', { type: 'text', 'aria-label': 'Artist', placeholder: 'Artist', autocomplete: 'off', value: search?.artist ?? yt.guess.artist ?? '' });
+    const album = el('input', { type: 'text', 'aria-label': 'Album', placeholder: 'Album', autocomplete: 'off', value: search?.album ?? yt.guess.album ?? '' });
+    const again = el('button', { class: 'btn outline small', type: 'submit' }, 'Search again');
+    const results = el('div', { class: 'album-cands', 'aria-live': 'polite' });
+    const paste = el('button', { class: 'link-btn t-caption', type: 'button', onclick: () => { form.hidden = false; url.focus(); } }, 'Paste a Discogs link');
+    const skipped = yt.skipped.length ? el('p', { class: 't-caption muted' }, `${yt.skipped.length} ${plural(yt.skipped.length, 'item was', 'items were')} skipped.`) : null;
+    const searchForm = el('form', { class: 'album-search' }, artist, album, again);
+    searchForm.addEventListener('submit', (e) => { e.preventDefault(); void runSearch(); });
+    body.replaceChildren(el('div', { class: 'add-card album-yt' },
+      el('p', { class: 't-subhead' }, `${n} ${plural(n, 'song was', 'songs were')} added to your library and the audio is downloading. Closing this window keeps them.`),
+      skipped,
+      el('p', { class: 't-caption muted' }, 'Pick the Discogs release this album matches:'),
+      searchForm, results, paste));
+
+    async function runSearch() {
+      results.replaceChildren(el('p', { class: 'muted t-caption', role: 'status' }, 'Searching Discogs...'));
+      let found = [];
+      let problem = '';
+      try {
+        const r = await api.albumDiscogsSearch({
+          artist: artist.value.trim() || undefined,
+          album: album.value.trim() || undefined,
+          trackCount: n,
+          durationsS: yt.songs.map((s) => s.durationS),
+        });
+        found = Array.isArray(r?.candidates) ? r.candidates : [];
+      } catch (ex) {
+        problem = ex.status === 503 || ex.code === 'discogs_unavailable' ? 'Discogs is not available right now.' : (ex.message || 'The search failed.');
+      }
+      if (!live) return;
+      if (problem || !found.length) {
+        results.replaceChildren(el('p', { class: 'muted t-subhead' }, problem || 'No matching releases found.'));
+        return;
+      }
+      results.replaceChildren(el('ul', { class: 'pl-pick-list album-cand-list' }, found.map((c) => {
+        const line = [`${c.artist} - ${c.title}`, c.year, c.trackCount ? `${c.trackCount} ${plural(c.trackCount, 'track', 'tracks')}` : ''].filter(Boolean).join(' · ');
+        return el('li', {}, el('button', { class: 'pl-pick-item album-cand', type: 'button', title: line, onclick: () => { void loadPreview(c.url); } }, line));
+      })));
+    }
+    void runSearch();
+  }
+
+  async function startYoutube(address) {
+    say('');
+    body.replaceChildren(el('p', { class: 'muted t-subhead', role: 'status' }, 'Reading the playlist...'));
+    fetchBtn.disabled = true;
+    try {
+      const r = await api.albumYoutubeStart(address);
+      if (!live) { void startDownloads((r.songs || []).map((s) => s.songId)); return; }
+      yt = { songs: r.songs || [], songIds: (r.songs || []).map((s) => s.songId), guess: r.guess || {}, skipped: r.skipped || [] };
+      void startDownloads(yt.songIds);
+      form.hidden = true;
+      showCandidates();
+    } catch (ex) {
+      body.replaceChildren();
+      if (live) say(youtubeErrorText(ex));
+    } finally {
+      fetchBtn.disabled = false;
+    }
+  }
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const address = url.value.trim();
+    if (!address) { say('Paste a Discogs release or YouTube playlist address.'); url.focus(); return; }
+    const list = playlistLink(address);
+    if (list?.kind === 'mix') { say(MIX_MESSAGE); return; }
+    if (list?.kind === 'private') { say(PRIVATE_MESSAGE); return; }
+    if (list) { await startYoutube(list.url); return; }
+    await loadPreview(address);
   });
 
   dlg.onclose = () => {
@@ -536,7 +634,7 @@ export function openAddAlbum(opener = null) {
     if (opener?.isConnected) opener.focus();
   };
   dlg.replaceChildren(
-    dialogHead('Add album from Discogs', 'Save the album\'s tracks; link your songs to them afterwards.', () => dlg.close()),
+    dialogHead('Add album', 'Save the tracks of a Discogs release, or import a YouTube playlist and match it to a release.', () => dlg.close()),
     form, message, body);
   dlg.onclick = (e) => { if (e.target === dlg) dlg.close(); };
   dlg.showModal();
@@ -556,6 +654,8 @@ export function mountAlbums(pane, id = albumIdOf(location.hash)) {
     const sel = { genres: new Set(), years: new Set() };
     let all = [];
     body.replaceChildren(facetRow, listSlot);
+    cleanups.push(mountDownloadStatus(body));
+    body.prepend(body.lastChild);
     const reload = () => { void loadList(); };
     window.addEventListener(ALBUMS_CHANGED, reload);
     cleanups.push(() => window.removeEventListener(ALBUMS_CHANGED, reload));

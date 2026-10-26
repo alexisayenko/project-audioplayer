@@ -17,9 +17,9 @@ import { loadCollapsed, saveCollapsed } from './sidebar-state.js';
 import { SYNC_POLL_MS } from './constants.js';
 import { describeSync } from './sync-status.js';
 import { describeBuild } from './build-info.js';
-import { initHelpNav, initLibraryNav } from './nav-help.js';
+import { initHelpNav, initLibraryNav, isLibraryRoute } from './nav-help.js';
 import { draftStore } from './drafts-store.js';
-import { syncLibraryMenu } from './nav-library.js';
+import { syncLibraryMenu, saveLibraryView, savedLibraryView, libraryHashFor, initialLibraryRedirect } from './nav-library.js';
 import { renderLogin } from './login.js';
 import { studioSiteUrl } from './studio-redirect.js';
 
@@ -65,6 +65,9 @@ function showLogin() {
   window.scrollTo(0, 0);
 }
 
+let firstRoute = true;
+let currentNav = '';
+
 function route() {
   const studioSite = studioSiteUrl(location.hash);
   if (studioSite) {
@@ -87,6 +90,14 @@ function route() {
     name = 'library';
     history.replaceState(null, '', '#/library');
   }
+  if (firstRoute && name === 'library' && !wantsAdd && !shared) {
+    const to = initialLibraryRedirect();
+    if (to) {
+      history.replaceState(null, '', to);
+      name = to.replace(/^#\/?/, '');
+    }
+  }
+  firstRoute = false;
   if (name.startsWith('playlists/')) name = 'playlists';
   const navName = /^library\/albums\//.test(name) ? 'library/albums' : name;
   if (/^library\/(albums(\/[^/]+)?|drafts)$/.test(name)) name = 'library';
@@ -95,6 +106,8 @@ function route() {
     history.replaceState(null, '', '#/genres');
   }
   if (!routes[name]) name = 'library';
+  if (name === 'library') saveLibraryView(navName);
+  currentNav = navName;
   document.body.classList.remove('signed-out');
   if (cleanup) cleanup();
   view.replaceChildren();
@@ -120,6 +133,9 @@ const viz = lazyVisualizer({ player: playerApi });
 initShare();
 const help = initHelpNav();
 const libNav = initLibraryNav();
+document.getElementById('library-toggle')?.addEventListener('click', () => {
+  if (!isLibraryRoute(currentNav)) location.hash = libraryHashFor(savedLibraryView());
+});
 const sideToggle = document.getElementById('side-toggle');
 function setCollapsed(collapsed) {
   document.body.classList.toggle('side-collapsed', collapsed);

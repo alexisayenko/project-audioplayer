@@ -261,3 +261,10 @@ class PlayIn(BaseModel):
 class PlaysRequest(BaseModel):
     batch_key: str = Field(min_length=1, max_length=128)
     plays: list[PlayIn] = Field(max_length=500)
+
+
+class AlbumSearchRequest(BaseModel):
+    artist: str | None = Field(default=None, max_length=300)
+    album: str | None = Field(default=None, max_length=300)
+    trackCount: int | None = Field(default=None, ge=0, le=1000)
+    durationsS: list[float | None] | None = Field(default=None, max_length=1000)
