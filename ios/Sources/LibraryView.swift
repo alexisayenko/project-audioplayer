@@ -14,7 +14,9 @@ struct LibraryView: View {
     @State private var showHiddenPlaying = false
     @State private var pendingReveal: String?
     @State private var showSort = false
+    var mode: Binding<LibraryMode>?
     @State private var showAdd = false
+    @State private var playlistSongs: [String] = []
     @State private var editing: ServerSong?
     @State private var path: [String] = []
     @State private var toast: String?
@@ -111,6 +113,9 @@ struct LibraryView: View {
             }
         }
         .sheet(isPresented: $showAdd) { AddSheet() }.sheet(item: $editing) { SongEditView(song: $0) }
+        .sheet(isPresented: Binding(get: { !playlistSongs.isEmpty }, set: { if !$0 { playlistSongs = [] } })) {
+            PlaylistPickerSheet(songIDs: playlistSongs) { notify($0) }
+        }
         .overlay(alignment: .top) { toastView }
         .sensoryFeedback(.success, trigger: queueTick).sensoryFeedback(.warning, trigger: deleteTick)
         .task(id: accountKey) { await listening.load(settings: settings, signedIn: signedIn, reset: true) }
@@ -141,6 +146,7 @@ struct LibraryView: View {
     private func pinnedHeader(_ matches: [Track], proxy: ScrollViewProxy) -> some View {
         VStack(spacing: 0) {
             header
+            if signedIn, let mode { LibraryModeSwitch(mode: mode).padding(.horizontal, DS.Space.space4) }
             if !hideTools {
                 VStack(spacing: 0) {
                     LibrarySearchField(text: $query.search).padding(.horizontal, DS.Space.space4)
@@ -252,6 +258,7 @@ struct LibraryView: View {
                     Button(queued ? "Remove from queue" : "Add to queue") { toggleQueued(track) }
                 }
                 if signedIn { Button("Edit") { editing = ServerSong(track) } }
+                if signedIn { Button("Add to playlist") { playlistSongs = [track.id] } }
                 if signedIn && !onPhone && progress == nil {
                     if track.onServer != false { Button("Download") { download(track) } }
                     else { Button("Get audio") { getAudio(track) } }
@@ -271,6 +278,7 @@ struct LibraryView: View {
             else { Button { getAudio(track) } label: { Label("Get audio", systemImage: "arrow.down.circle") } }
         }
         if signedIn { Button { editing = ServerSong(track) } label: { Label("Edit", systemImage: "pencil") } }
+        if signedIn { Button { playlistSongs = [track.id] } label: { Label("Add to playlist", systemImage: "music.note.list") } }
         if signedIn && onPhone && !current && track.localOnly != true {
             Button(role: .destructive) { removeAudio(track) } label: { Label("Remove from iPhone", systemImage: "iphone.slash") }
         }

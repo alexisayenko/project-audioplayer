@@ -177,7 +177,7 @@ struct APIClient {
 
     // MARK: Add and edit
 
-    private func send(_ path: String, method: String, body: [String: Any]? = nil,
+    func send(_ path: String, method: String, body: [String: Any]? = nil,
                       timeout: TimeInterval = 30) async throws -> Data {
         let data = try body.map { try JSONSerialization.data(withJSONObject: $0) }
         var req = try await request(path, method: method, body: data)

@@ -21,7 +21,7 @@ Key principle (CLAUDE.md): playback and offline reliability beat features. A pag
 | Visualizer Terrain / Synthwave (WebGL) | out of v1 | P4 | large, no reliability gain |
 | Share link (copy a web URL) | later | P3 | cheap, only useful with web viewers |
 | Guest read-only view (public library) | out of v1 | P4 | the Mac app is for signed-in users |
-| Playlists | built (placeholder, as the web) | P4 | the web has only "Playlists are coming soon"; the Mac mirrors it |
+| Playlists | built (the web page, flat playlists) | P4 | the Mac shows the web GUI, which has real playlists since 2026-10-24 (PLS-121 to PLS-128) |
 | Genres map (rework not built) | built, unverified | P4 | browsing aid (GEN: "nothing here changes a song") |
 | Song stats (year x BPM scatter) | built, unverified | P4 | analysis only |
 | Music theory | built, unverified | P4 | static reference text |

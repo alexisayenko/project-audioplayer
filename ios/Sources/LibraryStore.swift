@@ -305,8 +305,10 @@ enum CoverCache {
         let version: String
 
         init?(_ source: String) {
-            guard source.hasPrefix("/"), let c = URLComponents(string: source), let last = c.path.split(separator: "/").last else { return nil }
-            id = String(last)
+            guard source.hasPrefix("/"), let c = URLComponents(string: source) else { return nil }
+            let parts = c.path.split(separator: "/")
+            guard let last = parts.last else { return nil }
+            id = parts.count == 3 && parts[0] == "albums" ? "album-" + parts[1] : String(last)
             path = c.path
             version = c.queryItems?.first { $0.name == "v" }?.value ?? ""
         }

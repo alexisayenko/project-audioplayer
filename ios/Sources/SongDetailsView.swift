@@ -249,7 +249,7 @@ struct SongDetailsView: View {
 }
 
 /// Retain the native edge-swipe gesture with the artboard's custom navigation bar.
-private struct LibraryBackSwipe: UIViewControllerRepresentable {
+struct LibraryBackSwipe: UIViewControllerRepresentable {
     func makeUIViewController(context _: Context) -> Controller { Controller() }
     func updateUIViewController(_: Controller, context _: Context) {
         // The controller holds all the state it needs.

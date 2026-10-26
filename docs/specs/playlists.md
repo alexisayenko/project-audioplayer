@@ -1,6 +1,6 @@
 # Playlists (PLS)
 
-A top-level "Playlists" menu item: named, ordered lists of catalog songs. Decision: ADR-0022 (accepted), amended 2026-10-24 to a flat first slice ([task-0058](../tasks/task-0058.md), phase 1 of 4). Built so far: the server side (deployed 2026-10-24), `playlists.json` with the API of API-229 to API-238 and the text export (PLS-110 to PLS-120), and the web (phase 2, deployed 2026-10-24): the Playlists list and playlist pages, the "Add to playlist..." picker and the queue rename (PLS-121 to PLS-128). Not built: "Save queue as playlist" (PLS-013, phase 3) and the apps (phase 4).
+A top-level "Playlists" menu item: named, ordered lists of catalog songs. Decision: ADR-0022 (accepted), amended 2026-10-24 to a flat first slice ([task-0058](../tasks/task-0058.md), phase 1 of 4). Built so far: the server side (deployed 2026-10-24), `playlists.json` with the API of API-229 to API-238 and the text export (PLS-110 to PLS-120), and the web (phase 2, deployed 2026-10-24): the Playlists list and playlist pages, the "Add to playlist..." picker and the queue rename (PLS-121 to PLS-128). The iOS app (phase 4) is built in source: the list, the playlist screen with play, queue, shuffle, add, remove, reorder, rename and delete, and "Add to playlist" from a Library row (PLS-102, IOS-104 to IOS-106 in [ios.md](ios.md); not run on a device). Not built: "Save queue as playlist" (PLS-013, phase 3) and the Mac app.
 
 Playlists own the playlist data model. A playlist is not the play queue ([terminology](terminology.md)): a playlist is saved and named, the queue is the transient "what plays next".
 
@@ -140,5 +140,5 @@ The API of the flat model is API-229 to API-238 in [api.md](api.md); the rules b
 
 ## Later phases
 
-- PLS-090 SHOULD: iOS (phase 3 of task-0034) shows the playlist tree and playlists read-only and plays a playlist offline from the songs already on the phone; songs not downloaded are shown dimmed; smart playlists are evaluated on the phone from the cached library. Status: planned (task-0058 phase 4, flat playlists only; smart playlists deferred to task-0034)
+- PLS-090 SHOULD: iOS (phase 3 of task-0034) shows the playlist tree and playlists read-only and plays a playlist offline from the songs already on the phone; songs not downloaded are shown dimmed; smart playlists are evaluated on the phone from the cached library. Status: implemented in source for flat playlists on iOS (PLS-102, IOS-104; read, play, edit; songs not on the phone keep their Download button instead of being dimmed), not run on a device; folders and smart playlists deferred to task-0034
 - PLS-101 SHOULD: share link for a playlist (a hash route like the song share link, SHARE area) for guests; needs a visibility decision (D4 in task-0034). Status: deferred (task-0034); playlists are private today (PLS-110)

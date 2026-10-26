@@ -18,6 +18,8 @@ enum Endpoints {
     static let plays = path("plays")
     static let coversPrefix = path("covers") + "/"
     static let meUsage = path("me", "usage")
+    static let playlists = path("playlists")
+    static let albums = path("albums")
     static let genresGraph = path("genres", "graph")
     static let theoryTerms = path("data", "theory-terms.json")
     static let theoryAnatomy = path("data", "theory-anatomy.json")
@@ -39,6 +41,11 @@ enum Endpoints {
     static func songAudio(_ id: String) -> String { path("songs", id, "audio") }
     static func songCover(_ id: String) -> String { path("songs", id, "cover") }
     static func songCoverFromURL(_ id: String) -> String { path("songs", id, "cover", "from-url") }
+    static func playlist(_ id: String) -> String { path("playlists", id) }
+    static func playlistSongs(_ id: String) -> String { path("playlists", id, "songs") }
+    static func playlistSong(_ id: String, _ songID: String) -> String { path("playlists", id, "songs", songID) }
+    static func playlistOrder(_ id: String) -> String { path("playlists", id, "order") }
+    static func album(_ id: String) -> String { path("albums", id) }
     static func songBPMDetect(_ id: String) -> String { path("songs", id, "bpm", "detect") }
 
     private static func path(_ segments: String...) -> String {

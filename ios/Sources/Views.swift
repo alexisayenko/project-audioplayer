@@ -33,6 +33,9 @@ struct RootView: View {
     @EnvironmentObject var anon: AnonDownloader
     @EnvironmentObject var listening: ListeningStore
     @Environment(\.scenePhase) private var scenePhase
+    @StateObject private var playlists = PlaylistStore()
+    @StateObject private var albums = AlbumStore()
+    @StateObject private var albumDownloader = AlbumDownloader()
     @State private var tab = AppTab.library
     @State private var menuOpen = false
     @State private var selectTick = 0
@@ -40,13 +43,16 @@ struct RootView: View {
 
     var body: some View {
         ZStack {
-            page(.library) { LibraryView() }
+            page(.library) { LibraryHome() }
             page(.playback) { PlaybackView() }
             page(.playlists) { PlaylistsView() }
             page(.statistics) { statistics }
             page(.tools) { ToolsView(isVisible: tab == .tools) }
             page(.settings) { SettingsView() }
         }
+        .environmentObject(playlists)
+        .environmentObject(albums)
+        .environmentObject(albumDownloader)
         .environment(\.openMenu, { menuOpen = true })
         .environment(\.openSettings, { tab = .settings })
         .accessibilityHidden(menuOpen)
@@ -86,6 +92,9 @@ struct RootView: View {
             anon.resumePending(library: library)
             await server.check(settings: settings)
             await server.syncCatalog(settings: settings, library: library)
+        }
+        .onChange(of: ServerLink.hasCredentials(settings)) { _, signedIn in
+            if !signedIn { albumDownloader.cancelAll() }
         }
         .onReceive(NotificationCenter.default.publisher(for: .playsUploaded)) { _ in
             Task { await listening.load(settings: settings, signedIn: ServerLink.hasCredentials(settings)) }
