@@ -146,7 +146,7 @@ By issue count: `server/tests/test_genre_levels.py` 65, `test_genre_others.py` 4
 
 ## Duplication
 
-0.7%, no block over 100 lines. Largest blocks (lines): `ios/Sources/Components.swift` against `ios/MacSources/LibComponents.swift` 40 and 26, against `LibTagFields.swift` 20 and 21; three regex tests `credit-title-regex.test.mjs`, `credits-split-regex.test.mjs`, `song-form-credits-regex.test.mjs` 64 each; `viz-mirror-panel.js` and `viz-synth-panel.js` 49; `metafill.py` and `backfill.py` 36; `build-genre-sources.mjs` and `build-genre-hierarchy.mjs` 32.
+0.7%, no block over 100 lines. Largest blocks (lines): `ios/Sources/Components.swift` against `ios/MacSources/LibComponents.swift` 40 and 26, against `LibTagFields.swift` 20 and 21; three regex tests `credit-title-regex.test.mjs`, `credits-split-regex.test.mjs`, `song-form-credits-regex.test.mjs` 64 each (merged into `credits-regex.test.mjs` on 2026-10-26, so this duplicate is gone); `viz-mirror-panel.js` and `viz-synth-panel.js` 49; `metafill.py` and `backfill.py` 36; `build-genre-sources.mjs` and `build-genre-hierarchy.mjs` 32.
 
 ## Refactor and architecture candidates (a list, not changes)
 
