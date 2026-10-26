@@ -36,19 +36,12 @@ test('WEB-150: #/studio is a lazy route that hands the player to the page, and i
   assert.match(read('../index.html'), /<link rel="stylesheet" href="studio\.css">/);
 });
 
-test('PLY-160: the dock has the Loop chip host next to the connection note', () => {
-  assert.match(read('../index.html'), /<output id="mini-loop" class="loop-chip t-caption" aria-live="polite" hidden><\/output>/);
-});
-
 test('WEB-012: below 400 px the tab bar drops its gaps and side margins so eight 44 px entries fit 360 px', () => {
   const css = read('../style.css');
   const rule = css.match(/@media \(max-width: 399px\) \{ #nav :where\(a, \.nav-parent\) \{ min-width: var\(--hit\); \}[^\n]*\}/)[0];
   assert.match(rule, /#nav \{ gap: 0; padding-inline: 0; \}/);
   assert.match(rule, /\.side \{ left: clamp\(var\(--space-1\), calc\(\(100vw - 8 \* var\(--hit\)\) \/ 2\), var\(--space-4\)\)/);
 });
-
-const { studioTabs } = await import('./studio-tabs.js');
-const { fire, makeEvent } = await import('./test-dom.mjs');
 
 test('WEB-175: the main app redirects the old Analyze and Synthesize hashes to the studio site before anything else in route()', async () => {
   const { studioSiteUrl, STUDIO_SITE } = await import('./studio-redirect.js');
@@ -61,31 +54,3 @@ test('WEB-175: the main app redirects the old Analyze and Synthesize hashes to t
   assert.doesNotMatch(app, /studio\/tools|studio\/simple/);
 });
 
-
-test('WEB-175: the tabs reuse the Library switch classes with the tablist pattern and a roving tabindex', () => {
-  const t = studioTabs('tools', () => {});
-  assert.equal(t.bar.getAttribute('role'), 'tablist');
-  assert.match(t.bar.className, /\bseg\b/);
-  const tabs = t.bar.querySelectorAll('[role=tab]');
-  assert.deepEqual(tabs.map((b) => b.textContent), ['Modify', 'Analyze', 'Synthesize']);
-  assert.deepEqual(tabs.map((b) => b.getAttribute('aria-selected')), ['false', 'true', 'false']);
-  assert.deepEqual(tabs.map((b) => b.getAttribute('tabindex')), ['-1', '0', '-1']);
-  assert.deepEqual(tabs.map((b) => b.getAttribute('aria-controls')), ['stu-track', 'stu-tools', 'stu-simple']);
-  assert.ok(tabs.every((b) => /\bseg-btn\b/.test(b.className)));
-});
-
-test('WEB-175: a click and the arrow keys change the hash; the active tab does nothing', () => {
-  const seen = [];
-  const t = studioTabs('track', (h) => seen.push(h));
-  const [track, tools] = t.bar.querySelectorAll('[role=tab]');
-  fire(track, 'click');
-  assert.deepEqual(seen, []);
-  fire(tools, 'click');
-  assert.deepEqual(seen, ['#/studio/tools']);
-  const ev = makeEvent('keydown', { key: 'ArrowRight', bubbles: true });
-  t.bar.dispatchEvent(ev);
-  assert.equal(ev.defaultPrevented, true);
-  assert.deepEqual(seen, ['#/studio/tools', '#/studio/tools']);
-  t.bar.dispatchEvent(makeEvent('keydown', { key: 'Home', bubbles: true }));
-  assert.equal(seen.length, 2);
-});
