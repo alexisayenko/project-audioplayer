@@ -50,6 +50,11 @@ final class PlayRecorder {
         }
     }
 
+    /// The play in progress as a record, for counting it before it is flushed.
+    var openRecord: PlayRecord? {
+        open.map { PlayRecord(timestamp: $0.timestamp, songID: $0.songID, listened: $0.listened, cont: nil) }
+    }
+
     /// Called with every position tick. `songID` is the song whose item is attached, or nil when nothing countable plays.
     func tick(songID: String?, position: Double) {
         guard let songID, position.isFinite else {

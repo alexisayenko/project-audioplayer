@@ -59,22 +59,14 @@ final class MacPlayback: ObservableObject {
 
     @Published private(set) var toast: String?
 
-    private static let queueKey = "ap2.queue"
     private static let volumeKey = "ap2.volume"
     private weak var player: PlayerService?
     private weak var settings: Settings?
     private weak var library: LibraryStore?
     private var installed = false
-    private var restored = false
     private var bag = Set<AnyCancellable>()
     private var toastTask: Task<Void, Never>?
     private var skipped = 0
-
-    private struct Saved: Codable {
-        var ids: [String]
-        var index: Int
-        var tags: [String]
-    }
 
     func install(player: PlayerService, settings: Settings, library: LibraryStore) {
         guard !installed else { return }
@@ -93,12 +85,7 @@ final class MacPlayback: ObservableObject {
         if let v = UserDefaults.standard.object(forKey: Self.volumeKey) as? Double { player.volume = min(max(v, 0), 1) }
         player.$volume.dropFirst().sink { UserDefaults.standard.set($0, forKey: Self.volumeKey) }.store(in: &bag)
 
-        library.$songs.sink { [weak self] songs in self?.restoreIfPossible(songs) }.store(in: &bag)
-
-        Publishers.CombineLatest3(player.$queue, player.$index, player.$queueTags)
-            .dropFirst()
-            .sink { [weak self] queue, index, tags in self?.save(queue, index, tags) }
-            .store(in: &bag)
+        PlaybackPersistence.shared.install(player: player, library: library)
 
         player.$failedTrackID.compactMap { $0 }.sink { [weak self] id in self?.playbackFailed(id) }.store(in: &bag)
         player.clock.$position.sink { [weak self] p in if p > 0.5 { self?.skipped = 0 } }.store(in: &bag)
@@ -151,23 +138,5 @@ final class MacPlayback: ObservableObject {
         skipped += 1
         show("Skipped \(skipped) not downloaded")
         player.next()
-    }
-
-    private func save(_ queue: [Track], _ index: Int?, _ tags: [String]) {
-        guard restored else { return }
-        let saved = Saved(ids: queue.map(\.id), index: index ?? 0, tags: tags)
-        if let data = try? JSONEncoder().encode(saved) { UserDefaults.standard.set(data, forKey: Self.queueKey) }
-    }
-
-    private func restoreIfPossible(_ songs: [Track]) {
-        guard !restored, let player, !songs.isEmpty else { return }
-        restored = true
-        guard player.index == nil, let data = UserDefaults.standard.data(forKey: Self.queueKey),
-              let saved = try? JSONDecoder().decode(Saved.self, from: data) else { return }
-        let byID = Dictionary(songs.map { ($0.id, $0) }, uniquingKeysWith: { a, _ in a })
-        let tracks = saved.ids.compactMap { byID[$0] }
-        guard !tracks.isEmpty else { return }
-        let current = saved.ids.indices.contains(saved.index) ? saved.ids[saved.index] : nil
-        player.restore(tracks, index: tracks.firstIndex { $0.id == current } ?? 0, tags: saved.tags)
     }
 }

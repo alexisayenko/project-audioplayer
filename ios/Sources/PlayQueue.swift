@@ -132,6 +132,9 @@ final class PlayQueue {
         flush()
     }
 
+    /// Plays not yet confirmed by the server: the batch in flight and the ones waiting.
+    var pendingPlays: [PlayRecord] { (state.batch?.plays ?? []) + state.queue }
+
     func add(_ record: PlayRecord) {
         guard record.listened >= Self.minPlay else { return }
         var rec = record

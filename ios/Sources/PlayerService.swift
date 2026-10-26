@@ -65,8 +65,13 @@ final class PlayerService: ObservableObject {
     /// Called with the item that now plays, or nil when the player holds none.
     var itemObserver: ((AVPlayerItem?) -> Void)?
 
+    /// Recent play counts per song for the shuffle (IOS-105); nil or a nil result means no data, so the shuffle is uniform.
+    var shuffleCounts: (@MainActor () -> [String: Int]?)?
+
     private let player = AVPlayer()
     private let recorder = PlayRecorder()
+    private var ranker = ShuffleRanker()
+    private var rng = SystemRandomNumberGenerator()
     private var attachedID: String?
     private var timeObserver: Any?
     private var endObserver: NSObjectProtocol?
@@ -168,7 +173,16 @@ final class PlayerService: ObservableObject {
     /// Replaces the queue with the songs and starts the first, or a random one when shuffle is on.
     func playAll(_ tracks: [Track]) {
         guard !tracks.isEmpty else { return }
-        play(tracks, startAt: shuffle ? Int.random(in: tracks.indices) : 0)
+        let start = shuffle ? ShufflePick.firstIndex(tracks.map(\.id), counts: pendingCounts(), using: &rng) : 0
+        play(tracks, startAt: start ?? 0)
+    }
+
+    /// Server counts plus the plays this phone has not yet sent, so a song heard a minute ago is already one tier up.
+    private func pendingCounts() -> [String: Int]? {
+        guard let server = shuffleCounts?() else { return nil }
+        var plays = PlayQueue.shared.pendingPlays
+        if let open = recorder.openRecord { plays.append(open) }
+        return ShufflePick.merged(server, ShufflePick.localCounts(plays))
     }
 
     /// With shuffle on the queue order is not the play order, so dragging rows does not decide what plays next.
@@ -290,14 +304,18 @@ final class PlayerService: ObservableObject {
         let n = queue.count
         if shuffle {
             var cand = queue.indices.filter { !seen.contains(queue[$0].id) }
+            var fresh = false
             if cand.isEmpty {
                 guard repeatMode == .all else { return pause() }
                 seen = [cur.id]
+                fresh = true
                 cand = queue.indices.filter { $0 != index }
                 if cand.isEmpty { played = seen; seek(to: 0); resume(); return }
             }
             played = seen
-            return load(cand.randomElement()!)
+            let ids = queue.map(\.id)
+            let rank = ranker.rank(ids: ids, counts: pendingCounts(), fresh: fresh, last: cur.id, using: &rng)
+            return load(ShufflePick.best(cand, ids: ids, rank: rank) ?? cand[0])
         }
         played = seen
         if index + 1 < n { load(index + 1) }
@@ -435,7 +453,8 @@ final class PlayerService: ObservableObject {
     }
 
     /// Puts a saved queue back with its song cued and paused.
-    func restore(_ tracks: [Track], index start: Int, tags: [String]) {
+    /// `position` is where the song resumes (see `ResumePosition`); nothing plays until the user presses play.
+    func restore(_ tracks: [Track], index start: Int, tags: [String], position resume: Double = 0) {
         guard !tracks.isEmpty, index == nil else { return }
         queue = tracks
         manual = Set(tracks.map(\.id))
@@ -444,8 +463,9 @@ final class PlayerService: ObservableObject {
         index = i
         played = [tracks[i].id]
         duration = tracks[i].duration ?? 0
-        position = 0
+        position = resume
         cue(tracks[i])
+        if resume > 0 { player.seek(to: CMTime(seconds: resume, preferredTimescale: 600)) }
         refreshArtwork()
         updateNowPlaying()
     }

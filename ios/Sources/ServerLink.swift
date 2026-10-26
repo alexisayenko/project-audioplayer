@@ -115,6 +115,7 @@ final class ServerLink: ObservableObject {
 
     /// Fetches the catalog with the stored ETag and merges it. Failures are quiet: the status LED turns off and the cached catalog stays.
     func syncCatalog(settings: Settings, library: LibraryStore, auto: Bool = true) async {
+        adoptArrivedDownloads(into: library)
         guard !syncing, Self.hasCredentials(settings) else { return }
         syncing = true
         defer { syncing = false }
@@ -131,6 +132,11 @@ final class ServerLink: ObservableObject {
         } catch {
             record(error)
         }
+    }
+
+    /// Lists the songs whose file arrived while the app was not running (the system finished a background download).
+    func adoptArrivedDownloads(into library: LibraryStore) {
+        for track in BackgroundDownloader.shared.takeArrived() { add(track, to: library) }
     }
 
     private func recordSuccess() {

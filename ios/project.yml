@@ -94,6 +94,7 @@ targets:
           - APIModels.swift
           - AudioFiles.swift
           - AuthService.swift
+          - BackgroundDownloader.swift
           - DesignTokens.swift
           - Endpoints.swift
           - GenreSuggest.swift
@@ -101,11 +102,13 @@ targets:
           - LibraryFilterModel.swift
           - LibraryStore.swift
           - LocalCover.swift
+          - PlaybackPersistence.swift
           - PlayerService.swift
           - PlayQueue.swift
           - PlayRecorder.swift
           - ServerLink.swift
           - ServiceIcons.swift
+          - ShufflePick.swift
           - SongFormState.swift
           - StatData.swift
           - Settings.swift

@@ -125,7 +125,7 @@ struct LibraryFacetValue: Identifiable {
 }
 
 struct LibraryListeningEntry: Decodable {
-    struct Counts: Decodable { var all: Int? }
+    struct Counts: Decodable { var all: Int?; var d30: Int? }
     var listened: Counts?
     var skipped: Counts?
     var totalListenedS: Double?

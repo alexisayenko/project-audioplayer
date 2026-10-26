@@ -8,6 +8,13 @@ final class ListeningStore: ObservableObject {
     @Published private(set) var loaded = false
     private var generation = 0
 
+    /// `listened.d30 + skipped.d30` per song, the play counts the shuffle ranks by; nil until the statistics have loaded.
+    var recentCounts: [String: Int]? { loaded ? Self.recentCounts(entries) : nil }
+
+    nonisolated static func recentCounts(_ entries: [String: LibraryListeningEntry]) -> [String: Int] {
+        entries.mapValues { ($0.listened?.d30 ?? 0) + ($0.skipped?.d30 ?? 0) }
+    }
+
     func load(settings: Settings, signedIn: Bool, reset: Bool = false) async {
         generation += 1
         let request = generation

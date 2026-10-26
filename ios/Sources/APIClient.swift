@@ -137,22 +137,21 @@ struct APIClient {
         return try JSONDecoder().decode([SearchResult].self, from: data)
     }
 
-    /// Copies an audio file that is already on the server into the app, reporting 0...1 as it arrives.
+    /// Copies an audio file that is already on the server into the app, reporting 0...1 as it arrives. The transfer runs in a
+    /// background session (`BackgroundDownloader`), so it goes on while the app is suspended; the file is in place when this returns.
     func downloadFile(_ track: Track, onProgress: (@Sendable (Double) -> Void)? = nil) async throws {
-        let fetcher = FileFetcher(onProgress)
-        let session = Self.downloadSession(delegate: fetcher)
-        defer { session.finishTasksAndInvalidate() }
-        let tmp: URL
+        var req = try await request(Endpoints.file(track.id))
+        let cellular = UserDefaults.standard.bool(forKey: Settings.useMobileDataKey)
+        req.allowsCellularAccess = cellular
+        req.allowsExpensiveNetworkAccess = cellular
+        req.allowsConstrainedNetworkAccess = cellular
         let response: URLResponse
         do {
-            (tmp, response) = try await fetcher.run(session, try await request(Endpoints.file(track.id)))
+            response = try await BackgroundDownloader.shared.fetch(track, request: req, onProgress: onProgress)
         } catch let e as URLError where e.code == .dataNotAllowed || e.code == .internationalRoamingOff {
             throw APIError.http(0, "Mobile data is off for downloads. Turn on Use mobile data in Settings.")
         }
         try check(response)
-        let dest = AudioFiles.reserve(track)
-        try? FileManager.default.removeItem(at: dest)
-        try FileManager.default.moveItem(at: tmp, to: dest)
     }
 
     /// Asks the server to fetch the audio, then copies the file into the app.
@@ -222,40 +221,5 @@ struct APIClient {
 
     func delete(_ id: String) async throws {
         _ = try await send(Endpoints.song(id), method: "DELETE")
-    }
-}
-
-/// Runs one download task and reports 0...1 as bytes arrive; hands back a temp copy the caller owns.
-private final class FileFetcher: NSObject, URLSessionDownloadDelegate, @unchecked Sendable {
-    private let onProgress: (@Sendable (Double) -> Void)?
-    private var continuation: CheckedContinuation<(URL, URLResponse), Error>?
-    private var result: URL?
-
-    init(_ onProgress: (@Sendable (Double) -> Void)?) { self.onProgress = onProgress }
-
-    func run(_ session: URLSession, _ request: URLRequest) async throws -> (URL, URLResponse) {
-        try await withCheckedThrowingContinuation { cont in
-            continuation = cont
-            session.downloadTask(with: request).resume()
-        }
-    }
-
-    func urlSession(_: URLSession, downloadTask _: URLSessionDownloadTask, didWriteData _: Int64,
-                    totalBytesWritten: Int64, totalBytesExpectedToWrite: Int64) {
-        guard totalBytesExpectedToWrite > 0 else { return }
-        onProgress?(Double(totalBytesWritten) / Double(totalBytesExpectedToWrite))
-    }
-
-    func urlSession(_: URLSession, downloadTask _: URLSessionDownloadTask, didFinishDownloadingTo location: URL) {
-        let keep = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
-        try? FileManager.default.moveItem(at: location, to: keep)
-        result = keep
-    }
-
-    func urlSession(_: URLSession, task: URLSessionTask, didCompleteWithError error: Error?) {
-        defer { continuation = nil }
-        if let error { continuation?.resume(throwing: error) }
-        else if let result, let response = task.response { continuation?.resume(returning: (result, response)) }
-        else { continuation?.resume(throwing: URLError(.unknown)) }
     }
 }

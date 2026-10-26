@@ -2,6 +2,7 @@ import SwiftUI
 
 @main
 struct AudioPlayerApp: App {
+    @UIApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
     @StateObject private var library = LibraryStore()
     @StateObject private var player = PlayerService()
     @StateObject private var settings = Settings()
@@ -21,6 +22,10 @@ struct AudioPlayerApp: App {
                 .environmentObject(anon)
                 .environmentObject(libraryQuery)
                 .environmentObject(listening)
+                .task {
+                    player.shuffleCounts = { [listening] in listening.recentCounts }
+                    PlaybackPersistence.shared.install(player: player, library: library) { [library] in library.contains($0.id) }
+                }
         }
     }
 }
