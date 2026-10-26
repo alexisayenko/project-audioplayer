@@ -1,12 +1,13 @@
 import Foundation
 
 /// Names of the audio files in `Documents/audio`, so the Files app shows "Artist - Title.m4a" instead of "<id>.m4a".
-/// The id -> file name map is kept in `library.json`; an id without an entry uses the legacy name `<id>.m4a`.
+/// The id -> file name map is kept in `library.json` and in `phone-index.json` (`LibraryIndex`); an id without an entry uses the legacy name `<id>.m4a`.
 /// Every read and write of the map, and every move of a file, happens under one lock, so a path never points at a half-renamed file.
 enum AudioFiles {
     private static let ext = "m4a"
     private static let maxBase = 120
     private static let maxCollisions = 1000
+    private static let maxAdoptScan = 20
     private static let lock = NSLock()
     nonisolated(unsafe) private static var names: [String: String] = [:]
 
@@ -117,6 +118,29 @@ enum AudioFiles {
             }
             names[track.id] = name
             return true
+        }
+    }
+
+    /// Gives back the map entries lost with the index: a song with no entry and no legacy file gets the file that is named for its artist and title
+    /// (`base`, `base (2)`, ...) when it exists in `dir` and no other song owns it. True when an entry was added.
+    @discardableResult
+    static func adopt(_ tracks: [Track], in dir: URL = directory) -> Bool {
+        let fm = FileManager.default
+        return lock.withLock {
+            var changed = false
+            for t in tracks where names[t.id] == nil {
+                guard !fm.fileExists(atPath: dir.appendingPathComponent(legacyName(t.id)).path),
+                      let base = baseName(title: t.title, artist: t.artist) else { continue }
+                let taken = Set(names.values.map(fold))
+                for n in 1...maxAdoptScan {
+                    let candidate = (n == 1 ? base : "\(base) (\(n))") + "." + ext
+                    guard !taken.contains(fold(candidate)), fm.fileExists(atPath: dir.appendingPathComponent(candidate).path) else { continue }
+                    names[t.id] = candidate
+                    changed = true
+                    break
+                }
+            }
+            return changed
         }
     }
 

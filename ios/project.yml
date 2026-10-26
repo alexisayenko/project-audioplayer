@@ -104,6 +104,7 @@ targets:
           - GenreSuggest.swift
           - Keychain.swift
           - LibraryFilterModel.swift
+          - LibraryIndex.swift
           - LibraryStore.swift
           - LocalCover.swift
           - PlaybackPersistence.swift

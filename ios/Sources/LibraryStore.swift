@@ -9,8 +9,8 @@ import AppKit
 #endif
 
 /// The catalog on this iPhone: every song the server lists (cached for offline use) plus the songs whose audio is stored here.
-/// A song is "on the phone" when its file exists in `Documents/audio` (named by `AudioFiles`); that is never written to `library.json`,
-/// which only holds the id -> file name map.
+/// A song is "on the phone" when its file exists in `Documents/audio` (named by `AudioFiles`); that is never written to disk,
+/// only the id -> file name map is, in `library.json` and in `phone-index.json` (`LibraryIndex`), which survives a damaged catalog cache.
 @MainActor
 final class LibraryStore: ObservableObject {
     @Published private(set) var songs: [Track] = []
@@ -27,18 +27,9 @@ final class LibraryStore: ObservableObject {
         try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
         return dir
     }()
-    private static let indexURL = support.appendingPathComponent("library.json")
+    private static let index = LibraryIndex(catalogURL: support.appendingPathComponent("library.json"), phoneURL: support.appendingPathComponent("phone-index.json"))
+    private static var indexURL: URL { index.catalogURL }
     private static let legacyIndexURL = documents.appendingPathComponent("library.json")
-
-    /// Bumped when the cached song records gain fields, so the next sync refetches the catalog instead of answering 304.
-    private static let schema = 2
-
-    private struct Stored: Codable {
-        var etag: String?
-        var schema: Int?
-        var songs: [Track]
-        var files: [String: String]?
-    }
 
     /// Songs whose audio is on this iPhone.
     var tracks: [Track] { songs.filter { phoneIDs.contains($0.id) } }
@@ -46,22 +37,18 @@ final class LibraryStore: ObservableObject {
     init() {
         try? FileManager.default.createDirectory(at: Self.audioDirectory, withIntermediateDirectories: true)
         Self.migrateLegacyIndex()
-        if let data = try? Data(contentsOf: Self.indexURL) {
-            if let stored = try? JSONDecoder().decode(Stored.self, from: data) {
-                songs = stored.songs
-                AudioFiles.load(stored.files)
-                etag = stored.schema == Self.schema ? stored.etag : nil
-            } else if let legacy = try? JSONDecoder().decode([Track].self, from: data) {
-                songs = legacy
-            }
-            var changed = false
-            for i in songs.indices {
-                let clean = CoverURL.scrubbed(songs[i].thumbnail)
-                if clean != songs[i].thumbnail { songs[i].thumbnail = clean; changed = true }
-            }
-            phoneIDs = Set(songs.filter { FileManager.default.fileExists(atPath: $0.fileURL.path) }.map(\.id))
-            if changed { save() }
+        let loaded = Self.index.load()
+        songs = loaded.songs
+        AudioFiles.load(loaded.files)
+        etag = loaded.etag
+        var changed = loaded.recovered
+        if loaded.recovered { AudioFiles.adopt(songs) }
+        for i in songs.indices {
+            let clean = CoverURL.scrubbed(songs[i].thumbnail)
+            if clean != songs[i].thumbnail { songs[i].thumbnail = clean; changed = true }
         }
+        phoneIDs = Set(songs.filter { FileManager.default.fileExists(atPath: $0.fileURL.path) }.map(\.id))
+        if changed { save() }
         prefetchCovers()
         migrateFileNames()
     }
@@ -263,9 +250,7 @@ final class LibraryStore: ObservableObject {
     }
 
     private func save() {
-        if let data = try? JSONEncoder().encode(Stored(etag: etag, schema: Self.schema, songs: songs, files: AudioFiles.snapshot(keeping: Set(songs.map(\.id))))) {
-            try? data.write(to: Self.indexURL, options: .atomic)
-        }
+        Self.index.save(etag: etag, songs: songs, files: AudioFiles.snapshot(keeping: Set(songs.map(\.id))), phoneIDs: phoneIDs)
     }
 }
 
