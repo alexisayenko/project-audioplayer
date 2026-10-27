@@ -2,15 +2,11 @@
 
 from __future__ import annotations
 
-import json
 import logging
-import os
-import shutil
 from pathlib import Path
 from typing import Any
 
-from . import deps, genre_references as refs, library, users
-from .jsonio import write_json_atomic
+from . import deps, genre_references as refs, library, migration, users
 from .problems import Problem
 from .tags import namespace
 
@@ -21,27 +17,20 @@ _log = logging.getLogger(__name__)
 
 
 def enabled() -> bool:
-    return os.environ.get("AUDIO_REFERENCE_TAGS", "1").strip() != "0"
-
-
-def base_dir() -> Path:
-    return deps.SYNC.data_repo if deps.SYNC else deps.data_root()
+    return migration.enabled("AUDIO_REFERENCE_TAGS")
 
 
 def backup_path(uid: str) -> Path:
     """`<repo root>/backups-reference-tags/<uid>/library.json`: beside, not inside, the git-added `audioplayer/` tree; the catalogue backup sits next to it."""
-    return base_dir() / BACKUP_DIR / uid / "library.json"
+    return migration.user_backup(BACKUP_DIR, uid)
 
 
 def marker_path(uid: str) -> Path:
-    return backup_path(uid).parent / "applied.json"
+    return migration.marker_beside(backup_path(uid))
 
 
 def _done(uid: str) -> bool:
-    try:
-        return json.loads(marker_path(uid).read_text(encoding="utf-8")).get("marker") == MARKER_VERSION
-    except (OSError, ValueError, AttributeError):
-        return False
+    return migration.marker_has(marker_path(uid), "marker", MARKER_VERSION)
 
 
 def parse_tag(tag: Any) -> str | None:
@@ -103,14 +92,12 @@ def _apply(uid: str, lib: Path) -> tuple[int, int, int]:
         counts = convert(doc["songs"], catalogue)
         if counts[0] or counts[1]:
             backup = backup_path(uid)
-            backup.parent.mkdir(parents=True, exist_ok=True)
-            if not backup.exists():
-                shutil.copy2(lib, backup)
-            if refs.path().exists() and not (backup.parent / refs.FILE_NAME).exists():
-                shutil.copy2(refs.path(), backup.parent / refs.FILE_NAME)
+            migration.backup_once(lib, backup)
+            if refs.path().exists():
+                migration.backup_once(refs.path(), backup.parent / refs.FILE_NAME)
             refs.save(catalogue)
             library.save_doc(lib, doc)
-        write_json_atomic(marker_path(uid), {"marker": MARKER_VERSION, "converted": counts[0], "existing": counts[1], "left": counts[2]})
+        migration.write_marker(marker_path(uid), {"marker": MARKER_VERSION, "converted": counts[0], "existing": counts[1], "left": counts[2]})
     return counts
 
 
