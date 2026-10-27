@@ -5,12 +5,10 @@ from __future__ import annotations
 import hashlib
 import json
 import logging
-import os
-import shutil
 from pathlib import Path
 from typing import Any
 
-from . import deps, genre_filter, library, users
+from . import deps, genre_filter, library, migration, users
 from .jsonio import write_json_atomic
 from .tags import namespace
 
@@ -20,7 +18,7 @@ _log = logging.getLogger(__name__)
 
 
 def enabled() -> bool:
-    return os.environ.get("AUDIO_GENRE_REMOVALS", "1").strip() != "0"
+    return migration.enabled("AUDIO_GENRE_REMOVALS")
 
 
 def _plan_row(sid: str, row: Any) -> list[str]:
@@ -140,28 +138,21 @@ def apply_plan(songs: list[dict[str, Any]], plan: dict[str, list[str]], adds: di
     return {"removed": removed, "added": added, "cleared": cleared, "skipped": skipped, "unknown": unknown}
 
 
-def base_dir() -> Path:
-    return deps.SYNC.data_repo if deps.SYNC else deps.data_root()
-
-
 def backup_path(uid: str) -> Path:
     """`<repo root>/backups-genre-removals/<uid>/library.json`: beside, not inside, the git-added `audioplayer/` tree."""
-    return base_dir() / BACKUP_DIR / uid / "library.json"
+    return migration.user_backup(BACKUP_DIR, uid)
 
 
 def marker_path(uid: str) -> Path:
-    return backup_path(uid).parent / "applied.json"
+    return migration.marker_beside(backup_path(uid))
 
 
 def report_path(uid: str) -> Path:
-    return backup_path(uid).parent / "report.json"
+    return migration.user_backup(BACKUP_DIR, uid, "report.json")
 
 
 def _done(uid: str, digest: str) -> bool:
-    try:
-        return json.loads(marker_path(uid).read_text(encoding="utf-8")).get("sha256") == digest
-    except (OSError, ValueError, AttributeError):
-        return False
+    return migration.marker_has(marker_path(uid), "sha256", digest)
 
 
 def _apply(uid: str, lib: Path, plan: dict[str, list[str]], digest: str, adds: dict[str, list[str]] | None = None, clears: set[str] | None = None) -> tuple[int, int, int]:
@@ -174,13 +165,10 @@ def _apply(uid: str, lib: Path, plan: dict[str, list[str]], digest: str, adds: d
         touched = len(set(removed) | set(added) | set(cleared))
         report = {"uid": uid, "sha256": digest, "removed": removed, "added": added, "cleared": cleared, "skipped": skipped, "unknown": unknown}
         if removed or added or cleared:
-            backup = backup_path(uid)
-            if not backup.exists():
-                backup.parent.mkdir(parents=True, exist_ok=True)
-                shutil.copy2(lib, backup)
+            migration.backup_once(lib, backup_path(uid))
             write_json_atomic(report_path(uid), report)
             library.save_doc(lib, doc)
-        write_json_atomic(marker_path(uid), {"sha256": digest, "songs": touched, "genres": genres, "added": gained, "cleared": len(cleared), "skipped": sum(len(v) for v in skipped.values())})
+        migration.write_marker(marker_path(uid), {"sha256": digest, "songs": touched, "genres": genres, "added": gained, "cleared": len(cleared), "skipped": sum(len(v) for v in skipped.values())})
     for sid, gs in skipped.items():
         _log.info("genre removal skipped for %s: song %s would be left without a genre (%s)", uid[:8], sid, ", ".join(gs))
     for sid, gs in unknown.items():
