@@ -90,8 +90,12 @@ test('a playlist row is a label with its length; the pencil opens Artist, Title 
   server();
   await popup();
   assert.equal(rows().length, 3);
-  assert.equal(label(rows()[0]), 'Derango - Intro (1:00)');
-  assert.match(label(rows()[1]), /Derango - Noise \[Foo Remix\] \(3:20\)/);
+  assert.equal(label(rows()[0]), 'Derango - Intro');
+  assert.equal(rows()[0].querySelector('.av-time').textContent, '1:00');
+  assert.match(label(rows()[1]), /^Derango - Noise \[Foo Remix\]$/);
+  assert.equal(rows()[1].querySelector('.av-time').textContent, '3:20');
+  const kids = [...rows()[0].querySelector('.av-line1').children].map((c) => c.className.split(' ').find((n) => /^av-(label|edit|time)$/.test(n)));
+  assert.deepEqual(kids.filter(Boolean), ['av-label', 'av-edit', 'av-time']);
   assert.ok(rows()[2].querySelector('.album-in-library'));
   assert.equal(rows()[0].querySelector('.av-line2').hidden, true);
   fire(rows()[0].querySelector('.av-edit'), 'click');

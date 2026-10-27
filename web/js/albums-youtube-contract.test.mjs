@@ -71,7 +71,8 @@ test('the real preview response fills step 2 and gives one labelled row per trac
   const rows = qa('li.wiz-row');
   assert.equal(rows.length, 11);
   const labels = rows.map((r) => r.querySelector('.av-label').textContent.replace(/\s+/g, ' ').trim());
-  assert.equal(labels[0], 'Hallucinogen - LSD (7:30)');
+  assert.equal(labels[0], 'Hallucinogen - LSD');
+  assert.equal(rows[0].querySelector('.av-time').textContent, '7:30');
   assert.deepEqual(rows.map((r) => r.querySelector('input').checked), Array(11).fill(true));
   assert.equal(rows[0].querySelector('a.av-yt'), null);
   D().close();

@@ -92,13 +92,14 @@ export function mountRows(ctx, onChange) {
       meta.push(el('span', { class: 'chip tint album-in-library' }, 'In library'));
     }
     for (const w of src?.warnings || []) meta.push(el('span', { class: 't-caption muted av-warn' }, w));
-    const lineName = el('span', { class: 'av-label t-body' }, name, lenText ? el('span', { class: 'muted' }, ` (${lenText})`) : null);
+    const lineName = el('span', { class: 'av-label t-body', title: name }, name);
     const li = el('li', { class: 'av-row wiz-row', 'data-row': row.id },
       el('div', { class: 'av-line1' },
         el('label', { class: 'av-inc' }, box),
         no ? el('span', { class: 'album-no muted t-caption' }, `${no}.`) : null,
         lineName,
-        el('span', { class: 'av-icons' }, edit)),
+        edit,
+        lenText ? el('span', { class: 'av-time muted t-caption' }, lenText) : null),
       matchLine(row, rows),
       line2,
       useDisc,
