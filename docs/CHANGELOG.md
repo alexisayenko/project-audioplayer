@@ -2,6 +2,10 @@
 
 What shipped, newest first. One line each; the web UI and server are live at https://electrophone.cc. Everything listed here is deployed except the sections marked "built, not deployed" (the 2026-10-14 release went out once the SSH access in [task-0027](tasks/task-0027.md) was restored; the live visualizer files match `origin/main` as of 2026-10-15). Why: [tech/decisions.md](tech/decisions.md); runbook: [tech/deploy.md](tech/deploy.md).
 
+## 2026-10-27 (iOS: Albums and Playlists know when the server is offline; in source, not in a build)
+
+- iOS (IOS-119; offline check, owner decision JZ1; both schemes build, all unit tests pass, checked in the simulator against a mock server, not run on a device): the album and playlist screens used to keep offering "Download album" and "Download" when the server was gone, and a tap showed "Downloading 0%" with no message. Cause: only the catalog sync and the check told the app the server was unreachable. Now every API call reports it (an answer of any status means reachable, a network failure means unreachable), so Albums, Playlists and their pages show "Offline" on the rows, a disabled Download album with the note "Offline. Downloads need the server." and Retry, no download starts while offline, and a download that fails leaves a "Retry" on its row. Nothing publishes unless the state really changed. Playback, queue and background downloads are unchanged.
+
 ## 2026-10-27 (Docs: UI/UX images compressed)
 
 - Docs (task-0122 F13): the 38 design PNGs in `docs/ui-ux` (`alt-themes`, `mockups1`, `mockups2`, `vega-108`) are now WebP of the same pixel size, quality 85; 43 MB became 4.2 MB. Same file names with the `.webp` extension; the old PNGs are removed from the working tree only, git history is not rewritten, so the repository pack is unchanged.
