@@ -4,6 +4,12 @@ import { installPage, stubFetch, flush } from './test-dom.mjs';
 
 await installPage();
 globalThis.location = { hash: '', href: 'http://localhost/', host: 'localhost' };
+const LEGACY_ROWS = [
+  { id: 'legacy', name: 'Legacy', level: 1, cluster: 'legacy', parents: [], legacy: true, description: null, source_links: [] },
+  { id: 'legacy-rock', name: 'Rock', level: 2, cluster: 'legacy', parents: ['legacy'], v1: 'rock', legacy: true, description: null, source_links: [] },
+  { id: 'legacy-house', name: 'House', level: 2, cluster: 'legacy', parents: ['legacy'], v1: 'house', legacy: true, description: null, source_links: [] },
+  { id: 'legacy-deep', name: 'Deep House', level: 3, cluster: 'legacy', parents: ['legacy-house'], v1: 'deep house', legacy: true, description: null, source_links: [] },
+];
 const PAYLOAD = {
   version: 2,
   clusters: [{ id: 'edm-dance', name: 'EDM / Dance', colour: '#D52633' }],
@@ -14,7 +20,7 @@ const PAYLOAD = {
 };
 let mode = 'ok';
 const calls = stubFetch((u) => {
-  if (u.includes('/genres/v2')) return mode === 'vocab-fail' ? { status: 500, body: { error: 'x' } } : { body: mode === 'empty' ? { version: 2, clusters: [], genres: [] } : PAYLOAD };
+  if (u.includes('/genres/v2')) return mode === 'vocab-fail' ? { status: 500, body: { error: 'x' } } : { body: mode === 'empty' ? { version: 2, clusters: [], genres: [] } : mode === 'legacy' ? { ...PAYLOAD, clusters: [...PAYLOAD.clusters, { id: 'legacy', name: 'Legacy', colour: '#8A8A8A' }], genres: [...PAYLOAD.genres, ...LEGACY_ROWS] } : PAYLOAD };
   if (mode === 'lib-fail') return { status: 500, body: { error: 'x' } };
   return { body: { songs: [{ id: 's1', tags: ['genre:deep house'] }] } };
 });
@@ -24,14 +30,14 @@ function spyView() {
   const log = [];
   const rec = (name) => (...a) => { log.push([name, ...a]); };
   const names = ['setGraph', 'setVisible', 'setMarks', 'setRelated', 'select', 'setMatches', 'focusNode', 'reset', 'zoomBy', 'resize', 'destroy'];
-  return { log, factory: () => Object.fromEntries(names.map((n) => [n, rec(n)])) };
+  return { log, opts: null, factory(_c, o) { this.opts = o; return Object.fromEntries(names.map((n) => [n, rec(n)])); } };
 }
 
 async function mount() {
   const spy = spyView();
   const root = document.createElement('div');
   document.body.append(root);
-  const cleanup = renderGenresMap(root, { forceViewFactory: spy.factory });
+  const cleanup = renderGenresMap(root, { forceViewFactory: (c, o) => spy.factory(c, o) });
   await flush();
   return { root, cleanup, spy };
 }
@@ -108,4 +114,31 @@ test('collapsed dock on wide screens releases the bottom inset so it is a compac
   assert.match(rule, /height:\s*auto/);
   assert.match(rule, /min-height:\s*0/);
   assert.match(rule, /width:\s*auto/);
+});
+
+const lastVisible = (spy) => spy.log.filter((c) => c[0] === 'setVisible').at(-1)[1];
+test('without Legacy every circle is visible at once, no drill-down', async () => {
+  mode = 'ok';
+  const { cleanup, spy } = await mount();
+  assert.equal(lastVisible(spy), null);
+  cleanup();
+});
+
+test('Legacy is collapsed by default, a click on it opens and closes its subtree, curated circles stay', async () => {
+  mode = 'legacy';
+  const { cleanup, spy } = await mount();
+  const nodes = spy.log.find((c) => c[0] === 'setGraph')[1].nodes;
+  const root = nodes.find((n) => n.name === 'Legacy').id;
+  const vis = lastVisible(spy);
+  assert.ok(vis.has(root) && vis.has('g:House') && vis.has('s:Deep House'));
+  const hiddenNames = nodes.filter((n) => !vis.has(n.id)).map((n) => n.label || n.name);
+  assert.deepEqual(hiddenNames.sort(), ['Deep House', 'House', 'Rock']);
+  assert.equal(spy.log.filter((c) => c[0] === 'setMarks').at(-1)[1].get(root), 'closed');
+  spy.opts.onSelect(root);
+  assert.equal(lastVisible(spy), null);
+  assert.equal(spy.log.filter((c) => c[0] === 'setMarks').at(-1)[1].get(root), 'open');
+  spy.opts.onSelect(root);
+  assert.equal(lastVisible(spy).size, nodes.length - 3);
+  assert.equal(spy.log.filter((c) => c[0] === 'setMarks').at(-1)[1].get(root), 'closed');
+  cleanup();
 });

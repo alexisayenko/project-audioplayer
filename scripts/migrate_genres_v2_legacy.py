@@ -1,6 +1,6 @@
-"""One-off, idempotent: folds the v1 genre vocabulary into server/data/genres_v2.json (ADR-0045, task-0096).
+"""Idempotent: regenerates the Legacy section of server/data/genres_v2.json (ADR-0045, task-0096).
 
-Curated v2 genres stay byte for byte. Every v1 genre with no v2 counterpart (matched by the `v1` field, id, name or synonym) is added with `legacy: true`, `v1` = its exact v1 name, its v1 parents mapped to the matching curated or added genre (none left: a child of the grey `legacy` genre), `legacyParents` for dropped parents. Run from server/: python ../scripts/migrate_genres_v2_legacy.py"""
+Curated v2 genres (no `legacy` flag) stay byte for byte. Legacy is one level 1 genre holding a COMPLETE copy of the v1 vocabulary: every v1 genre, including those that also exist as curated v2 genres, gets a `legacy: true` row with id `legacy-<slug>`, its plain v1 name, `v1` = its exact v1 name and its v1 parents among the copies (v1 top-level genres are level 2 children of `legacy`); `legacyParents` lists v1 parents outside the vocabulary. Nothing is folded into curated genres. Previous legacy rows are removed first. Run from server/: python ../scripts/migrate_genres_v2_legacy.py"""
 
 from __future__ import annotations
 
@@ -16,7 +16,7 @@ sys.path.insert(0, str(ROOT / "server"))
 from app import genre_vocab as gv  # noqa: E402
 
 FILE = ROOT / "server" / "data" / "genres_v2.json"
-CLUSTER = {"id": "legacy", "name": "Legacy", "colour": "#8A8A8A", "note": "Holding area for genres not yet curated: every v1 vocabulary genre without a v2 counterpart, flagged legacy. Move them into the curated clusters over time."}
+CLUSTER = {"id": "legacy", "name": "Legacy", "colour": "#8A8A8A", "note": "Holding area: a complete copy of the v1 vocabulary hierarchy, duplicates of curated genres included, every row flagged legacy. Curated genres live in their own clusters."}
 LEGACY = {"id": "legacy", "name": "Legacy", "level": 1, "cluster": "legacy", "parents": [], "legacy": True, "description": "Holding area for genres not yet curated."}
 
 
@@ -69,31 +69,17 @@ def main() -> None:
     clines = [l.rstrip(",") for l in lines[c0 + 1 : c1] if '"id": "legacy"' not in l]
     glines = [l.rstrip(",") for l in lines[g0 + 1 : g1] if '"legacy": true' not in l]
     curated = [json.loads(l) for l in glines]
-    cur_by_id = {g["id"]: g for g in curated}
-    tmap, norm = {}, {}
-    for g in curated:
-        if g.get("v1"):
-            tmap[g["v1"]] = g["id"]
-        for k in (g["id"], g["name"], g.get("v1"), *g.get("synonyms", [])):
-            if k:
-                norm.setdefault(gv.vkey(k.replace("-", " ")), g["id"])
     rows = vocab_rows()
-    folded = {}
-    for name in rows:
-        hit = tmap.get(name) or norm.get(gv.vkey(name.replace("-", " "))) or norm.get(gv.vkey(slug(name)))
-        if hit:
-            folded[name] = hit
-    added = sorted((n for n in rows if n not in folded), key=lambda n: (rows[n]["name"].casefold(), n))
-    used = set(cur_by_id) | {"legacy"}
+    names = sorted(rows, key=lambda n: (rows[n]["name"].casefold(), n))
+    used = {g["id"] for g in curated} | {"legacy"}
     ids = {}
-    for n in added:
-        base = slug(rows[n]["name"]) or slug(n) or "genre"
+    for n in names:
+        base = "legacy-" + (slug(rows[n]["name"]) or slug(n) or "genre")
         cand, i = base, 2
         while cand in used:
-            cand, i = (f"{base}-legacy" if i == 2 else f"{base}-legacy-{i}"), i + 1
+            cand, i = f"{base}-{i}", i + 1
         used.add(cand)
         ids[n] = cand
-    ref = {**folded, **ids}
     out, state = {}, {}
 
     def build(n: str) -> dict:
@@ -102,21 +88,13 @@ def main() -> None:
         if state.get(n) == 1:
             raise SystemExit(f"cycle in v1 data at {n!r}")
         state[n] = 1
-        kept, dropped = [], []
-        for p in rows[n]["parents"]:
-            t = ref.get(p)
-            if t and t not in kept:
-                kept.append(t)
-        for p in rows[n]["raw_parents"]:
-            if gv.vkey(p) not in {gv.vkey(x) for x in rows} and p not in dropped:
-                dropped.append(p)
-        pl = [cur_by_id[t]["level"] if t in cur_by_id else build(next(k for k, v in ids.items() if v == t))["level"] for t in kept]
-        if kept:
-            first = kept[0]
-            cluster = cur_by_id[first]["cluster"] if first in cur_by_id else out[next(k for k, v in ids.items() if v == first)]["cluster"]
-        else:
-            kept, pl, cluster = ["legacy"], [1], "legacy"
-        row = {"id": ids[n], "name": rows[n]["name"], "level": 1 + min(pl), "cluster": cluster, "parents": kept, "v1": n}
+        kept = [ids[p] for p in dict.fromkeys(rows[n]["parents"]) if p in ids and p != n]
+        known = {gv.vkey(x) for x in rows}
+        dropped = [p for p in dict.fromkeys(rows[n]["raw_parents"]) if gv.vkey(p) not in known]
+        levels = [build(p)["level"] for p in rows[n]["parents"] if p in ids and p != n]
+        if not kept:
+            kept, levels = ["legacy"], [1]
+        row = {"id": ids[n], "name": rows[n]["name"], "level": 1 + min(levels), "cluster": "legacy", "parents": kept, "v1": n}
         if rows[n]["synonyms"]:
             row["synonyms"] = rows[n]["synonyms"]
         if dropped:
@@ -126,13 +104,13 @@ def main() -> None:
         state[n] = 2
         return row
 
-    for n in added:
+    for n in names:
         build(n)
-    cl = clines + [line(CLUSTER)[:0] + "  " + json.dumps(CLUSTER, ensure_ascii=False)]
-    gl = glines + [line(LEGACY)] + [line(out[n]) for n in added]
+    cl = clines + ["  " + json.dumps(CLUSTER, ensure_ascii=False)]
+    gl = glines + [line(LEGACY)] + [line(out[n]) for n in names]
     new = lines[: c0 + 1] + [l + "," for l in cl[:-1]] + [cl[-1]] + lines[c1 : g0 + 1] + [l + "," for l in gl[:-1]] + [gl[-1]] + lines[g1:]
     FILE.write_text("\n".join(new), encoding="utf-8", newline="")
-    print(f"folded {len(folded)}, added {len(added)} (+ legacy)")
+    print(f"curated {len(curated)}, legacy copies {len(names)} (+ legacy)")
 
 
 main()

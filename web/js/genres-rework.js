@@ -3,8 +3,8 @@ import { el, pageHead, toast } from './dom.js';
 import { familyIndex, isHiddenFamily, dotClass, claimMapColours } from './genre-data.js';
 import { createForceView } from './genre-force-view.js';
 import { isGuest } from './guest.js';
-import { buildMapGraph, visibleIds } from './genre-map-graph.js';
-import { newDrill, drillEmpty, pruneDrill, drillVisible, clickDrill, revealDrill, collapseDrill, drillMarks } from './genre-drill.js';
+import { buildMapGraph } from './genre-map-graph.js';
+import { legacyRootId, legacyIds, legacyVisible, legacyMarks } from './genre-legacy.js';
 import { createGenreDock } from './genre-dock.js';
 import { createV2InfoRenderer } from './genres-v2-info.js';
 import { createLayoutStore } from './genre-layout-store.js';
@@ -28,7 +28,8 @@ export function renderGenresMap(root, opts = {}) {
   let userLayout = null;
   let pendingSelected = loadSelected(store());
   const reduced = globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
-  const drillState = newDrill();
+  let legacyId = null;
+  let legacyOpen = false;
   const fusion = loadFusion(store());
   const related = loadRelated(store());
   clearSubfamilies(store());
@@ -59,24 +60,27 @@ export function renderGenresMap(root, opts = {}) {
     onMap: (n) => selectByName(n.name),
   });
 
-  const base = () => (tree ? visibleIds(tree) : null);
-  const currentVisible = () => (tree && graph ? drillVisible(tree, graph, drillState, base()) : null);
+  const currentVisible = () => legacyVisible(tree, legacyId, legacyOpen);
   const onMap = (id) => !!graph?.byId.has(id) && (currentVisible()?.has(id) ?? true);
 
-  function syncMap() {
+  function syncMap(animate = true) {
     const vis = currentVisible();
-    view.setVisible(vis, { heat: 0.4, keepCamera: true, chained: true });
-    view.setMarks?.(tree && graph ? drillMarks(graph, drillState, base(), vis) : new Map());
+    if (animate) view.setVisible(vis, { heat: 0.4, keepCamera: true, chained: true });
+    else view.setVisible(vis);
+    view.setMarks?.(legacyMarks(legacyId, legacyOpen));
+  }
+
+  function setLegacyOpen(on) {
+    if (!legacyId || legacyOpen === on) return;
+    legacyOpen = on;
+    syncMap();
+    if (selectedId && !onMap(selectedId)) deselect();
   }
 
   function canvasSelect(id) {
-    if (id) {
-      if (clickDrill(tree, graph, drillState, id, base())) syncMap();
-      select(id, { map: true });
-      return;
-    }
-    collapseMap();
-    deselect();
+    if (!id) { deselect(); return; }
+    if (id === legacyId) setLegacyOpen(!legacyOpen);
+    select(id, { map: true });
   }
 
   const view = (opts?.forceViewFactory || createForceView)(canvas, {
@@ -85,11 +89,6 @@ export function renderGenresMap(root, opts = {}) {
     onMoved: () => layoutStore?.touch(),
     onSelect: canvasSelect,
   });
-
-  function collapseMap() {
-    if (collapseDrill(drillState)) syncMap();
-    if (selectedId && !onMap(selectedId)) deselect();
-  }
 
   function markMatches() {
     const n = tree && selectedId ? tree.byId.get(selectedId) : null;
@@ -108,7 +107,7 @@ export function renderGenresMap(root, opts = {}) {
   }
 
   function select(id, { center = false, map = false } = {}) {
-    if (tree && !map && revealDrill(tree, graph, drillState, id, base())) syncMap();
+    if (!map && legacyId && !legacyOpen && legacyIds(tree, legacyId).has(id)) setLegacyOpen(true);
     selectedId = id;
     const n = tree?.byId.get(id);
     saveSelected(store(), n?.name);
@@ -159,14 +158,15 @@ export function renderGenresMap(root, opts = {}) {
     claimMapColours();
     applyCounts(tree, lastData.lib);
     graph = buildMapGraph(tree);
-    pruneDrill(drillState, graph);
+    legacyId = legacyRootId(tree, lastData.vocab.v2?.byName);
+    legacyOpen = false;
     if (layoutStore) userLayout = layoutStore.current();
     view.setGraph(graph, { saved: userLayout?.size ? userLayout : null, moved: userLayout });
     view.setRelated?.(related);
     if (selectedId && !tree.byId.has(selectedId)) selectedId = null;
     dock.show(null);
     view.select(selectedId);
-    syncMap();
+    syncMap(false);
     markMatches();
     restoreSelected();
     applyFocusRequest();
@@ -184,9 +184,6 @@ export function renderGenresMap(root, opts = {}) {
   wrap.append(pageHead(pageTitle), work);
   root.append(wrap);
 
-  wrap.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && !drillEmpty(drillState)) collapseMap();
-  });
   const unsubFocus = onGenreFocus(applyFocusRequest);
   layoutStore?.attach({ collect: () => view.movedPositions?.() || new Map(), known: (id) => !!graph?.nodes.some((n) => n.id === id) });
   load().catch(() => {

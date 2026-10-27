@@ -131,38 +131,34 @@ def test_curated_genres_are_unchanged_and_unflagged():
     assert by["goa-trance"]["parents"] == ["psytrance"] and by["trance"]["level"] == 1
 
 
-def test_legacy_holding_area_covers_the_v1_vocabulary_once():
+def test_legacy_holds_a_complete_copy_of_v1_including_duplicates():
     rows, curated, by = _split()
     clusters = {c["id"]: c for c in shipped()["clusters"]}
     assert clusters["legacy"]["colour"] == "#8A8A8A"
     assert by["legacy"]["legacy"] and by["legacy"]["level"] == 1 and by["legacy"]["parents"] == []
-    mapped = [g["v1"] for g in rows if g.get("v1")]
-    assert len(mapped) == len(set(mapped)), "a v1 genre is mapped twice"
     assert len({g["id"] for g in rows}) == len(rows)
     v1 = genre_vocab.load().entries
-    assert set(mapped) <= set(v1)
-    folded = {g["v1"] for g in curated if g.get("v1")}
-    missing = set(v1) - set(mapped)
-    assert not missing, sorted(missing)[:10]
-    added = [g for g in rows if g.get("legacy") and g["id"] != "legacy"]
-    assert {g["v1"] for g in added} == set(v1) - folded
-    for g in added:
-        assert g["parents"] and all(p in by for p in g["parents"]), g["id"]
-        assert not ("legacy" in g["parents"] and len(g["parents"]) > 1), g["id"]
+    copies = [g for g in rows if g.get("legacy") and g["id"] != "legacy"]
+    assert len(copies) == len(v1) == len({g["v1"] for g in copies})
+    assert {g["v1"] for g in copies} == set(v1)
+    assert all(g["id"].startswith("legacy-") and g["cluster"] == "legacy" for g in copies)
+    shared = {g["v1"] for g in curated if g.get("v1")}
+    assert shared and shared <= {g["v1"] for g in copies}
+    assert {"synthwave", "trance", "psytrance", "goa trance"} <= shared
 
 
-def test_added_children_attach_to_their_curated_v1_parents():
-    _, _, by = _split()
+def test_legacy_copies_keep_the_v1_hierarchy_and_never_attach_to_curated_genres():
+    rows, _, by = _split()
     entries = genre_vocab.load().entries
-    by_v1 = {g["v1"]: g for g in by.values() if g.get("v1")}
-    for g in by.values():
-        if not g.get("legacy") or g["id"] == "legacy" or g["v1"] not in entries:
-            continue
-        for p in entries[g["v1"]].parents:
-            target = by_v1.get(genre_vocab.lookup(p) or "")
-            if target is not None and not target.get("legacy"):
-                assert target["id"] in g["parents"], (g["id"], p)
-    assert "trance" in by_v1["acid trance"]["parents"]
+    copy_of = {g["v1"]: g for g in rows if g.get("legacy") and g["id"] != "legacy"}
+    for n, g in copy_of.items():
+        assert all(by[p].get("legacy") for p in g["parents"]), g["id"]
+        want = [copy_of[t]["id"] for p in entries[n].parents if (t := genre_vocab.lookup(p)) in copy_of and t != n]
+        assert g["parents"] == (list(dict.fromkeys(want)) or ["legacy"]), g["id"]
+        assert g["level"] == 1 + min(by[p]["level"] for p in g["parents"])
+    for g in rows:
+        if not g.get("legacy"):
+            assert not any(by[p].get("legacy") for p in g["parents"]), g["id"]
 
 
 def test_v1_data_is_acyclic():

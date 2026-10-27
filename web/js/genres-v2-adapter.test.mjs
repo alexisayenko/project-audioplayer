@@ -73,3 +73,29 @@ test('a later v1 tree build for cards does not overwrite the map colours', async
   assert.equal(familyIndex(t.roots[0].name), slot);
   assert.equal(globalThis.document?.documentElement?.style?.getPropertyValue(`--chart-${slot}`), before);
 });
+
+test('legacy copies of a curated name get a unique key, show the plain name and never shadow the curated genre', async () => {
+  const { buildTree, resolveNode } = await import('./genre-levels.js');
+  const v = adaptGenresV2({
+    version: 2,
+    clusters: [{ id: 'edm-dance', name: 'EDM / Dance', colour: '#D52633' }, { id: 'legacy', name: 'Legacy', colour: '#8A8A8A' }],
+    genres: [
+      { id: 'legacy', name: 'Legacy', level: 1, cluster: 'legacy', parents: [], legacy: true },
+      { id: 'legacy-house', name: 'House', level: 2, cluster: 'legacy', parents: ['legacy'], v1: 'house', legacy: true },
+      { id: 'legacy-acid', name: 'Acid House', level: 3, cluster: 'legacy', parents: ['legacy-house'], v1: 'acid house', legacy: true },
+      { id: 'house', name: 'House', level: 1, cluster: 'edm-dance', parents: [], v1: 'house' },
+    ],
+  });
+  assert.deepEqual(v.families, ['House', 'Legacy']);
+  assert.deepEqual(Object.keys(v.levels), ['legacy-house', 'Acid House']);
+  assert.equal(v.levels['legacy-house'].display, 'House');
+  assert.equal(v.levels['Acid House'].display, undefined);
+  assert.deepEqual(v.levels['Acid House'].parents, ['legacy-house']);
+  assert.equal(v.v2.byName['legacy-house'].name, 'House');
+  assert.equal(v.v2.byName['legacy-house'].legacy, true);
+  const tree = buildTree(v, { colours: false });
+  assert.equal(resolveNode('house', tree).id, 'g:House');
+  assert.equal(resolveNode('Acid House', tree).id, 's:Acid House');
+  assert.equal(tree.byId.get('s:legacy-house').label, 'House');
+  assert.equal(tree.byId.get('s:legacy-house').level, 2);
+});

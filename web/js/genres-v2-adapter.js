@@ -5,13 +5,13 @@ export function hasStructure(payload) {
   return list(payload?.genres).some((g) => g?.level === 1 && typeof g.name === 'string');
 }
 
-function familyEntry(g, common, cluster, anchor, hex) {
+function familyEntry(g, key, common, cluster, anchor, hex) {
   const colour = /^#[0-9a-f]{6}$/i.test(cluster?.colour) ? cluster.colour : null;
   if (colour && !anchor.has(g.cluster)) {
-    anchor.set(g.cluster, g.name);
-    hex[g.name] = colour;
+    anchor.set(g.cluster, key);
+    hex[key] = colour;
   }
-  const shared = colour && anchor.get(g.cluster) !== g.name ? anchor.get(g.cluster) : null;
+  const shared = colour && anchor.get(g.cluster) !== key ? anchor.get(g.cluster) : null;
   return { ...common, colour: shared, parents: [] };
 }
 
@@ -21,8 +21,15 @@ function synonymsOf(g) {
 
 export function adaptGenresV2(payload) {
   const clusters = new Map(list(payload?.clusters).map((c) => [c.id, c]));
-  const rows = list(payload?.genres).filter((g) => g && typeof g.name === 'string' && typeof g.id === 'string');
-  const nameOf = new Map(rows.map((g) => [g.id, g.name]));
+  const valid = list(payload?.genres).filter((g) => g && typeof g.name === 'string' && typeof g.id === 'string');
+  const rows = [...valid.filter((g) => !g.legacy), ...valid.filter((g) => g.legacy)];
+  const keyOf = new Map();
+  const taken = new Set();
+  for (const g of rows) {
+    const key = taken.has(g.name) ? g.id : g.name;
+    taken.add(key);
+    keyOf.set(g.id, key);
+  }
   const roots = rows.filter((g) => g.level === 1);
   const forms = {};
   const levels = {};
@@ -30,17 +37,18 @@ export function adaptGenresV2(payload) {
   const anchor = new Map();
   const hex = {};
   for (const g of rows) {
+    const key = keyOf.get(g.id);
     const cluster = clusters.get(g.cluster);
     const common = {
-      description: g.description || '', source_links: list(g.source_links), synonyms: synonymsOf(g), discogs: true,
+      description: g.description || '', source_links: list(g.source_links), synonyms: synonymsOf(g), discogs: true, ...(key !== g.name ? { display: g.name } : {}),
     };
-    byName[g.name] = { ...g, clusterName: cluster?.name || '' };
+    byName[key] = { ...g, key, clusterName: cluster?.name || '' };
     if (g.level === 1) {
-      forms[g.name] = familyEntry(g, common, cluster, anchor, hex);
-    } else levels[g.name] = { ...common, parents: list(g.parents).map((p) => nameOf.get(p)).filter(Boolean) };
+      forms[key] = familyEntry(g, key, common, cluster, anchor, hex);
+    } else levels[key] = { ...common, parents: list(g.parents).map((p) => keyOf.get(p)).filter(Boolean) };
   }
   return {
-    families: roots.map((g) => g.name),
+    families: roots.map((g) => keyOf.get(g.id)),
     family_synonyms: {},
     forms,
     levels,
