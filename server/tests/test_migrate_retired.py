@@ -2,7 +2,7 @@ import json
 
 import pytest
 
-from app import deps, library, main, migrate_retired as mr
+from app import deps, library, main, migrate_retired as mr, migrations
 
 OWNER = "owneruid"
 
@@ -147,7 +147,7 @@ def test_apply_retired_skips_songs_without_a_tag_list():
 def test_startup_runs_retired_after_renames_and_removals(monkeypatch):
     order = []
     for mod in ("migrate_model2", "migrate_model3", "migrate_tags", "migrate_removals", "migrate_renames", "migrate_retired"):
-        monkeypatch.setattr(getattr(main, mod), "run", lambda m=mod: order.append(m) or 0)
+        monkeypatch.setattr(getattr(migrations, mod), "run", lambda m=mod: order.append(m) or 0)
     monkeypatch.setattr(deps, "SYNC", None)
     main._startup()
     assert order[-2:] == ["migrate_renames", "migrate_retired"]

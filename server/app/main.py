@@ -9,7 +9,7 @@ from fastapi.exception_handlers import http_exception_handler
 from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
-from . import anon, deps, features, genre_vocab, guest, hosts, legal, migrate_model2, migrate_model3, migrate_removals, migrate_renames, migrate_retired, migrate_sources, migrate_tags, migrate_version_norm, migrate_reference_tags, migrate_genre_eras_seed, plays, readiness, session, web
+from . import anon, deps, features, genre_vocab, guest, hosts, legal, migrations, plays, readiness, session, web
 from .problems import Problem, error_code
 from .routes import playlist_import as playlist_import_routes
 from .routes import album_video as album_video_routes, albums as albums_routes, analyze, anon as anon_routes, auth, backfill, catalog, covers, drafts, features as features_routes, files, genre_layout as genre_layout_routes, genre_references as genre_references_routes, genres, health, legacy, legal as legal_routes, lookup, me, metafill, peaks as peaks_routes, playlists as playlists_routes, plays as plays_routes, removal, songs
@@ -73,11 +73,8 @@ def _startup_steps() -> list[tuple[str, Callable[[], object]]]:
     steps: list[tuple[str, Callable[[], object]]] = []
     if deps.SYNC:
         steps.append(("git recovery", deps.SYNC.recover_on_startup))
-    steps += [
-        ("migrate model 2", migrate_model2.run), ("migrate model 3", migrate_model3.run), ("migrate tags", migrate_tags.run),
-        ("migrate removals", migrate_removals.run), ("migrate renames", migrate_renames.run), ("migrate retired", migrate_retired.run), ("migrate version norm", migrate_version_norm.run), ("migrate sources", migrate_sources.run), ("migrate reference tags", migrate_reference_tags.run), ("migrate genre eras seed", migrate_genre_eras_seed.run),
-        ("record startup", features.record_startup),
-    ]
+    steps += migrations.startup_steps()
+    steps.append(("record startup", features.record_startup))
     return steps
 
 

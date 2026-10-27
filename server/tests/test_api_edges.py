@@ -8,7 +8,7 @@ from urllib.parse import unquote
 import pytest
 from fastapi.testclient import TestClient
 
-from app import bpm, deps, downloads, extractor, identify, jobs, library, links, main, session, users
+from app import bpm, deps, downloads, extractor, identify, jobs, library, links, main, migrations, session, users
 from app.routes import analyze
 from fastapi import HTTPException
 from app.problems import Problem
@@ -101,14 +101,14 @@ def test_find_uid_by_sub_scans_profiles_then_caches(multi, tmp_path):
 
 def test_startup_recovers_git_only_when_configured(monkeypatch):
     calls = []
-    monkeypatch.setattr(main.migrate_tags, "run", lambda: 0)
-    monkeypatch.setattr(main.migrate_removals, "run", lambda: 0)
-    monkeypatch.setattr(main.migrate_renames, "run", lambda: 0)
-    monkeypatch.setattr(main.migrate_retired, "run", lambda: 0)
-    monkeypatch.setattr(main.migrate_version_norm, "run", lambda: 0)
-    monkeypatch.setattr(main.migrate_sources, "run", lambda: 0)
-    monkeypatch.setattr(main.migrate_model2, "run", lambda: 0)
-    monkeypatch.setattr(main.migrate_model3, "run", lambda: 0)
+    monkeypatch.setattr(migrations.migrate_tags, "run", lambda: 0)
+    monkeypatch.setattr(migrations.migrate_removals, "run", lambda: 0)
+    monkeypatch.setattr(migrations.migrate_renames, "run", lambda: 0)
+    monkeypatch.setattr(migrations.migrate_retired, "run", lambda: 0)
+    monkeypatch.setattr(migrations.migrate_version_norm, "run", lambda: 0)
+    monkeypatch.setattr(migrations.migrate_sources, "run", lambda: 0)
+    monkeypatch.setattr(migrations.migrate_model2, "run", lambda: 0)
+    monkeypatch.setattr(migrations.migrate_model3, "run", lambda: 0)
     monkeypatch.setattr(deps, "SYNC", SimpleNamespace(recover_on_startup=lambda: calls.append(1)))
     main._startup()
     monkeypatch.setattr(deps, "SYNC", None)

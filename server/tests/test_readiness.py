@@ -3,7 +3,7 @@ import time
 
 import pytest
 
-from app import deps, main, readiness as rd
+from app import deps, main, migrations, readiness as rd
 from app.readiness import Readiness, allowed_while_starting, readiness
 from tests.test_library import H, client  # noqa: F401
 
@@ -27,7 +27,7 @@ def _threaded(monkeypatch):
     monkeypatch.delenv("AUDIO_STARTUP_SYNC", raising=False)
     monkeypatch.setattr(deps, "SYNC", None)
     for name in STEPS:
-        monkeypatch.setattr(getattr(main, name), "run", lambda: 0)
+        monkeypatch.setattr(getattr(migrations, name), "run", lambda: 0)
 
 
 @pytest.fixture
@@ -35,7 +35,7 @@ def background(monkeypatch):
     """Startup in a real thread: the first migration blocks until the test sets `release`."""
     _threaded(monkeypatch)
     gate = Gate()
-    monkeypatch.setattr(main.migrate_model2, "run", gate.wait)
+    monkeypatch.setattr(migrations.migrate_model2, "run", gate.wait)
     return gate
 
 
@@ -121,12 +121,12 @@ def test_a_failing_migration_is_logged_and_the_server_still_becomes_ready(client
     _threaded(monkeypatch)
     ran = []
     for name in STEPS:
-        monkeypatch.setattr(getattr(main, name), "run", lambda n=name: ran.append(n) or 0)
+        monkeypatch.setattr(getattr(migrations, name), "run", lambda n=name: ran.append(n) or 0)
 
     def boom():
         raise RuntimeError("migration exploded")
 
-    monkeypatch.setattr(main.migrate_tags, "run", boom)
+    monkeypatch.setattr(migrations.migrate_tags, "run", boom)
     with client as c:
         assert wait_ready(c)
         assert c.get("/library", headers=H).status_code == 200
@@ -184,7 +184,7 @@ def test_the_cap_reads_the_environment(monkeypatch):
 def test_sync_switch_runs_the_worker_before_startup_returns(monkeypatch):
     order = []
     for name in STEPS:
-        monkeypatch.setattr(getattr(main, name), "run", lambda n=name: order.append(n) or 0)
+        monkeypatch.setattr(getattr(migrations, name), "run", lambda n=name: order.append(n) or 0)
     monkeypatch.setattr(main.features, "record_startup", lambda: order.append("record_startup"))
     monkeypatch.setattr(deps, "SYNC", type("S", (), {"recover_on_startup": staticmethod(lambda: order.append("git"))})())
     main._startup()
@@ -195,7 +195,7 @@ def test_sync_switch_runs_the_worker_before_startup_returns(monkeypatch):
 def test_without_the_switch_startup_returns_while_the_worker_still_runs(monkeypatch):
     _threaded(monkeypatch)
     gate = Gate()
-    monkeypatch.setattr(main.migrate_model2, "run", gate.wait)
+    monkeypatch.setattr(migrations.migrate_model2, "run", gate.wait)
     main._startup()
     assert gate.entered.wait(5)
     assert readiness.blocking()
