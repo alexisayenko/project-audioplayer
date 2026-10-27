@@ -173,6 +173,7 @@ test('the unlink button uses the broken-chain icon (no image file)', async () =>
   const { ICONS, icon } = await import('./icons.js');
   assert.ok(ICONS.unlink);
   assert.equal((ICONS.unlink.d.match(/<path/g) || []).length, 6);
+  assert.equal((ICONS.link.d.match(/<path/g) || []).length, 3);
   assert.equal(ICONS.unlink.d.includes('<image'), false);
   assert.equal(icon('unlink', 'inline').getAttribute('viewBox'), '0 0 24 24');
   const album = { ...ALBUM, tracks: [{ no: 1, title: 'Intro', durationS: 65, songId: 'u2' }] };

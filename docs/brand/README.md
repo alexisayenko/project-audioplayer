@@ -81,6 +81,7 @@ The visualizer palettes (`--viz-*` in `web/viz.css`, including the Ice palette `
 | iOS app icon | `ios/Sources/Assets.xcassets/AppIcon.appiconset/` (the plated image, see [logo/README.md](logo/README.md)) |
 | Web favicon | `web/favicon.svg` (embeds the vinyl PNG), `web/favicon-32.png` (vinyl) and `web/apple-touch-icon.png` (plated app icon); social cards not yet |
 | Web in-app mark | `icon('mark')` in `web/js/icons.js`, an `<image>` of `web/img/electrophone-vinyl.png` (vinyl only; the sidebar lockup, login, cover placeholder and empty states) |
+| Link and unlink icons | `docs/brand/icons/link.svg` and `unlink.svg` (drawn by Alex, 24 x 24, `currentColor`) are the source for `ICONS.link` and `ICONS.unlink` in `web/js/icons.js` (web; iOS not yet) |
 
 ## Logo and app icon
 
