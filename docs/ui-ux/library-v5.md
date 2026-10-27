@@ -81,7 +81,7 @@ Conventions: "hit" = 44 x 44 minimum; `surface slab` = `dsSlab` (`surface` fill 
 | Add | `LitCircleButtonStyle` 44 circle, `accent` fill + glow (`depthGlow`), `plus` 22 semibold in `onAccent`. VO: "Add a song", button. The only glowing element on the screen. |
 | Menu | `MenuButton`, `line.3.horizontal`, `ink`, 44. VO "Open menu". |
 | States | pressed: opacity .8. No disabled state. |
-| Pinned | The header never scrolls away (1.14). |
+| Pinned | The header never scrolls away (1.14); the Songs/Albums switch and the controls line (1.4) stay pinned under it. |
 | Large text | the title may take 2 lines; Menu and Add stay on the title line. |
 
 ### 1.2 Search field
@@ -93,7 +93,7 @@ Conventions: "hit" = 44 x 44 minimum; `surface slab` = `dsSlab` (`surface` fill 
 | Clear | `xmark.circle.fill` 18 `inkMuted`, hit 44, only while the field has text. No Cancel button. VO "Clear search". |
 | Keyboard | Dismissed by: return, scrolling the list (`scrollDismissesKeyboard(.interactively)`), tapping a row zone, opening a sheet. The text stays. |
 | States | default; focused: 2 pt (`DS.Stroke.strokeMedium`) `accentInk` ring; filled: Clear visible. |
-| Collapse | The field collapses with the chip row when the list scrolls down and returns on scroll up (1.14). |
+| Position | The field is the first item of the scrolling list, above the chip row (1.14), so it scrolls away with the list and is back at the top of the list, on a status bar tap, on a sort change and on a typed search. |
 | Search scope | Case- and diacritic-insensitive substring over title, artists (main, featured, with), album(s), remixer and version name, genres and tags (display labels, e.g. "the 90s" is not searched, "Lithuania" is). Combines (AND) with every filter. Live on each keystroke, no debounce above 150 ms. |
 | VO | label "Search songs, artists and tags", trait searchField; value = text. |
 | In sheets | The sheet search (Tags, Genres, Countries) is the same field at `field-height` 40. |
@@ -150,6 +150,7 @@ Row = `HStack(spacing: space3)` inside the list slab, padding `space3` all sides
 | --- | --- |
 | Cover | 56 x 56 (`cover-row` 56; `coverMd` stays 64 for the transport; today a literal in `@ScaledMetric` LV:468, scaled with Dynamic Type up to 1.5x), radius `radiusSm` 8, `CoverImage`. Tap zone: the cover plus the row padding around it (68 x 80, min 44). VO hidden (the row is one element, 1.5.1). |
 | Cover tap = play | On the phone: play (replaces the queue with the phone songs of the current result set, in current order, starting here; no toast). The song already current: toggle pause and resume. Server only: start the download (same as the Download pill, never auto-plays). Downloading or waiting: nothing (toast "Already downloading" once). No audio: toast "No audio yet". |
+| Play glyph at rest | A song on the phone that is not current shows a small play badge centred on its cover: a circle of `iconButton` 32 filled `coverScrim` with a Play glyph of `iconInline` 16 in `surface`, drawn in the light scheme so it reads on the scrim at night. It tells that the cover plays; the row tap stays Song Details. Server-only, downloading and no-audio songs show no badge (their tap is a download or a toast). Pressed: the cover scales to `enterScale` 0.96 and dims to 80% over `durFast`. VO unchanged (the badge is hidden). |
 | Playing cover | Overlay: fill `coverScrim` (`vinyl` at 45%, both themes) and a persistent Pause glyph while playing or Play glyph while paused, matching the web cover button. The playing row also has the `accentTint` wash over the whole row. |
 | Title | `T.headline` `ink`, max 2 lines (3 at large text), tail truncation. A positive known duration for a song with audio sits at the title line's trailing edge in `T.time`, using `formatTime`; unavailable or zero durations are omitted. Title and duration open details. |
 | Artist line | `T.subhead`, `inkMuted` (`ink` on the playing row: `inkMuted` is 4.0:1 on `accentTint` at night), 1 line: "Artist · Year" (year = the displayed year, version year first, LIB-150; missing parts and the dot are omitted). No source mark, no BPM badge. |
@@ -283,15 +284,13 @@ Replaces the list slab only (header, search, chips and the controls line stay li
 
 ### 1.14 Pinned block and scrolling rules
 
-**Library.** The slim header (1.1, 52 pt with its top padding) and the controls line (1.4, 44 pt) are pinned: about 96 pt together. Only the song list scrolls beneath them.
+**Library.** The slim header (1.1, 52 pt with its top padding), the Songs/Albums switch (signed in) and the controls line (1.4) are pinned: about 160 pt on an iPhone SE, 20 pt more at accessibility sizes. The search field and the chip row are the first items of the scrolling list: they scroll away with it and stay reachable at the top of the list (scroll to top, pull down, status bar tap).
 
 | Rule | Spec |
 | --- | --- |
-| Collapse | The search field and the chip row collapse (height to 0 over `durSlow` `easeIO`, fade over `durBase`) when the list scrolls down past 24 pt (a downward movement of more than about 4 pt), so the pinned block is all that is left above the list. |
-| Return | They return on any scroll up (more than about 4 pt), on a status bar tap, and at the top of the list. Scroll events are ignored for about 450 ms after a switch so the block does not flicker. |
+| Search and chips | Part of the scrolling content (owner decision L7, 2026-10-27, replacing the collapse-on-scroll rule); no collapse animation and no direction tracking. The keyboard is dismissed by return, by scrolling the list (`scrollDismissesKeyboard(.interactively)`), by opening a sheet. |
 | Hairline | A `line` hairline (`strokeHairline`) fades in under the pinned block (`durFast`) once content scrolls under it. |
-| Reduce Motion | The block switches without sliding. |
-| Sheets | Opening a filter sheet leaves the search field and chip row in their existing expanded or collapsed state; presentation and dismissal do not change the background layout or scroll position (1.9). |
+| Sheets | Presentation and dismissal of a filter sheet do not change the background layout or scroll position (1.9). |
 | Bottom | The 34 pt bottom safe area is kept clear; the list's bottom inset clears the mini-player (A). |
 | Today | The whole screen is one `ScrollView` (LV:154-194): the header, search and chips scroll away with the list. |
 
@@ -341,9 +340,10 @@ Every action-flow table has the columns: **User action → immediate UI response
 | --- | --- | --- |
 | status bar | system | 54 safe area at the top (Dynamic Island devices) |
 | +8 | Header (1.1) | 44 high; pinned |
-| +12 | Search field (1.2) | 44; collapses on scroll |
-| +12 | Chip row (1.3) | 36 (44 hit), 12 above and below; collapses on scroll |
-| | Controls and results line (1.4) | 44; pinned (header + line = about 96) |
+| | Songs/Albums switch (signed in) | pinned |
+| | Controls and results line (1.4) | 44; pinned |
+| +12 | Search field (1.2) | 44; scrolls with the list |
+| +12 | Chip row (1.3) | 36 (44 hit), 12 above and below; scrolls with the list |
 | +8 | List slab (1.5) | rows of 80, radius 20 |
 | bottom | Safe area | 34 pt kept clear; the home indicator is not drawn |
 | bottom | Mini-player (reference only, unchanged) | 64 high, floats 8 above the safe area; the list's bottom inset clears it (122 = 34 + 8 + 64 + 16) |
