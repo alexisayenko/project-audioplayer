@@ -25,6 +25,8 @@ schemes:
     build:
       targets:
         ElectrophoneMac: all
+    test:
+      targets: [ElectrophoneMacTests]
     run:
       config: Debug
     archive:
@@ -44,6 +46,22 @@ targets:
       base:
         GENERATE_INFOPLIST_FILE: YES
         PRODUCT_BUNDLE_IDENTIFIER: com.alexisayenko.audioplayer.tests
+  ElectrophoneMacTests:
+    type: bundle.unit-test
+    platform: macOS
+    sources:
+      - MacTests
+      - path: MacSources
+        includes: [GenData.swift, GenSim.swift]
+      - path: Sources
+        includes: [AudioFiles.swift, DesignTokens.swift, TagLogic.swift, Tokens.swift, Track.swift]
+      - path: ../server/tests/fixtures
+        includes: [gen_graph_cases.json, gen_sim_cases.json]
+        buildPhase: resources
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
+        PRODUCT_BUNDLE_IDENTIFIER: com.alexisayenko.audioplayer.mac.tests
   AudioPlayer:
     type: application
     platform: iOS

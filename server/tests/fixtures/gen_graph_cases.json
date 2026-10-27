@@ -1,0 +1,2182 @@
+{
+ "_note": "Expected outputs of web/js/genre-data.js (indexGraph, localCounts, descendantIds, filterTags, searchNodes, outlineRows, pathKeys, ancestorsOf) on two small graphs (families limited to those the web and the macOS family orders share); the macOS port (MacSources/GenData.swift) must agree. `style` repeats `anchor` as the server sends it.",
+ "radius": [
+  {
+   "count": 0,
+   "r": 4
+  },
+  {
+   "count": 1,
+   "r": 6.4
+  },
+  {
+   "count": 4,
+   "r": 8.8
+  },
+  {
+   "count": 9,
+   "r": 11.2
+  },
+  {
+   "count": 100,
+   "r": 28
+  },
+  {
+   "count": 400,
+   "r": 30
+  },
+  {
+   "count": 1000,
+   "r": 30
+  },
+  {
+   "count": -3,
+   "r": 4
+  }
+ ],
+ "songs": [
+  {
+   "id": "s1",
+   "tags": [
+    "genre:Deep House",
+    "genre:Techno",
+    "mood:chill"
+   ]
+  },
+  {
+   "id": "s2",
+   "tags": [
+    "genre:house music"
+   ]
+  },
+  {
+   "id": "s3",
+   "tags": [
+    "genre:Alternative Rock",
+    "genre:alternative rock"
+   ]
+  },
+  {
+   "id": "s4",
+   "tags": [
+    "genre:tech   house"
+   ]
+  },
+  {
+   "id": "s5",
+   "tags": [
+    "genre:unknown genre"
+   ]
+  },
+  {
+   "id": "s6",
+   "tags": []
+  },
+  {
+   "id": "s7",
+   "tags": [
+    "genre: Bebop ",
+    "genre:rock"
+   ]
+  },
+  {
+   "id": "s8",
+   "tags": [
+    "year:1999"
+   ]
+  }
+ ],
+ "graphs": {
+  "plain": {
+   "nodes": [
+    {
+     "id": "electronic",
+     "label": "electronic",
+     "qid": null,
+     "family": "Electronic",
+     "count": 12,
+     "ownCount": 1,
+     "tags": [
+      "electronic"
+     ],
+     "parents": []
+    },
+    {
+     "id": "house",
+     "label": "house",
+     "qid": null,
+     "family": "Electronic",
+     "count": 8,
+     "ownCount": 3,
+     "tags": [
+      "house",
+      "house music"
+     ],
+     "parents": [
+      "electronic"
+     ]
+    },
+    {
+     "id": "deep-house",
+     "label": "deep house",
+     "qid": null,
+     "family": "Electronic",
+     "count": 4,
+     "ownCount": 4,
+     "tags": [
+      "deep house"
+     ],
+     "parents": [
+      "house"
+     ]
+    },
+    {
+     "id": "techno",
+     "label": "techno",
+     "qid": null,
+     "family": "Electronic",
+     "count": 5,
+     "ownCount": 5,
+     "tags": [
+      "techno"
+     ],
+     "parents": [
+      "electronic"
+     ]
+    },
+    {
+     "id": "tech-house",
+     "label": "tech house",
+     "qid": null,
+     "family": "Electronic",
+     "count": 3,
+     "ownCount": 3,
+     "tags": [
+      "tech house"
+     ],
+     "parents": [
+      "house",
+      "techno"
+     ]
+    },
+    {
+     "id": "ambient",
+     "label": "ambient",
+     "qid": null,
+     "family": "Electronic",
+     "count": 2,
+     "ownCount": 2,
+     "tags": [
+      "ambient"
+     ],
+     "parents": [
+      "ambient",
+      "electronic",
+      "ghost"
+     ]
+    },
+    {
+     "id": "rock",
+     "label": "rock",
+     "qid": null,
+     "family": "Rock",
+     "count": 9,
+     "ownCount": 2,
+     "tags": [
+      "rock"
+     ],
+     "parents": []
+    },
+    {
+     "id": "alt-rock",
+     "label": "alternative rock",
+     "qid": null,
+     "family": "Rock",
+     "count": 5,
+     "ownCount": 5,
+     "tags": [
+      "alternative rock"
+     ],
+     "parents": [
+      "rock"
+     ]
+    },
+    {
+     "id": "punk",
+     "label": "punk rock",
+     "qid": null,
+     "family": "Rock",
+     "count": 2,
+     "ownCount": 2,
+     "tags": [
+      "punk rock"
+     ],
+     "parents": [
+      "rock"
+     ]
+    },
+    {
+     "id": "acoustic-music",
+     "label": "acoustic music",
+     "qid": null,
+     "family": "Other",
+     "count": 0,
+     "ownCount": 0,
+     "tags": [],
+     "parents": []
+    },
+    {
+     "id": "bebop",
+     "label": "bebop",
+     "qid": null,
+     "family": "Jazz",
+     "count": 1,
+     "ownCount": 1,
+     "tags": [
+      "bebop"
+     ],
+     "parents": [
+      "acoustic-music"
+     ]
+    },
+    {
+     "id": "world-music",
+     "label": "World Music",
+     "qid": null,
+     "family": "Other",
+     "count": 0,
+     "ownCount": 0,
+     "tags": [],
+     "parents": [
+      "bebop"
+     ]
+    },
+    {
+     "id": "dub",
+     "label": "dub",
+     "qid": null,
+     "family": "Reggae",
+     "count": 3,
+     "ownCount": 3,
+     "tags": [],
+     "parents": []
+    }
+   ],
+   "edges": [
+    {
+     "source": "deep-house",
+     "target": "house",
+     "kind": "parent"
+    },
+    {
+     "source": "house",
+     "target": "electronic",
+     "kind": "parent"
+    },
+    {
+     "source": "tech-house",
+     "target": "house",
+     "kind": "parent"
+    },
+    {
+     "source": "tech-house",
+     "target": "techno",
+     "kind": "parent"
+    },
+    {
+     "source": "techno",
+     "target": "electronic",
+     "kind": "parent"
+    },
+    {
+     "source": "house",
+     "target": "techno",
+     "kind": "related"
+    },
+    {
+     "source": "alt-rock",
+     "target": "rock",
+     "kind": "parent"
+    },
+    {
+     "source": "punk",
+     "target": "rock",
+     "kind": "parent"
+    }
+   ],
+   "ontology": true
+  },
+  "styled": {
+   "nodes": [
+    {
+     "id": "electronic",
+     "label": "electronic",
+     "qid": null,
+     "family": "Electronic",
+     "count": 12,
+     "ownCount": 1,
+     "tags": [
+      "electronic"
+     ],
+     "parents": [],
+     "anchor": "Electronic",
+     "style": "Electronic"
+    },
+    {
+     "id": "house",
+     "label": "house",
+     "qid": null,
+     "family": "Electronic",
+     "count": 8,
+     "ownCount": 3,
+     "tags": [
+      "house",
+      "house music"
+     ],
+     "parents": [
+      "electronic"
+     ],
+     "anchor": "House",
+     "style": "House"
+    },
+    {
+     "id": "deep-house",
+     "label": "deep house",
+     "qid": null,
+     "family": "Electronic",
+     "count": 4,
+     "ownCount": 4,
+     "tags": [
+      "deep house"
+     ],
+     "parents": [
+      "house"
+     ],
+     "anchor": "House",
+     "style": "House"
+    },
+    {
+     "id": "techno",
+     "label": "techno",
+     "qid": null,
+     "family": "Electronic",
+     "count": 5,
+     "ownCount": 5,
+     "tags": [
+      "techno"
+     ],
+     "parents": [
+      "electronic"
+     ],
+     "anchor": "Techno",
+     "style": "Techno"
+    },
+    {
+     "id": "tech-house",
+     "label": "tech house",
+     "qid": null,
+     "family": "Electronic",
+     "count": 3,
+     "ownCount": 3,
+     "tags": [
+      "tech house"
+     ],
+     "parents": [
+      "house",
+      "techno"
+     ],
+     "anchor": "House",
+     "style": "House"
+    },
+    {
+     "id": "ambient",
+     "label": "ambient",
+     "qid": null,
+     "family": "Electronic",
+     "count": 2,
+     "ownCount": 2,
+     "tags": [
+      "ambient"
+     ],
+     "parents": [
+      "electronic"
+     ]
+    },
+    {
+     "id": "rock",
+     "label": "rock",
+     "qid": null,
+     "family": "Rock",
+     "count": 9,
+     "ownCount": 2,
+     "tags": [
+      "rock"
+     ],
+     "parents": [],
+     "anchor": "Rock",
+     "style": "Rock"
+    },
+    {
+     "id": "alt-rock",
+     "label": "alternative rock",
+     "qid": null,
+     "family": "Rock",
+     "count": 5,
+     "ownCount": 5,
+     "tags": [
+      "alternative rock"
+     ],
+     "parents": [
+      "rock"
+     ],
+     "anchor": "Rock",
+     "style": "Rock"
+    },
+    {
+     "id": "punk",
+     "label": "punk rock",
+     "qid": null,
+     "family": "Rock",
+     "count": 2,
+     "ownCount": 2,
+     "tags": [
+      "punk rock"
+     ],
+     "parents": [
+      "rock"
+     ],
+     "anchor": "Punk",
+     "style": "Punk"
+    },
+    {
+     "id": "bebop",
+     "label": "bebop",
+     "qid": null,
+     "family": "Jazz",
+     "count": 1,
+     "ownCount": 1,
+     "tags": [
+      "bebop"
+     ],
+     "parents": []
+    }
+   ],
+   "edges": [],
+   "ontology": true
+  }
+ },
+ "expected": {
+  "plain": {
+   "descendants": [
+    {
+     "id": "electronic",
+     "ids": [
+      "ambient",
+      "deep-house",
+      "electronic",
+      "house",
+      "tech-house",
+      "techno"
+     ]
+    },
+    {
+     "id": "house",
+     "ids": [
+      "deep-house",
+      "house",
+      "tech-house"
+     ]
+    },
+    {
+     "id": "deep-house",
+     "ids": [
+      "deep-house"
+     ]
+    },
+    {
+     "id": "techno",
+     "ids": [
+      "tech-house",
+      "techno"
+     ]
+    },
+    {
+     "id": "tech-house",
+     "ids": [
+      "tech-house"
+     ]
+    },
+    {
+     "id": "ambient",
+     "ids": [
+      "ambient"
+     ]
+    },
+    {
+     "id": "rock",
+     "ids": [
+      "alt-rock",
+      "punk",
+      "rock"
+     ]
+    },
+    {
+     "id": "alt-rock",
+     "ids": [
+      "alt-rock"
+     ]
+    },
+    {
+     "id": "punk",
+     "ids": [
+      "punk"
+     ]
+    },
+    {
+     "id": "acoustic-music",
+     "ids": [
+      "acoustic-music",
+      "bebop",
+      "world-music"
+     ]
+    },
+    {
+     "id": "bebop",
+     "ids": [
+      "bebop",
+      "world-music"
+     ]
+    },
+    {
+     "id": "world-music",
+     "ids": [
+      "world-music"
+     ]
+    },
+    {
+     "id": "dub",
+     "ids": [
+      "dub"
+     ]
+    }
+   ],
+   "filterTags": [
+    {
+     "id": "electronic",
+     "tags": [
+      "genre:ambient",
+      "genre:deep house",
+      "genre:electronic",
+      "genre:house",
+      "genre:house music",
+      "genre:tech house",
+      "genre:techno"
+     ]
+    },
+    {
+     "id": "house",
+     "tags": [
+      "genre:deep house",
+      "genre:house",
+      "genre:house music",
+      "genre:tech house"
+     ]
+    },
+    {
+     "id": "deep-house",
+     "tags": [
+      "genre:deep house"
+     ]
+    },
+    {
+     "id": "techno",
+     "tags": [
+      "genre:tech house",
+      "genre:techno"
+     ]
+    },
+    {
+     "id": "tech-house",
+     "tags": [
+      "genre:tech house"
+     ]
+    },
+    {
+     "id": "ambient",
+     "tags": [
+      "genre:ambient"
+     ]
+    },
+    {
+     "id": "rock",
+     "tags": [
+      "genre:alternative rock",
+      "genre:punk rock",
+      "genre:rock"
+     ]
+    },
+    {
+     "id": "alt-rock",
+     "tags": [
+      "genre:alternative rock"
+     ]
+    },
+    {
+     "id": "punk",
+     "tags": [
+      "genre:punk rock"
+     ]
+    },
+    {
+     "id": "acoustic-music",
+     "tags": [
+      "genre:bebop"
+     ]
+    },
+    {
+     "id": "bebop",
+     "tags": [
+      "genre:bebop"
+     ]
+    },
+    {
+     "id": "world-music",
+     "tags": []
+    },
+    {
+     "id": "dub",
+     "tags": []
+    }
+   ],
+   "localCounts": {
+    "electronic": {
+     "count": 3,
+     "ownCount": 0
+    },
+    "house": {
+     "count": 3,
+     "ownCount": 1
+    },
+    "deep-house": {
+     "count": 1,
+     "ownCount": 1
+    },
+    "techno": {
+     "count": 2,
+     "ownCount": 1
+    },
+    "tech-house": {
+     "count": 1,
+     "ownCount": 1
+    },
+    "ambient": {
+     "count": 0,
+     "ownCount": 0
+    },
+    "rock": {
+     "count": 2,
+     "ownCount": 1
+    },
+    "alt-rock": {
+     "count": 1,
+     "ownCount": 1
+    },
+    "punk": {
+     "count": 0,
+     "ownCount": 0
+    },
+    "acoustic-music": {
+     "count": 1,
+     "ownCount": 0
+    },
+    "bebop": {
+     "count": 1,
+     "ownCount": 1
+    },
+    "world-music": {
+     "count": 0,
+     "ownCount": 0
+    },
+    "dub": {
+     "count": 0,
+     "ownCount": 0
+    }
+   },
+   "search": [
+    {
+     "query": "house",
+     "limit": 8,
+     "ids": [
+      "house",
+      "deep-house",
+      "tech-house"
+     ]
+    },
+    {
+     "query": "HOUSE",
+     "limit": 2,
+     "ids": [
+      "house",
+      "deep-house"
+     ]
+    },
+    {
+     "query": "rock",
+     "limit": 8,
+     "ids": [
+      "rock",
+      "alt-rock",
+      "punk"
+     ]
+    },
+    {
+     "query": "  ",
+     "limit": 8,
+     "ids": []
+    },
+    {
+     "query": "zzz",
+     "limit": 8,
+     "ids": []
+    },
+    {
+     "query": "music",
+     "limit": 8,
+     "ids": [
+      "acoustic-music",
+      "world-music"
+     ]
+    },
+    {
+     "query": "e",
+     "limit": 3,
+     "ids": [
+      "electronic",
+      "house",
+      "alt-rock"
+     ]
+    },
+    {
+     "query": "punk rock",
+     "limit": 8,
+     "ids": [
+      "punk"
+     ]
+    }
+   ],
+   "categories": [
+    {
+     "id": "electronic",
+     "category": false
+    },
+    {
+     "id": "house",
+     "category": false
+    },
+    {
+     "id": "deep-house",
+     "category": false
+    },
+    {
+     "id": "techno",
+     "category": false
+    },
+    {
+     "id": "tech-house",
+     "category": false
+    },
+    {
+     "id": "ambient",
+     "category": false
+    },
+    {
+     "id": "rock",
+     "category": false
+    },
+    {
+     "id": "alt-rock",
+     "category": false
+    },
+    {
+     "id": "punk",
+     "category": false
+    },
+    {
+     "id": "acoustic-music",
+     "category": true
+    },
+    {
+     "id": "bebop",
+     "category": false
+    },
+    {
+     "id": "world-music",
+     "category": true
+    },
+    {
+     "id": "dub",
+     "category": false
+    }
+   ],
+   "outline": [
+    {
+     "expanded": [],
+     "rows": [
+      {
+       "key": "f:Electronic",
+       "id": null,
+       "depth": 0,
+       "label": "Electronic",
+       "count": null,
+       "hasChildren": true,
+       "expanded": false,
+       "alsoUnder": [],
+       "kind": "family",
+       "size": 1,
+       "unit": "root"
+      },
+      {
+       "key": "f:Jazz",
+       "id": null,
+       "depth": 0,
+       "label": "Jazz",
+       "count": null,
+       "hasChildren": true,
+       "expanded": false,
+       "alsoUnder": [],
+       "kind": "family",
+       "size": 1,
+       "unit": "root"
+      },
+      {
+       "key": "f:Reggae",
+       "id": null,
+       "depth": 0,
+       "label": "Reggae",
+       "count": null,
+       "hasChildren": true,
+       "expanded": false,
+       "alsoUnder": [],
+       "kind": "family",
+       "size": 1,
+       "unit": "root"
+      },
+      {
+       "key": "f:Rock",
+       "id": null,
+       "depth": 0,
+       "label": "Rock",
+       "count": null,
+       "hasChildren": true,
+       "expanded": false,
+       "alsoUnder": [],
+       "kind": "family",
+       "size": 1,
+       "unit": "root"
+      }
+     ]
+    },
+    {
+     "expanded": [
+      "f:Electronic",
+      "f:Jazz",
+      "f:Other",
+      "f:Reggae",
+      "f:Rock"
+     ],
+     "rows": [
+      {
+       "key": "f:Electronic",
+       "id": null,
+       "depth": 0,
+       "label": "Electronic",
+       "count": null,
+       "hasChildren": true,
+       "expanded": true,
+       "alsoUnder": [],
+       "kind": "family",
+       "size": 1,
+       "unit": "root"
+      },
+      {
+       "key": "f:Electronic>electronic",
+       "id": "electronic",
+       "depth": 1,
+       "label": "electronic",
+       "count": 12,
+       "hasChildren": true,
+       "expanded": false,
+       "alsoUnder": [],
+       "kind": "node",
+       "size": 0,
+       "unit": "root"
+      },
+      {
+       "key": "f:Jazz",
+       "id": null,
+       "depth": 0,
+       "label": "Jazz",
+       "count": null,
+       "hasChildren": true,
+       "expanded": true,
+       "alsoUnder": [],
+       "kind": "family",
+       "size": 1,
+       "unit": "root"
+      },
+      {
+       "key": "f:Jazz>bebop",
+       "id": "bebop",
+       "depth": 1,
+       "label": "bebop",
+       "count": 1,
+       "hasChildren": false,
+       "expanded": false,
+       "alsoUnder": [],
+       "kind": "node",
+       "size": 0,
+       "unit": "root"
+      },
+      {
+       "key": "f:Reggae",
+       "id": null,
+       "depth": 0,
+       "label": "Reggae",
+       "count": null,
+       "hasChildren": true,
+       "expanded": true,
+       "alsoUnder": [],
+       "kind": "family",
+       "size": 1,
+       "unit": "root"
+      },
+      {
+       "key": "f:Reggae>dub",
+       "id": "dub",
+       "depth": 1,
+       "label": "dub",
+       "count": 3,
+       "hasChildren": false,
+       "expanded": false,
+       "alsoUnder": [],
+       "kind": "node",
+       "size": 0,
+       "unit": "root"
+      },
+      {
+       "key": "f:Rock",
+       "id": null,
+       "depth": 0,
+       "label": "Rock",
+       "count": null,
+       "hasChildren": true,
+       "expanded": true,
+       "alsoUnder": [],
+       "kind": "family",
+       "size": 1,
+       "unit": "root"
+      },
+      {
+       "key": "f:Rock>rock",
+       "id": "rock",
+       "depth": 1,
+       "label": "rock",
+       "count": 9,
+       "hasChildren": true,
+       "expanded": false,
+       "alsoUnder": [],
+       "kind": "node",
+       "size": 0,
+       "unit": "root"
+      }
+     ]
+    },
+    {
+     "expanded": [
+      "f:Electronic",
+      "f:Electronic>electronic",
+      "f:Electronic>electronic>house",
+      "f:Electronic>electronic>techno",
+      "f:Jazz",
+      "f:Reggae",
+      "f:Rock",
+      "f:Rock>rock"
+     ],
+     "rows": [
+      {
+       "key": "f:Electronic",
+       "id": null,
+       "depth": 0,
+       "label": "Electronic",
+       "count": null,
+       "hasChildren": true,
+       "expanded": true,
+       "alsoUnder": [],
+       "kind": "family",
+       "size": 1,
+       "unit": "root"
+      },
+      {
+       "key": "f:Electronic>electronic",
+       "id": "electronic",
+       "depth": 1,
+       "label": "electronic",
+       "count": 12,
+       "hasChildren": true,
+       "expanded": true,
+       "alsoUnder": [],
+       "kind": "node",
+       "size": 0,
+       "unit": "root"
+      },
+      {
+       "key": "f:Electronic>electronic>house",
+       "id": "house",
+       "depth": 2,
+       "label": "house",
+       "count": 8,
+       "hasChildren": true,
+       "expanded": true,
+       "alsoUnder": [],
+       "kind": "node",
+       "size": 0,
+       "unit": "root"
+      },
+      {
+       "key": "f:Electronic>electronic>house>deep-house",
+       "id": "deep-house",
+       "depth": 3,
+       "label": "deep house",
+       "count": 4,
+       "hasChildren": false,
+       "expanded": false,
+       "alsoUnder": [],
+       "kind": "node",
+       "size": 0,
+       "unit": "root"
+      },
+      {
+       "key": "f:Electronic>electronic>house>tech-house",
+       "id": "tech-house",
+       "depth": 3,
+       "label": "tech house",
+       "count": 3,
+       "hasChildren": false,
+       "expanded": false,
+       "alsoUnder": [
+        "techno"
+       ],
+       "kind": "node",
+       "size": 0,
+       "unit": "root"
+      },
+      {
+       "key": "f:Electronic>electronic>techno",
+       "id": "techno",
+       "depth": 2,
+       "label": "techno",
+       "count": 5,
+       "hasChildren": true,
+       "expanded": true,
+       "alsoUnder": [],
+       "kind": "node",
+       "size": 0,
+       "unit": "root"
+      },
+      {
+       "key": "f:Electronic>electronic>techno>tech-house",
+       "id": "tech-house",
+       "depth": 3,
+       "label": "tech house",
+       "count": 3,
+       "hasChildren": false,
+       "expanded": false,
+       "alsoUnder": [
+        "house"
+       ],
+       "kind": "node",
+       "size": 0,
+       "unit": "root"
+      },
+      {
+       "key": "f:Electronic>electronic>ambient",
+       "id": "ambient",
+       "depth": 2,
+       "label": "ambient",
+       "count": 2,
+       "hasChildren": false,
+       "expanded": false,
+       "alsoUnder": [],
+       "kind": "node",
+       "size": 0,
+       "unit": "root"
+      },
+      {
+       "key": "f:Jazz",
+       "id": null,
+       "depth": 0,
+       "label": "Jazz",
+       "count": null,
+       "hasChildren": true,
+       "expanded": true,
+       "alsoUnder": [],
+       "kind": "family",
+       "size": 1,
+       "unit": "root"
+      },
+      {
+       "key": "f:Jazz>bebop",
+       "id": "bebop",
+       "depth": 1,
+       "label": "bebop",
+       "count": 1,
+       "hasChildren": false,
+       "expanded": false,
+       "alsoUnder": [],
+       "kind": "node",
+       "size": 0,
+       "unit": "root"
+      },
+      {
+       "key": "f:Reggae",
+       "id": null,
+       "depth": 0,
+       "label": "Reggae",
+       "count": null,
+       "hasChildren": true,
+       "expanded": true,
+       "alsoUnder": [],
+       "kind": "family",
+       "size": 1,
+       "unit": "root"
+      },
+      {
+       "key": "f:Reggae>dub",
+       "id": "dub",
+       "depth": 1,
+       "label": "dub",
+       "count": 3,
+       "hasChildren": false,
+       "expanded": false,
+       "alsoUnder": [],
+       "kind": "node",
+       "size": 0,
+       "unit": "root"
+      },
+      {
+       "key": "f:Rock",
+       "id": null,
+       "depth": 0,
+       "label": "Rock",
+       "count": null,
+       "hasChildren": true,
+       "expanded": true,
+       "alsoUnder": [],
+       "kind": "family",
+       "size": 1,
+       "unit": "root"
+      },
+      {
+       "key": "f:Rock>rock",
+       "id": "rock",
+       "depth": 1,
+       "label": "rock",
+       "count": 9,
+       "hasChildren": true,
+       "expanded": true,
+       "alsoUnder": [],
+       "kind": "node",
+       "size": 0,
+       "unit": "root"
+      },
+      {
+       "key": "f:Rock>rock>alt-rock",
+       "id": "alt-rock",
+       "depth": 2,
+       "label": "alternative rock",
+       "count": 5,
+       "hasChildren": false,
+       "expanded": false,
+       "alsoUnder": [],
+       "kind": "node",
+       "size": 0,
+       "unit": "root"
+      },
+      {
+       "key": "f:Rock>rock>punk",
+       "id": "punk",
+       "depth": 2,
+       "label": "punk rock",
+       "count": 2,
+       "hasChildren": false,
+       "expanded": false,
+       "alsoUnder": [],
+       "kind": "node",
+       "size": 0,
+       "unit": "root"
+      }
+     ]
+    }
+   ],
+   "pathKeys": [
+    {
+     "id": "electronic",
+     "keys": [
+      "f:Electronic",
+      "f:Electronic>electronic"
+     ]
+    },
+    {
+     "id": "house",
+     "keys": [
+      "f:Electronic",
+      "f:Electronic>electronic",
+      "f:Electronic>electronic>house"
+     ]
+    },
+    {
+     "id": "deep-house",
+     "keys": [
+      "f:Electronic",
+      "f:Electronic>electronic",
+      "f:Electronic>electronic>house",
+      "f:Electronic>electronic>house>deep-house"
+     ]
+    },
+    {
+     "id": "techno",
+     "keys": [
+      "f:Electronic",
+      "f:Electronic>electronic",
+      "f:Electronic>electronic>techno"
+     ]
+    },
+    {
+     "id": "tech-house",
+     "keys": [
+      "f:Electronic",
+      "f:Electronic>electronic",
+      "f:Electronic>electronic>house",
+      "f:Electronic>electronic>house>tech-house"
+     ]
+    },
+    {
+     "id": "ambient",
+     "keys": [
+      "f:Electronic",
+      "f:Electronic>electronic",
+      "f:Electronic>electronic>ambient"
+     ]
+    },
+    {
+     "id": "rock",
+     "keys": [
+      "f:Rock",
+      "f:Rock>rock"
+     ]
+    },
+    {
+     "id": "alt-rock",
+     "keys": [
+      "f:Rock",
+      "f:Rock>rock",
+      "f:Rock>rock>alt-rock"
+     ]
+    },
+    {
+     "id": "punk",
+     "keys": [
+      "f:Rock",
+      "f:Rock>rock",
+      "f:Rock>rock>punk"
+     ]
+    },
+    {
+     "id": "acoustic-music",
+     "keys": []
+    },
+    {
+     "id": "bebop",
+     "keys": [
+      "f:Jazz",
+      "f:Jazz>bebop"
+     ]
+    },
+    {
+     "id": "world-music",
+     "keys": [
+      "f:Jazz",
+      "f:Jazz>bebop"
+     ]
+    },
+    {
+     "id": "dub",
+     "keys": [
+      "f:Reggae",
+      "f:Reggae>dub"
+     ]
+    }
+   ],
+   "ancestors": [
+    {
+     "id": "electronic",
+     "depth": {}
+    },
+    {
+     "id": "house",
+     "depth": {
+      "electronic": 1
+     }
+    },
+    {
+     "id": "deep-house",
+     "depth": {
+      "electronic": 2,
+      "house": 1
+     }
+    },
+    {
+     "id": "techno",
+     "depth": {
+      "electronic": 1
+     }
+    },
+    {
+     "id": "tech-house",
+     "depth": {
+      "electronic": 2,
+      "house": 1,
+      "techno": 1
+     }
+    },
+    {
+     "id": "ambient",
+     "depth": {}
+    },
+    {
+     "id": "rock",
+     "depth": {}
+    },
+    {
+     "id": "alt-rock",
+     "depth": {
+      "rock": 1
+     }
+    },
+    {
+     "id": "punk",
+     "depth": {
+      "rock": 1
+     }
+    },
+    {
+     "id": "acoustic-music",
+     "depth": {}
+    },
+    {
+     "id": "bebop",
+     "depth": {}
+    },
+    {
+     "id": "world-music",
+     "depth": {}
+    },
+    {
+     "id": "dub",
+     "depth": {}
+    }
+   ]
+  },
+  "styled": {
+   "descendants": [
+    {
+     "id": "electronic",
+     "ids": [
+      "ambient",
+      "deep-house",
+      "electronic",
+      "house",
+      "tech-house",
+      "techno"
+     ]
+    },
+    {
+     "id": "house",
+     "ids": [
+      "deep-house",
+      "house",
+      "tech-house"
+     ]
+    },
+    {
+     "id": "deep-house",
+     "ids": [
+      "deep-house"
+     ]
+    },
+    {
+     "id": "techno",
+     "ids": [
+      "tech-house",
+      "techno"
+     ]
+    },
+    {
+     "id": "tech-house",
+     "ids": [
+      "tech-house"
+     ]
+    },
+    {
+     "id": "ambient",
+     "ids": [
+      "ambient"
+     ]
+    },
+    {
+     "id": "rock",
+     "ids": [
+      "alt-rock",
+      "punk",
+      "rock"
+     ]
+    },
+    {
+     "id": "alt-rock",
+     "ids": [
+      "alt-rock"
+     ]
+    },
+    {
+     "id": "punk",
+     "ids": [
+      "punk"
+     ]
+    },
+    {
+     "id": "bebop",
+     "ids": [
+      "bebop"
+     ]
+    }
+   ],
+   "filterTags": [
+    {
+     "id": "electronic",
+     "tags": [
+      "genre:ambient",
+      "genre:deep house",
+      "genre:electronic",
+      "genre:house",
+      "genre:house music",
+      "genre:tech house",
+      "genre:techno"
+     ]
+    },
+    {
+     "id": "house",
+     "tags": [
+      "genre:deep house",
+      "genre:house",
+      "genre:house music",
+      "genre:tech house"
+     ]
+    },
+    {
+     "id": "deep-house",
+     "tags": [
+      "genre:deep house"
+     ]
+    },
+    {
+     "id": "techno",
+     "tags": [
+      "genre:tech house",
+      "genre:techno"
+     ]
+    },
+    {
+     "id": "tech-house",
+     "tags": [
+      "genre:tech house"
+     ]
+    },
+    {
+     "id": "ambient",
+     "tags": [
+      "genre:ambient"
+     ]
+    },
+    {
+     "id": "rock",
+     "tags": [
+      "genre:alternative rock",
+      "genre:punk rock",
+      "genre:rock"
+     ]
+    },
+    {
+     "id": "alt-rock",
+     "tags": [
+      "genre:alternative rock"
+     ]
+    },
+    {
+     "id": "punk",
+     "tags": [
+      "genre:punk rock"
+     ]
+    },
+    {
+     "id": "bebop",
+     "tags": [
+      "genre:bebop"
+     ]
+    }
+   ],
+   "localCounts": {
+    "electronic": {
+     "count": 3,
+     "ownCount": 0
+    },
+    "house": {
+     "count": 3,
+     "ownCount": 1
+    },
+    "deep-house": {
+     "count": 1,
+     "ownCount": 1
+    },
+    "techno": {
+     "count": 2,
+     "ownCount": 1
+    },
+    "tech-house": {
+     "count": 1,
+     "ownCount": 1
+    },
+    "ambient": {
+     "count": 0,
+     "ownCount": 0
+    },
+    "rock": {
+     "count": 2,
+     "ownCount": 1
+    },
+    "alt-rock": {
+     "count": 1,
+     "ownCount": 1
+    },
+    "punk": {
+     "count": 0,
+     "ownCount": 0
+    },
+    "bebop": {
+     "count": 1,
+     "ownCount": 1
+    }
+   },
+   "search": [
+    {
+     "query": "house",
+     "limit": 8,
+     "ids": [
+      "house",
+      "deep-house",
+      "tech-house"
+     ]
+    },
+    {
+     "query": "HOUSE",
+     "limit": 2,
+     "ids": [
+      "house",
+      "deep-house"
+     ]
+    },
+    {
+     "query": "rock",
+     "limit": 8,
+     "ids": [
+      "rock",
+      "alt-rock",
+      "punk"
+     ]
+    },
+    {
+     "query": "  ",
+     "limit": 8,
+     "ids": []
+    },
+    {
+     "query": "zzz",
+     "limit": 8,
+     "ids": []
+    },
+    {
+     "query": "music",
+     "limit": 8,
+     "ids": []
+    },
+    {
+     "query": "e",
+     "limit": 3,
+     "ids": [
+      "electronic",
+      "house",
+      "alt-rock"
+     ]
+    },
+    {
+     "query": "punk rock",
+     "limit": 8,
+     "ids": [
+      "punk"
+     ]
+    }
+   ],
+   "categories": [
+    {
+     "id": "electronic",
+     "category": false
+    },
+    {
+     "id": "house",
+     "category": false
+    },
+    {
+     "id": "deep-house",
+     "category": false
+    },
+    {
+     "id": "techno",
+     "category": false
+    },
+    {
+     "id": "tech-house",
+     "category": false
+    },
+    {
+     "id": "ambient",
+     "category": false
+    },
+    {
+     "id": "rock",
+     "category": false
+    },
+    {
+     "id": "alt-rock",
+     "category": false
+    },
+    {
+     "id": "punk",
+     "category": false
+    },
+    {
+     "id": "bebop",
+     "category": false
+    }
+   ],
+   "outline": [
+    {
+     "expanded": [],
+     "rows": [
+      {
+       "key": "f:Electronic",
+       "id": null,
+       "depth": 0,
+       "label": "Electronic",
+       "count": null,
+       "hasChildren": true,
+       "expanded": false,
+       "alsoUnder": [],
+       "kind": "family",
+       "size": 4,
+       "unit": "root"
+      },
+      {
+       "key": "f:Jazz",
+       "id": null,
+       "depth": 0,
+       "label": "Jazz",
+       "count": null,
+       "hasChildren": true,
+       "expanded": false,
+       "alsoUnder": [],
+       "kind": "family",
+       "size": 1,
+       "unit": "root"
+      },
+      {
+       "key": "f:Rock",
+       "id": null,
+       "depth": 0,
+       "label": "Rock",
+       "count": null,
+       "hasChildren": true,
+       "expanded": false,
+       "alsoUnder": [],
+       "kind": "family",
+       "size": 2,
+       "unit": "genre"
+      }
+     ]
+    },
+    {
+     "expanded": [
+      "f:Electronic",
+      "f:Jazz",
+      "f:Rock"
+     ],
+     "rows": [
+      {
+       "key": "f:Electronic",
+       "id": null,
+       "depth": 0,
+       "label": "Electronic",
+       "count": null,
+       "hasChildren": true,
+       "expanded": true,
+       "alsoUnder": [],
+       "kind": "family",
+       "size": 4,
+       "unit": "root"
+      },
+      {
+       "key": "f:Electronic>electronic",
+       "id": "electronic",
+       "depth": 1,
+       "label": "electronic",
+       "count": 12,
+       "hasChildren": false,
+       "expanded": false,
+       "alsoUnder": [],
+       "kind": "style",
+       "size": 0,
+       "unit": "root"
+      },
+      {
+       "key": "f:Electronic>house",
+       "id": "house",
+       "depth": 1,
+       "label": "house",
+       "count": 8,
+       "hasChildren": true,
+       "expanded": false,
+       "alsoUnder": [],
+       "kind": "style",
+       "size": 0,
+       "unit": "root"
+      },
+      {
+       "key": "f:Electronic>techno",
+       "id": "techno",
+       "depth": 1,
+       "label": "techno",
+       "count": 5,
+       "hasChildren": true,
+       "expanded": false,
+       "alsoUnder": [],
+       "kind": "style",
+       "size": 0,
+       "unit": "root"
+      },
+      {
+       "key": "f:Electronic>ambient",
+       "id": "ambient",
+       "depth": 1,
+       "label": "ambient",
+       "count": 2,
+       "hasChildren": false,
+       "expanded": false,
+       "alsoUnder": [],
+       "kind": "node",
+       "size": 0,
+       "unit": "root"
+      },
+      {
+       "key": "f:Jazz",
+       "id": null,
+       "depth": 0,
+       "label": "Jazz",
+       "count": null,
+       "hasChildren": true,
+       "expanded": true,
+       "alsoUnder": [],
+       "kind": "family",
+       "size": 1,
+       "unit": "root"
+      },
+      {
+       "key": "f:Jazz>bebop",
+       "id": "bebop",
+       "depth": 1,
+       "label": "bebop",
+       "count": 1,
+       "hasChildren": false,
+       "expanded": false,
+       "alsoUnder": [],
+       "kind": "node",
+       "size": 0,
+       "unit": "root"
+      },
+      {
+       "key": "f:Rock",
+       "id": null,
+       "depth": 0,
+       "label": "Rock",
+       "count": null,
+       "hasChildren": true,
+       "expanded": true,
+       "alsoUnder": [],
+       "kind": "family",
+       "size": 2,
+       "unit": "genre"
+      },
+      {
+       "key": "f:Rock>rock",
+       "id": "rock",
+       "depth": 1,
+       "label": "rock",
+       "count": 9,
+       "hasChildren": true,
+       "expanded": false,
+       "alsoUnder": [],
+       "kind": "style",
+       "size": 0,
+       "unit": "root"
+      },
+      {
+       "key": "f:Rock>punk",
+       "id": "punk",
+       "depth": 1,
+       "label": "punk rock",
+       "count": 2,
+       "hasChildren": false,
+       "expanded": false,
+       "alsoUnder": [],
+       "kind": "style",
+       "size": 0,
+       "unit": "root"
+      }
+     ]
+    },
+    {
+     "expanded": [
+      "f:Electronic",
+      "f:Electronic>house",
+      "f:Electronic>techno",
+      "f:Jazz",
+      "f:Rock",
+      "f:Rock>rock"
+     ],
+     "rows": [
+      {
+       "key": "f:Electronic",
+       "id": null,
+       "depth": 0,
+       "label": "Electronic",
+       "count": null,
+       "hasChildren": true,
+       "expanded": true,
+       "alsoUnder": [],
+       "kind": "family",
+       "size": 4,
+       "unit": "root"
+      },
+      {
+       "key": "f:Electronic>electronic",
+       "id": "electronic",
+       "depth": 1,
+       "label": "electronic",
+       "count": 12,
+       "hasChildren": false,
+       "expanded": false,
+       "alsoUnder": [],
+       "kind": "style",
+       "size": 0,
+       "unit": "root"
+      },
+      {
+       "key": "f:Electronic>house",
+       "id": "house",
+       "depth": 1,
+       "label": "house",
+       "count": 8,
+       "hasChildren": true,
+       "expanded": true,
+       "alsoUnder": [],
+       "kind": "style",
+       "size": 0,
+       "unit": "root"
+      },
+      {
+       "key": "f:Electronic>house>deep-house",
+       "id": "deep-house",
+       "depth": 2,
+       "label": "deep house",
+       "count": 4,
+       "hasChildren": false,
+       "expanded": false,
+       "alsoUnder": [],
+       "kind": "node",
+       "size": 0,
+       "unit": "root"
+      },
+      {
+       "key": "f:Electronic>house>tech-house",
+       "id": "tech-house",
+       "depth": 2,
+       "label": "tech house",
+       "count": 3,
+       "hasChildren": false,
+       "expanded": false,
+       "alsoUnder": [
+        "techno"
+       ],
+       "kind": "node",
+       "size": 0,
+       "unit": "root"
+      },
+      {
+       "key": "f:Electronic>techno",
+       "id": "techno",
+       "depth": 1,
+       "label": "techno",
+       "count": 5,
+       "hasChildren": true,
+       "expanded": true,
+       "alsoUnder": [],
+       "kind": "style",
+       "size": 0,
+       "unit": "root"
+      },
+      {
+       "key": "f:Electronic>techno>tech-house",
+       "id": "tech-house",
+       "depth": 2,
+       "label": "tech house",
+       "count": 3,
+       "hasChildren": false,
+       "expanded": false,
+       "alsoUnder": [
+        "house"
+       ],
+       "kind": "node",
+       "size": 0,
+       "unit": "root"
+      },
+      {
+       "key": "f:Electronic>ambient",
+       "id": "ambient",
+       "depth": 1,
+       "label": "ambient",
+       "count": 2,
+       "hasChildren": false,
+       "expanded": false,
+       "alsoUnder": [],
+       "kind": "node",
+       "size": 0,
+       "unit": "root"
+      },
+      {
+       "key": "f:Jazz",
+       "id": null,
+       "depth": 0,
+       "label": "Jazz",
+       "count": null,
+       "hasChildren": true,
+       "expanded": true,
+       "alsoUnder": [],
+       "kind": "family",
+       "size": 1,
+       "unit": "root"
+      },
+      {
+       "key": "f:Jazz>bebop",
+       "id": "bebop",
+       "depth": 1,
+       "label": "bebop",
+       "count": 1,
+       "hasChildren": false,
+       "expanded": false,
+       "alsoUnder": [],
+       "kind": "node",
+       "size": 0,
+       "unit": "root"
+      },
+      {
+       "key": "f:Rock",
+       "id": null,
+       "depth": 0,
+       "label": "Rock",
+       "count": null,
+       "hasChildren": true,
+       "expanded": true,
+       "alsoUnder": [],
+       "kind": "family",
+       "size": 2,
+       "unit": "genre"
+      },
+      {
+       "key": "f:Rock>rock",
+       "id": "rock",
+       "depth": 1,
+       "label": "rock",
+       "count": 9,
+       "hasChildren": true,
+       "expanded": true,
+       "alsoUnder": [],
+       "kind": "style",
+       "size": 0,
+       "unit": "root"
+      },
+      {
+       "key": "f:Rock>rock>alt-rock",
+       "id": "alt-rock",
+       "depth": 2,
+       "label": "alternative rock",
+       "count": 5,
+       "hasChildren": false,
+       "expanded": false,
+       "alsoUnder": [],
+       "kind": "node",
+       "size": 0,
+       "unit": "root"
+      },
+      {
+       "key": "f:Rock>punk",
+       "id": "punk",
+       "depth": 1,
+       "label": "punk rock",
+       "count": 2,
+       "hasChildren": false,
+       "expanded": false,
+       "alsoUnder": [],
+       "kind": "style",
+       "size": 0,
+       "unit": "root"
+      }
+     ]
+    }
+   ],
+   "pathKeys": [
+    {
+     "id": "electronic",
+     "keys": [
+      "f:Electronic",
+      "f:Electronic>electronic"
+     ]
+    },
+    {
+     "id": "house",
+     "keys": [
+      "f:Electronic",
+      "f:Electronic>house"
+     ]
+    },
+    {
+     "id": "deep-house",
+     "keys": [
+      "f:Electronic",
+      "f:Electronic>house",
+      "f:Electronic>house>deep-house"
+     ]
+    },
+    {
+     "id": "techno",
+     "keys": [
+      "f:Electronic",
+      "f:Electronic>techno"
+     ]
+    },
+    {
+     "id": "tech-house",
+     "keys": [
+      "f:Electronic",
+      "f:Electronic>house",
+      "f:Electronic>house>tech-house"
+     ]
+    },
+    {
+     "id": "ambient",
+     "keys": [
+      "f:Electronic",
+      "f:Electronic>ambient"
+     ]
+    },
+    {
+     "id": "rock",
+     "keys": [
+      "f:Rock",
+      "f:Rock>rock"
+     ]
+    },
+    {
+     "id": "alt-rock",
+     "keys": [
+      "f:Rock",
+      "f:Rock>rock",
+      "f:Rock>rock>alt-rock"
+     ]
+    },
+    {
+     "id": "punk",
+     "keys": [
+      "f:Rock",
+      "f:Rock>punk"
+     ]
+    },
+    {
+     "id": "bebop",
+     "keys": [
+      "f:Jazz",
+      "f:Jazz>bebop"
+     ]
+    }
+   ],
+   "ancestors": [
+    {
+     "id": "electronic",
+     "depth": {}
+    },
+    {
+     "id": "house",
+     "depth": {}
+    },
+    {
+     "id": "deep-house",
+     "depth": {}
+    },
+    {
+     "id": "techno",
+     "depth": {}
+    },
+    {
+     "id": "tech-house",
+     "depth": {}
+    },
+    {
+     "id": "ambient",
+     "depth": {}
+    },
+    {
+     "id": "rock",
+     "depth": {}
+    },
+    {
+     "id": "alt-rock",
+     "depth": {}
+    },
+    {
+     "id": "punk",
+     "depth": {}
+    },
+    {
+     "id": "bebop",
+     "depth": {}
+    }
+   ]
+  }
+ }
+}
