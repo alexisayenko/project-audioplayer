@@ -174,7 +174,8 @@ def _with_lengths(first: list[dict[str, Any]], second: list[dict[str, Any]]) -> 
 
 
 def _fail(exc: albums.AlbumError) -> dict[str, Any]:
-    return {"candidate": None, "searchError": "discogs_unavailable" if exc.code == "discogs_unavailable" else "discogs_failed"}
+    code = exc.code if exc.code in ("discogs_unavailable", "not_found") else "discogs_failed"
+    return {"candidate": None, "searchError": "discogs_not_found" if code == "not_found" else code}
 
 
 def _resolve_release(ident: int) -> dict[str, Any]:

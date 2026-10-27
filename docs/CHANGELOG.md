@@ -2,6 +2,12 @@
 
 What shipped, newest first. One line each; the web UI and server are live at https://electrophone.cc. Everything listed here is deployed except the sections marked "built, not deployed" (the 2026-10-14 release went out once the SSH access in [task-0027](tasks/task-0027.md) was restored; the live visualizer files match `origin/main` as of 2026-10-15). Why: [tech/decisions.md](tech/decisions.md); runbook: [tech/deploy.md](tech/deploy.md).
 
+## 2026-10-28 (Web and server: paste a Discogs link in Add album; Review hint removed; PENDING_DEPLOY)
+
+- Web (LIB-267, owner request; unit tests only so far): step 3 of the Add album wizard has an always-visible field "Paste a Discogs link" with a "Use" button inside it; a master or release address (language prefix, slug, query, `api.discogs.com`, `r123`/`m123`) is read with `POST /albums/discogs/resolve`, listed first as "From your link", selected, and used by the later steps (tracklist with lengths, cover, genres, Discogs link). Inline errors for a bad link, a missing album, a Discogs failure or rate limit, and a missing token; clearing the field restores the previous selection.
+- Web (LIB-270, owner request): the Review step no longer shows "Not on the Discogs list. Tick it to add it after the others." above the leftover YouTube tracks; the heading, the unticked state and the numbering are unchanged.
+- Server (API-309, additive): `POST /albums/discogs/resolve` answers `searchError` `discogs_not_found` when Discogs answers 404 (it was `discogs_failed`); other failures and 429 stay `discogs_failed`.
+
 ## 2026-10-28 (Web and server: link an album track to a library song by hand; deployed in `3ba464b`)
 
 - Web (LIB-275, LIB-252, LIB-270, owner decision KH1; unit tests and `scripts/check.sh` pass, /health ready after 6 s, unauthenticated `POST /albums/from-video/preview` answers 401, served `app.js` byte-identical to `web/dist/app.js`, not seen in a browser): each YouTube track row of the Add album Review step has "Link to a song in the library" (video and playlist), an inline searchable picker over the loaded library (8 results, cover, title, artist, "used for track N", keyboard: arrows, Enter, Escape). Picking ticks the row and "Use existing", the chip reads "Linked: Artist - Title" with an unlink button; a song sits on one row only (relinking moves it). A video track sends `useExistingSongId` as for a detected match; no song is created, downloaded or cut for it.

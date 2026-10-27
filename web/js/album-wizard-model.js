@@ -46,7 +46,7 @@ export function newDraft() {
   return {
     step: 'link', address: '', url: '', kind: null, pasteText: '',
     preview: null, st: null, base: null, fields: { artist: '', album: '', year: '' }, edited: false,
-    discogs: { key: '', state: 'idle', all: false, candidates: [], error: '', pick: null, resolved: null, auto: false },
+    discogs: { key: '', state: 'idle', all: false, candidates: [], error: '', pick: null, resolved: null, auto: false, linked: null },
     review: null, art: { chosen: null },
     album: { type: 'album', genres: [], links: {} }, touched: { genres: false, type: false },
     genreHints: { key: '', state: 'idle', items: [], page: null, error: '' },

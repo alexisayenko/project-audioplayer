@@ -51,7 +51,7 @@ export function mountRows(ctx, onChange) {
   }
 
   function matchLine(row, rows) {
-    if (!row.disc) return el('div', { class: 'wiz-match muted t-caption' }, 'Not on the Discogs list. Tick it to add it after the others.');
+    if (!row.disc) return null;
     const select = el('select', { 'aria-label': `YouTube track for ${row.disc.no}. ${row.disc.title}`, 'data-row': row.id },
       el('option', { value: '', selected: !row.src }, 'No match, skip this track'),
       ...draft.st.rows.map((r, i) => el('option', { value: String(r.key), selected: row.src === r }, optionText(r, i, rows, row))));

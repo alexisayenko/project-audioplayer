@@ -41,20 +41,35 @@ export async function searchDiscogs(draft, { all = false, find = api.albumDiscog
   return draft.discogs;
 }
 
-export async function resolvePick(draft, candidate, { resolve = api.albumDiscogsResolve } = {}) {
+export async function resolveLink(link, { resolve = api.albumDiscogsResolve } = {}) {
+  let res;
+  try {
+    res = await resolve({ kind: link.kind, id: link.id });
+  } catch (ex) {
+    return { ok: false, error: ex?.status === 0 ? 'unreachable' : 'discogs_failed' };
+  }
+  const row = res?.candidate;
+  if (!row || !Array.isArray(row.tracks)) return { ok: false, error: res?.searchError || 'discogs_failed' };
+  return { ok: true, candidate: { ...row, kind: row.kind || link.kind, id: row.id ?? link.id } };
+}
+
+export async function resolvePick(draft, candidate, { resolve = api.albumDiscogsResolve, full: known = null } = {}) {
   if (candidate === 'none') {
     setPick(draft, 'none');
     return true;
   }
   const have = draft.discogs.pick;
   if (have && have !== 'none' && have.id === candidate.id && have.kind === candidate.kind && draft.discogs.resolved) return true;
-  let res;
-  try {
-    res = await resolve({ kind: candidate.kind, id: candidate.id });
-  } catch {
-    return false;
+  let full = known;
+  if (!full) {
+    let res;
+    try {
+      res = await resolve({ kind: candidate.kind, id: candidate.id });
+    } catch {
+      return false;
+    }
+    full = res?.candidate;
   }
-  const full = res?.candidate;
   if (!full) return false;
   setPick(draft, candidate);
   draft.discogs.pick = candidate;
@@ -68,7 +83,7 @@ export async function resolvePick(draft, candidate, { resolve = api.albumDiscogs
 export async function runDetails(draft, deps = {}) {
   const key = searchKey(draft.fields);
   if (draft.discogs.key !== key) {
-    draft.discogs = { key: '', state: 'idle', all: false, candidates: [], error: '', pick: null, resolved: null, auto: false };
+    draft.discogs = { key: '', state: 'idle', all: false, candidates: [], error: '', pick: null, resolved: null, auto: false, linked: null };
     clearDownstream(draft);
     await searchDiscogs(draft, deps);
   }

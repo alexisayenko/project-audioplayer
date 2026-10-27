@@ -320,6 +320,137 @@ test('a failed resolve keeps step 3 with a message', async () => {
   D().close();
 });
 
+const TWO = () => ok({ candidates: [MASTER, { ...MASTER, id: 8, year: 1996 }], searchError: null });
+const LINKED = { ...RESOLVED, kind: 'release', id: 123, url: 'https://www.discogs.com/release/123', title: 'Linked Album', year: 1997, cover: 'https://img.discogs.com/l.jpg', trackCount: 4 };
+const discUrl = () => q('#wiz-discogs-url');
+const useBtn = () => q('.wiz-use');
+const pasteLink = async (text) => { type(discUrl(), text); fire(useBtn(), 'click'); await settle(); };
+const pickRadio = (i) => { const r = qa('.wiz-cand input')[i]; r.checked = true; fire(r, 'change'); };
+
+test('step 3 always has the Paste a Discogs link field with the Use button inside it', async () => {
+  server({ find: TWO });
+  await fetchStep();
+  await go();
+  assert.match(q('label[for="wiz-discogs-url"]').textContent, /Paste a Discogs link/);
+  assert.equal(useBtn().parentNode, discUrl().parentNode);
+  assert.equal(useBtn().disabled, true);
+  type(discUrl(), 'r1');
+  assert.equal(useBtn().disabled, false);
+  D().close();
+  server({ find: () => ok({ candidates: [], searchError: null }) });
+  await fetchStep();
+  await go();
+  assert.match(q('.wiz-pick').textContent, /No match on Discogs/);
+  assert.ok(discUrl() && useBtn());
+  D().close();
+});
+
+test('a pasted release link is read, listed first as "From your link", selected, and used by the later steps', async () => {
+  const calls = server({ find: TWO, resolve: () => ok({ candidate: LINKED, searchError: null }) });
+  await fetchStep();
+  await go();
+  await pasteLink('https://www.discogs.com/de/release/123-Linked-Album?ev=x');
+  assert.deepEqual(post(calls, '/albums/discogs/resolve'), { kind: 'release', id: 123 });
+  const cands = qa('.wiz-cand');
+  assert.equal(cands.length, 4);
+  assert.match(cands[0].textContent, /Hallucinogen - Linked Album/);
+  assert.match(cands[0].textContent, /From your link/);
+  assert.equal(cands[0].querySelector('input').checked, true);
+  assert.equal(q('.wiz-link-error').hidden, true);
+  await go();
+  assert.equal(count(calls, '/albums/discogs/resolve'), 1);
+  assert.match(stepText(), /^Step 4 of 5 · Review$/);
+  assert.equal(rows().length, 4);
+  assert.equal(linkIn('discogs').value, 'https://www.discogs.com/release/123');
+  assert.equal(qa('.wiz-art-opt img')[0].getAttribute('src'), 'https://img.discogs.com/l.jpg');
+  fire(backBtn(), 'click');
+  await settle();
+  assert.equal(discUrl().value, 'https://www.discogs.com/release/123');
+  assert.equal(qa('.wiz-cand input')[0].checked, true);
+  D().close();
+});
+
+test('a pasted link also works when the search found nothing, and Enter applies it', async () => {
+  const calls = server({ find: () => ok({ candidates: [], searchError: null }), resolve: () => ok({ candidate: { ...LINKED, kind: 'master', id: 55, url: 'https://www.discogs.com/master/55' }, searchError: null }) });
+  await fetchStep();
+  await go();
+  type(discUrl(), 'm55');
+  fire(discUrl(), 'keydown', { key: 'Enter' });
+  await settle();
+  assert.deepEqual(post(calls, '/albums/discogs/resolve'), { kind: 'master', id: 55 });
+  assert.equal(qa('.wiz-cand').length, 2);
+  assert.equal(qa('.wiz-cand input')[0].checked, true);
+  D().close();
+});
+
+test('clearing the pasted link removes its row and returns to the previous selection', async () => {
+  server({ find: TWO, resolve: (o) => ok({ candidate: JSON.parse(o.body).id === 123 ? LINKED : RESOLVED, searchError: null }) });
+  await fetchStep();
+  await go();
+  pickRadio(1);
+  await pasteLink('https://www.discogs.com/release/123');
+  assert.equal(qa('.wiz-cand').length, 4);
+  assert.equal(qa('.wiz-cand input')[0].checked, true);
+  type(discUrl(), '');
+  assert.equal(qa('.wiz-cand').length, 3);
+  assert.equal(qa('.wiz-cand input')[1].checked, true);
+  assert.equal(qa('.wiz-cand input')[0].checked, false);
+  D().close();
+});
+
+test('a pasted link to an album the search already listed shows once, as the link row', async () => {
+  server({ find: TWO });
+  await fetchStep();
+  await go();
+  await pasteLink('https://www.discogs.com/master/7-Twisted');
+  assert.equal(qa('.wiz-cand').length, 3);
+  assert.match(qa('.wiz-cand')[0].textContent, /From your link/);
+  D().close();
+});
+
+test('None of these still works after a link was pasted', async () => {
+  const calls = server({ find: TWO, resolve: () => ok({ candidate: LINKED, searchError: null }) });
+  await fetchStep();
+  await go();
+  await pasteLink('r123');
+  const none = q('.wiz-none input');
+  none.checked = true;
+  fire(none, 'change');
+  await go();
+  assert.match(stepText(), /Review/);
+  assert.equal(count(calls, '/albums/discogs/resolve'), 1);
+  assert.equal(rows().length, 3);
+  D().close();
+});
+
+test('pasting something that is not a Discogs link, or a link that fails, is said inline and changes nothing', async () => {
+  let answer = () => ok({ candidate: null, searchError: 'discogs_not_found' });
+  const calls = server({ find: TWO, resolve: () => answer() });
+  await fetchStep();
+  await go();
+  const err = () => q('.wiz-link-error');
+  await pasteLink('https://example.com/release/123');
+  assert.equal(err().hidden, false);
+  assert.equal(err().textContent, 'This is not a Discogs release or master link.');
+  assert.equal(count(calls, '/albums/discogs/resolve'), 0);
+  await pasteLink('https://www.discogs.com/release/999');
+  assert.match(err().textContent, /no album at this link/);
+  answer = () => ok({ candidate: null, searchError: 'discogs_failed' });
+  await pasteLink('https://www.discogs.com/release/999');
+  assert.equal(err().textContent, 'Discogs did not answer, try again.');
+  answer = () => ({ status: 429, body: { detail: 'rate' } });
+  await pasteLink('https://www.discogs.com/release/999');
+  assert.equal(err().textContent, 'Discogs did not answer, try again.');
+  answer = () => ok({ candidate: null, searchError: 'discogs_unavailable' });
+  await pasteLink('https://www.discogs.com/release/999');
+  assert.match(err().textContent, /not set up on this server/);
+  type(discUrl(), 'x');
+  assert.equal(err().hidden, true);
+  assert.equal(qa('.wiz-cand').length, 3);
+  assert.equal(qa('.wiz-cand input').some((r) => r.checked), false);
+  D().close();
+});
+
 test('the review offers the art, genres with their sources, and flags names outside the tree', async () => {
   server();
   await fetchStep();
@@ -495,6 +626,7 @@ test('re-assigning a Discogs track to another video track and skipping one chang
   await settle();
   assert.equal(rows()[0].querySelector('input[type=checkbox]').disabled, true);
   assert.match(qa('.wiz-extras-head')[0].textContent, /Other tracks/);
+  assert.doesNotMatch(q('.wiz-body').textContent, /Not on the Discogs list|Tick it to add/);
   fire(nextBtn(), 'click');
   await settle();
   const included = post(calls, '/albums/from-video').tracks.filter((t) => t.include);

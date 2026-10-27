@@ -200,6 +200,7 @@ input[type=text].album-year { height: var(--hit); box-sizing: content-box; flex:
 .wiz-foot { justify-content: space-between; gap: var(--space-3); margin-top: var(--space-4); }
 .wiz-foot .btn[hidden] { display: none; }
 .wiz-well .wiz-fetch { flex: none; }
+.wiz-well .wiz-use { flex: none; }
 .wiz-source a { overflow-wrap: anywhere; }
 .wiz-paste { display: grid; gap: var(--space-2); }
 .wiz-paste[hidden] { display: none; }

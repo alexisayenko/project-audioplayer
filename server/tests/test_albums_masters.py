@@ -177,7 +177,7 @@ def test_resolve_a_release_reads_its_tracklist_type_and_ids(client, fake):
     assert fake["calls"] == ["releases/9001"]
     del fake["data"]["releases/9001"]
     album_masters._cache.clear()
-    assert client.post("/albums/discogs/resolve", json={"kind": "release", "id": 9001}, headers=H).json() == {"candidate": None, "searchError": "discogs_failed"}
+    assert client.post("/albums/discogs/resolve", json={"kind": "release", "id": 9001}, headers=H).json() == {"candidate": None, "searchError": "discogs_not_found"}
 
 
 def test_resolve_survives_a_missing_main_release_and_reports_failures(client, fake):
@@ -185,7 +185,17 @@ def test_resolve_survives_a_missing_main_release_and_reports_failures(client, fa
     assert resolve(client).json()["candidate"]["type"] is None
     fake["data"].pop("masters/3001")
     album_masters._cache.clear()
+    assert resolve(client).json() == {"candidate": None, "searchError": "discogs_not_found"}
+
+
+@pytest.mark.parametrize("status", [429, 500, 502])
+def test_resolve_says_a_discogs_failure_or_rate_limit_as_discogs_failed(client, fake, monkeypatch, status):
+    def get(path, params=None):
+        raise urllib.error.HTTPError(path, status, "x", {}, None)
+
+    monkeypatch.setattr(discogs_lookup, "_get", get)
     assert resolve(client).json() == {"candidate": None, "searchError": "discogs_failed"}
+    assert resolve(client, kind="release", id=9001).json() == {"candidate": None, "searchError": "discogs_failed"}
 
 
 def test_resolve_refuses_bad_input_and_a_missing_token(client, fake, monkeypatch):
