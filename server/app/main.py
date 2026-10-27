@@ -5,10 +5,12 @@ from __future__ import annotations
 from collections.abc import Awaitable, Callable
 
 from fastapi import FastAPI, Request, Response
+from fastapi.exception_handlers import http_exception_handler
 from fastapi.responses import JSONResponse
+from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from . import anon, deps, features, genre_vocab, guest, hosts, legal, migrate_model2, migrate_model3, migrate_removals, migrate_renames, migrate_retired, migrate_sources, migrate_tags, migrate_version_norm, migrate_reference_tags, migrate_genre_eras_seed, plays, readiness, session, web
-from .problems import Problem
+from .problems import Problem, error_code
 from .routes import playlist_import as playlist_import_routes
 from .routes import album_video as album_video_routes, albums as albums_routes, analyze, anon as anon_routes, auth, backfill, catalog, covers, drafts, features as features_routes, files, genre_layout as genre_layout_routes, genre_references as genre_references_routes, genres, health, legacy, legal as legal_routes, lookup, me, metafill, peaks as peaks_routes, playlists as playlists_routes, plays as plays_routes, removal, songs
 
@@ -23,6 +25,14 @@ async def _music_root_unavailable(request: Request, exc: deps.MusicRootUnavailab
 @app.exception_handler(Problem)
 async def _problem(request: Request, exc: Problem) -> JSONResponse:
     return JSONResponse(exc.body(), status_code=exc.status, headers=exc.headers)
+
+
+@app.exception_handler(StarletteHTTPException)
+async def _http_error(request: Request, exc: StarletteHTTPException) -> Response:
+    code = error_code(exc.status_code, exc.detail)
+    if code is None or exc.status_code < 400:
+        return await http_exception_handler(request, exc)
+    return JSONResponse({"error": code, "detail": exc.detail}, status_code=exc.status_code, headers=exc.headers)
 
 
 @app.middleware("http")
