@@ -18,7 +18,7 @@ import sys
 from pathlib import Path
 from typing import Any
 
-from . import countrycodes, credits, deps, migrate_model2, safepath
+from . import countrycodes, credits, deps, migrate_model2, migration, safepath
 from .jsonio import write_json_atomic
 from .tags import namespace
 
@@ -194,8 +194,7 @@ def backup_path(path: Path, backup_dir: Path | None = None) -> Path:
     """`<repo root>/backups-model3/<uid>/library.json`: beside, not inside, the git-added `audioplayer/` tree."""
     if backup_dir is not None:
         return backup_dir / path.name
-    base = deps.SYNC.data_repo if deps.SYNC else deps.data_root()
-    return base / BACKUP_DIR / path.parent.name / path.name
+    return migration.user_backup(BACKUP_DIR, path.parent.name, path.name)
 
 
 def legacy_backup_path(path: Path, legacy_dir: Path | None = None) -> Path | None:
@@ -267,11 +266,8 @@ def migrate(path: Path, apply: bool = False, report_path: Path | None = None, ba
 
 def run() -> int:
     """Startup, after model 2: migrate every user's library; returns the number rewritten. An anomaly stops that library (logged), the server still serves it."""
-    users_dir = deps.data_root() / "users"
-    if not users_dir.is_dir():
-        return 0
     done = 0
-    for lib in sorted(users_dir.glob("*/library.json")):
+    for lib in migration.libraries():
         uid = lib.parent.name
         try:
             raw = json.loads(lib.read_text(encoding="utf-8"))

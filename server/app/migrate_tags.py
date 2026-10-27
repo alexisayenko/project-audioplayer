@@ -4,11 +4,10 @@ from __future__ import annotations
 
 import json
 import logging
-import shutil
 from pathlib import Path
 from typing import Any
 
-from . import deps, genre_filter, genre_vocab, library, migrate_retired, users
+from . import deps, genre_filter, genre_vocab, library, migrate_retired, migration, users
 from .jsonio import write_json_atomic
 from .tags import namespace, namespaced_values
 
@@ -80,8 +79,7 @@ def _stale(path: Path) -> bool:
 
 def backup_path(path: Path) -> Path:
     """`<repo root>/backups-genre-merge/<uid>/library.json`: beside, not inside, the git-added `audioplayer/` tree."""
-    base = deps.SYNC.data_repo if deps.SYNC else deps.data_root()
-    return base / BACKUP_DIR / path.parent.name / path.name
+    return migration.user_backup(BACKUP_DIR, path.parent.name, path.name)
 
 
 def review_path(path: Path) -> Path:
@@ -121,10 +119,7 @@ def migrate(path: Path) -> bool:
     """Rewrite one library.json when a genre tag is not canonical; keeps a one-time backup first. True when rewritten."""
     if not (_stale(path) or one_off_pending(path)):
         return False
-    backup = backup_path(path)
-    if not backup.exists():
-        backup.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copy2(path, backup)
+    migration.backup_once(path, backup_path(path))
     doc = library.load_doc(path)
     if path.parent.name == users.owner_uid():
         for sid in apply_one_off(doc["songs"]):
@@ -134,11 +129,8 @@ def migrate(path: Path) -> bool:
 
 
 def run() -> int:
-    users_dir = deps.data_root() / "users"
-    if not users_dir.is_dir():
-        return 0
     done = 0
-    for lib in sorted(users_dir.glob("*/library.json")):
+    for lib in migration.libraries():
         uid = lib.parent.name
         try:
             if _stale(lib) or one_off_pending(lib):
