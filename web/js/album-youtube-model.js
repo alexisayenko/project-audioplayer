@@ -52,6 +52,7 @@ export function payload(st) {
     album: albumPayload(st),
     selected: st.rows.filter((r) => r.include).map((r) => ({
       position: r.position, videoId: r.videoId, title: r.title.trim(), durationS: r.durationS ?? null, artists: splitArtists(r.artists), version: r.version.trim() || null,
+      ...(r.useExisting && r.match && !r.songId ? { useExistingSongId: r.match.songId } : {}),
     })),
   };
 }

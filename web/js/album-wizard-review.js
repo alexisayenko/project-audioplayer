@@ -3,9 +3,10 @@ import { el } from './dom.js';
 import { createErrorText } from './album-video-model.js';
 import { youtubeErrorText, errorCode, QUOTA_PER_HOUR } from './album-candidates.js';
 import {
-  artistName, buildReview, createIssues, createPayload, createLabel, summaryText, reviewRows, fieldIssues, offline, unreachable,
+  artistName, buildReview, createIssues, createPayload, createLabel, summaryText, fieldIssues, offline, unreachable, downloadCount,
   OFFLINE_MESSAGE,
 } from './album-wizard-model.js';
+import { clearLinks } from './album-wizard-songlink.js';
 import { mountRows } from './album-wizard-rows.js';
 import { mountPaste } from './album-wizard-paste.js';
 import { artPicker, genreArea, linkRows, typeSelect } from './album-wizard-extras.js';
@@ -21,9 +22,9 @@ function failure(ctx, ex) {
     ctx.say('This album already exists.', id ? ctx.openExisting(id) : null);
     return;
   }
-  if (draft.kind === 'video' && code === 'unknown_song') {
-    for (const s of draft.review.state.values()) s.useExisting = false;
-    ctx.say(createErrorText(ex));
+  if (code === 'unknown_song') {
+    clearLinks(draft);
+    ctx.say(draft.kind === 'video' ? createErrorText(ex) : youtubeErrorText(ex));
     return;
   }
   ctx.say(draft.kind === 'video' ? createErrorText(ex) : youtubeErrorText(ex));
@@ -59,7 +60,7 @@ export function mountReview(ctx) {
     rows.paintRows();
     const label = createLabel(draft);
     ctx.setNext(label, issues.length > 0);
-    const k = reviewRows(draft).filter((r) => r.src && r.st.include && !r.src.songId).length;
+    const k = downloadCount(draft);
     quota.textContent = `${k} selected, up to ${QUOTA_PER_HOUR} fetches an hour, it pauses and resumes.`;
     quota.hidden = draft.kind !== 'playlist' || owner;
   }
@@ -106,7 +107,11 @@ export function mountReview(ctx) {
         }
         if (ctx.live()) ctx.go('run');
       } catch (ex) {
-        if (ctx.live()) { failure(ctx, ex); paint(); }
+        if (ctx.live()) {
+          failure(ctx, ex);
+          if (errorCode(ex) === 'unknown_song') rows.draw();
+          paint();
+        }
       } finally {
         ctx.busy(false);
       }

@@ -80,7 +80,7 @@ function server(o = {}) {
     }
     if (u === '/me') return ok({ owner: false });
     if (u === '/albums') return ok([]);
-    if (u === '/library') return ok({ songs: [] });
+    if (u === '/library') return ok({ songs: o.library || [] });
     return ok({});
   });
 }
@@ -759,5 +759,137 @@ test('backdrop: a plain backdrop click closes the empty first step but not a sta
   await fetchStep();
   D().onclick({ target: D(), clientX: undefined });
   assert.equal(D().open, true);
+  D().close();
+});
+
+const LIBRARY = [
+  { id: 'lib1', title: 'Elsewhere', mainArtists: ['Other'], featuredArtists: [], withArtists: [], version: null },
+  { id: 'lib2', title: 'Else Where Too', mainArtists: ['Another'], featuredArtists: [], withArtists: [], version: null },
+  { id: 'lib3', title: 'Unrelated', mainArtists: ['Nobody'], featuredArtists: [], withArtists: [], version: null },
+];
+const { store } = await import('./store.js');
+const holdLibrary = (loaded = true) => { store.songs = loaded ? LIBRARY : []; store.loaded = loaded; store.pending = null; store.sig = null; };
+const key = (node, k) => fire(node, 'keydown', { key: k });
+const linkBtn = (row) => row.querySelector('.wiz-link-open');
+
+async function openPicker(row, text) {
+  fire(linkBtn(row), 'click');
+  await settle();
+  const input = row.querySelector('.wiz-songpick-input');
+  if (text !== undefined) type(input, text);
+  return input;
+}
+
+test('Link to a song in the library picks a song by search and sends its id for that row', async () => {
+  holdLibrary(false);
+  const calls = server({ library: LIBRARY });
+  await fetchStep();
+  await go();
+  await settle();
+  const row = rows()[0];
+  assert.equal(linkBtn(row).textContent, 'Link to a song in the library');
+  const input = await openPicker(row, 'else');
+  assert.equal(input.getAttribute('role'), 'combobox');
+  const items = () => [...row.querySelectorAll('.wiz-songpick-item')];
+  assert.deepEqual(items().map((li) => li.getAttribute('data-song')), ['lib2', 'lib1']);
+  key(input, 'ArrowDown');
+  assert.equal(items()[1].getAttribute('aria-selected'), 'true');
+  fire(items()[1], 'click');
+  await settle();
+  const after = rows()[0];
+  assert.equal(after.querySelector('.wiz-linked').textContent, 'Linked: Other - Elsewhere');
+  assert.equal(after.querySelector('.av-use:not(.av-use-disc) input').checked, true);
+  assert.equal(after.querySelector('.av-inc input').checked, true);
+  assert.equal(linkBtn(after).textContent, 'Change song');
+  fire(nextBtn(), 'click');
+  await settle();
+  const first = post(calls, '/albums/from-video').tracks[0];
+  assert.deepEqual([first.include, first.useExistingSongId, first.title], [true, 'lib1', 'LSD']);
+});
+
+test('the picker closes on Escape without closing the dialog, and Enter picks the highlighted song', async () => {
+  holdLibrary();
+  server();
+  await fetchStep();
+  await go();
+  await settle();
+  const row = rows()[0];
+  const input = await openPicker(row, 'unrel');
+  key(input, 'Escape');
+  assert.equal(row.querySelector('.wiz-songpick-slot').hidden, true);
+  assert.equal(D().open, true);
+  const again = await openPicker(row, 'unrel');
+  key(again, 'Enter');
+  await settle();
+  assert.equal(rows()[0].querySelector('.wiz-linked').textContent, 'Linked: Nobody - Unrelated');
+  D().close();
+});
+
+test('unlinking clears the link and unticks the row; a song linked twice moves and says used for track N', async () => {
+  holdLibrary();
+  const calls = server();
+  await fetchStep();
+  await go();
+  await settle();
+  const input = await openPicker(rows()[0], 'elsewhere');
+  fire(rows()[0].querySelector('.wiz-songpick-item'), 'click');
+  await settle();
+  const second = rows().find((r) => r !== rows()[0] && linkBtn(r));
+  await openPicker(second, 'elsewhere');
+  assert.match(second.querySelector('.wiz-songpick-used').textContent, /^used for track \d+$/);
+  fire(second.querySelector('.wiz-songpick-item'), 'click');
+  await settle();
+  assert.equal(input !== null, true);
+  assert.equal(rows()[0].querySelector('.wiz-linked'), null);
+  assert.equal(rows()[0].querySelector('.av-inc input').checked, false);
+  const moved = rows().find((r) => r.querySelector('.wiz-linked'));
+  assert.equal(moved.querySelector('.wiz-linked').textContent, 'Linked: Other - Elsewhere');
+  fire(moved.querySelector('.wiz-linkctl .icon'), 'click');
+  await settle();
+  assert.equal(qa('.wiz-linked').length, 0);
+  assert.equal(count(calls, '/albums/from-video'), 0);
+  D().close();
+});
+
+test('a detected match keeps its chip and offers Link to another song', async () => {
+  holdLibrary();
+  server();
+  await fetchStep();
+  await go();
+  await settle();
+  const matched = rows().find((r) => r.textContent.includes('In library'));
+  assert.equal(linkBtn(matched).textContent, 'Link to another song');
+  D().close();
+});
+
+test('a playlist row is linked through the same picker and the commit body carries the song id', async () => {
+  holdLibrary();
+  const calls = server();
+  await fetchStep(LIST);
+  await go();
+  await settle();
+  const row = rows().find((r) => r.querySelector('.av-label').textContent === 'Spirit Guide');
+  await openPicker(row, 'unrel');
+  fire(row.querySelector('.wiz-songpick-item'), 'click');
+  await settle();
+  fire(nextBtn(), 'click');
+  await settle();
+  const sel = post(calls, '/albums/youtube/commit').selected;
+  assert.deepEqual(sel.filter((s) => s.useExistingSongId).map((s) => [s.title, s.useExistingSongId]), [['Spirit Guide', 'lib3']]);
+});
+
+test('unknown_song on create clears every link and says so', async () => {
+  holdLibrary();
+  server({ create:() => ({ status: 422, body: { detail: 'unknown_song' } }) });
+  await fetchStep();
+  await go();
+  await settle();
+  await openPicker(rows()[0], 'unrel');
+  fire(rows()[0].querySelector('.wiz-songpick-item'), 'click');
+  await settle();
+  fire(nextBtn(), 'click');
+  await settle();
+  assert.match(q('.wiz-msg').textContent, /no longer in your library/);
+  assert.equal(qa('.wiz-linked').length, 0);
   D().close();
 });

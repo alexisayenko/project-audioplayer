@@ -5,6 +5,8 @@ import { formatClock, parseClock } from './album-video-model.js';
 import {
   reviewRows, reassign, reviewView, rowIssueFor, estLength, lengthGap, trackArtists, offersDiscTitle, LENGTH_WARN_S,
 } from './album-wizard-model.js';
+import { effectiveMatch, linkText, linkSong, unlinkSong } from './album-wizard-songlink.js';
+import { songPicker } from './album-wizard-songpick.js';
 
 const clock = (s) => (s ? trackClock(s) : '');
 
@@ -64,6 +66,29 @@ export function mountRows(ctx, onChange) {
       gap > LENGTH_WARN_S ? el('span', { class: 't-caption av-warn', title: `The lengths differ by ${gap} s` }, 'Length differs, check the match') : null);
   }
 
+  function linkControls(row, st, name, slot) {
+    const { src } = row;
+    const text = st.link ? 'Change song' : src.match ? 'Link to another song' : 'Link to a song in the library';
+    const open = el('button', { class: 'link-btn t-caption wiz-link-open', type: 'button', 'aria-expanded': 'false', 'aria-label': `${text} for ${name}`, ...(st.link ? {} : { 'data-focus': row.id }) },
+      icon('link', 'inline'), text);
+    const shut = () => { slot.hidden = true; slot.replaceChildren(); open.setAttribute('aria-expanded', 'false'); open.focus(); };
+    open.addEventListener('click', () => {
+      if (!slot.hidden) { shut(); return; }
+      const pick = songPicker({
+        draft, rowKey: src.key, name,
+        onPick: (song) => { linkSong(draft, src.key, song); ctx.touch(); onChange(true, row.id); },
+        onClose: shut,
+      });
+      slot.replaceChildren(pick.node);
+      slot.hidden = false;
+      open.setAttribute('aria-expanded', 'true');
+      pick.focus();
+    });
+    const clear = st.link ? el('button', { class: 'icon sq-btn av-edit', type: 'button', title: 'Unlink this song', 'aria-label': `Unlink the song from ${name}`, 'data-focus': row.id }, icon('unlink', 'inline')) : null;
+    clear?.addEventListener('click', () => { unlinkSong(draft, src.key); ctx.touch(); onChange(true, row.id); });
+    return el('span', { class: 'wiz-linkctl' }, open, clear);
+  }
+
   function rowNode(row, rows) {
     const { disc, src, st } = row;
     const name = disc ? disc.title : srcName(src);
@@ -83,14 +108,19 @@ export function mountRows(ctx, onChange) {
     const line2 = el('div', { class: 'av-line2', hidden: true }, ...fields);
     const issue = el('p', { class: 'av-issue t-caption', role: 'alert', hidden: true });
     const meta = [];
-    if (src?.match) {
+    const found = src ? effectiveMatch(src, st) : null;
+    const slot = el('div', { class: 'wiz-songpick-slot', hidden: true });
+    if (found) {
       const use = el('input', { type: 'checkbox', checked: !!st.useExisting, 'aria-label': `Use the existing song for ${name}` });
       use.addEventListener('change', () => { st.useExisting = use.checked; if (use.checked) { st.include = true; box.checked = true; } ctx.touch(); onChange(); });
-      meta.push(el('span', { class: 'chip tint album-in-library', title: [src.match.title, (src.match.artists || []).join(' & ')].filter(Boolean).join(' - ') }, 'In library'),
-        el('label', { class: 't-caption av-use' }, use, 'Use existing'));
+      meta.push(st.link
+        ? el('span', { class: 'chip tint album-in-library wiz-linked', title: linkText(found) }, `Linked: ${linkText(found)}`)
+        : el('span', { class: 'chip tint album-in-library', title: linkText(found) }, 'In library'),
+      el('label', { class: 't-caption av-use' }, use, 'Use existing'));
     } else if (src?.songId) {
       meta.push(el('span', { class: 'chip tint album-in-library' }, 'In library'));
     }
+    if (src && !src.songId) meta.push(linkControls(row, st, name, slot));
     for (const w of src?.warnings || []) meta.push(el('span', { class: 't-caption muted av-warn' }, w));
     const lineName = el('span', { class: 'av-label t-body', title: name }, name);
     const li = el('li', { class: 'av-row wiz-row', 'data-row': row.id },
@@ -104,6 +134,7 @@ export function mountRows(ctx, onChange) {
       line2,
       useDisc,
       meta.length ? el('div', { class: 'av-meta' }, ...meta) : null,
+      slot,
       issue);
     if (edit) edit.addEventListener('click', () => {
       const open = line2.hidden;
@@ -135,7 +166,7 @@ export function mountRows(ctx, onChange) {
       nodes.push(rowNode(row, rows));
     }
     list.replaceChildren(...nodes);
-    if (focusRow) list.querySelector(`select[data-row="${focusRow}"]`)?.focus();
+    if (focusRow) (list.querySelector(`select[data-row="${focusRow}"]`) || list.querySelector(`[data-focus="${focusRow}"]`))?.focus();
     return rows;
   }
 

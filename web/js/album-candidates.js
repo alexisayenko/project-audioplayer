@@ -16,6 +16,7 @@ export function errorCode(ex) {
 export function youtubeErrorText(ex) {
   const code = errorCode(ex);
   if (code === 'library_full_songs') return 'Your library is full. Remove some songs and try again.';
+  if (code === 'unknown_song') return 'A song you linked is no longer in your library. Reload and try again.';
   if (code === 'bad_selection' || code === 'bad_mapping' || code === 'bad_album') return 'The selection could not be saved. Reload the playlist and try again.';
   if (ex.status === 400 || ex.code === 'bad_url') return 'This is not a valid YouTube playlist link.';
   if (ex.status === 404 || code === 'not_found') return 'YouTube has no playlist at this address, or it is private.';

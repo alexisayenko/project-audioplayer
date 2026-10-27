@@ -153,7 +153,7 @@ export function buildReview(draft) {
   const matched = disc.length ? matchTracks(src, disc) : new Map();
   for (const d of disc) assign.set(d.no, matched.get(d.no) ?? null);
   const taken = new Set(matched.values());
-  const state = new Map(src.map((r) => [r.key, { include: disc.length && !taken.has(r.key) ? false : defaultInclude(r), useExisting: false, useDisc: false }]));
+  const state = new Map(src.map((r) => [r.key, { include: disc.length && !taken.has(r.key) ? false : defaultInclude(r), useExisting: false, useDisc: false, link: null }]));
   draft.review = { assign, state, disc };
   return draft.review;
 }
@@ -277,6 +277,7 @@ export function reviewView(draft) {
     const r = row.src ? byKey.get(row.src.key) : null;
     if (!r) continue;
     r.include = !!row.st.include;
+    if (row.st.link) r.match = row.st.link;
     r.useExisting = !!row.st.useExisting && !!r.match;
     r.artists = trackArtists(draft, row.src);
     if (row.disc) {
@@ -359,9 +360,11 @@ export function genresPayload(draft, rymText = '') {
   };
 }
 
+export const downloadCount = (draft) => reviewView(draft).rows.filter((r) => r.include && !r.songId && !(r.useExisting && r.match)).length;
+
 export function createLabel(draft) {
   if (draft.kind === 'video') return 'Download, cut and import';
-  const fresh = reviewView(draft).rows.filter((r) => r.include && !r.songId).length;
+  const fresh = downloadCount(draft);
   return fresh ? `Import and download ${fresh} ${fresh === 1 ? 'track' : 'tracks'}` : 'Import the album';
 }
 
