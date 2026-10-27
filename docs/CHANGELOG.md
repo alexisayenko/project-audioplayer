@@ -2,6 +2,11 @@
 
 What shipped, newest first. One line each; the web UI and server are live at https://electrophone.cc. Everything listed here is deployed except the sections marked "built, not deployed" (the 2026-10-14 release went out once the SSH access in [task-0027](tasks/task-0027.md) was restored; the live visualizer files match `origin/main` as of 2026-10-15). Why: [tech/decisions.md](tech/decisions.md); runbook: [tech/deploy.md](tech/deploy.md).
 
+## 2026-10-27 (iOS: player structure and port tests of the architecture audit; in source, not in a build)
+
+- iOS (task-0122 F9, IOS-115; both schemes build, 150 `AudioPlayerTests` and the new `ElectrophoneMacTests` pass, played in the simulator, not run on a device): `PlayerService` keeps the AVPlayer and the API the views use; the next, previous, reorder and tag-removal rules are pure and tested (`QueueAdvance`), Now Playing and the remote commands are wired in `NowPlaying.swift`, the artwork fetch is `ArtworkLoader` with the server address injected, and `Components.swift` is split by job. No behaviour change.
+- iOS and macOS tests (task-0122 F3, IOS-108): shared case files `play_recorder_cases.json`, `live_bpm_cases.json`, `gen_graph_cases.json` and `gen_sim_cases.json` check `PlayRecorder`, the Live BPM port, `GenData.swift` and `GenSim.swift` against the web, with web tests on the same files. Two drifts fixed: Swift `decadeTag` stopped at 2029 (it now follows the current year plus one like the web and the server), and the macOS force simulation split the link pull by the source degree instead of the target degree.
+
 ## 2026-10-27 (iOS TestFlight build 20261035)
 
 - iOS: TestFlight build 20261035 uploaded 2026-10-27 (archive and export from `8052a801`, uploaded by `xcodebuild -exportArchive`; processing at the time of writing; internal group "Alex" only). Both schemes build and `AudioPlayerTests` pass (115 tests). It carries all iOS work listed below as "in source, not on TestFlight" (Playlists, Albums and Download album, the reliability phase, the UI/UX audit fixes) and the playback resume, shuffle and background-download work; none of it is checked on a device yet. No server or web change.

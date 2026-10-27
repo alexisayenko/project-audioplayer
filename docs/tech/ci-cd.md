@@ -266,10 +266,10 @@ iOS unit tests (not part of `scripts/check.sh`, which runs no Swift; run them be
 ```sh
 cd ios && xcodegen && xcodebuild test -project AudioPlayer.xcodeproj -scheme AudioPlayer \
   -destination 'platform=iOS Simulator,name=iPhone 17' CODE_SIGNING_ALLOWED=NO
-xcodebuild build -project AudioPlayer.xcodeproj -scheme ElectrophoneMac -destination 'platform=macOS' CODE_SIGNING_ALLOWED=NO
+xcodebuild test -project AudioPlayer.xcodeproj -scheme ElectrophoneMac -destination 'platform=macOS' CODE_SIGNING_ALLOWED=NO
 ```
 
-`AudioPlayerTests` bundles `token_cases.json`, `url_clean_cases.json` and `tag_cases.json` from `server/tests/fixtures`, the same files the server and web tests read (IOS-108).
+`AudioPlayerTests` bundles `token_cases.json`, `url_clean_cases.json`, `tag_cases.json`, `play_recorder_cases.json` and `live_bpm_cases.json` from `server/tests/fixtures`, and `ElectrophoneMacTests` (a bundle without the app, it compiles the pure Genres map sources) bundles `gen_graph_cases.json` and `gen_sim_cases.json`; the server and web tests read the same files (IOS-108).
 
 ## Secrets and credentials
 

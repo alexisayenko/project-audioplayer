@@ -14,9 +14,9 @@ final class ArtworkLoaderTests: XCTestCase {
         try? FileManager.default.removeItem(at: directory)
     }
 
-    private func loader(_ asked: @escaping @Sendable () -> Void = {}) -> ArtworkLoader {
+    private func loader(_ asked: AskCounter = AskCounter()) -> ArtworkLoader {
         ArtworkLoader(directory: directory) {
-            asked()
+            asked.bump()
             return ArtworkServer(base: "http://127.0.0.1:1", token: "")
         }
     }
@@ -32,7 +32,7 @@ final class ArtworkLoaderTests: XCTestCase {
     func testACachedCoverIsServedWithoutAskingForTheServer() async throws {
         try writeCover("aaaaaaaaaaa")
         let asked = AskCounter()
-        let image = try await loader { asked.bump() }.image(for: Track(id: "aaaaaaaaaaa", title: "T", artist: "A", thumbnail: "/covers/aaaaaaaaaaa"))
+        let image = try await loader(asked).image(for: Track(id: "aaaaaaaaaaa", title: "T", artist: "A", thumbnail: "/covers/aaaaaaaaaaa"))
         XCTAssertNotNil(image)
         XCTAssertEqual(asked.count, 0)
     }

@@ -201,9 +201,11 @@ Sources in `ios/Sources/`:
   BPM detect, delete; auth header added per request.
 - `AuthService`, `Keychain` — Sign in with Apple / Google (ADR-0006) and
   token storage.
-- `PlayerService` — `AVPlayer`, `.playback` audio session, queue, shuffle and
-  repeat, `MPNowPlayingInfoCenter`, `MPRemoteCommandCenter`;
-  `UIBackgroundModes: audio`.
+- `PlayerService` — `AVPlayer`, `.playback` audio session, queue state;
+  `UIBackgroundModes: audio`. The rules and wiring live beside it: `QueueAdvance`
+  (next, previous, reorder; pure), `ShufflePick`, `NowPlaying` and
+  `RemoteCommands` (`MPNowPlayingInfoCenter`, `MPRemoteCommandCenter`),
+  `ArtworkLoader` (IOS-115).
 - The server URL defaults to `https://electrophone.cc`; Settings has cards Account (Apple/Google sign-in), Downloads (read-only quality, auto-download and mobile-data switches; a "Custom server · Reset" row only for a non-default server or a stale token) and Storage, then the version line; no server or token field.
 
 ```sh
