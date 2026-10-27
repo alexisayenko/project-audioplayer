@@ -1,6 +1,6 @@
 {
   "esbuild": "0.27.7",
-  "sources": "c3e9c6b40d2105ce6ac15a15459e38776eb9f48e2245a02da4f8e19d6023ea6c",
+  "sources": "5599f7757a8ebc4437fd4ec9efd1aca01566204352fa9b1d69cc55ee1d1188ba",
   "modules": [
     "js/about.js",
     "js/add-preview.js",
@@ -11,6 +11,8 @@
     "js/album-draft-model.js",
     "js/album-draft-view.js",
     "js/album-form.js",
+    "js/album-tracklist-panel.js",
+    "js/album-tracklist.js",
     "js/album-video-model.js",
     "js/album-video-progress.js",
     "js/album-video.js",
@@ -308,17 +310,17 @@
   "tier1": [
     "dist/app.js",
     "dist/icons.js",
-    "dist/chunk-POOE2EBE.js",
-    "dist/chunk-IZXMHZ23.js",
-    "dist/chunk-2X6OTV4U.js",
+    "dist/chunk-O77HEHTD.js",
+    "dist/chunk-AVIKX6HK.js",
+    "dist/chunk-7XSYGMS4.js",
     "dist/chunk-DDUC7YAS.js",
     "dist/chunk-EEQXK5JZ.js",
     "dist/chunk-WOT6VMZA.js"
   ],
   "tier2": [
-    "dist/lazy-ui-FYPBT56D.js",
+    "dist/lazy-ui-ILDYDZ3T.js",
     "dist/chunk-N44TH7US.js",
-    "dist/chunk-DPYDGQ4X.js",
-    "dist/lazy-genres-HORBOKQX.js"
+    "dist/chunk-2UUMYGZN.js",
+    "dist/lazy-genres-E5CFER32.js"
   ]
 }
