@@ -12,7 +12,7 @@ export const prefersReducedMotion = () => window.matchMedia?.('(prefers-reduced-
 export const initialOutlineOpen = (v2) => v2 || outlineDefaultOpen(window.innerWidth || 1200);
 
 export function initialDrill(v2, storage) {
-  if (v2) return false;
+  if (v2) return true;
   return loadDrill(storage);
 }
 

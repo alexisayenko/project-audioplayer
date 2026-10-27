@@ -110,7 +110,18 @@ def _genre(i: int, row: Any, known: set[str], rows: dict[str, dict[str, Any]], v
     url = _text(row, "musicmap_url", where, 300)
     if url is not None and not url.startswith("https://"):
         raise ValueError(f"{where}: musicmap_url must be an https URL")
-    return {"id": gid, "name": _text(row, "name", where, NAME_MAX, True), "level": level, "cluster": cluster, "parents": list(parents), "v1": v1, "description": _text(row, "description", where, TEXT_MAX), "synonyms": [x.strip() for x in syn], "details": _text(row, "details", where, TEXT_MAX), "musicmap_url": url}
+    out = {"id": gid, "name": _text(row, "name", where, NAME_MAX, True), "level": level, "cluster": cluster, "parents": list(parents), "v1": v1, "description": _text(row, "description", where, TEXT_MAX), "synonyms": [x.strip() for x in syn], "details": _text(row, "details", where, TEXT_MAX), "musicmap_url": url}
+    flag = row.get("legacy")
+    if flag is not None:
+        if flag is not True:
+            raise ValueError(f"{where}: legacy must be true when present")
+        out["legacy"] = True
+    lp = row.get("legacyParents")
+    if lp is not None:
+        if not isinstance(lp, list) or not lp or not all(isinstance(x, str) and x.strip() and len(x.strip()) <= NAME_MAX for x in lp):
+            raise ValueError(f"{where}: legacyParents must be a non-empty list of strings")
+        out["legacyParents"] = [x.strip() for x in lp]
+    return out
 
 
 def parse(doc: Any, v1_names: set[str]) -> dict[str, Any]:

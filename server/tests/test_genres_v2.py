@@ -114,3 +114,73 @@ def test_the_route_serves_the_shipped_genres_with_v1_descriptions_and_links(clie
 def test_v1_routes_are_unchanged(client):
     body = client.get("/genres/vocabulary", headers=H).json()
     assert "Drum 'n' Bass" not in {g["name"] for g in body["genres"]}
+
+
+CURATED = ["breakbeat", "drum-n-bass", "hardcore", "house", "techno", "trance", "psytrance", "goa-trance", "dark-psytrance", "progressive-psytrance", "forest-psytrance", "full-on-psytrance", "hi-tech-psytrance", "psycore", "nitzhonot", "suomisaundi", "zenonesque", "synthwave", "vaporwave", "chillsynth", "darksynth", "dreamwave", "outrun", "sovietwave"]
+
+
+def _split():
+    rows = shipped()["genres"]
+    return rows, [g for g in rows if not g.get("legacy")], {g["id"]: g for g in rows}
+
+
+def test_curated_genres_are_unchanged_and_unflagged():
+    rows, curated, by = _split()
+    assert [g["id"] for g in curated] == CURATED
+    assert all("legacyParents" not in g and g["cluster"] != "legacy" for g in curated)
+    assert by["goa-trance"]["parents"] == ["psytrance"] and by["trance"]["level"] == 1
+
+
+def test_legacy_holding_area_covers_the_v1_vocabulary_once():
+    rows, curated, by = _split()
+    clusters = {c["id"]: c for c in shipped()["clusters"]}
+    assert clusters["legacy"]["colour"] == "#8A8A8A"
+    assert by["legacy"]["legacy"] and by["legacy"]["level"] == 1 and by["legacy"]["parents"] == []
+    mapped = [g["v1"] for g in rows if g.get("v1")]
+    assert len(mapped) == len(set(mapped)), "a v1 genre is mapped twice"
+    assert len({g["id"] for g in rows}) == len(rows)
+    v1 = genre_vocab.load().entries
+    assert set(mapped) <= set(v1)
+    folded = {g["v1"] for g in curated if g.get("v1")}
+    missing = set(v1) - set(mapped)
+    assert not missing, sorted(missing)[:10]
+    added = [g for g in rows if g.get("legacy") and g["id"] != "legacy"]
+    assert {g["v1"] for g in added} == set(v1) - folded
+    for g in added:
+        assert g["parents"] and all(p in by for p in g["parents"]), g["id"]
+        assert not ("legacy" in g["parents"] and len(g["parents"]) > 1), g["id"]
+
+
+def test_added_children_attach_to_their_curated_v1_parents():
+    _, _, by = _split()
+    entries = genre_vocab.load().entries
+    by_v1 = {g["v1"]: g for g in by.values() if g.get("v1")}
+    for g in by.values():
+        if not g.get("legacy") or g["id"] == "legacy" or g["v1"] not in entries:
+            continue
+        for p in entries[g["v1"]].parents:
+            target = by_v1.get(genre_vocab.lookup(p) or "")
+            if target is not None and not target.get("legacy"):
+                assert target["id"] in g["parents"], (g["id"], p)
+    assert "trance" in by_v1["acid trance"]["parents"]
+
+
+def test_v1_data_is_acyclic():
+    entries = genre_vocab.load().entries
+
+    def depth(n, seen=()):
+        assert n not in seen, f"cycle at {n}"
+        return 1 + max((depth(t, seen + (n,)) for p in entries[n].parents if (t := genre_vocab.lookup(p)) in entries and t != n), default=0)
+
+    for n in entries:
+        depth(n)
+
+
+def test_parse_accepts_and_validates_the_legacy_fields():
+    ok = doc(genres=[genre(id="a", legacy=True, legacyParents=["Others"])])
+    g = genres_v2.parse(ok, NAMES)["genres"][0]
+    assert g["legacy"] is True and g["legacyParents"] == ["Others"]
+    assert "legacy" not in genres_v2.parse(doc(), NAMES)["genres"][0]
+    for bad in ({"legacy": False}, {"legacyParents": []}, {"legacyParents": "x"}):
+        with pytest.raises(ValueError):
+            genres_v2.parse(doc(genres=[genre(**bad)]), NAMES)
