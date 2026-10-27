@@ -101,7 +101,8 @@ struct AnonAddSheet: View {
                 .opacity(fetchOff ? 0.5 : 1)
             }
             .padding(.leading, DS.Space.space4).padding(.trailing, DS.Space.space2).frame(minHeight: 48)
-            .background(RoundedRectangle(cornerRadius: DS.Radius.radiusKey, style: .continuous).fill(DS.Color.surfaceSunken))
+            .background(RoundedRectangle(cornerRadius: DS.Radius.radiusKey, style: .continuous).fill(DS.Color.surfaceSunken)
+                .dsEdge(RoundedRectangle(cornerRadius: DS.Radius.radiusKey, style: .continuous)))
             .overlay {
                 if startError != nil { RoundedRectangle(cornerRadius: DS.Radius.radiusKey, style: .continuous).strokeBorder(DS.Color.power, lineWidth: 1.5) }
             }

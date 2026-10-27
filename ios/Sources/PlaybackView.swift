@@ -15,6 +15,7 @@ struct PlaybackView: View {
     @State private var editing: ServerSong?
     @State private var playlistSongs: [String] = []
     @EnvironmentObject private var settings: Settings
+    @Environment(\.colorSchemeContrast) private var contrast
 
     private var signedIn: Bool { ServerLink.hasCredentials(settings) }
     private var current: Track? { player.current }
@@ -150,7 +151,7 @@ struct PlaybackView: View {
                             .padding(.horizontal, DS.Space.space3)
                             .frame(minHeight: DS.Control.control)
                             .background(Capsule().fill(DS.Color.surface).dsShadow(DS.Shadow.depthSlab))
-                            .overlay(Capsule().strokeBorder(DS.Color.line, lineWidth: DS.Stroke.strokeThin))
+                            .overlay(Capsule().strokeBorder(contrast.outline, lineWidth: DS.Stroke.strokeThin))
                     }
                 }
             }

@@ -136,6 +136,7 @@ targets:
           - PlayRecorder.swift
           - QueueAdvance.swift
           - ServerLink.swift
+          - ScaledIcon.swift
           - ServiceIcons.swift
           - ShufflePick.swift
           - SongFormState.swift

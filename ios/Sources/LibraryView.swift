@@ -137,7 +137,7 @@ struct LibraryView: View {
     private var header: some View {
         ScreenHeader(title: "Library") {
             Button { hideKeyboard(); showAdd = true } label: {
-                Image(systemName: "plus").font(.system(size: DS.Icon.iconNavLg, weight: DS.Icon.iconWeightStrong))
+                Image(systemName: "plus").dsIcon(DS.Icon.iconNavLg, weight: DS.Icon.iconWeightStrong)
                     .foregroundStyle(DS.Color.onAccent).frame(width: DS.Space.hit, height: DS.Space.hit)
                     .background(Circle().fill(DS.Color.accent).dsShadow(DS.Shadow.depthGlowSoft))
             }.buttonStyle(LibraryPressStyle()).accessibilityLabel("Add a song")
@@ -349,7 +349,7 @@ struct LibraryView: View {
     }
     private var offlineBanner: some View {
         HStack(spacing: DS.Space.space2) {
-            Image(systemName: "wifi.slash").font(.system(size: DS.Icon.iconInline)).foregroundStyle(DS.Color.inkMuted)
+            Image(systemName: "wifi.slash").dsIcon(DS.Icon.iconInline).foregroundStyle(DS.Color.inkMuted)
             Text(server.syncing ? "Checking…" : "Offline. Your downloaded songs still play.").font(T.caption).foregroundStyle(DS.Color.ink)
             Spacer(minLength: 0)
             Button("Retry") { Task { await refresh() } }.font(T.caption.weight(.semibold)).foregroundStyle(DS.Color.accentInk)

@@ -224,14 +224,14 @@ struct TokenField: View {
                 }
                 Button("Remove", role: .destructive) { remove(i) }
             } label: {
-                Image(systemName: "pencil").font(.system(size: 12, weight: .semibold)).foregroundStyle(DS.Color.accentInk)
+                Image(systemName: "pencil").dsIcon(12, weight: .semibold).foregroundStyle(DS.Color.accentInk)
                     .frame(width: 30, height: 36).contentShape(Rectangle())
             }
             .flatMenu()
             .accessibilityLabel("Edit \(label)")
             Text(label).font(T.subhead.weight(.medium)).foregroundStyle(DS.Color.ink).lineLimit(1).padding(.horizontal, DS.Space.space1)
             Button { remove(i) } label: {
-                Image(systemName: "xmark").font(.system(size: 11, weight: .bold)).foregroundStyle(DS.Color.accentInk)
+                Image(systemName: "xmark").dsIcon(11, weight: .bold).foregroundStyle(DS.Color.accentInk)
                     .frame(width: 30, height: 36).contentShape(Rectangle())
             }
             .buttonStyle(.plain).accessibilityLabel("Remove \(label)")

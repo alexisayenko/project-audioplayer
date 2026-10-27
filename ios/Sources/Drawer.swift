@@ -40,27 +40,99 @@ struct MenuButton: View {
     }
 }
 
-/// Fires its action when the touch lands; a release after that is ignored, while accessibility activation (no touch) still fires it.
-private struct TouchDownButton<Label: View>: View {
-    let action: () -> Void
-    @ViewBuilder let label: () -> Label
-    @State private var firedOnPress = false
-
-    var body: some View {
-        Button {
-            if firedOnPress { firedOnPress = false } else { action() }
-        } label: { label() }
-            .buttonStyle(TouchDownStyle { firedOnPress = true; action() })
-    }
-}
-
-private struct TouchDownStyle: ButtonStyle {
+private struct DrawerRowStyle: ButtonStyle {
     let onPress: () -> Void
 
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .opacity(configuration.isPressed ? 0.6 : 1)
             .onChange(of: configuration.isPressed) { _, pressed in if pressed { onPress() } }
+    }
+}
+
+/// A drawer row: a standard button that activates on release inside the row, dims while pressed, and does nothing when the touch turned into a sideways swipe (swiping left closes the drawer).
+private struct DrawerRowButton<Label: View>: View {
+    let action: () -> Void
+    @ViewBuilder let label: () -> Label
+    @State private var swiped = false
+
+    var body: some View {
+        Button {
+            if !swiped { action() }
+        } label: { label() }
+            .buttonStyle(DrawerRowStyle { swiped = false })
+            .simultaneousGesture(DragGesture(minimumDistance: 10).onChanged { if abs($0.translation.width) > 10 { swiped = true } })
+    }
+}
+
+@MainActor
+final class PushedScreens: ObservableObject {
+    @Published private(set) var ids: Set<UUID> = []
+    var hasPushed: Bool { !ids.isEmpty }
+
+    func update(_ id: UUID, pushed: Bool) {
+        if pushed {
+            if !ids.contains(id) { ids.insert(id) }
+        } else if ids.contains(id) {
+            ids.remove(id)
+        }
+    }
+}
+
+private struct PushedScreensKey: EnvironmentKey {
+    static let defaultValue: PushedScreens? = nil
+}
+
+private struct PageActiveKey: EnvironmentKey {
+    static let defaultValue = true
+}
+
+extension EnvironmentValues {
+    var pushedScreens: PushedScreens? {
+        get { self[PushedScreensKey.self] }
+        set { self[PushedScreensKey.self] = newValue }
+    }
+
+    /// False for a page that stays alive but is not the one on screen.
+    var pageActive: Bool {
+        get { self[PageActiveKey.self] }
+        set { self[PageActiveKey.self] = newValue }
+    }
+}
+
+private struct PushedScreenModifier: ViewModifier {
+    @Environment(\.pushedScreens) private var registry
+    @Environment(\.pageActive) private var pageActive
+    @State private var id = UUID()
+    @State private var appeared = false
+
+    func body(content: Content) -> some View {
+        content
+            .background(LibraryBackSwipe())
+            .onAppear { appeared = true; report() }
+            .onDisappear { appeared = false; report() }
+            .onChange(of: pageActive) { report() }
+    }
+
+    private func report() { registry?.update(id, pushed: appeared && pageActive) }
+}
+
+extension View {
+    /// Marks a screen pushed on a navigation stack: the system back swipe stays free while it is shown, because the drawer's edge swipe steps aside.
+    func pushedScreen() -> some View { modifier(PushedScreenModifier()) }
+}
+
+/// Opens the drawer from a swipe at the leading edge; absent while a pushed screen is shown, so the system back swipe wins there.
+struct DrawerEdgeSwipe: View {
+    @ObservedObject var pushed: PushedScreens
+    let open: () -> Void
+
+    var body: some View {
+        if !pushed.hasPushed {
+            Color.clear.frame(width: DS.Space.space5).contentShape(Rectangle())
+                .gesture(DragGesture(minimumDistance: 12).onEnded { if $0.translation.width > 40 { open() } })
+                .accessibilityHidden(true)
+        }
     }
 }
 
@@ -90,7 +162,7 @@ struct SideDrawer: View {
                         .accessibilityLabel("Close menu")
                         .transition(.opacity)
                     panel
-                        .frame(width: min(geo.size.width * 0.75, 320))
+                        .frame(width: dynamicType.isAccessibilitySize ? geo.size.width * 0.92 : min(geo.size.width * 0.75, 320))
                         .transition(.move(edge: .leading))
                         .zIndex(1)
                 }
@@ -137,12 +209,12 @@ struct SideDrawer: View {
         private func row(symbol: String, label: String, active: Bool = false, lines: Int = 2) -> some View {
         HStack(spacing: DS.Space.space3) {
             Image(systemName: symbol).symbolRenderingMode(.monochrome)
-                .font(.system(size: icon, weight: DS.Icon.iconWeight))
+                .font(.system(size: min(icon, DS.Icon.iconNavLg * 1.8), weight: DS.Icon.iconWeight))
                 .foregroundStyle(active ? DS.Color.selectInk : DS.Color.inkMuted)
-                .frame(width: iconFrame)
+                .frame(width: min(iconFrame, DS.Component.navIconFrame * 1.8))
             Text(label).font(T.body.weight(active ? .semibold : .medium))
                 .foregroundStyle(active ? DS.Color.selectInk : DS.Color.ink)
-                .lineLimit(lines).truncationMode(.middle)
+                .lineLimit(lines).minimumScaleFactor(0.6).truncationMode(.middle)
             Spacer(minLength: 0)
         }
         .padding(.horizontal, DS.Space.space3)
@@ -155,7 +227,7 @@ struct SideDrawer: View {
 
     private func item(_ tab: AppTab) -> some View {
         let active = tab == selection
-        return TouchDownButton(action: { select(tab) }) { row(symbol: tab.symbol, label: tab.title, active: active) }
+        return DrawerRowButton(action: { select(tab) }) { row(symbol: tab.symbol, label: tab.title, active: active) }
             .accessibilityLabel(tab.title)
             .accessibilityAddTraits(active ? [.isSelected, .isButton] : .isButton)
     }
@@ -165,7 +237,7 @@ struct SideDrawer: View {
         return VStack(alignment: .leading, spacing: DS.Space.space2) {
             Rectangle().fill(DS.Color.line).frame(height: DS.Stroke.strokeHairline)
                 .padding(.horizontal, DS.Space.space6)
-            TouchDownButton(action: { select(.settings) }) {
+            DrawerRowButton(action: { select(.settings) }) {
                 row(symbol: "person.crop.circle", label: email ?? "Sign in", lines: 1)
             }
             .accessibilityLabel(email.map { "Account, \($0)" } ?? "Sign in")

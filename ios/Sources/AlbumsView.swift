@@ -9,15 +9,20 @@ enum LibraryMode: String, CaseIterable, Identifiable {
 /// "Songs | Albums" under the Library header (IOS-098); shown to signed-in users only.
 struct LibraryModeSwitch: View {
     @Binding var mode: LibraryMode
+    @Environment(\.dynamicTypeSize) private var typeSize
 
     var body: some View {
-        HStack(spacing: DS.Space.space2) {
+        let layout = typeSize.isAccessibilitySize
+            ? AnyLayout(VStackLayout(alignment: .leading, spacing: DS.Space.space2))
+            : AnyLayout(HStackLayout(spacing: DS.Space.space2))
+        return layout {
             ForEach(LibraryMode.allCases) { item in
                 LibraryFilterChip(title: item.rawValue, symbol: item.symbol, selected: mode == item,
                                   hint: "Shows \(item.rawValue.lowercased())") { mode = item }
             }
-            Spacer(minLength: 0)
+            if !typeSize.isAccessibilitySize { Spacer(minLength: 0) }
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 }
 
@@ -111,7 +116,7 @@ struct AlbumsView: View {
             } label: {
                 Label(sort.rawValue, systemImage: "arrow.up.arrow.down").font(T.subhead.weight(.medium)).foregroundStyle(DS.Color.ink)
                     .padding(.horizontal, DS.Space.space3).frame(minHeight: DS.Control.control)
-                    .background(Capsule().fill(DS.Color.surface).dsShadow(DS.Shadow.depthSlab))
+                    .background(Capsule().fill(DS.Color.surface).dsShadow(DS.Shadow.depthSlab).dsEdge(Capsule()))
                     .frame(minHeight: DS.Space.hit).contentShape(Rectangle())
             }.accessibilityLabel("Sort by, \(sort.rawValue)")
             LibraryFilterChip(title: "On phone", symbol: "iphone", selected: onPhoneOnly, hint: "Shows only albums with every linked track on this iPhone") {
@@ -145,7 +150,7 @@ struct AlbumsView: View {
 
     private var offlineNote: some View {
         HStack(spacing: DS.Space.space2) {
-            Image(systemName: "wifi.slash").font(.system(size: DS.Icon.iconInline)).foregroundStyle(DS.Color.inkMuted)
+            Image(systemName: "wifi.slash").dsIcon(DS.Icon.iconInline).foregroundStyle(DS.Color.inkMuted)
             Text("Offline. Showing the last albums. Downloaded songs still play.").font(T.caption).foregroundStyle(DS.Color.ink)
             Spacer(minLength: 0)
         }.padding(DS.Space.space3).librarySlab(radius: DS.Radius.radiusKey)

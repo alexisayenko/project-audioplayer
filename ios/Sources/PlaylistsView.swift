@@ -59,7 +59,7 @@ struct PlaylistsView: View {
         ScreenHeader(title: "Playlists") {
             if signedIn {
                 Button { newName = ""; creating = true } label: {
-                    Image(systemName: "plus").font(.system(size: DS.Icon.iconNavLg, weight: DS.Icon.iconWeightStrong))
+                    Image(systemName: "plus").dsIcon(DS.Icon.iconNavLg, weight: DS.Icon.iconWeightStrong)
                         .foregroundStyle(DS.Color.onAccent).frame(width: DS.Space.hit, height: DS.Space.hit)
                         .background(Circle().fill(DS.Color.accent).dsShadow(DS.Shadow.depthGlowSoft))
                 }.buttonStyle(LibraryPressStyle()).accessibilityLabel("New playlist")
@@ -91,7 +91,7 @@ struct PlaylistsView: View {
 
     private var offlineNote: some View {
         HStack(spacing: DS.Space.space2) {
-            Image(systemName: "wifi.slash").font(.system(size: DS.Icon.iconInline)).foregroundStyle(DS.Color.inkMuted)
+            Image(systemName: "wifi.slash").dsIcon(DS.Icon.iconInline).foregroundStyle(DS.Color.inkMuted)
             Text("Offline. Showing the last playlists. Downloaded songs still play.").font(T.caption).foregroundStyle(DS.Color.ink)
             Spacer(minLength: 0)
         }.padding(DS.Space.space3).librarySlab(radius: DS.Radius.radiusKey)
@@ -154,7 +154,7 @@ struct PlaylistRow: View {
                     Text(PlaylistLogic.songCount(list.count)).font(T.subhead).foregroundStyle(DS.Color.inkMuted)
                 }
                 Spacer(minLength: 0)
-                Image(systemName: "chevron.right").font(.system(size: DS.Icon.iconInline)).foregroundStyle(DS.Color.inkFaint).accessibilityHidden(true)
+                Image(systemName: "chevron.right").dsIcon(DS.Icon.iconInline).foregroundStyle(DS.Color.inkFaint).accessibilityHidden(true)
             }
             .padding(DS.Space.space3).frame(maxWidth: .infinity, alignment: .leading).contentShape(Rectangle())
         }

@@ -10,7 +10,7 @@ struct TagPill: View {
         Button(action: action) {
             HStack(spacing: 6) {
                 Text(text).lineLimit(1)
-                if removable { Image(systemName: "xmark").font(.system(size: 11, weight: .bold)).foregroundStyle(DS.Color.accentInk) }
+                if removable { Image(systemName: "xmark").dsIcon(11, weight: .bold).foregroundStyle(DS.Color.accentInk) }
             }
             .font(T.subhead.weight(.medium)).foregroundStyle(DS.Color.ink)
             .padding(.horizontal, DS.Space.space3).frame(minHeight: 32)
@@ -26,12 +26,13 @@ struct TagPill: View {
 struct AddTagButton: View {
     var open: Bool
     let action: () -> Void
+    @Environment(\.colorSchemeContrast) private var contrast
 
     var body: some View {
         Button(action: action) {
-            Image(systemName: open ? "chevron.up" : "plus").font(.system(size: 14, weight: .semibold))
+            Image(systemName: open ? "chevron.up" : "plus").dsIcon(14, weight: .semibold)
                 .foregroundStyle(DS.Color.accentInk)
-                .frame(width: 32, height: 32).overlay(Circle().stroke(DS.Color.line, lineWidth: 1.5))
+                .frame(width: 32, height: 32).overlay(Circle().stroke(contrast.outline, lineWidth: 1.5))
                 .contentShape(Rectangle().inset(by: -6))
         }
         .buttonStyle(.plain)

@@ -4,13 +4,15 @@ import SwiftUI
 extension View {
     func librarySlab(radius: CGFloat = DS.Radius.radiusCard) -> some View {
         background(RoundedRectangle(cornerRadius: radius, style: .continuous)
-            .fill(DS.Color.surface).dsShadow(DS.Shadow.depthSlab))
+            .fill(DS.Color.surface).dsShadow(DS.Shadow.depthSlab)
+            .dsEdge(RoundedRectangle(cornerRadius: radius, style: .continuous)))
     }
     func libraryFloat() -> some View {
         background(RoundedRectangle(cornerRadius: DS.Radius.radiusKey, style: .continuous)
             .fill(DS.Color.surface).dsShadow(DS.Shadow.depthLift))
             .overlay(RoundedRectangle(cornerRadius: DS.Radius.radiusKey, style: .continuous)
                 .strokeBorder(DS.Color.line, lineWidth: DS.Stroke.strokeHairline))
+            .dsEdge(RoundedRectangle(cornerRadius: DS.Radius.radiusKey, style: .continuous))
     }
 }
 
@@ -30,7 +32,7 @@ struct LibrarySearchField: View {
 
     var body: some View {
         HStack(spacing: DS.Space.space2) {
-            Image(systemName: "magnifyingglass").font(.system(size: DS.Icon.iconAction))
+            Image(systemName: "magnifyingglass").dsIcon(DS.Icon.iconAction)
                 .foregroundStyle(DS.Color.inkMuted).accessibilityHidden(true)
             TextField("", text: $text, prompt: Text(placeholder).foregroundStyle(DS.Color.inkMuted))
                 .font(T.body).foregroundStyle(DS.Color.ink).focused($focused)
@@ -47,7 +49,8 @@ struct LibrarySearchField: View {
         }
         .padding(.leading, DS.Space.space3).padding(.trailing, text.isEmpty ? DS.Space.space3 : 0)
         .frame(height: height)
-        .background(RoundedRectangle(cornerRadius: DS.Radius.radiusKey).fill(DS.Color.surfaceSunken))
+        .background(RoundedRectangle(cornerRadius: DS.Radius.radiusKey).fill(DS.Color.surfaceSunken)
+            .dsEdge(RoundedRectangle(cornerRadius: DS.Radius.radiusKey)))
         .overlay(RoundedRectangle(cornerRadius: DS.Radius.radiusKey)
             .strokeBorder(focused ? DS.Color.accentInk : .clear, lineWidth: DS.Stroke.strokeMedium))
         .onChange(of: focused) { _, value in if value { onFocus?() } }
@@ -66,9 +69,9 @@ struct LibraryFilterChip: View {
     var body: some View {
         Button(action: action) {
             HStack(spacing: DS.Space.space1) {
-                Image(systemName: symbol).font(.system(size: DS.Icon.iconInline, weight: DS.Icon.iconWeight))
+                Image(systemName: symbol).dsIcon(DS.Icon.iconInline, weight: DS.Icon.iconWeight)
                     .foregroundStyle(selected ? DS.Color.ink : DS.Color.inkMuted)
-                Text(title).font(selected ? T.subhead.weight(.semibold) : T.subhead.weight(.medium))
+                Text(title).font(selected ? T.subhead.weight(.semibold) : T.subhead.weight(.medium)).lineLimit(1)
                 if let count, count > 0 {
                     Text("\(count)").font(T.caption.weight(.semibold)).foregroundStyle(scheme.onStrong)
                         .frame(minWidth: DS.Component.badge, minHeight: DS.Component.badge)
@@ -79,7 +82,7 @@ struct LibraryFilterChip: View {
             .frame(minHeight: DS.Control.control)
             .background {
                 if selected { Capsule().fill(DS.Color.accentTint) }
-                else { Capsule().fill(DS.Color.surface).dsShadow(DS.Shadow.depthSlab) }
+                else { Capsule().fill(DS.Color.surface).dsShadow(DS.Shadow.depthSlab).dsEdge(Capsule()) }
             }
             .overlay(Capsule().strokeBorder(selected ? DS.Color.accentInk : .clear, lineWidth: DS.Stroke.strokeThin))
             .frame(minHeight: DS.Space.hit).contentShape(Rectangle())
@@ -152,7 +155,7 @@ struct LibraryControls: View {
                 .frame(width: circle, height: circle)
                 .background {
                     if selected { Circle().fill(DS.Color.selectTint) }
-                    else { Circle().fill(DS.Color.surface).dsShadow(DS.Shadow.depthSlab) }
+                    else { Circle().fill(DS.Color.surface).dsShadow(DS.Shadow.depthSlab).dsEdge(Circle()) }
                 }
                 .overlay(Circle().strokeBorder(selected ? DS.Color.selectInk : .clear, lineWidth: DS.Stroke.strokeThin))
                 .frame(width: hit, height: hit).contentShape(Rectangle())
@@ -177,10 +180,10 @@ struct LibraryControls: View {
                     .disabled(!query.narrowing)
             } label: {
                 Image(systemName: "ellipsis")
-                    .font(.system(size: DS.Icon.iconNav, weight: DS.Icon.iconWeight))
+                    .dsIcon(DS.Icon.iconNav, weight: DS.Icon.iconWeight)
                     .foregroundStyle(DS.Color.ink)
                     .frame(width: DS.Control.control, height: DS.Control.control)
-                    .background(Circle().fill(DS.Color.surface).dsShadow(DS.Shadow.depthSlab))
+                    .background(Circle().fill(DS.Color.surface).dsShadow(DS.Shadow.depthSlab).dsEdge(Circle()))
                     .frame(width: DS.Space.hit, height: DS.Space.hit)
                     .contentShape(Rectangle())
             }
@@ -216,7 +219,7 @@ struct LibrarySortSheet: View {
                             dismiss()
                         } label: {
                             HStack(spacing: DS.Space.space3) {
-                                Image(systemName: criterion.symbol).font(.system(size: DS.Icon.iconNav))
+                                Image(systemName: criterion.symbol).dsIcon(DS.Icon.iconNav)
                                     .foregroundStyle(disabled ? DS.Color.inkFaint : enabledTint)
                                     .frame(width: DS.Icon.iconNav)
                                 VStack(alignment: .leading, spacing: DS.Space.space1) {

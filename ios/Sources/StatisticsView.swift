@@ -78,7 +78,6 @@ struct StatisticsView: View {
                 .background(DS.Color.ground)
         }
         .dsGround()
-        .dynamicTypeSize(...DynamicTypeSize.accessibility2)
         .task(id: signedIn && isVisible && isActive ? attempt : -1) {
             guard signedIn, isVisible, isActive else { return }
             while !Task.isCancelled {
@@ -161,7 +160,8 @@ private struct StatsTabBar: View {
             }
         }
         .padding(DS.Space.space1)
-        .background(RoundedRectangle(cornerRadius: DS.Radius.radiusPill, style: .continuous).fill(DS.Color.surfaceSunken))
+        .background(RoundedRectangle(cornerRadius: DS.Radius.radiusPill, style: .continuous).fill(DS.Color.surfaceSunken)
+            .dsEdge(RoundedRectangle(cornerRadius: DS.Radius.radiusPill, style: .continuous)))
         .accessibilityElement(children: .contain)
     }
 }

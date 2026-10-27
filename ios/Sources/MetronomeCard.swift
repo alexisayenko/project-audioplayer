@@ -132,7 +132,7 @@ struct MetronomeCard: View {
 
     private func stepButton(_ symbol: String, label: String, delta: Int) -> some View {
         Button { model.nudge(delta) } label: {
-            Image(systemName: symbol).font(.system(size: DS.Icon.iconPlay, weight: DS.Icon.iconWeightStrong))
+            Image(systemName: symbol).dsIcon(DS.Icon.iconPlay, weight: DS.Icon.iconWeightStrong)
                 .foregroundStyle(DS.Color.ink)
                 .frame(width: DS.Space.hit, height: DS.Space.hit)
                 .background(Circle().fill(DS.Color.surfaceKey).dsShadow(DS.Shadow.depthKey))
@@ -144,7 +144,7 @@ struct MetronomeCard: View {
 
     private func barButton(_ symbol: String, label: String, delta: Int, enabled: Bool) -> some View {
         Button { model.beats += delta } label: {
-            Image(systemName: symbol).font(.system(size: DS.Icon.iconAction, weight: DS.Icon.iconWeightStrong))
+            Image(systemName: symbol).dsIcon(DS.Icon.iconAction, weight: DS.Icon.iconWeightStrong)
                 .foregroundStyle(DS.Color.ink)
                 .frame(width: DS.Space.hit, height: DS.Space.hit)
                 .background(Circle().fill(DS.Color.surfaceKey).dsShadow(DS.Shadow.depthKey))

@@ -97,7 +97,7 @@ struct SongListScreen<Extra: View, MenuItems: View>: View {
             if isEditing, actions.move != nil { editList } else { readList }
         }
         .safeAreaInset(edge: .top, spacing: 0) { topBar }
-        .dsGround().toolbar(.hidden, for: .navigationBar).background(LibraryBackSwipe())
+        .dsGround().toolbar(.hidden, for: .navigationBar).pushedScreen()
         .listToast($toast)
         .sensoryFeedback(.success, trigger: tick)
         .navigationDestination(item: $detail) { route in
@@ -110,7 +110,7 @@ struct SongListScreen<Extra: View, MenuItems: View>: View {
     private var topBar: some View {
         HStack {
             Button { dismiss() } label: {
-                Image(systemName: "chevron.left").font(.system(size: DS.Icon.iconNav)).foregroundStyle(DS.Color.ink)
+                Image(systemName: "chevron.left").dsIcon(DS.Icon.iconNav).foregroundStyle(DS.Color.ink)
                     .frame(width: DS.Space.hit, height: DS.Space.hit)
             }.accessibilityLabel("Back")
             Spacer()
@@ -121,7 +121,7 @@ struct SongListScreen<Extra: View, MenuItems: View>: View {
                     .frame(minWidth: DS.Space.hit, minHeight: DS.Space.hit)
             } else if showsMenu {
                 Menu { menu() } label: {
-                    Image(systemName: "ellipsis").font(.system(size: DS.Icon.iconNav, weight: DS.Icon.iconWeight))
+                    Image(systemName: "ellipsis").dsIcon(DS.Icon.iconNav, weight: DS.Icon.iconWeight)
                         .foregroundStyle(DS.Color.ink).frame(width: DS.Space.hit, height: DS.Space.hit).contentShape(Rectangle())
                 }.accessibilityLabel("Actions")
             }

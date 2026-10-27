@@ -185,7 +185,7 @@ struct LibraryFilterSheet: View {
             }
             .foregroundStyle(on ? scheme.onStrong : DS.Color.ink).padding(.horizontal, DS.Space.space3)
             .frame(minHeight: DS.Control.control)
-            .background(Capsule().fill(on ? scheme.strongFill : DS.Color.surfaceSunken))
+            .background(Capsule().fill(on ? scheme.strongFill : DS.Color.surfaceSunken).dsEdge(Capsule()))
             .contentShape(Rectangle().inset(by: -DS.Space.space1))
         }
         .buttonStyle(LibraryPressStyle()).accessibilityLabel(voiceLabel(value))

@@ -36,7 +36,7 @@ struct OfflineDownloadNote: View {
 
     var body: some View {
         HStack(spacing: DS.Space.space2) {
-            Image(systemName: "wifi.slash").font(.system(size: DS.Icon.iconInline)).foregroundStyle(DS.Color.inkMuted).accessibilityHidden(true)
+            Image(systemName: "wifi.slash").dsIcon(DS.Icon.iconInline).foregroundStyle(DS.Color.inkMuted).accessibilityHidden(true)
             Text(retrying ? "Checking…" : "Offline. Downloads need the server.").font(T.caption).foregroundStyle(DS.Color.ink)
             Spacer(minLength: 0)
             Button("Retry", action: retry).font(T.caption.weight(.semibold)).foregroundStyle(DS.Color.accentInk)

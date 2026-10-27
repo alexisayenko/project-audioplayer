@@ -29,7 +29,6 @@ struct ToolsView: View {
         }
         .scrollDismissesKeyboard(.interactively)
         .dsGround()
-        .dynamicTypeSize(...DynamicTypeSize.accessibility2)
         .onAppear {
             mic.isPlayerPlaying = { [weak player] in player?.isPlaying ?? false }
             metronome.isMicListening = { [weak mic] in (mic?.running ?? false) || (mic?.busy ?? false) }
@@ -55,6 +54,9 @@ private struct LiveBPMCard: View {
     @ObservedObject var mic: MicBPMModel
     @Environment(\.openURL) private var openURL
     @Environment(\.colorScheme) private var scheme
+    @Environment(\.colorSchemeContrast) private var contrast
+    @Environment(\.dynamicTypeSize) private var typeSize
+    @ScaledMetric(relativeTo: .largeTitle) private var badgeSize: CGFloat = 40
 
     private var badgeText: String {
         let label = BPMLabel.live(mic.running ? mic.bpm : nil)
@@ -65,9 +67,13 @@ private struct LiveBPMCard: View {
         VStack(alignment: .leading, spacing: DS.Space.space2) {
             SectionLabel("Live BPM (microphone)")
             VStack(alignment: .leading, spacing: DS.Space.space3) {
-                HStack(alignment: .center, spacing: DS.Space.space3) {
+                let stacked = typeSize.isAccessibilitySize
+                let layout = stacked
+                    ? AnyLayout(VStackLayout(alignment: .leading, spacing: DS.Space.space3))
+                    : AnyLayout(HStackLayout(alignment: .center, spacing: DS.Space.space3))
+                layout {
                     badge
-                    Spacer(minLength: DS.Space.space2)
+                    if !stacked { Spacer(minLength: DS.Space.space2) }
                     toggleButton
                 }
                 meter
@@ -88,7 +94,7 @@ private struct LiveBPMCard: View {
 
     private var badge: some View {
         HStack(alignment: .firstTextBaseline, spacing: DS.Space.space1) {
-            Text(badgeText).font(.system(size: 40, weight: .bold, design: .monospaced)).foregroundStyle(DS.Color.ink)
+            Text(badgeText).font(.system(size: min(badgeSize, 64), weight: .bold, design: .monospaced)).foregroundStyle(DS.Color.ink)
                 .lineLimit(1).minimumScaleFactor(0.5)
             Text("BPM").font(T.caption.weight(.semibold)).foregroundStyle(DS.Color.inkMuted)
         }
@@ -99,7 +105,7 @@ private struct LiveBPMCard: View {
     private var toggleButton: some View {
         Button { mic.toggle() } label: {
             Text(mic.running ? "Stop" : "Start")
-                .font(T.subhead.weight(.semibold))
+                .font(T.subhead.weight(.semibold)).lineLimit(1)
                 .foregroundStyle(mic.running ? DS.Color.accentInk : DS.Color.onAccent)
                 .padding(.horizontal, DS.Space.space5)
                 .frame(minWidth: 96, minHeight: DS.Space.hit)
@@ -117,8 +123,8 @@ private struct LiveBPMCard: View {
     private var meter: some View {
         GeometryReader { geo in
             ZStack(alignment: .leading) {
-                Capsule().fill(DS.Color.surfaceSunken)
-                Capsule().fill(scheme.strongFill).frame(width: geo.size.width * mic.level)
+                Capsule().fill(DS.Color.surfaceSunken).dsEdge(Capsule())
+                Capsule().fill(scheme.progressFill(contrast)).frame(width: geo.size.width * mic.level)
             }
         }
         .frame(height: 8)

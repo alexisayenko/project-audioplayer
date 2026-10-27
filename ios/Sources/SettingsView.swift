@@ -7,6 +7,8 @@ struct SettingsView: View {
     @EnvironmentObject var server: ServerLink
     @ObservedObject private var auth = AuthService.shared
     @Environment(\.colorScheme) private var scheme
+    @Environment(\.dynamicTypeSize) private var typeSize
+    @ScaledMetric(relativeTo: .body) private var signInHeight: CGFloat = DS.Space.hit
     @State private var bytes: Int64 = 0
     @State private var freeBytes: Int64 = 0
     @State private var confirmRemoveAll = false
@@ -80,12 +82,16 @@ struct SettingsView: View {
 
     /// A 48pt settings row: label on the left, value or control on the right.
     private func row<Trail: View>(_ label: String, color: Color = DS.Color.ink, @ViewBuilder trailing: () -> Trail) -> some View {
-        HStack(spacing: DS.Space.space3) {
+        let layout = typeSize.isAccessibilitySize
+            ? AnyLayout(VStackLayout(alignment: .leading, spacing: DS.Space.space2))
+            : AnyLayout(HStackLayout(spacing: DS.Space.space3))
+        return layout {
             Text(label).font(T.subhead).foregroundStyle(color)
-            Spacer(minLength: DS.Space.space2)
+            if !typeSize.isAccessibilitySize { Spacer(minLength: DS.Space.space2) }
             trailing()
         }
-        .frame(minHeight: 48)
+        .padding(.vertical, typeSize.isAccessibilitySize ? DS.Space.space3 : 0)
+        .frame(maxWidth: .infinity, minHeight: 48, alignment: .leading)
     }
 
     private var downloadsCard: some View {
@@ -145,7 +151,7 @@ struct SettingsView: View {
                         SignInWithAppleButton(.signIn) { $0.requestedScopes = [.email] } onCompletion: { auth.apple($0) }
                             .signInWithAppleButtonStyle(scheme == .dark ? .white : .black)
                             .id(scheme)
-                            .frame(height: DS.Space.hit).clipShape(Capsule())
+                            .frame(height: min(signInHeight, DS.Space.hit * 1.8)).clipShape(Capsule())
                         GoogleSignInButton { Task { await auth.signInWithGoogle() } }.disabled(auth.busy)
                     }
                 }
@@ -244,7 +250,7 @@ struct SettingsView: View {
                 if freeBytes > 0 {
                     GeometryReader { g in
                         ZStack(alignment: .leading) {
-                            Capsule().fill(DS.Color.surfaceSunken)
+                            Capsule().fill(DS.Color.surfaceSunken).dsEdge(Capsule())
                             Capsule().fill(lowSpace ? DS.Color.power : DS.Color.accent)
                                 .frame(width: max(6, g.size.width * Double(bytes) / Double(max(1, bytes + freeBytes))))
                         }
@@ -277,6 +283,7 @@ struct SettingsView: View {
 /// Google sign-in as an outlined pill: line border, ink label.
 struct GoogleSignInButton: View {
     let action: () -> Void
+    @Environment(\.colorSchemeContrast) private var contrast
 
     var body: some View {
         Button(action: action) {
@@ -285,7 +292,7 @@ struct GoogleSignInButton: View {
                 Text("Sign in with Google").font(T.subhead.weight(.semibold)).foregroundStyle(DS.Color.ink)
             }
             .frame(maxWidth: .infinity, minHeight: DS.Space.hit)
-            .overlay(Capsule().stroke(DS.Color.line, lineWidth: 1.5))
+            .overlay(Capsule().stroke(contrast.outline, lineWidth: 1.5))
             .contentShape(Capsule())
         }
         .buttonStyle(.plain)

@@ -111,7 +111,7 @@ struct LibrarySongRow: View {
     @ViewBuilder private var playCount: some View {
         if let listenedCount, listenedCount > 0 {
             HStack(spacing: DS.Space.space1) {
-                Image(systemName: "headphones").font(.system(size: DS.Icon.iconInline))
+                Image(systemName: "headphones").dsIcon(DS.Icon.iconInline)
                 Text(String(listenedCount)).font(T.subhead).monospacedDigit()
             }
             .foregroundStyle(DS.Color.inkMuted).fixedSize().accessibilityHidden(true)

@@ -65,6 +65,7 @@ struct RootView: View {
     @State private var expandedDock = false
     @State private var keyboardUp = false
     @State private var dockHeight: CGFloat = 0
+    @State private var pushedScreens = PushedScreens()
 
     private var showsDock: Bool { tab != .playback && player.current != nil && !keyboardUp }
 
@@ -82,6 +83,7 @@ struct RootView: View {
         .environmentObject(albumDownloader)
         .environment(\.openMenu, { menuOpen = true })
         .environment(\.openSettings, { tab = .settings })
+        .environment(\.pushedScreens, pushedScreens)
         .environment(\.dockHeight, showsDock ? dockHeight : 0)
         .accessibilityHidden(menuOpen)
         .safeAreaInset(edge: .bottom, spacing: 0) {
@@ -93,11 +95,7 @@ struct RootView: View {
             }
         }
         .overlay(alignment: .leading) {
-            if !menuOpen {
-                Color.clear.frame(width: DS.Space.space5).contentShape(Rectangle())
-                    .gesture(DragGesture(minimumDistance: 12).onEnded { if $0.translation.width > 40 { menuOpen = true } })
-                    .accessibilityHidden(true)
-            }
+            if !menuOpen { DrawerEdgeSwipe(pushed: pushedScreens) { menuOpen = true } }
         }
         .overlay {
             SideDrawer(open: menuOpen, selection: $tab, close: { menuOpen = false }) { t in
@@ -116,7 +114,6 @@ struct RootView: View {
                 .presentationCornerRadius(DS.Radius.radiusCard)
                 .presentationBackground(DS.Color.ground)
         }
-        .dynamicTypeSize(...DynamicTypeSize.accessibility2)
         .task {
             PlayQueue.shared.configure(settings: settings)
             anon.resumePending(library: library)
@@ -155,6 +152,7 @@ extension RootView {
     /// All screens stay alive so a filter or search survives a menu switch.
     fileprivate func page<V: View>(_ t: AppTab, @ViewBuilder _ content: () -> V) -> some View {
         content()
+            .environment(\.pageActive, tab == t)
             .opacity(tab == t ? 1 : 0)
             .allowsHitTesting(tab == t)
             .accessibilityHidden(tab != t)
@@ -172,7 +170,7 @@ struct MiniPlayer: View {
 
     private var compact: Bool { typeSize.isAccessibilitySize }
     private var cover: CGFloat { compact ? DS.Space.hit : scaledCover }
-    private var glyph: CGFloat { compact ? DS.Icon.iconPlay : icon }
+    private var glyph: CGFloat { compact ? min(icon, DS.Icon.iconPlay * 1.4) : icon }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -228,6 +226,7 @@ private struct MiniProgress: View {
     @EnvironmentObject var player: PlayerService
     @EnvironmentObject var clock: PlaybackClock
     @Environment(\.colorScheme) private var scheme
+    @Environment(\.colorSchemeContrast) private var contrast
 
     var body: some View {
         GeometryReader { geo in
@@ -235,7 +234,7 @@ private struct MiniProgress: View {
                 .overlay(alignment: .topLeading) {
                     ZStack(alignment: .leading) {
                         Rectangle().fill(DS.Color.surfaceSunken)
-                        Rectangle().fill(scheme.strongFill)
+                        Rectangle().fill(scheme.progressFill(contrast))
                             .frame(width: geo.size.width * min(1, clock.position / max(clock.duration, 1)))
                     }
                     .frame(height: DS.Stroke.strokeProgress)

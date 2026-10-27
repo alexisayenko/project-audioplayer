@@ -63,7 +63,7 @@ struct SongDetailsView: View {
                 }
             } else { Color.clear }
         }
-        .dsGround().toolbar(.hidden, for: .navigationBar).background(LibraryBackSwipe())
+        .dsGround().toolbar(.hidden, for: .navigationBar).pushedScreen()
         .sheet(item: $editing) { SongEditView(song: $0) }
         .sensoryFeedback(.success, trigger: tick)
         .onChange(of: library.songs) { _, _ in
@@ -76,7 +76,7 @@ struct SongDetailsView: View {
             Text("Song Details").font(T.headline).foregroundStyle(DS.Color.ink).accessibilityAddTraits(.isHeader)
             HStack {
                 Button { dismiss() } label: {
-                    Image(systemName: "chevron.left").font(.system(size: DS.Icon.iconNav)).foregroundStyle(DS.Color.ink)
+                    Image(systemName: "chevron.left").dsIcon(DS.Icon.iconNav).foregroundStyle(DS.Color.ink)
                         .frame(width: DS.Space.hit, height: DS.Space.hit)
                 }.accessibilityLabel("Back")
                 Spacer()

@@ -184,7 +184,8 @@ struct AddSheet: View {
                 .opacity(fetchOff ? 0.5 : 1)
             }
             .padding(.leading, DS.Space.space4).padding(.trailing, DS.Space.space2).frame(minHeight: 48)
-            .background(RoundedRectangle(cornerRadius: DS.Radius.radiusKey, style: .continuous).fill(DS.Color.surfaceSunken))
+            .background(RoundedRectangle(cornerRadius: DS.Radius.radiusKey, style: .continuous).fill(DS.Color.surfaceSunken)
+                .dsEdge(RoundedRectangle(cornerRadius: DS.Radius.radiusKey, style: .continuous)))
             .overlay {
                 if linkFailed { RoundedRectangle(cornerRadius: DS.Radius.radiusKey, style: .continuous).strokeBorder(DS.Color.power, lineWidth: 1.5) }
             }
@@ -240,7 +241,8 @@ struct AddSheet: View {
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading).padding(DS.Space.space3)
-        .background(RoundedRectangle(cornerRadius: DS.Radius.radiusKey, style: .continuous).fill(DS.Color.surfaceSunken))
+        .background(RoundedRectangle(cornerRadius: DS.Radius.radiusKey, style: .continuous).fill(DS.Color.surfaceSunken)
+            .dsEdge(RoundedRectangle(cornerRadius: DS.Radius.radiusKey, style: .continuous)))
         .accessibilityElement(children: .combine)
     }
 
@@ -272,7 +274,7 @@ struct AddSheet: View {
                     if !timing.isEmpty { Text(timing).font(T.time).foregroundStyle(DS.Color.inkMuted) }
                     Text(sourceLabel(p.source ?? sourceOf(id: p.id))).font(.caption2.weight(.semibold))
                         .foregroundStyle(DS.Color.inkMuted).padding(.horizontal, DS.Space.space2).padding(.vertical, DS.Space.space1 / 2)
-                        .background(Capsule().fill(DS.Color.surfaceSunken))
+                        .background(Capsule().fill(DS.Color.surfaceSunken).dsEdge(Capsule()))
                 }
             }
             Spacer(minLength: DS.Space.space2)

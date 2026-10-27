@@ -3,6 +3,7 @@ import SwiftUI
 struct TransportKeyStyle: ButtonStyle {
     enum Kind { case key, lit, ghost(on: Bool) }
     var kind: Kind
+    @ScaledMetric(relativeTo: .body) private var heightFactor: CGFloat = 1
 
     private var foreground: Color {
         switch kind {
@@ -17,9 +18,9 @@ struct TransportKeyStyle: ButtonStyle {
         let ghost: Bool = { if case .ghost = kind { return true }; return false }()
         let size = lit ? CGSize(width: 64, height: 48) : CGSize(width: ghost ? DS.Space.hit : 56, height: DS.Space.hit)
         return configuration.label
-            .font(.system(size: lit ? 22 : 20))
+            .dsIcon(lit ? 22 : 20)
             .foregroundStyle(foreground)
-            .frame(width: size.width, height: size.height)
+            .frame(width: size.width, height: size.height * min(heightFactor, 1.4))
             .background {
                 switch kind {
                 case .lit:
@@ -81,6 +82,7 @@ struct DSSlider: View {
     var tapStep: Double? = nil
     var valueText: ((Double) -> String)?
     @Environment(\.colorScheme) private var scheme
+    @Environment(\.colorSchemeContrast) private var contrast
 
     var body: some View {
         GeometryReader { geo in
@@ -89,10 +91,10 @@ struct DSSlider: View {
             let track = max(geo.size.width - 16, 1)
             let x = track * frac
             ZStack(alignment: .leading) {
-                Capsule().fill(DS.Color.surfaceSunken).frame(height: 6)
-                Capsule().fill(scheme.strongFill).frame(width: x + 8, height: 6)
+                Capsule().fill(DS.Color.surfaceSunken).dsEdge(Capsule()).frame(height: 6)
+                Capsule().fill(scheme.progressFill(contrast)).frame(width: x + 8, height: 6)
                 Circle().fill(scheme == .dark ? DS.Color.ink : DS.Color.surface).frame(width: 16, height: 16)
-                    .overlay(Circle().strokeBorder(scheme.strongFill, lineWidth: DS.Stroke.strokeFocus))
+                    .overlay(Circle().strokeBorder(scheme.progressFill(contrast), lineWidth: DS.Stroke.strokeFocus))
                     .shadow(color: DS.Color.vinyl.opacity(0.3), radius: 2, y: 1)
                     .offset(x: x)
             }

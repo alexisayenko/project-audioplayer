@@ -16,24 +16,47 @@ extension ColorScheme {
     var strongFill: Color { self == .dark ? DS.Color.accent : DS.Color.accentStrong }
     /// Label on `strongFill`: ink by day (4.8:1), on-accent by night (8.5:1).
     var onStrong: Color { self == .dark ? DS.Color.onAccent : DS.Color.ink }
+    /// Fill of a progress or level bar: `strongFill`, or `accentInk` (4.7:1 on the ground by day) when Increase Contrast is on, because 3:1 is needed for a UI part.
+    func progressFill(_ contrast: ColorSchemeContrast) -> Color { contrast == .increased ? DS.Color.accentInk : strongFill }
+}
+
+extension ColorSchemeContrast {
+    /// Outline of an outlined pill: the hairline `line` (1.3:1), or `inkMuted` with Increase Contrast.
+    var outline: Color { self == .increased ? DS.Color.inkMuted : DS.Color.line }
+}
+
+private struct ContrastEdge<S: InsettableShape>: ViewModifier {
+    let shape: S
+    @Environment(\.colorSchemeContrast) private var contrast
+
+    func body(content: Content) -> some View {
+        content.overlay {
+            if contrast == .increased { shape.strokeBorder(DS.Color.inkMuted, lineWidth: DS.Stroke.strokeHairline) }
+        }
+    }
 }
 
 extension View {
     /// A flat glass slab: surface, soft ambient shadow, no border.
     func dsSlab(radius: CGFloat = DS.Radius.radiusCard, fill: Color = DS.Color.surface) -> some View {
         background(RoundedRectangle(cornerRadius: radius, style: .continuous).fill(fill)
-            .shadow(color: DS.Color.vinyl.opacity(0.16), radius: 10, y: 2))
+            .shadow(color: DS.Color.vinyl.opacity(0.16), radius: 10, y: 2)
+            .dsEdge(RoundedRectangle(cornerRadius: radius, style: .continuous)))
     }
 
     /// A floating slab (mini player, tab bar, transport tray): stronger lift and a 1px line ring (`shadow-float`).
     func dsFloat(radius: CGFloat = DS.Radius.radiusTray) -> some View { modifier(FloatSlab(radius: radius)) }
+
+    /// With Increase Contrast, a 1pt `inkMuted` outline (4.5:1 on ground and surface): cards, fields and tracks otherwise sit at about 1.1:1 and rely on a shadow.
+    func dsEdge<S: InsettableShape>(_ shape: S) -> some View { modifier(ContrastEdge(shape: shape)) }
 
     func dsGround() -> some View { background(DS.Color.ground.ignoresSafeArea()) }
 
     func dsField() -> some View {
         font(T.subhead).foregroundStyle(DS.Color.ink)
             .padding(.horizontal, DS.Space.space3).frame(minHeight: 40)
-            .background(RoundedRectangle(cornerRadius: DS.Radius.radiusKey, style: .continuous).fill(DS.Color.surfaceSunken))
+            .background(RoundedRectangle(cornerRadius: DS.Radius.radiusKey, style: .continuous).fill(DS.Color.surfaceSunken)
+                .dsEdge(RoundedRectangle(cornerRadius: DS.Radius.radiusKey, style: .continuous)))
     }
 
     func dsCaption() -> some View { font(T.caption).foregroundStyle(DS.Color.inkMuted) }
@@ -58,12 +81,14 @@ struct DSTextField: View {
 private struct FloatSlab: ViewModifier {
     let radius: CGFloat
     @Environment(\.colorScheme) private var scheme
+    @Environment(\.colorSchemeContrast) private var contrast
 
     func body(content: Content) -> some View {
         content
             .background(RoundedRectangle(cornerRadius: radius, style: .continuous).fill(DS.Color.surface)
                 .shadow(color: DS.Color.vinyl.opacity(scheme == .dark ? 0.7 : 0.16), radius: 12, y: 8))
-            .overlay(RoundedRectangle(cornerRadius: radius, style: .continuous).strokeBorder(DS.Color.line, lineWidth: 1))
+            .overlay(RoundedRectangle(cornerRadius: radius, style: .continuous)
+                .strokeBorder(contrast == .increased ? DS.Color.inkMuted : DS.Color.line, lineWidth: 1))
     }
 }
 
@@ -164,7 +189,7 @@ struct CategoryChip: View {
             .padding(.horizontal, 6).frame(maxWidth: .infinity, minHeight: 36)
             .background {
                 if on { Capsule().fill(scheme.strongFill) }
-                else { Capsule().fill(DS.Color.surface).shadow(color: DS.Color.vinyl.opacity(0.16), radius: 10, y: 2) }
+                else { Capsule().fill(DS.Color.surface).shadow(color: DS.Color.vinyl.opacity(0.16), radius: 10, y: 2).dsEdge(Capsule()) }
             }
             .contentShape(Rectangle().inset(by: -4))
         }
@@ -193,7 +218,7 @@ struct TagChip: View {
             .font(T.subhead.weight(on ? .semibold : .medium))
             .foregroundStyle(on ? scheme.onStrong : DS.Color.ink)
             .padding(.horizontal, 14).frame(minHeight: 36)
-            .background(Capsule().fill(on ? scheme.strongFill : DS.Color.surfaceSunken))
+            .background(Capsule().fill(on ? scheme.strongFill : DS.Color.surfaceSunken).dsEdge(Capsule()))
             .contentShape(Rectangle().inset(by: -4))
         }
         .buttonStyle(.plain)
@@ -276,10 +301,12 @@ extension View {
 /// The 48 x 28 switch: accent-strong track when on, sunken track when off, round paper thumb.
 struct DSSwitchStyle: ToggleStyle {
     @Environment(\.colorScheme) private var scheme
+    @Environment(\.colorSchemeContrast) private var contrast
 
     func makeBody(configuration: Configuration) -> some View {
         Button { configuration.isOn.toggle() } label: {
             Capsule().fill(configuration.isOn ? DS.Color.accentStrong : DS.Color.surfaceSunken)
+                .overlay(Capsule().strokeBorder(contrast == .increased ? DS.Color.inkMuted : .clear, lineWidth: DS.Stroke.strokeThin))
                 .frame(width: 48, height: 28)
                 .overlay(alignment: configuration.isOn ? .trailing : .leading) {
                     Circle().fill(scheme == .dark ? DS.Color.ink : DS.Color.surface).frame(width: 24, height: 24).padding(2)
@@ -300,6 +327,7 @@ struct ToggleChip: View {
     let count: Int
     let on: Bool
     let action: () -> Void
+    @Environment(\.colorSchemeContrast) private var contrast
 
     var body: some View {
         Button(action: action) {
@@ -309,7 +337,7 @@ struct ToggleChip: View {
             }
             .padding(.horizontal, DS.Space.space3).frame(minHeight: 32)
             .background(Capsule().fill(on ? DS.Color.accentTint : Color.clear))
-            .overlay(Capsule().stroke(on ? DS.Color.accentInk : DS.Color.line, lineWidth: 1.5))
+            .overlay(Capsule().stroke(on ? DS.Color.accentInk : contrast.outline, lineWidth: 1.5))
             .contentShape(Capsule().inset(by: -6))
         }
         .buttonStyle(.plain)

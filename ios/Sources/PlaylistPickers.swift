@@ -57,7 +57,7 @@ struct SongPickerSheet: View {
                     Text(track.librarySubtitle).font(T.subhead).foregroundStyle(DS.Color.inkMuted).lineLimit(1)
                 }
                 Spacer(minLength: 0)
-                Image(systemName: on ? "checkmark.circle.fill" : "circle").font(.system(size: DS.Icon.iconNav))
+                Image(systemName: on ? "checkmark.circle.fill" : "circle").dsIcon(DS.Icon.iconNav)
                     .foregroundStyle(on ? DS.Color.accentInk : DS.Color.inkFaint).accessibilityHidden(true)
             }
             .padding(DS.Space.space3).frame(maxWidth: .infinity, alignment: .leading).contentShape(Rectangle())
@@ -110,7 +110,7 @@ struct PlaylistPickerSheet: View {
 
     private func rowLabel(_ title: String, symbol: String, count: Int?) -> some View {
         HStack(spacing: DS.Space.space3) {
-            Image(systemName: symbol).font(.system(size: DS.Icon.iconNav)).foregroundStyle(DS.Color.inkMuted).frame(width: DS.Component.coverRow)
+            Image(systemName: symbol).dsIcon(DS.Icon.iconNav).foregroundStyle(DS.Color.inkMuted).frame(width: DS.Component.coverRow)
             Text(title).font(T.headline).foregroundStyle(DS.Color.ink).lineLimit(2)
             Spacer(minLength: 0)
             if let count { Text(String(count)).font(T.subhead).foregroundStyle(DS.Color.inkMuted) }
