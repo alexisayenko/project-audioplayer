@@ -1,8 +1,10 @@
 import { api } from './api.js';
-import { el, field, toast } from './dom.js';
+import { el, toast } from './dom.js';
+import { serviceIcon } from './service-icons.js';
+import { albumFields } from './album-form.js';
 import { icon } from './icons.js';
 import {
-  ALBUM_TYPES, FADE_TYPES, stateOf, endOf, formatClock, parseClock, rowIssue, issues, summary, offsetAll, sortRows, isSorted,
+  FADE_TYPES, stateOf, endOf, formatClock, parseClock, rowIssue, issues, summary, offsetAll, sortRows, isSorted,
   addRow, renumber, payload, youtubeAt, previewErrorText, createErrorText,
 } from './album-video-model.js';
 import { mountSplitProgress } from './album-video-progress.js';
@@ -76,7 +78,7 @@ export function createVideoFlow({ body, say, genreEditor, isLive, setBusy, hideF
     reset();
     hideForm();
     const st = stateOf(preview, address);
-    const editor = genreEditor([]);
+    const editor = genreEditor(st.album.genres);
     const ui = new Map();
     const stat = el('p', { class: 't-subhead av-summary', role: 'status' });
     const problems = el('p', { class: 't-caption muted av-problems', role: 'status' });
@@ -102,7 +104,6 @@ export function createVideoFlow({ body, say, genreEditor, isLive, setBusy, hideF
         u.issue.textContent = bad;
         u.issue.hidden = !bad;
         u.start.setAttribute('aria-invalid', String(!!bad));
-        if (u.end.tagName === 'SPAN') u.end.textContent = `to ${formatClock(endOf(st, i))}`;
         u.link.href = youtubeAt(st.videoId, r.start);
       });
     }
@@ -146,9 +147,8 @@ export function createVideoFlow({ body, say, genreEditor, isLive, setBusy, hideF
       const u = {
         no: el('span', { class: 'album-no muted t-caption' }),
         start: startField(r),
-        end: i === st.rows.length - 1 ? endField() : el('span', { class: 'muted t-caption av-end' }),
         issue: el('p', { class: 'av-issue t-caption', role: 'alert', hidden: true }),
-        link: el('a', { class: 'link-btn t-caption', href: youtubeAt(st.videoId, r.start), target: '_blank', rel: 'noopener' }, 'Open in YouTube at this time'),
+        link: el('a', { class: 'icon sq-btn av-yt', href: youtubeAt(st.videoId, r.start), target: '_blank', rel: 'noopener', title: 'Open in YouTube at this time', 'aria-label': 'Open in YouTube at this time' }, serviceIcon('youtube', { size: 'inline' })),
       };
       const meta = [];
       if (r.match) {
@@ -158,20 +158,23 @@ export function createVideoFlow({ body, say, genreEditor, isLive, setBusy, hideF
           el('label', { class: 't-caption av-use' }, use, 'Use existing'));
       }
       for (const w of r.warnings) meta.push(el('span', { class: 't-caption muted av-warn' }, w));
-      const remove = el('button', { class: 'link-btn t-caption', type: 'button', 'aria-label': `Remove track ${r.no}`, onclick: () => {
+      const remove = el('button', { class: 'icon sq-btn av-remove', type: 'button', title: 'Remove', 'aria-label': 'Remove', onclick: () => {
         st.rows.splice(st.rows.indexOf(r), 1);
         renumber(st);
         drawRows();
         paint();
-      } }, 'Remove');
+      } }, icon('clear', 'inline'));
       ui.set(r.key, u);
       return el('li', { class: 'av-row' },
-        el('label', { class: 'av-inc' }, box),
-        u.no, u.start, u.end,
-        textField(r, 'artists', 'Artist', { class: 'av-artist' }),
-        textField(r, 'title', 'Title', { class: 'av-title' }),
-        textField(r, 'version', 'Version', { class: 'av-version' }),
-        el('div', { class: 'av-meta' }, ...meta, u.link, remove),
+        el('div', { class: 'av-line1' },
+          el('label', { class: 'av-inc' }, box),
+          u.no, u.start,
+          el('span', { class: 'av-icons' }, u.link, remove)),
+        el('div', { class: 'av-line2' },
+          textField(r, 'artists', 'Artist', { class: 'av-artist' }),
+          textField(r, 'title', 'Title', { class: 'av-title' }),
+          textField(r, 'version', 'Version', { class: 'av-version' })),
+        meta.length ? el('div', { class: 'av-meta' }, ...meta) : null,
         u.issue);
     }
 
@@ -187,7 +190,7 @@ export function createVideoFlow({ body, say, genreEditor, isLive, setBusy, hideF
       paint();
     });
 
-    const delta = el('input', { type: 'number', class: 'av-delta', value: '1', min: '0', step: '1', inputMode: 'numeric', 'aria-label': 'Seconds to shift' });
+    const delta = el('input', { type: 'number', class: 'av-delta', value: '1', min: '0', step: '1', inputMode: 'numeric', id: 'av-delta', 'aria-label': 'Seconds to shift' });
     const shift = (sign) => {
       const n = Math.floor(Number(delta.value));
       if (!Number.isFinite(n) || n <= 0) { delta.focus(); return; }
@@ -212,14 +215,17 @@ export function createVideoFlow({ body, say, genreEditor, isLive, setBusy, hideF
     } }, icon('plus', 'inline'), 'Add a track');
     const paste = el('button', { class: 'link-btn t-caption', type: 'button', onclick: () => showPaste(address, st.rawText, 'Edit the track list and read it again. Your table edits are replaced.') }, 'Paste a track list instead');
 
-    const albumInput = (key, label, extra = {}) => {
-      const input = el('input', { type: 'text', value: st.album[key], autocomplete: 'off', 'aria-label': label, placeholder: label, ...extra });
-      input.addEventListener('input', () => { st.album[key] = input.value; paint(); });
-      return input;
+    const form = albumFields({ title: st.album.title, artist: st.album.albumArtist, year: st.album.year, type: st.album.type, genres: editor, links: st.album.links, linksId: 'album-links-add' });
+    const syncAlbum = () => {
+      st.album.title = form.title();
+      st.album.albumArtist = form.artist();
+      st.album.year = form.year();
+      st.album.links = form.links.get();
+      paint();
     };
-    const typeSel = el('select', { 'aria-label': 'Album type' }, ...ALBUM_TYPES.map(([k, label]) => el('option', { value: k, selected: k === st.album.type }, label)));
-    typeSel.addEventListener('change', () => {
-      st.album.type = typeSel.value;
+    for (const n of [form.titleF, form.artistsF, form.yearIn, ...Object.values(form.links.inputs)]) n.addEventListener('input', syncAlbum);
+    form.typeSel.addEventListener('change', () => {
+      st.album.type = form.typeSel.value;
       if (!st.fadesTouched) { st.fades = FADE_TYPES.has(st.album.type); fadesBox.checked = st.fades; }
     });
 
@@ -228,22 +234,19 @@ export function createVideoFlow({ body, say, genreEditor, isLive, setBusy, hideF
       el('div', { class: 'muted t-caption' }, [st.uploader, st.duration ? formatClock(st.duration) : '', SOURCE_NOTE[st.source]].filter(Boolean).join(' · ')),
       ...st.warnings.map((w) => el('div', { class: 'muted t-caption av-warn' }, w)));
 
-    const header = el('div', { class: 'av-form' },
-      field('Album title', albumInput('title', 'Album title')),
-      field('Album artist', albumInput('albumArtist', 'Album artist')),
-      field('Type', typeSel),
-      field('Year', albumInput('year', 'Year', { inputMode: 'numeric' })),
-      el('div', { class: 'field av-genres' }, el('label', {}, 'Genres'), editor.node));
-
-    const tools = el('div', { class: 'av-tools' },
-      el('div', { class: 'av-shift' }, el('label', { class: 't-caption' }, 'Shift all times by'), delta, el('span', { class: 't-caption muted' }, 's'), earlier, later),
-      artistAll, sortBtn);
+    const advanced = el('details', { class: 'av-advanced' },
+      el('summary', { class: 't-subhead' }, 'Advanced'),
+      el('div', { class: 'av-shift' },
+        el('label', { class: 't-caption', htmlFor: 'av-delta' }, 'Shift all times by'), delta, el('span', { class: 't-caption muted' }, 'seconds'), earlier, later),
+      el('div', { class: 'av-shift' }, el('label', { class: 't-caption' }, 'End of the last track'), endField()));
 
     const cancel = el('button', { class: 'btn outline', type: 'button', onclick: () => { say(''); onBack(); } }, 'Back');
 
     async function submit() {
       editor.commit();
       st.album.genres = editor.get();
+      syncAlbum();
+      form.links.paint();
       say('');
       const data = payload(st);
       create.disabled = true;
@@ -268,11 +271,11 @@ export function createVideoFlow({ body, say, genreEditor, isLive, setBusy, hideF
     create.addEventListener('click', () => { void submit(); });
 
     body.replaceChildren(el('div', { class: 'add-card album-video' },
-      head, header,
+      head, form.node,
       el('div', { class: 'av-bar-row' }, stat, toggleAll),
-      tools,
       rows,
-      el('div', { class: 'av-bottom' }, addBtn, paste),
+      el('div', { class: 'av-bottom' }, addBtn, artistAll, sortBtn, paste),
+      advanced,
       el('label', { class: 'av-fades t-subhead' }, fadesBox, 'Fade each track in and out for 1 s'),
       problems,
       el('p', { class: 't-caption muted' }, 'Tick the tracks to create. The whole split counts as one add.'),

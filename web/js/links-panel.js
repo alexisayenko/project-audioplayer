@@ -25,7 +25,7 @@ export const LINK_ROWS = [
   { key: 'discogs', kind: 'discogs', label: 'Discogs link' },
 ];
 
-export function linksPanel({ inputs, readOnly = [], storage = globalThis.localStorage, id = 'song-links' } = {}) {
+export function linksPanel({ inputs, readOnly = [], storage = globalThis.localStorage, id = 'song-links', rows: rowDefs = LINK_ROWS } = {}) {
   const summary = serviceIcons({ onlyOn: true });
   summary.node.classList.add('lk-summary');
   const chev = el('span', { class: 'cl-chev', 'aria-hidden': 'true' }, icon('chevron', 'inline'));
@@ -34,7 +34,7 @@ export function linksPanel({ inputs, readOnly = [], storage = globalThis.localSt
   const bar = el('div', { class: 'lk-bar' }, head, summary.node);
   const root = el('div', { class: 'lk-clip' }, body);
 
-  const rows = LINK_ROWS.map((r) => {
+  const rows = rowDefs.map((r) => {
     const inp = inputs[r.key] || el('input', { type: 'text', placeholder: r.label, 'aria-label': r.label, autocomplete: 'off', spellcheck: 'false' });
     if (readOnly.includes(r.key)) inp.readOnly = true;
     inp.setAttribute('placeholder', r.label);

@@ -56,7 +56,6 @@ test('unlinked track shows Link song; the popup has a search field and lists ent
   assert.equal(rows[1].querySelector('.album-link-btn'), null);
   assert.match(rows[1].querySelector('.album-linked').textContent, /Derango - Noise3:21/);
   assert.equal(rows[1].querySelector('button.album-linked-name').textContent, 'Derango - Noise');
-  assert.ok(rows[1].querySelector('.album-play.sq-btn'));
   assert.ok(rows[1].querySelector('.album-unlink.sq-btn'));
   assert.equal(rows[1].querySelector('.album-unlink').classList.contains('x'), false);
   fire(rows[0].querySelector('.album-link-btn'), 'click');
@@ -138,53 +137,33 @@ test('a linked song with unknown length shows a dash', async () => {
   assert.equal(candidateMeta(store.songs[0]), 'Derango');
 });
 
-test('track accordion: collapsed by default, one open at a time, toggle, accessible buttons', async () => {
+test('every track has its own sub-row: Link icon when free, Unlink icon with name and length when linked; no accordion', async () => {
   const v = await open(() => ok(ALBUM));
-  const lis = () => [...v.dlg.querySelectorAll('.album-info-tracks li')];
-  const state = () => lis().map((li) => [li.querySelector('.album-row-btn').getAttribute('aria-expanded'), li.querySelector('.album-panel').hidden]);
-  assert.deepEqual(state(), [['false', true], ['false', true], ['false', true]]);
-  for (const li of lis()) {
-    const b = li.querySelector('.album-row-btn');
-    assert.equal(b.tagName, 'BUTTON');
-    assert.equal(b.getAttribute('aria-controls'), li.querySelector('.album-panel').id);
-  }
-  fire(lis()[0].querySelector('.album-row-btn'), 'click');
-  assert.deepEqual(state(), [['true', false], ['false', true], ['false', true]]);
-  fire(lis()[2].querySelector('.album-row-btn'), 'click');
-  assert.deepEqual(state(), [['false', true], ['false', true], ['true', false]]);
-  fire(lis()[2].querySelector('.album-row-btn'), 'click');
-  assert.deepEqual(state(), [['false', true], ['false', true], ['false', true]]);
+  const lis = [...v.dlg.querySelectorAll('.album-info-tracks li')];
+  assert.equal(v.dlg.querySelector('.album-row-btn'), null);
+  for (const li of lis) assert.ok(li.querySelector('.album-linked'));
+  const free = lis[0].querySelector('.album-link-btn');
+  assert.equal(free.getAttribute('aria-label'), 'Link a song');
+  assert.equal(free.title, 'Link a song');
+  const un = lis[1].querySelector('.album-unlink');
+  assert.equal(un.getAttribute('aria-label'), 'Unlink song');
+  assert.equal(un.title, 'Unlink song');
+  assert.equal(lis[1].querySelector('.album-linked').children[2].textContent, '3:21');
+  assert.equal(lis[1].querySelector('.album-play'), null);
   v.dlg.close();
 });
 
-test('linking inside an open panel keeps that panel open', async () => {
+test('linking a track swaps its Link icon for the Unlink sub-row', async () => {
   const linked = { ...ALBUM, tracks: [{ ...TRACKS[0], songId: 's1' }, TRACKS[1], TRACKS[2]] };
   const v = await open((u, o) => (o.method === 'PUT' ? ok(linked) : ok(ALBUM)));
-  fire(v.dlg.querySelectorAll('.album-row-btn')[0], 'click');
   fire(v.dlg.querySelector('.album-link-btn'), 'click');
   const pop = document.getElementById('pl-dialog');
   fire(pop.querySelector('li.song .open'), 'click');
   for (let i = 0; i < 5; i++) await flush();
   const first = v.dlg.querySelectorAll('.album-info-tracks li')[0];
-  assert.equal(first.querySelector('.album-row-btn').getAttribute('aria-expanded'), 'true');
-  assert.equal(first.querySelector('.album-panel').hidden, false);
   assert.ok(first.querySelector('.album-unlink'));
+  assert.equal(first.querySelector('.album-link-btn'), null);
   v.dlg.close();
 });
 
-test('arrow keys move focus between track rows; Home and End jump', async () => {
-  const v = await open(() => ok(ALBUM));
-  const rows = () => [...v.dlg.querySelectorAll('.album-row-btn')];
-  rows()[0].focus();
-  fire(rows()[0], 'keydown', { key: 'ArrowDown' });
-  assert.equal(document.activeElement, rows()[1]);
-  fire(rows()[1], 'keydown', { key: 'End' });
-  assert.equal(document.activeElement, rows()[2]);
-  fire(rows()[2], 'keydown', { key: 'ArrowUp' });
-  assert.equal(document.activeElement, rows()[1]);
-  fire(rows()[1], 'keydown', { key: 'Home' });
-  assert.equal(document.activeElement, rows()[0]);
-  fire(rows()[0], 'keydown', { key: 'ArrowUp' });
-  assert.equal(document.activeElement, rows()[0]);
-  v.dlg.close();
-});
+

@@ -28,7 +28,7 @@ async function open(handler, album = ALBUM) {
 }
 const submit = async (form) => { fire(form, 'submit'); for (let i = 0; i < 5; i++) await flush(); };
 const openEdit = (v) => { fire(v.dlg.querySelector('.act-edit'), 'click'); return document.getElementById('edit-dialog'); };
-const input = (edit, key) => edit.querySelector(`.album-edit-links input[data-key="${key}"]`);
+const input = (edit, key) => edit.querySelector(`.lk-row input[data-key="${key}"]`);
 
 test('albumLinks reads the four keys, ignores bad values, keeps the legacy fallbacks', () => {
   assert.deepEqual(albumLinks({ links: { discogs: DISCOGS, rateyourmusic: RYM, youtube: 'https://youtu.be/x', wikipedia: 'not a url' } }), { discogs: DISCOGS, rateyourmusic: RYM, youtube: 'https://youtu.be/x' });
@@ -47,7 +47,6 @@ test('the info box row shows one icon per set link in a new tab; no Edit links t
     assert.equal(a.getAttribute('target'), '_blank');
     assert.match(a.getAttribute('rel'), /noopener/);
   }
-  assert.equal(v.dlg.querySelector('.album-edit-links'), null);
   assert.equal(v.dlg.querySelector('form.album-rym'), null);
   assert.equal(v.dlg.querySelector('.album-links-form'), null);
   assert.equal([...v.dlg.querySelectorAll('button')].some((b) => b.textContent === 'Edit links'), false);
@@ -60,14 +59,14 @@ test('with no links the info box shows no link row', async () => {
   v.dlg.close();
 });
 
-test('the Edit dialog has four labelled link inputs, prefilled, after Title, Artist, Year and Genres', async () => {
+test('the Edit dialog has the Links panel with labelled inputs, prefilled', async () => {
   const v = await open(() => ok({ ...ALBUM, links: { ...NO_LINKS, discogs: DISCOGS } }));
   const edit = openEdit(v);
-  const inputs = [...edit.querySelectorAll('.album-edit-links input')];
-  assert.deepEqual(inputs.map((i) => i.getAttribute('aria-label')), ['Discogs', 'Rate Your Music', 'YouTube', 'Wikipedia']);
-  assert.equal(inputs[0].value, DISCOGS);
+  const inputs = [...edit.querySelectorAll('.lk-row input')];
+  assert.deepEqual(inputs.map((i) => i.getAttribute('aria-label')), ['YouTube link', 'Wikipedia: album', 'Discogs link', 'Rate Your Music link']);
+  assert.equal(input(edit, 'discogs').value, DISCOGS);
   assert.ok(inputs.every((i) => i.tagName === 'INPUT' && i.getAttribute('placeholder')));
-  assert.deepEqual([...edit.querySelectorAll('.row.end > button')].map((b) => b.textContent), ['Delete album', 'Save']);
+  assert.deepEqual([...edit.querySelectorAll('.row.end > button')].map((b) => b.textContent), ['', 'Delete from library', 'Save']);
   edit.close();
   v.dlg.close();
 });
@@ -103,11 +102,11 @@ test('422 bad_link shows the error under that field and keeps the typed text', a
   const edit = openEdit(v);
   input(edit, 'youtube').value = 'https://example.com/x';
   await submit(edit.querySelector('form'));
-  const err = input(edit, 'youtube').parentNode.querySelector('.msg.error');
+  const err = input(edit, 'youtube').parentNode.nextSibling;
   assert.equal(err.hidden, false);
   assert.equal(err.textContent, linkErrorText('YouTube'));
   assert.equal(input(edit, 'youtube').value, 'https://example.com/x');
-  assert.equal(input(edit, 'discogs').parentNode.querySelector('.msg.error').hidden, true);
+  assert.equal(input(edit, 'discogs').parentNode.nextSibling.hidden, true);
   assert.equal(edit.querySelector('button[type=submit]').disabled, false);
   assert.equal(edit.open, true);
   edit.close();
@@ -138,10 +137,10 @@ test('Add Album preview keeps one optional Rate Your Music field, sent as links.
   assert.deepEqual(posts[1].links, { rateyourmusic: RYM });
 });
 
-test('regression: the link fields are full-width text inputs in the Edit dialog, which is not a sheet', async () => {
+test('regression: the link inputs sit in the shared Links panel in the Edit dialog, which is not a sheet', async () => {
   const v = await open(() => ok(ALBUM));
   const edit = openEdit(v);
-  assert.equal(edit.querySelectorAll('.album-link-field input').length, 4);
+  assert.equal(edit.querySelectorAll('.lk-row input').length, 4);
   assert.equal(edit.classList.contains('sheet'), false);
   const { readFileSync } = await import('node:fs');
   const css = readFileSync(new URL('../albums.css', import.meta.url), 'utf8');
@@ -170,18 +169,17 @@ test('YouTube link: prefilled in the Edit dialog, kept in the info box after sav
   v.dlg.close();
 });
 
-test('the unlink button uses the new unlink icon (two links, four sparks, no image file)', async () => {
+test('the unlink button uses the chain-with-minus icon (no image file)', async () => {
   const { ICONS, icon } = await import('./icons.js');
-  assert.ok(ICONS.unlink);
-  assert.equal((ICONS.unlink.d.match(/<rect/g) || []).length, 2);
-  assert.equal((ICONS.unlink.d.match(/<path/g) || []).length, 4);
-  assert.equal(ICONS.unlink.d.includes('<image'), false);
-  assert.equal(icon('unlink', 'inline').getAttribute('viewBox'), '0 0 24 24');
+  assert.ok(ICONS.linkMinus);
+  assert.equal((ICONS.linkMinus.d.match(/<path/g) || []).length, 3);
+  assert.equal(ICONS.linkMinus.d.includes('<image'), false);
+  assert.equal(icon('linkMinus', 'inline').getAttribute('viewBox'), '0 0 24 24');
   const album = { ...ALBUM, tracks: [{ no: 1, title: 'Intro', durationS: 65, songId: 'u2' }] };
   const v = await open(() => ok(album));
   const btn = v.dlg.querySelector('.album-unlink');
   assert.equal(btn.getAttribute('title'), 'Unlink song');
-  assert.match(btn.getAttribute('aria-label'), /Unlink song/);
+  assert.equal(btn.getAttribute('aria-label'), 'Unlink song');
   assert.ok(btn.querySelector('svg'));
   v.dlg.close();
 });

@@ -2,10 +2,8 @@ import { plural } from './dom.js';
 
 export const MAX_TRACKS = 100;
 export const MAX_SECONDS = 4 * 3600;
-export const ALBUM_TYPES = [
-  ['album', 'Album'], ['EP', 'EP'], ['single', 'Single'], ['compilation', 'Compilation'],
-  ['live', 'Live'], ['soundtrack', 'Soundtrack'], ['mix', 'DJ mix'],
-];
+export const ALBUM_TYPES = [['album', 'Album'], ['EP', 'EP'], ['single', 'Single'], ['mix', 'Mix'], ['compilation', 'Compilation']];
+export const normalType = (t) => ALBUM_TYPES.find(([k]) => k.toLowerCase() === String(t ?? '').toLowerCase())?.[0] || 'album';
 export const FADE_TYPES = new Set(['mix', 'compilation']);
 
 const HOSTS = new Set(['youtube.com', 'www.youtube.com', 'm.youtube.com', 'music.youtube.com']);
@@ -66,7 +64,7 @@ export function rowOf(t, i) {
     key: seq,
     include: !t.match,
     start: Number(t.start) || 0,
-    artists: joinArtists(t.artists),
+    artists: joinArtists(t.artists ?? (t.artist ? [t.artist] : [])),
     title: String(t.title ?? ''),
     version: String(t.version ?? ''),
     warnings: Array.isArray(t.warnings) ? t.warnings.filter(Boolean).map(String) : [],
@@ -79,9 +77,9 @@ export function rowOf(t, i) {
 }
 
 export function stateOf(preview, address = '') {
-  const a = preview.album || {};
+  const a = preview.album || { title: preview.title, albumArtist: preview.artist, year: preview.year, type: preview.type, genres: preview.genres };
   const tracks = (Array.isArray(preview.tracks) ? preview.tracks : []).map(rowOf);
-  const type = ALBUM_TYPES.some(([k]) => k === a.type) ? a.type : 'album';
+  const type = normalType(a.type);
   return {
     videoId: preview.videoId || '',
     url: preview.url || address,
@@ -98,7 +96,8 @@ export function stateOf(preview, address = '') {
       albumArtist: String(a.albumArtist ?? ''),
       type,
       year: Number.isInteger(a.year) ? String(a.year) : '',
-      genres: [],
+      genres: Array.isArray(a.genres) ? a.genres.filter((g) => typeof g === 'string' && g.trim()) : [],
+      links: { youtube: preview.url || address },
       coverUrl: a.coverUrl || preview.thumbnail || null,
     },
     fades: FADE_TYPES.has(type),
@@ -177,6 +176,12 @@ export function addRow(st) {
   return r;
 }
 
+function extraLinks(links) {
+  const out = {};
+  for (const [k, v] of Object.entries(links || {})) if (k !== 'youtube' && String(v ?? '').trim()) out[k] = String(v).trim();
+  return Object.keys(out).length ? out : null;
+}
+
 export function payload(st) {
   const a = st.album;
   const year = a.year.trim();
@@ -189,6 +194,7 @@ export function payload(st) {
       year: year ? Number(year) : null,
       genres: a.genres,
       coverUrl: a.coverUrl || null,
+      ...(extraLinks(a.links) ? { links: extraLinks(a.links) } : {}),
     },
     tracks: st.rows.map((r, i) => ({
       include: r.include,

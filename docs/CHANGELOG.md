@@ -2,6 +2,11 @@
 
 What shipped, newest first. One line each; the web UI and server are live at https://electrophone.cc. Everything listed here is deployed except the sections marked "built, not deployed" (the 2026-10-14 release went out once the SSH access in [task-0027](tasks/task-0027.md) was restored; the live visualizer files match `origin/main` as of 2026-10-15). Why: [tech/decisions.md](tech/decisions.md); runbook: [tech/deploy.md](tech/deploy.md).
 
+## 2026-10-27 (Web: album popups and infobox; to deploy)
+
+- Server: adding an album from a YouTube playlist fills the songs (Album, year, vocabulary genres, artist; only empty fields of existing songs and of songs linked to a track), the preview guesses artist, album, year and type from the title, and suggests genres (LIB-256, CAT-061, API-298, API-299, task-0120; to deploy).
+- Web: Add album and Edit album popups reworked (no accidental close, token fields for title and artists, narrow year, Type select, one Genres field pre-filled from the preview, song-form Links panel, two-line track rows, Advanced time shift) and the album infobox shows the linked song under each track with Link and Unlink icons (LIB-253 to LIB-255, task-0120; to deploy, focused tests only).
+
 ## 2026-10-27 (iOS: player structure and port tests of the architecture audit; in source, not in a build)
 
 - iOS (task-0122 F9, IOS-115; both schemes build, 150 `AudioPlayerTests` and the new `ElectrophoneMacTests` pass, played in the simulator, not run on a device): `PlayerService` keeps the AVPlayer and the API the views use; the next, previous, reorder and tag-removal rules are pure and tested (`QueueAdvance`), Now Playing and the remote commands are wired in `NowPlaying.swift`, the artwork fetch is `ArtworkLoader` with the server address injected, and `Components.swift` is split by job. No behaviour change.

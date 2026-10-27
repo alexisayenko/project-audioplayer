@@ -174,7 +174,7 @@ test('whole-row click opens the info box; the queue button and cover do not', as
   const dlg = document.getElementById('song-card');
   fire(v.q('li.album-row .info'), 'click');
   assert.equal(dlg.open, true);
-  assert.equal(dlg.querySelector('h2').textContent, 'Bravo');
+  assert.equal(dlg.querySelector('h2').textContent, 'Zed - Bravo');
   dlg.close();
   fire(v.q('li.album-row .row-acts button'), 'click');
   assert.equal(dlg.open, false);
@@ -209,19 +209,25 @@ test('model: matchesQuery folds accents; length and bpm sorts put albums without
   assert.deepEqual(model.sortedAlbums(ALL).map((a) => a.id), ['Charlie', 'Alpha', 'Bravo']);
 });
 
+const tokenOf = (dlg, label) => [...dlg.querySelectorAll('.token-field')].find((n) => n.getAttribute('aria-label') === label);
+const setTokens = (dlg, label, value) => { const n = tokenOf(dlg, label); n.value = value; fire(n, 'input'); };
+const yearOf = (dlg) => dlg.querySelector('input[aria-label=Year]');
+
 test('Edit dialog: fields, only changed keys sent, genres from the vocabulary field, deletes at the bottom', async () => {
   const dlg = document.getElementById('edit-dialog');
   const calls = stubFetch((u, o) => (o.method === 'PATCH' ? ok({ ...A, title: 'Alpha 2', year: 2001 }) : ok({})));
   let saved = null;
   openAlbumEdit(A, (full) => { saved = full; });
   const labels = [...dlg.querySelectorAll('.field > label')].map((l) => l.textContent);
-  assert.deepEqual(labels.slice(0, 3), ['Title', 'Artist', 'Year']);
+  assert.deepEqual(labels.slice(0, 4), ['Album title', 'Album artists', 'Year', 'Type']);
+  assert.ok(dlg.querySelector('.lk-head'));
+  assert.equal(dlg.querySelector('.album-edit-tracks') === null, A.tracks.length === 0);
   assert.ok(dlg.querySelector('.chip-field'));
-  assert.deepEqual([...dlg.querySelectorAll('.row.end > button')].map((b) => b.textContent), ['Delete album', 'Save']);
-  assert.deepEqual([...dlg.querySelectorAll('.album-edit-links label')].map((l) => l.textContent), ['Discogs', 'Rate Your Music', 'YouTube', 'Wikipedia']);
-  const inputs = [...dlg.querySelectorAll('.field > input')];
-  inputs[0].value = ' Alpha 2 ';
-  inputs[2].value = '2001';
+  assert.deepEqual([...dlg.querySelectorAll('.row.end > button')].map((b) => b.textContent), ['', 'Delete from library', 'Save']);
+  assert.deepEqual([...dlg.querySelectorAll('.lk-row input')].map((i) => i.getAttribute('data-key')), ['youtube', 'wikipedia', 'discogs', 'rateyourmusic']);
+  assert.equal(yearOf(dlg).getAttribute('maxlength') ?? '4', '4');
+  setTokens(dlg, 'Album title', ' Alpha 2 ');
+  yearOf(dlg).value = '2001';
   fire(dlg.querySelector('form'), 'submit');
   for (let i = 0; i < 5; i++) await flush();
   const patch = calls.find((c) => c.opts.method === 'PATCH');
@@ -241,22 +247,22 @@ test('Edit dialog: nothing changed makes no request; invalid year and 422 bad_fi
   assert.equal(dlg.open, false);
 
   openAlbumEdit(A, () => {});
-  dlg.querySelectorAll('.field > input')[2].value = 'abcd';
+  yearOf(dlg).value = 'abcd';
   fire(dlg.querySelector('form'), 'submit');
   for (let i = 0; i < 3; i++) await flush();
-  const yearErr = dlg.querySelectorAll('.field')[2].querySelector('.msg.error');
+  const yearErr = yearOf(dlg).parentNode.querySelector('.msg.error');
   assert.equal(yearErr.hidden, false);
   assert.match(yearErr.textContent, /whole number/);
   dlg.close();
 
   calls = stubFetch((u, o) => (o.method === 'PATCH' ? { status: 422, body: { error: 'bad_field', key: 'artist' } } : ok({})));
   openAlbumEdit(A, () => {});
-  dlg.querySelectorAll('.field > input')[1].value = 'x'.repeat(5);
+  setTokens(dlg, 'Album artists', 'xxxxx');
   fire(dlg.querySelector('form'), 'submit');
   for (let i = 0; i < 5; i++) await flush();
-  const artistErr = dlg.querySelectorAll('.field')[1].querySelector('.msg.error');
+  const artistErr = tokenOf(dlg, 'Album artists').parentNode.querySelector('.msg.error');
   assert.equal(artistErr.hidden, false);
-  assert.match(artistErr.textContent, /artist is not valid/);
+  assert.match(artistErr.textContent, /album artists is not valid/);
   assert.equal(dlg.open, true);
   dlg.close();
 });
@@ -331,7 +337,7 @@ test('Edit dialog: links are four fields; one Save sends only the changed keys w
   const key = (k) => dlg.querySelector(`input[data-key="${k}"]`);
   assert.equal(key('discogs').value, 'https://www.discogs.com/release/1');
   key('youtube').value = ' https://www.youtube.com/playlist?list=PL1 ';
-  dlg.querySelector('input[aria-label=Title]').value = 'Alpha 3';
+  setTokens(dlg, 'Album title', 'Alpha 3');
   fire(dlg.querySelector('form'), 'submit');
   for (let i = 0; i < 5; i++) await flush();
   const patch = calls.find((c) => c.opts.method === 'PATCH');
@@ -349,7 +355,7 @@ test('Edit dialog: links are four fields; one Save sends only the changed keys w
   key('wikipedia').value = 'junk';
   fire(dlg.querySelector('form'), 'submit');
   for (let i = 0; i < 5; i++) await flush();
-  const err = key('wikipedia').parentNode.querySelector('.msg.error');
+  const err = key('wikipedia').parentNode.nextSibling;
   assert.equal(err.hidden, false);
   assert.equal(err.textContent, 'This is not a valid Wikipedia address.');
   assert.equal(key('wikipedia').value, 'junk');

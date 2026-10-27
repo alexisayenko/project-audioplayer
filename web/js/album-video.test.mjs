@@ -69,6 +69,7 @@ const createBtn = () => qa('button').find((b) => /^Create album/.test(b.textCont
 const post = (calls, url) => JSON.parse(calls.find((c) => c.url === url).opts.body);
 const typeInto = (node, value) => { node.value = value; fire(node, 'input'); };
 const tick = (node, on) => { node.checked = on; fire(node, 'change'); };
+const tokens = (label, value) => { const n = qa('.token-field').find((x) => x.getAttribute('aria-label') === label); n.value = value; fire(n, 'input'); };
 
 test('a video link calls the preview and shows the editable table; nothing is created yet', async () => {
   const calls = server();
@@ -81,9 +82,18 @@ test('a video link calls the preview and shows the editable table; nothing is cr
   assert.equal(rows()[0].querySelector('.av-start').value, '00:00:00');
   assert.equal(rows()[0].querySelector('.av-artist').value, 'A & B');
   assert.equal(rows()[1].querySelector('.av-version').value, 'Remix');
-  assert.equal(rows()[0].querySelector('.av-end').textContent, 'to 00:10:00');
-  assert.equal(rows()[2].querySelector('.av-end-input').value, '01:00:00');
-  assert.equal(rows()[2].querySelector('a').href, 'https://youtu.be/yeUFSnA9Puk?t=1800');
+  assert.ok(!q('.av-advanced').open);
+  assert.equal(q('.av-advanced .av-end-input').value, '01:00:00');
+  assert.equal(rows()[0].textContent.includes('to 00:10:00'), false);
+  const yt = rows()[2].querySelector('a.av-yt');
+  assert.equal(yt.href, 'https://youtu.be/yeUFSnA9Puk?t=1800');
+  assert.equal(yt.getAttribute('aria-label'), 'Open in YouTube at this time');
+  assert.equal(yt.title, 'Open in YouTube at this time');
+  const rm = rows()[2].querySelector('button.av-remove');
+  assert.equal(rm.getAttribute('aria-label'), 'Remove');
+  assert.equal(rows()[0].querySelectorAll('.av-line1').length, 1);
+  assert.equal(rows()[0].querySelectorAll('.av-line2 input').length, 3);
+  assert.equal(rows()[0].querySelector('.av-line1 .av-artist'), null);
   assert.equal(calls.some((c) => c.url === '/albums/from-video'), false);
   D().close();
 });
@@ -115,21 +125,19 @@ test('edits to start, artist, title, version and the album header reach the crea
   typeInto(r[0].querySelector('.av-title'), 'Opening');
   typeInto(r[0].querySelector('.av-artist'), 'X & Y & Z');
   typeInto(r[0].querySelector('.av-version'), 'Radio Edit');
-  typeInto(r[2].querySelector('.av-end-input'), '1:00:30');
-  const [title, albumArtist] = qa('.av-form input[type=text]');
-  typeInto(title, 'My Mix');
-  typeInto(albumArtist, 'Various');
-  const year = qa('.av-form input').find((i) => i.getAttribute('aria-label') === 'Year');
+  typeInto(q('.av-advanced .av-end-input'), '1:00:30');
+  tokens('Album title', 'My Mix');
+  tokens('Album artists', 'Various');
+  const year = qa('.album-fields input').find((i) => i.getAttribute('aria-label') === 'Year');
   typeInto(year, '2019');
-  const type = q('.av-form select');
-  type.value = 'live';
+  const type = q('.album-fields select');
+  type.value = 'single';
   fire(type, 'change');
-  assert.equal(r[1].querySelector('.av-end').textContent, 'to 00:31:30');
   fire(createBtn(), 'click');
   await settle();
   const body = post(calls, '/albums/from-video');
   assert.equal(body.url, 'https://youtu.be/yeUFSnA9Puk');
-  assert.deepEqual(body.album, { title: 'My Mix', albumArtist: 'Various', type: 'live', year: 2019, genres: [], coverUrl: 'https://i/t.jpg' });
+  assert.deepEqual(body.album, { title: 'My Mix', albumArtist: 'Various', type: 'single', year: 2019, genres: [], coverUrl: 'https://i/t.jpg' });
   assert.deepEqual(body.tracks[0], { include: true, start: 0, end: 600, artists: ['X', 'Y', 'Z'], title: 'Opening', version: 'Radio Edit', trackNo: 1, useExistingSongId: null });
   assert.equal(body.tracks[2].start, 1890);
   assert.equal(body.tracks[2].end, 3630);
@@ -143,7 +151,7 @@ test('fades follow the type until the user ticks the box', async () => {
   await open();
   const box = q('.av-fades input');
   assert.equal(box.checked, true);
-  const type = q('.av-form select');
+  const type = q('.album-fields select');
   type.value = 'album';
   fire(type, 'change');
   assert.equal(box.checked, false);
@@ -324,4 +332,79 @@ test('closing the dialog stops the polling', async () => {
   const n = calls.filter((c) => c.url === '/jobs/j1').length;
   await sleep(50);
   assert.equal(calls.filter((c) => c.url === '/jobs/j1').length, n);
+});
+
+const PV2 = {
+  videoId: 'yeUFSnA9Puk', url: 'https://youtu.be/yeUFSnA9Puk', title: 'Deep Mix', uploader: 'DJ Q', duration: 3600, source: 'description', rawText: '',
+  artist: 'Foo', year: 2012, type: 'ep', genres: ['Techno'],
+  tracks: [{ index: 0, start: 0, end: 1800, artist: 'Foo', title: 'One', version: null, warnings: [], match: null }, { index: 1, start: 1800, end: 3600, artist: 'Foo', title: 'Two', version: null, warnings: [], match: null }],
+  warnings: [],
+};
+const tokenNode = (label) => qa('.token-field').find((x) => x.getAttribute('aria-label') === label);
+
+test('preview type, year, genres and artist fill the form: Type select, narrow Year, one Genres label, links with the video address', async () => {
+  const calls = server({ preview: () => ok(PV2) });
+  await open();
+  assert.equal(tokenNode('Album title').value, 'Deep Mix');
+  assert.equal(tokenNode('Album artists').value, 'Foo');
+  const type = q('.album-fields select');
+  assert.equal(type.value, 'EP');
+  assert.deepEqual([...type.querySelectorAll('option')].map((o) => o.textContent), ['Album', 'EP', 'Single', 'Mix', 'Compilation']);
+  const year = qa('.album-fields input').find((i) => i.getAttribute('aria-label') === 'Year');
+  assert.equal(year.value, '2012');
+  assert.ok(year.classList.contains('album-year'));
+  assert.equal(qa('.album-fields label').filter((l) => l.textContent === 'Genres').length, 1);
+  assert.deepEqual(qa('.album-fields .chips .chip.tint').map((c) => c.textContent), ['Techno']);
+  assert.equal(qa('.lk-row input').find((i) => i.getAttribute('data-key') === 'youtube').value, 'https://youtu.be/yeUFSnA9Puk');
+  assert.equal(rows()[1].querySelector('.av-artist').value, 'Foo');
+  fire(createBtn(), 'click');
+  await settle();
+  const body = post(calls, '/albums/from-video');
+  assert.equal(body.album.type, 'EP');
+  assert.deepEqual(body.album.genres, ['Techno']);
+  assert.equal(body.album.albumArtist, 'Foo');
+  D().close();
+});
+
+test('type defaults to Album when the preview has none, and is never forced to Mix', async () => {
+  server({ preview: () => ok({ ...PV2, type: undefined }) });
+  await open();
+  assert.equal(q('.album-fields select').value, 'album');
+  D().close();
+});
+
+test('the Advanced disclosure holds the shift control with the seconds label; Earlier and Later move every start', async () => {
+  server();
+  await open();
+  const adv = q('details.av-advanced');
+  assert.equal(adv.querySelector('summary').textContent, 'Advanced');
+  assert.ok(adv.textContent.includes('seconds'));
+  assert.equal(qa('button').filter((b) => b.textContent === 'Earlier' || b.textContent === 'Later').every((b) => adv.contains(b)), true);
+  assert.equal(q('.av-bar-row').nextSibling, q('ul.av-rows'));
+  D().close();
+});
+
+test('backdrop: inner clicks, padding clicks and a drag that started inside never close; a plain backdrop click closes unless the form is dirty', async () => {
+  server();
+  await open();
+  const dlg = D();
+  fire(rows()[0].querySelector('.av-title'), 'click');
+  assert.equal(dlg.open, true);
+  fire(rows()[0].querySelector('.av-title'), 'mousedown');
+  fire(dlg, 'click', { clientX: 5, clientY: 5 });
+  assert.equal(dlg.open, true, 'mousedown inside, mouseup on the backdrop');
+  fire(dlg, 'mousedown');
+  fire(dlg, 'click');
+  assert.equal(dlg.open, true, 'a table is loaded: the form is dirty');
+  fire(q('.dlg-head button'), 'click');
+  assert.equal(dlg.open, false);
+});
+
+test('backdrop closes the empty address step', async () => {
+  server();
+  openAddAlbum();
+  const dlg = D();
+  fire(dlg, 'mousedown');
+  fire(dlg, 'click');
+  assert.equal(dlg.open, false);
 });
