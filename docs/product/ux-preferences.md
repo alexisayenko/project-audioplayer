@@ -43,6 +43,7 @@ Living rulebook of Alex's UI/UX expectations, so UI decisions can be taken from 
 - Badges (BPM) sit inline with the metadata line like a genre, without a comma; or after the length (2026-10-19).
 - Sub-rows (a song linked to an album track) are indented, with extra gap before the next group so groups read apart; unlink icon at the left (2026-10-27).
 - Link/unlink are icons; the unlinked state shows the link icon (2026-10-27).
+- Lists of items to review: read-only text labels by default, edit on demand via a pencil icon (2026-10-27).
 - Songs not downloaded show a download icon in place of the queue mark, same styling (2026-10-19).
 
 ## Dialogs

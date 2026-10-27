@@ -142,18 +142,22 @@
 .album-info-tracks .album-linked { padding: var(--space-1) 0 0 calc(2.5ch + var(--space-2)); justify-content: flex-start; }
 .album-linked .album-len { margin-left: auto; text-align: right; }
 .av-line1 { display: flex; align-items: center; gap: var(--space-2); min-width: 0; }
-.av-line1 .av-start { width: calc(var(--hit) * 2); flex: none; }
+.av-line2[hidden] { display: none; }
+.av-line2 .av-start { width: calc(var(--hit) * 2); }
+.av-label { flex: 1 1 auto; min-width: 0; overflow-wrap: anywhere; }
+.av-flag { color: var(--power-text); font-weight: 700; }
 .av-icons { display: inline-flex; align-items: center; gap: var(--space-1); margin-left: auto; }
 .av-icons .sq-btn { display: inline-grid; place-items: center; width: var(--control-sm); height: var(--control-sm); padding: 0; border: 0; background: none; color: var(--ink-muted); cursor: pointer; }
 .av-icons .sq-btn:hover, .av-icons .sq-btn:focus-visible { color: var(--ink); }
 .av-icons .av-yt { color: var(--brand-youtube); }
 .av-line2 { display: grid; gap: var(--space-2); grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+.av-line2 .av-start { grid-column: 1 / -1; order: 0; }
 .av-line2 .av-title { grid-column: 1 / -1; order: 2; }
 .av-line2 .av-artist { order: 1; grid-column: 1 / -1; }
 .av-line2 .av-version { order: 3; grid-column: 1 / -1; }
 @media (min-width: 560px) {
-  .av-line2 { grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr) minmax(0, 1fr); }
-  .av-line2 .av-artist, .av-line2 .av-title, .av-line2 .av-version { grid-column: auto; order: 0; }
+  .av-line2 { grid-template-columns: auto minmax(0, 1fr) minmax(0, 1.4fr) minmax(0, 1fr); }
+  .av-line2 .av-start, .av-line2 .av-artist, .av-line2 .av-title, .av-line2 .av-version { grid-column: auto; order: 0; }
 }
 .av-advanced { display: grid; gap: var(--space-2); }
 .av-advanced summary { cursor: pointer; }

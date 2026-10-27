@@ -169,3 +169,14 @@ test('stateOf: links from the description prefill the Links section', () => {
   assert.equal(st.album.links.youtube, PV.url);
   assert.equal(st.album.links.wikipedia, undefined);
 });
+
+test('trackClock gives m:ss or h:mm:ss; trackLabel joins artist, title, version and length', async () => {
+  const { trackClock, trackLabel } = await import('./album-video-model.js');
+  assert.equal(trackClock(529), '8:49');
+  assert.equal(trackClock(3725), '1:02:05');
+  assert.equal(trackClock(-5), '0:00');
+  const st = stateOf(PV);
+  assert.deepEqual(trackLabel(st, 1), { name: 'C - Two', version: 'Remix', length: '20:00' });
+  st.rows[0].artists = '';
+  assert.equal(trackLabel(st, 0).name, 'One');
+});

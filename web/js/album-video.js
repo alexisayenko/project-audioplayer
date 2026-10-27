@@ -5,7 +5,7 @@ import { albumFields } from './album-form.js';
 import { discogsFinder } from './album-discogs.js';
 import { icon } from './icons.js';
 import {
-  FADE_TYPES, stateOf, endOf, formatClock, parseClock, rowIssue, issues, summary, offsetAll, sortRows, isSorted,
+  FADE_TYPES, stateOf, endOf, formatClock, parseClock, rowIssue, trackLabel, issues, summary, offsetAll, sortRows, isSorted,
   addRow, renumber, payload, youtubeAt, previewErrorText, createErrorText,
 } from './album-video-model.js';
 import { mountSplitProgress } from './album-video-progress.js';
@@ -102,6 +102,12 @@ export function createVideoFlow({ body, say, genreEditor, isLive, setBusy, hideF
         if (!u) return;
         u.no.textContent = `${r.no}.`;
         const bad = rowIssue(st, i);
+        const lab = trackLabel(st, i);
+        u.name.textContent = lab.name;
+        u.version.textContent = lab.version ? `[${lab.version}]` : '';
+        u.version.hidden = !lab.version;
+        u.len.textContent = `(${lab.length})`;
+        u.flag.hidden = !bad;
         u.issue.textContent = bad;
         u.issue.hidden = !bad;
         u.start.setAttribute('aria-invalid', String(!!bad));
@@ -148,6 +154,10 @@ export function createVideoFlow({ body, say, genreEditor, isLive, setBusy, hideF
       const u = {
         no: el('span', { class: 'album-no muted t-caption' }),
         start: startField(r),
+        name: el('span', { class: 'av-name' }),
+        version: el('span', { class: 'av-ver muted', hidden: true }),
+        len: el('span', { class: 'av-len muted' }),
+        flag: el('span', { class: 'av-flag', title: 'Needs attention', 'aria-label': 'Needs attention', hidden: true }, '!'),
         issue: el('p', { class: 'av-issue t-caption', role: 'alert', hidden: true }),
         link: el('a', { class: 'icon sq-btn av-yt', href: youtubeAt(st.videoId, r.start), target: '_blank', rel: 'noopener', title: 'Open in YouTube at this time', 'aria-label': 'Open in YouTube at this time' }, serviceIcon('youtube', { size: 'inline' })),
       };
@@ -165,16 +175,33 @@ export function createVideoFlow({ body, say, genreEditor, isLive, setBusy, hideF
         drawRows();
         paint();
       } }, icon('clear', 'inline'));
+      const edit = el('button', { class: 'icon sq-btn av-edit', type: 'button', title: 'Edit track', 'aria-label': 'Edit track', 'aria-expanded': String(!!r.editing) }, icon('pencil', 'inline'));
+      const line2 = el('div', { class: 'av-line2', hidden: !r.editing },
+        u.start,
+        textField(r, 'artists', 'Artist', { class: 'av-artist' }),
+        textField(r, 'title', 'Title', { class: 'av-title' }),
+        textField(r, 'version', 'Version', { class: 'av-version' }));
+      const setEditing = (on) => {
+        r.editing = on;
+        line2.hidden = !on;
+        edit.setAttribute('aria-expanded', String(on));
+      };
+      edit.addEventListener('click', () => setEditing(!r.editing));
+      line2.addEventListener('keydown', (e) => {
+        if (e.key !== 'Enter' && e.key !== 'Escape') return;
+        e.preventDefault();
+        e.stopPropagation();
+        setEditing(false);
+      });
       ui.set(r.key, u);
       return el('li', { class: 'av-row' },
         el('div', { class: 'av-line1' },
           el('label', { class: 'av-inc' }, box),
-          u.no, u.start,
-          el('span', { class: 'av-icons' }, u.link, remove)),
-        el('div', { class: 'av-line2' },
-          textField(r, 'artists', 'Artist', { class: 'av-artist' }),
-          textField(r, 'title', 'Title', { class: 'av-title' }),
-          textField(r, 'version', 'Version', { class: 'av-version' })),
+          u.no,
+          el('span', { class: 'av-label t-body' }, u.name, ' ', u.version, ' ', u.len),
+          u.flag,
+          el('span', { class: 'av-icons' }, edit, u.link, remove)),
+        line2,
         meta.length ? el('div', { class: 'av-meta' }, ...meta) : null,
         u.issue);
     }
@@ -210,6 +237,7 @@ export function createVideoFlow({ body, say, genreEditor, isLive, setBusy, hideF
     } }, 'Use album artist for all tracks');
     const addBtn = el('button', { class: 'btn outline small', type: 'button', onclick: () => {
       const r = addRow(st);
+      r.editing = true;
       drawRows();
       paint();
       ui.get(r.key)?.start.focus();

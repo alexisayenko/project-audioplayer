@@ -92,7 +92,7 @@ test('a video link calls the preview and shows the editable table; nothing is cr
   const rm = rows()[2].querySelector('button.av-remove');
   assert.equal(rm.getAttribute('aria-label'), 'Remove');
   assert.equal(rows()[0].querySelectorAll('.av-line1').length, 1);
-  assert.equal(rows()[0].querySelectorAll('.av-line2 input').length, 3);
+  assert.equal(rows()[0].querySelectorAll('.av-line2 input').length, 4);
   assert.equal(rows()[0].querySelector('.av-line1 .av-artist'), null);
   assert.equal(calls.some((c) => c.url === '/albums/from-video'), false);
   D().close();
@@ -407,4 +407,47 @@ test('backdrop closes the empty address step', async () => {
   fire(dlg, 'mousedown');
   fire(dlg, 'click');
   assert.equal(dlg.open, false);
+});
+
+test('tracks are read-only labels with length; the pencil toggles the editor; Enter and Escape close it', async () => {
+  const calls = server();
+  await open();
+  const r = rows();
+  const label = (row) => row.querySelector('.av-label').textContent.replace(/\s+/g, ' ').trim();
+  assert.equal(label(r[0]), 'A & B - One (10:00)');
+  assert.equal(label(r[1]), 'C - Two [Remix] (20:00)');
+  assert.equal(label(r[2]), 'Three (30:00)');
+  assert.equal(r[0].querySelector('.av-line2').hidden, true);
+  const pencil = r[0].querySelector('button.av-edit');
+  assert.equal(pencil.getAttribute('aria-label'), 'Edit track');
+  pencil.click();
+  assert.equal(r[0].querySelector('.av-line2').hidden, false);
+  typeInto(r[0].querySelector('.av-title'), 'Opening');
+  typeInto(r[0].querySelector('.av-version'), 'Edit');
+  fire(r[0].querySelector('.av-title'), 'keydown', { key: 'Enter' });
+  assert.equal(r[0].querySelector('.av-line2').hidden, true);
+  assert.equal(label(r[0]), 'A & B - Opening [Edit] (10:00)');
+  pencil.click();
+  fire(r[0].querySelector('.av-title'), 'keydown', { key: 'Escape' });
+  assert.equal(r[0].querySelector('.av-line2').hidden, true);
+  typeInto(r[2].querySelector('.av-start'), '31:30');
+  assert.equal(label(r[2]), 'Three (28:30)');
+  assert.equal(label(r[1]), 'C - Two [Remix] (21:30)');
+  fire(createBtn(), 'click');
+  await settle();
+  const body = post(calls, '/albums/from-video');
+  assert.deepEqual(body.tracks[0], { include: true, start: 0, end: 600, artists: ['A', 'B'], title: 'Opening', version: 'Edit', trackNo: 1, useExistingSongId: null });
+  D().close();
+});
+
+test('a row with a problem shows the marker and message while collapsed', async () => {
+  server();
+  await open();
+  const row = rows()[0];
+  typeInto(row.querySelector('.av-title'), '');
+  assert.equal(row.querySelector('.av-flag').hidden, false);
+  assert.equal(row.querySelector('.av-issue').hidden, false);
+  assert.match(row.querySelector('.av-label').textContent, /A & B/);
+  assert.match(q('.av-problems').textContent, /Title is empty/);
+  D().close();
 });

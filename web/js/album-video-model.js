@@ -53,6 +53,13 @@ export function lengthText(sec) {
   return h ? `${h} h ${two(m % 60)} min` : `${m} min`;
 }
 
+export function trackClock(sec) {
+  const s = Math.max(0, Math.round(Number(sec) || 0));
+  const h = Math.floor(s / 3600);
+  const m = Math.floor((s % 3600) / 60);
+  return h ? `${h}:${two(m)}:${two(s % 60)}` : `${m}:${two(s % 60)}`;
+}
+
 export const joinArtists = (list) => (Array.isArray(list) ? list.filter(Boolean).join(' & ') : '');
 export const splitArtists = (text) => String(text ?? '').split('&').map((a) => a.trim()).filter(Boolean);
 
@@ -67,7 +74,7 @@ export function rowOf(t, i) {
     artists: joinArtists(t.artists ?? (t.artist ? [t.artist] : [])),
     title: String(t.title ?? ''),
     version: String(t.version ?? ''),
-    warnings: Array.isArray(t.warnings) ? t.warnings.filter(Boolean).map(String) : [],
+    warnings: Array.isArray(t.warnings) ? t.warnings.filter(Boolean).map(String).filter((w) => w !== 'Artist is the channel') : [],
     match: t.match && typeof t.match === 'object' ? t.match : null,
     useExisting: false,
     startText: formatClock(t.start),
@@ -108,6 +115,12 @@ export function stateOf(preview, address = '') {
 }
 
 export const endOf = (st, i) => (i + 1 < st.rows.length ? st.rows[i + 1].start : st.endTime);
+
+export function trackLabel(st, i) {
+  const r = st.rows[i];
+  const name = [r.artists.trim(), r.title.trim()].filter(Boolean).join(' - ');
+  return { name: name || 'Untitled track', version: r.version.trim(), length: trackClock(endOf(st, i) - r.start) };
+}
 
 export function renumber(st) {
   st.rows.forEach((r, i) => { r.no = i + 1; });
