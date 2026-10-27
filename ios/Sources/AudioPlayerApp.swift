@@ -19,6 +19,7 @@ struct AudioPlayerApp: App {
                 .environmentObject(player.clock)
                 .environmentObject(settings)
                 .environmentObject(server)
+                .environmentObject(server.board)
                 .environmentObject(anon)
                 .environmentObject(libraryQuery)
                 .environmentObject(listening)

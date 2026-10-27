@@ -92,9 +92,13 @@ struct SongDetailsView: View {
             .filter { !$0.isEmpty }.joined(separator: " · ")
     }
     private func primary(_ track: Track) -> some View {
+        LiveProgress(id: id, tracked: server.transfers[id] != nil, fallback: anon.transfers[id]?.progress) { progress in
+            primaryButton(track, progress: progress)
+        }
+    }
+    private func primaryButton(_ track: Track, progress: Double?) -> some View {
         let phone = library.contains(id)
-        let transfer = server.transfers[id] ?? anon.transfers[id]
-        let noAudio = !phone && track.onServer == false && transfer == nil
+        let noAudio = !phone && track.onServer == false && progress == nil
         let pausing = current && player.isPlaying
         let idleTitle: String
         let symbol: String
@@ -105,12 +109,12 @@ struct SongDetailsView: View {
             idleTitle = noAudio ? "No audio yet" : "Download to iPhone"
             symbol = "arrow.down.circle"
         }
-        let title = transfer.map { "Downloading \(Int(min(1, max(0, $0.progress)) * 100))%" } ?? idleTitle
+        let title = progress.map { "Downloading \(Int(min(1, max(0, $0)) * 100))%" } ?? idleTitle
         return Button { if phone { play(track) } else { download(track) } } label: {
             Label(title, systemImage: symbol)
                 .frame(minWidth: DS.Component.detailsCover)
         }
-        .buttonStyle(LibraryPrimaryStyle()).disabled(noAudio || transfer != nil || (!phone && !signedIn))
+        .buttonStyle(LibraryPrimaryStyle()).disabled(noAudio || progress != nil || (!phone && !signedIn))
     }
     private func facts(_ track: Track) -> some View {
         VStack(spacing: 0) {

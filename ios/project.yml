@@ -130,6 +130,8 @@ targets:
           - PlaybackPersistence.swift
           - PlayerService.swift
           - PlayQueue.swift
+          - ProgressGate.swift
+          - TransferProgress.swift
           - NowPlaying.swift
           - PlayRecorder.swift
           - QueueAdvance.swift

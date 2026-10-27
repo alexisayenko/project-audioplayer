@@ -238,8 +238,11 @@ final class AnonDownloader: ObservableObject {
         while true {
             try Task.checkCancellation()
             do {
+                let gate = ProgressGate()
                 try await api.downloadFile(serverID(id), to: partial, expectedSize: size) { [weak self] p in
-                    Task { @MainActor in self?.setProgress(id, Self.serverShare + (1 - Self.serverShare) * p, waiting: false) }
+                    let value = Self.serverShare + (1 - Self.serverShare) * p
+                    guard gate.admit(value) else { return }
+                    Task { @MainActor in self?.setProgress(id, value, waiting: false) }
                 }
                 actual = try await Self.sha256(of: partial)
                 if actual == expected { break }

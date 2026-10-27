@@ -13,8 +13,10 @@ import AppKit
 /// only the id -> file name map is, in `library.json` and in `phone-index.json` (`LibraryIndex`), which survives a damaged catalog cache.
 @MainActor
 final class LibraryStore: ObservableObject {
-    @Published private(set) var songs: [Track] = []
-    @Published private(set) var phoneIDs: Set<String> = []
+    @Published private(set) var songs: [Track] = [] { didSet { revision &+= 1 } }
+    @Published private(set) var phoneIDs: Set<String> = [] { didSet { revision &+= 1 } }
+    /// Counts changes of `songs` and `phoneIDs`, so a view can tell that what it derived from them is still valid.
+    private(set) var revision = 0
     /// ETag of the last catalog the server sent, for `If-None-Match`.
     private(set) var etag: String?
     private var prefetchTask: Task<Void, Never>?
@@ -31,8 +33,15 @@ final class LibraryStore: ObservableObject {
     private static var indexURL: URL { index.catalogURL }
     private static let legacyIndexURL = documents.appendingPathComponent("library.json")
 
-    /// Songs whose audio is on this iPhone.
-    var tracks: [Track] { songs.filter { phoneIDs.contains($0.id) } }
+    private var phoneTracks: (revision: Int, tracks: [Track])?
+
+    /// Songs whose audio is on this iPhone. Kept until `songs` or `phoneIDs` change: screens read it on every refresh.
+    var tracks: [Track] {
+        if let phoneTracks, phoneTracks.revision == revision { return phoneTracks.tracks }
+        let found = songs.filter { phoneIDs.contains($0.id) }
+        phoneTracks = (revision, found)
+        return found
+    }
 
     init() {
         try? FileManager.default.createDirectory(at: Self.audioDirectory, withIntermediateDirectories: true)

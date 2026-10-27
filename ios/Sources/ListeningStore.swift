@@ -4,7 +4,8 @@ import Foundation
 /// Listening statistics are optional: local playback never waits for this request.
 @MainActor
 final class ListeningStore: ObservableObject {
-    @Published private(set) var entries: [String: LibraryListeningEntry] = [:]
+    @Published private(set) var entries: [String: LibraryListeningEntry] = [:] { didSet { revision &+= 1 } }
+    private(set) var revision = 0
     @Published private(set) var loaded = false
     private var generation = 0
 

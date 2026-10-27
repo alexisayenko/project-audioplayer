@@ -95,6 +95,40 @@ final class LibraryQueryTests: XCTestCase {
         XCTAssertEqual(q.results(songs, phoneIDs: [], listening: entries).map(\.id), ["c", "b", "a", "d"])
     }
 
+    func testMemoizedResultsRunTheFilterOnceWhileNothingChanges() {
+        let q = query()
+        let songs = [song("a", "Beta"), song("b", "Alpha")]
+        let stamp = LibraryQuery.DataStamp(phoneOnly: false, library: 1, listening: 1)
+        let expected = q.results(songs, phoneIDs: [], listening: [:]).map(\.id)
+        for _ in 0..<5 { XCTAssertEqual(q.results(songs, phoneIDs: [], listening: [:], stamp: stamp).map(\.id), expected) }
+        XCTAssertEqual(q.computed, 1)
+    }
+
+    func testMemoizedResultsFollowTheQueryAndTheStamp() {
+        let q = query()
+        let songs = [song("a", "Beta"), song("b", "Alpha")]
+        var stamp = LibraryQuery.DataStamp(phoneOnly: false, library: 1, listening: 1)
+        _ = q.results(songs, phoneIDs: [], listening: [:], stamp: stamp)
+        q.search = "alpha"
+        XCTAssertEqual(q.results(songs, phoneIDs: [], listening: [:], stamp: stamp).map(\.id), ["b"])
+        q.choose(.title); q.search = ""
+        XCTAssertEqual(q.results(songs, phoneIDs: [], listening: [:], stamp: stamp).map(\.id), ["b", "a"])
+        stamp.library = 2
+        let more = songs + [song("c", "Aardvark")]
+        XCTAssertEqual(q.results(more, phoneIDs: [], listening: [:], stamp: stamp).map(\.id), ["c", "b", "a"])
+        XCTAssertEqual(q.computed, 4)
+    }
+
+    func testMemoizedResultsSkipReadingTheSongsWhenCached() {
+        let q = query()
+        let stamp = LibraryQuery.DataStamp(phoneOnly: true, library: 3, listening: 0)
+        var reads = 0
+        func songs() -> [Track] { reads += 1; return [song("a")] }
+        _ = q.results(songs(), phoneIDs: [], listening: [:], stamp: stamp)
+        _ = q.results(songs(), phoneIDs: [], listening: [:], stamp: stamp)
+        XCTAssertEqual(reads, 1)
+    }
+
     func testClearKeepsSortAndRelaunchRestoresOnlySort() {
         let defaults = UserDefaults(suiteName: "LibraryQueryTests.\(UUID().uuidString)")!
         let q = LibraryQuery(defaults: defaults)

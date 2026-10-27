@@ -2,6 +2,10 @@
 
 What shipped, newest first. One line each; the web UI and server are live at https://electrophone.cc. Everything listed here is deployed except the sections marked "built, not deployed" (the 2026-10-14 release went out once the SSH access in [task-0027](tasks/task-0027.md) was restored; the live visualizer files match `origin/main` as of 2026-10-15). Why: [tech/decisions.md](tech/decisions.md); runbook: [tech/deploy.md](tech/deploy.md).
 
+## 2026-10-27 (iOS: UI jitter while downloading and playing; in source, not in a build)
+
+- iOS (IOS-116; both schemes build, all unit tests pass, measured in the simulator with a 1500-song library, not run on a device): the screen no longer stutters while songs download or play. Causes found: every download tick rebuilt the Library list (filter and sort of the whole library twice), the hidden Settings tab and the root view; the playback position checkpoint (every 5 s) rewrote UserDefaults and `@AppStorage` re-rendered the always-alive Statistics chart each time. Fixes: the percent of a download lives in its own `TransferProgress` and reaches only the rows that show it, throttled by `ProgressGate`; the Library results are computed once per change; Statistics and Albums use `@StoredValue`; redundant `ServerLink` publishes are skipped. Debug build, simulator, two downloads at a time: 3 to 54 frames per second while downloading, longest stall 1.7 s to 0.22 s, stalls every 5 s while playing gone. The recent PlayerService, NowPlaying and QueueAdvance refactor (IOS-115) added no publishes; the 0.5 s position clock was already separate.
+
 ## 2026-10-27 (Web: album popups and infobox; to deploy)
 
 - Server and web: the album Edit dialog has a "Use for songs" button that copies the album's own cover to every linked song in one request (`POST /albums/{id}/cover/to-songs`); songs whose cover the user chose are kept until a second click confirms replacing them, and it reports "Set art on N songs" (LIB-262, API-305, task-0120; to deploy; iOS not built).

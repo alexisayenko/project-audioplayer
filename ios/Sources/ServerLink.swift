@@ -91,7 +91,10 @@ final class ServerLink: ObservableObject {
     /// What the last failed request really was, in words for the person. Nil while requests succeed.
     @Published private(set) var failureMessage: String?
     @Published private var book = TransferBook()
+    /// The songs now arriving; their percent lives in `board`, not in `Transfer.progress`.
     var transfers: [String: Transfer] { book.items }
+    /// The percent of each running download; views that show it observe this, so a tick does not wake everything that watches the link.
+    let board = TransferProgress()
     @Published private(set) var failed: Set<String> = []
     /// A failure to tell the person about once (Library shows it as a toast).
     @Published var notice: String?
@@ -108,6 +111,11 @@ final class ServerLink: ObservableObject {
     private var bulkStreak: Set<String> = []
     private static let bulkConcurrency = 2
     private static let bulkMaxStreak = 3
+
+    /// The percent of a running download, nil when the song is not arriving; read it where `board` is observed.
+    func progress(of id: String) -> Double? {
+        book.contains(id) ? board.values[id] ?? 0 : nil
+    }
 
     static func hasCredentials(_ settings: Settings) -> Bool {
         !settings.token.isEmpty || AuthService.shared.isSignedIn
@@ -186,7 +194,7 @@ final class ServerLink: ObservableObject {
     func listWhenSaved(_ id: String, settings: Settings, library: LibraryStore) {
         listTasks[id]?.cancel()
         listTasks[id] = Task {
-            defer { listTasks[id] = nil; waiting.remove(id) }
+            defer { listTasks[id] = nil; setWaiting(id, false) }
             let api = APIClient(baseURL: settings.serverURL, token: settings.token)
             var misses = 0
             for _ in 0..<900 {
@@ -195,7 +203,7 @@ final class ServerLink: ObservableObject {
                 do {
                     let st = try await api.status(id)
                     misses = 0
-                    if st.isQueued { waiting.insert(id) } else { waiting.remove(id) }
+                    setWaiting(id, st.isQueued)
                     if st.status == "done" { await syncCatalog(settings: settings, library: library, auto: false); return }
                     if st.status == "error" { notice = st.failureMessage; return }
                 } catch {
@@ -209,6 +217,15 @@ final class ServerLink: ObservableObject {
                 }
             }
         }
+    }
+
+    private func clearFailure(_ id: String) {
+        if failed.contains(id) { failed.remove(id) }
+    }
+
+    private func setWaiting(_ id: String, _ value: Bool) {
+        guard waiting.contains(id) != value else { return }
+        if value { waiting.insert(id) } else { waiting.remove(id) }
     }
 
     private static func isFatal(_ error: Error) -> Bool {
@@ -269,7 +286,7 @@ final class ServerLink: ObservableObject {
         switch await copy(track, settings: settings, from: 0, span: 1) {
         case .success:
             add(track, to: library)
-            failed.remove(track.id)
+            clearFailure(track.id)
             return .done
         case .failure(let f):
             failed.insert(track.id)
@@ -304,7 +321,7 @@ final class ServerLink: ObservableObject {
     private func ingest(_ track: Track, generation gen: Int, settings: Settings, library: LibraryStore, player: PlayerService?, playWhenReady: Bool) async {
         transferLog.debug("ingest begin \(track.id, privacy: .public)")
         defer {
-            waiting.remove(track.id)
+            setWaiting(track.id, false)
             end(track.id, generation: gen)
             transferLog.debug("ingest end \(track.id, privacy: .public)")
         }
@@ -315,8 +332,8 @@ final class ServerLink: ObservableObject {
             do {
                 let st = try await api.status(track.id)
                 misses = 0
-                if st.isQueued { waiting.insert(track.id) } else { waiting.remove(track.id) }
-                book.setProgress(track.id, generation: gen, 0.8 * (st.isQueued ? 0 : st.progress ?? 0))
+                setWaiting(track.id, st.isQueued)
+                progress(track.id, generation: gen, 0.8 * (st.isQueued ? 0 : st.progress ?? 0))
                 if st.status == "error" { fail(track, st.failureMessage); return }
                 if st.status == "done" { break }
             } catch {
@@ -329,15 +346,18 @@ final class ServerLink: ObservableObject {
             return
         }
         add(track, to: library)
-        failed.remove(track.id)
+        clearFailure(track.id)
         if playWhenReady { player?.playNow(track) }
     }
 
     private func copy(_ track: Track, settings: Settings, from base: Double, span: Double) async -> Result<Void, CopyFailure> {
         let gen = book.generation(track.id)
+        let gate = ProgressGate()
         do {
             try await APIClient(baseURL: settings.serverURL, token: settings.token).downloadFile(track) { [weak self] p in
-                Task { @MainActor in self?.progress(track.id, generation: gen, base + span * p) }
+                let value = base + span * p
+                guard gate.admit(value) else { return }
+                Task { @MainActor in self?.progress(track.id, generation: gen, value) }
             }
             return .success(())
         } catch {
@@ -348,17 +368,23 @@ final class ServerLink: ObservableObject {
 
     private func begin(_ track: Track) -> Int {
         transferLog.debug("transfer start \(track.id, privacy: .public)")
-        return book.start(track)
+        let generation = book.start(track)
+        board.set(track.id, 0)
+        return generation
     }
 
     private func end(_ id: String, generation: Int) {
-        book.finish(id, generation: generation)
+        if book.generation(id) == generation {
+            board.clear(id)
+            book.finish(id, generation: generation)
+        }
         transferLog.debug("transfer cleared \(id, privacy: .public)")
     }
 
     private func progress(_ id: String, generation: Int?, _ value: Double) {
         if value >= 1 { transferLog.debug("transfer progress 100% \(id, privacy: .public)") }
-        book.setProgress(id, generation: generation, value)
+        guard let generation, book.generation(id) == generation else { return }
+        board.set(id, value)
     }
 
     private func add(_ track: Track, to library: LibraryStore) {
@@ -369,7 +395,10 @@ final class ServerLink: ObservableObject {
 
     /// Drops transfers whose song is already on the phone, so a finished row can never linger.
     func reconcile(_ library: LibraryStore) {
-        for id in book.reconcile(onPhone: library.contains) {
+        guard book.items.keys.contains(where: library.contains) else { return }
+        let dropped = book.reconcile(onPhone: library.contains)
+        board.clear(dropped)
+        for id in dropped {
             transferLog.debug("transfer cleared by reconcile \(id, privacy: .public)")
         }
     }

@@ -190,14 +190,16 @@ struct SongListScreen<Extra: View, MenuItems: View>: View {
         let onPhone = library.contains(track.id)
         let current = player.current?.id == track.id
         let extra = transfer(track.id)
-        let progress = server.transfers[track.id]?.progress ?? extra?.progress
-        return LibrarySongRow(track: track, progress: progress, onPhone: onPhone, playing: current, isPlaying: player.isPlaying,
-                              queued: queued, waiting: server.waiting.contains(track.id) || extra?.waiting == true,
-                              offline: signedIn && server.reachable == false,
-                              listenedCount: signedIn && listening.loaded ? listening.entries[track.id]?.listened?.all ?? 0 : nil,
-                              toggleQueue: onPhone && !current ? { toggleQueued(track) } : nil,
-                              play: { play(track) }, details: { detail = SongRoute(id: track.id) }, download: { download(track) })
-            .contextMenu { menuItems(track, onPhone: onPhone, current: current, transferring: progress != nil) }
+        let tracked = server.transfers[track.id] != nil
+        return LiveProgress(id: track.id, tracked: tracked, fallback: extra?.progress) { progress in
+            LibrarySongRow(track: track, progress: progress, onPhone: onPhone, playing: current, isPlaying: player.isPlaying,
+                           queued: queued, waiting: server.waiting.contains(track.id) || extra?.waiting == true,
+                           offline: signedIn && server.reachable == false,
+                           listenedCount: signedIn && listening.loaded ? listening.entries[track.id]?.listened?.all ?? 0 : nil,
+                           toggleQueue: onPhone && !current ? { toggleQueued(track) } : nil,
+                           play: { play(track) }, details: { detail = SongRoute(id: track.id) }, download: { download(track) })
+        }
+            .contextMenu { menuItems(track, onPhone: onPhone, current: current, transferring: tracked || extra != nil) }
             .accessibilityActions {
                 if onPhone && !current { Button(queued ? "Remove from queue" : "Add to queue") { toggleQueued(track) } }
                 if let remove = actions.remove { Button("Remove from list") { remove(track) } }

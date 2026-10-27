@@ -37,7 +37,10 @@ struct LibraryView: View {
 
     private var signedIn: Bool { ServerLink.hasCredentials(settings) }
     private var songs: [Track] { signedIn ? library.songs : library.tracks }
-    private var tracks: [Track] { query.results(songs, phoneIDs: library.phoneIDs, listening: listening.entries) }
+    private var tracks: [Track] {
+        query.results(songs, phoneIDs: library.phoneIDs, listening: listening.entries,
+                      stamp: LibraryQuery.DataStamp(phoneOnly: !signedIn, library: library.revision, listening: listening.revision))
+    }
     private var accountKey: String {
         [settings.serverURL, settings.token, auth.session?.email ?? "", auth.session?.provider.rawValue ?? ""].joined(separator: "|")
     }
@@ -229,9 +232,11 @@ struct LibraryView: View {
         } else {
             LazyVStack(spacing: 0) {
                 ForEach(arriving) { track in
-                    LibrarySongRow(track: track, progress: (server.transfers[track.id] ?? anon.transfers[track.id])?.progress ?? 0,
-                                   onPhone: false, playing: false, isPlaying: false, queued: false,
-                                   waiting: server.waiting.contains(track.id), arriving: true, play: LibrarySongRow.inert, details: LibrarySongRow.inert, download: LibrarySongRow.inert)
+                    LiveProgress(id: track.id, tracked: server.transfers[track.id] != nil, fallback: anon.transfers[track.id]?.progress ?? 0) { progress in
+                        LibrarySongRow(track: track, progress: progress ?? 0,
+                                       onPhone: false, playing: false, isPlaying: false, queued: false,
+                                       waiting: server.waiting.contains(track.id), arriving: true, play: LibrarySongRow.inert, details: LibrarySongRow.inert, download: LibrarySongRow.inert)
+                    }
                     LibraryHairline().padding(.horizontal, DS.Space.space3)
                 }
                 ForEach(Array(matches.enumerated()), id: \.element.id) { index, track in
@@ -247,14 +252,18 @@ struct LibraryView: View {
     private func row(_ track: Track, matches: [Track], queued: Bool) -> some View {
         let onPhone = library.contains(track.id)
         let current = player.current?.id == track.id
-        let progress = (server.transfers[track.id] ?? anon.transfers[track.id])?.progress
-        return LibrarySongRow(track: track, progress: progress, onPhone: onPhone, playing: current, isPlaying: player.isPlaying,
-                              queued: queued, waiting: server.waiting.contains(track.id), offline: signedIn && server.reachable == false,
-                              listenedCount: signedIn && listening.loaded ? listening.entries[track.id]?.listened?.all ?? 0 : nil,
-                              toggleQueue: onPhone && !current ? { toggleQueued(track) } : nil,
-                              play: { hideKeyboard(); play(track, in: matches) },
-                              details: { openDetails(track, matches: matches) }, download: { download(track) })
-            .contextMenu { menu(track, onPhone: onPhone, current: current, transferring: progress != nil) }
+        let tracked = server.transfers[track.id] != nil
+        let anonymous = anon.transfers[track.id]?.progress
+        let transferring = tracked || anonymous != nil
+        return LiveProgress(id: track.id, tracked: tracked, fallback: anonymous) { progress in
+            LibrarySongRow(track: track, progress: progress, onPhone: onPhone, playing: current, isPlaying: player.isPlaying,
+                           queued: queued, waiting: server.waiting.contains(track.id), offline: signedIn && server.reachable == false,
+                           listenedCount: signedIn && listening.loaded ? listening.entries[track.id]?.listened?.all ?? 0 : nil,
+                           toggleQueue: onPhone && !current ? { toggleQueued(track) } : nil,
+                           play: { hideKeyboard(); play(track, in: matches) },
+                           details: { openDetails(track, matches: matches) }, download: { download(track) })
+        }
+            .contextMenu { menu(track, onPhone: onPhone, current: current, transferring: transferring) }
             .accessibilityFocused($rowFocus, equals: track.id)
             .accessibilityActions {
                 Button("Show details") { openDetails(track, matches: matches) }
@@ -264,7 +273,7 @@ struct LibraryView: View {
                 }
                 if signedIn { Button("Edit") { editing = ServerSong(track) } }
                 if signedIn { Button("Add to playlist") { playlistSongs = [track.id] } }
-                if signedIn && !onPhone && progress == nil {
+                if signedIn && !onPhone && !transferring {
                     if track.onServer != false { Button("Download") { download(track) } }
                     else { Button("Get audio") { getAudio(track) } }
                 }
