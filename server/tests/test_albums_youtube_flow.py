@@ -218,3 +218,23 @@ def test_a_playlist_youtube_link_survives_patch_and_get(client, discogs):
         client.patch(f"/albums/{album['id']}", json={"links": {"youtube": link}}, headers=H)
         assert client.get(f"/albums/{album['id']}", headers=H).json()["links"]["youtube"].startswith("https://")
     assert client.patch(f"/albums/{album['id']}", json={"links": {"youtube": "https://www.youtube.com/watch?t=5"}}, headers=H).status_code == 422
+
+
+def test_commit_gives_songs_without_an_artist_the_album_artist(client, yt, monkeypatch):
+    monkeypatch.setattr(album_youtube, "_views", lambda *a: {})
+    post_commit(client, commit_body(sel((1, A, "Intro", 60), (2, B, "Outro", 90)), fallback={"title": "My Album", "artist": "Derango"}))
+    songs = library_ids(client)
+    assert songs[A]["mainArtists"] == ["Derango"]
+    assert songs[B]["mainArtists"] == ["Derango"]
+
+
+@pytest.mark.parametrize("fallback", [{"title": "Comp", "artist": "Various Artists"}, {"title": "Solo"}])
+def test_commit_leaves_songs_artistless_for_various_artists_or_no_album_artist(client, yt, monkeypatch, fallback):
+    monkeypatch.setattr(album_youtube, "_views", lambda *a: {})
+    post_commit(client, commit_body(sel((1, A, "Intro", 60)), fallback=fallback))
+    assert library_ids(client)[A]["mainArtists"] == []
+
+
+def test_with_album_artist_keeps_a_track_artist():
+    entry = {"mainArtists": ["Own"], "title": "t"}
+    assert album_youtube._with_album_artist(entry, "Album Artist") is entry

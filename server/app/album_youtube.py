@@ -11,7 +11,7 @@ from typing import Any
 
 from fastapi import HTTPException
 
-from . import album_covers, albums, credit_title, credits_split, deps, discogs_lookup, downloads, extractor, limits, playlist_import, timeutil, urlclean, users
+from . import album_covers, albums, credit_title, credits_split, credits_v1, deps, discogs_lookup, downloads, extractor, limits, playlist_import, timeutil, urlclean, users
 from .links import Resolved
 
 MAX_CANDIDATES = 8
@@ -241,7 +241,7 @@ def commit(uid: str, owner: bool, body: dict[str, Any], songs: list[dict[str, An
         raise HTTPException(status_code=409, detail="library_full_songs")
     views = _views(uid, owner, list_id, songs, fresh)
     for s in fresh:
-        _create(uid, views.get(s["videoId"]) or _minimal(s))
+        _create(uid, _with_album_artist(views.get(s["videoId"]) or _minimal(s), payload["artist"]))
     ids = {s["position"]: have.get(s["videoId"], s["videoId"]) for s in selected}
     with deps.tx(uid, "albums commit"):
         items = albums.load(deps.albums_path(uid))
@@ -278,6 +278,13 @@ def _views(uid: str, owner: bool, list_id: str, songs: list[dict[str, Any]], fre
 def _minimal(selected: dict[str, Any]) -> dict[str, Any]:
     return {"id": selected["videoId"], "title": selected["title"], "mainArtists": [], "featuredArtists": [], "withArtists": [], "version": None,
             "duration": selected["durationS"], "thumbnail": None}
+
+
+def _with_album_artist(entry: dict[str, Any], album_artist: str) -> dict[str, Any]:
+    """A track with no artist of its own gets the album artist (never "Various Artists")."""
+    if entry["mainArtists"] or not album_artist or discogs_lookup._is_various(album_artist):
+        return entry
+    return {**entry, "mainArtists": credits_v1.pills(album_artist)}
 
 
 def _create(uid: str, entry: dict[str, Any]) -> None:
