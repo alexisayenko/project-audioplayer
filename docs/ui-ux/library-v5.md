@@ -60,7 +60,7 @@ where a person finds a song and starts it, and nothing on it may get in the way 
    text, outlines and icons that are "on", `accentTint` for chip washes. The quiet selection roles `selectTint`/`selectInk` mark a narrowed or non-default state in the controls line and the sheets (Done, Clear, the count while narrowing, a tinted sort icon). Red (`powerText`, `power`) only for destructive words and glyphs.
 3. **Tokens only.** No hex, no literal radius, size or stroke in views. A value that has no token is listed in section 1.15.
 4. **44 pt targets.** Every tappable control has a 44 x 44 hit area (`DS.Space.hit`) even when it draws smaller (chips and the sort circles draw 36, Download pill 32).
-5. **Dynamic Type up to accessibility2.** Text uses `T.*`; the root caps at `.accessibility2`; layouts have an explicit large-text variant (screen S4).
+5. **Dynamic Type up to the largest accessibility size.** Text uses `T.*`; the root has no cap (IOS-122); layouts have an explicit large-text variant (screen S4).
 6. **Nothing moves when a number changes.** The controls line has fixed slots; the only count is the right-aligned "N of total" count beside the ellipsis menu; the header has no counter; the sheets' match count uses tabular figures.
 7. **One way to do each thing.** One Clear all filters action (in the ellipsis menu), one sort entry point (the Sort by icon), one way to apply a filter (live, no confirm button), one delete (in Song Details), one place per count.
 8. **Contrast.** Text pairs are 4.5:1 in both themes, using the substitutions of the style guide (`ink` on `accentTint`, `powerText` for red words, `selectInk` on `selectTint` 4.5:1 by day, `ink-faint` never on a working control).

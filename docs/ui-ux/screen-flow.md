@@ -32,7 +32,7 @@ a floating bar over every page except Now playing.
 ```mermaid
 flowchart LR
   Launch(["App launch"]) --> Library
-  Menu{{"Left drawer<br/>menu button or swipe from the left edge"}}
+  Menu{{"Left drawer<br/>menu button, or swipe from the left edge on a root screen (a pushed screen keeps the back swipe)"}}
   Menu --> Library["Library"]
   Menu --> Playback["Now playing"]
   Menu --> Playlists["Playlists"]
