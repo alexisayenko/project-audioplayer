@@ -115,6 +115,9 @@
 .av-bottom { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3); }
 .av-problems { margin: 0; color: var(--power-text); }
 .av-paste { width: 100%; resize: vertical; }
+.av-tl { flex-basis: 100%; display: flex; flex-direction: column; align-items: flex-start; gap: var(--space-2); }
+.av-tl-panel { width: 100%; display: flex; flex-direction: column; gap: var(--space-2); align-items: flex-start; }
+.av-tl-mismatch { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3); }
 .av-progress { display: grid; gap: var(--space-3); }
 .av-progress p { margin: 0; }
 .av-progress-actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3); }

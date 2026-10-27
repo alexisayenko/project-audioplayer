@@ -7,6 +7,7 @@ import {
   addRow, payload, youtubeAt, previewErrorText, createErrorText,
 } from './album-video-model.js';
 import { mountSplitProgress } from './album-video-progress.js';
+import { trackListPanel } from './album-tracklist-panel.js';
 
 const SOURCE_NOTE = { chapters: 'Tracks from the video chapters', description: 'Tracks from the video description', pasted: 'Tracks from the pasted text' };
 
@@ -129,8 +130,9 @@ export function createVideoFlow({ body, say, genreEditor, isLive, setBusy, hideF
         c.paint();
         c.ui.get(r.key)?.extra.start.focus();
       } }, icon('plus', 'inline'), 'Add a track')],
-      bottomAfter: () => [
+      bottomAfter: (c) => [
         sortBtn,
+        trackListPanel({ st, ctx: c }),
         el('button', { class: 'link-btn t-caption', type: 'button', onclick: () => showPaste(address, st.rawText, 'Edit the track list and read it again. Your table edits are replaced.') }, 'Paste a track list instead'),
       ],
     };
