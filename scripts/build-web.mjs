@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import { createHash } from 'node:crypto';
-import { existsSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { ESBUILD, TARGET, loadEsbuild } from './build-lib.mjs';
@@ -21,8 +21,7 @@ function stylesheets() {
   return [...html.matchAll(/<link rel="stylesheet" href="([^"]+)"/g)].map((m) => m[1]);
 }
 
-function sourceDigest(sheets) {
-  const modules = readdirSync(jsDir, { recursive: true }).map(posix).filter((p) => p.endsWith('.js')).map((p) => `js/${p}`).sort();
+function sourceDigest(modules, sheets) {
   const hash = createHash('sha256');
   for (const rel of [...modules, ...sheets]) {
     hash.update(`${rel}\0`);
@@ -93,7 +92,6 @@ async function build() {
   const esbuild = loadEsbuild();
   if (esbuild.version !== ESBUILD) throw new Error(`esbuild ${esbuild.version} is installed, ${ESBUILD} is pinned`);
   const sheets = stylesheets();
-  const digest = sourceDigest(sheets);
   rmSync(dist, { recursive: true, force: true });
   const result = await esbuild.build({
     entryPoints: ENTRIES.map((n) => join(jsDir, `${n}.js`)),
@@ -121,8 +119,10 @@ async function build() {
   const minified = await esbuild.transform(css, { loader: 'css', minify: true, target: TARGET, legalComments: 'none' });
   writeFileSync(join(dist, 'app.css'), minified.code);
   const outputs = result.metafile.outputs;
+  const modules = Object.keys(result.metafile.inputs).map(posix).filter((p) => p.startsWith('js/') && p.endsWith('.js')).sort();
+  const digest = sourceDigest(modules, sheets);
   const { tier1, tier2 } = layout(outputs);
-  const manifest = { esbuild: ESBUILD, sources: digest, stylesheets: sheets, css: 'dist/app.css', entry: 'dist/app.js', icons: 'dist/icons.js', tier1, tier2 };
+  const manifest = { esbuild: ESBUILD, sources: digest, modules, stylesheets: sheets, css: 'dist/app.css', entry: 'dist/app.js', icons: 'dist/icons.js', tier1, tier2 };
   writeFileSync(join(dist, 'manifest.json'), `${JSON.stringify(manifest, null, 2)}\n`);
   const bytes = Object.values(outputs).reduce((n, o) => n + o.bytes, 0);
   console.log(`web bundle: ${Object.keys(outputs).length} js files (${bytes} bytes), ${tier1.length} startup, ${tier2.length} lazy, css ${minified.code.length} bytes`);
@@ -135,8 +135,8 @@ function check() {
     return 1;
   }
   const manifest = JSON.parse(readFileSync(file, 'utf8'));
-  if (manifest.sources !== sourceDigest(stylesheets())) {
-    console.error('web/dist is stale (web/js or a stylesheet changed since the last build): run node scripts/build-web.mjs and commit web/dist');
+  if (!Array.isArray(manifest.modules) || !manifest.modules.every((m) => existsSync(join(root, m))) || manifest.sources !== sourceDigest(manifest.modules, stylesheets())) {
+    console.error('web/dist is stale (a module of the app or a stylesheet changed since the last build): run node scripts/build-web.mjs and commit web/dist');
     return 1;
   }
   const files = [manifest.css, manifest.entry, manifest.icons, ...manifest.tier1, ...manifest.tier2];

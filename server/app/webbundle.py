@@ -22,11 +22,10 @@ def enabled() -> bool:
     return os.environ.get("AUDIO_WEB_BUNDLE", "1").strip().lower() not in ("0", "false", "no", "off")
 
 
-def source_digest(root: Path, sheets: list[str]) -> str:
-    """SHA-256 over every web/js module (sorted by path) and the stylesheets in link order; the same value scripts/build-web.mjs writes."""
-    modules = sorted(p.relative_to(root).as_posix() for p in (root / "js").rglob("*.js"))
+def source_digest(root: Path, modules: list[str], sheets: list[str]) -> str:
+    """SHA-256 over the web/js modules the app bundle was built from (sorted by path, listed in the manifest) and the stylesheets in link order; the same value scripts/build-web.mjs writes."""
     digest = hashlib.sha256()
-    for rel in [*modules, *sheets]:
+    for rel in [*sorted(modules), *sheets]:
         digest.update(f"{rel}\0".encode())
         digest.update((root / rel).read_bytes())
         digest.update(b"\0")
@@ -39,7 +38,7 @@ def _load(root: Path) -> dict | None:
     except (OSError, ValueError):
         return None
     try:
-        if manifest["sources"] != source_digest(root, manifest["stylesheets"]):
+        if manifest["sources"] != source_digest(root, manifest["modules"], manifest["stylesheets"]):
             log.warning("web bundle is stale (web/js or a stylesheet changed since web/dist was built); serving the unbundled files")
             return None
         needed = [manifest["css"], manifest["entry"], manifest["icons"], *manifest["tier1"], *manifest["tier2"]]
