@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import difflib
+import logging
 import os
 import re
 import urllib.error
@@ -11,7 +12,7 @@ from typing import Any
 
 from fastapi import HTTPException
 
-from . import album_covers, albums, credit_title, credits_split, credits_v1, deps, discogs_lookup, downloads, extractor, limits, playlist_import, timeutil, urlclean, users
+from . import album_covers, albums, credit_title, credits_split, credits_v1, deps, discogs_lookup, downloads, extractor, genre_filter, genre_lookup, library, limits, playlist_import, timeutil, urlclean, users
 from .links import Resolved
 
 MAX_CANDIDATES = 8
@@ -20,9 +21,13 @@ BEST_MIN_SCORE = 0.7
 BEST_MARGIN = 0.1
 SUBSTRING_SCORE = 0.6
 MAX_SELECTED = 200
+MAX_SUGGESTED_GENRES = 4
+log = logging.getLogger(__name__)
 _FULL_ALBUM = r"(?:(?:full|complete|entire|whole)\s+)?(?:album|lp|ep)"
 _NOISE_GROUP = re.compile(rf"(?<!\s)\s*[\(\[]\s*{_FULL_ALBUM}(?:\s+(?:stream|version|playlist))?\s*[\)\]]", re.I)
 _NOISE_TAIL = re.compile(r"(?<![\s\-–—:|])[\s\-–—:|]+(?:full|complete|entire|whole)\s+(?:album|lp|ep)(?:\s+stream)?\s*$", re.I)
+_NOISE_WORDS = r"(?:official(?:\s+(?:audio|video|music\s+video|album|lyric\s+video|visualizer))?|hd|hq|4k|lyrics?|audio|full\s+(?:album\s+)?stream)"
+_NOISE_TAGS = re.compile(rf"(?<!\s)\s*[\(\[]\s*{_NOISE_WORDS}\s*[\)\]]", re.I)
 _SEP = re.compile(r"(?<!\s)\s+[-–—]\s+")
 _TOPIC = re.compile(r"(?<!\s)\s+-\s+topic$", re.I)
 _OPENER = re.compile(r"[\(\[]")
@@ -64,18 +69,58 @@ def _clean_album(text: str) -> str:
     return text
 
 
+_TYPE_MIX_TITLE = re.compile(r"\b(?:dj[\s-]?(?:mix|set)|live\s+set|mixed\s+by|continuous\s+mix|mixtape)\b", re.I)
+_TYPE_MIX_DESC = re.compile(r"\b(?:dj[\s-]?(?:mix|set)|live\s+set|continuous\s+mix)\b", re.I)
+_TYPE_TITLE = (
+    ("EP", re.compile(r"(?<![\w])EP(?![\w])")),
+    ("single", re.compile(r"\bsingle\b", re.I)),
+    ("compilation", re.compile(r"\b(?:compilation|various\s+artists)\b", re.I)),
+    ("soundtrack", re.compile(r"\b(?:soundtrack|OST|original\s+score)\b", re.I)),
+    ("live", re.compile(r"\blive\s+(?:at|in|from)\b|\(live\)|\[live\]", re.I)),
+)
+
+
+def guess_type(title: Any, description: Any = None) -> str:
+    """album (default), EP, single, compilation, soundtrack, live or mix (a DJ mix or set); "mix" only when the title or description says so."""
+    head = str(title or "")
+    if _TYPE_MIX_TITLE.search(head) or (description and _TYPE_MIX_DESC.search(str(description)[:1500])):
+        return "mix"
+    return next((kind for kind, pattern in _TYPE_TITLE if pattern.search(head)), "album")
+
+
 def guess(title: Any, uploader: Any, description: Any = None) -> dict[str, Any]:
     year = guess_year(title, description)
-    text = _NOISE_TAIL.sub("", _NOISE_GROUP.sub("", str(title or ""))).strip(" -–—|:")
+    kind = guess_type(title, description)
+    text = _NOISE_TAGS.sub("", _NOISE_TAIL.sub("", _NOISE_GROUP.sub("", str(title or "")))).strip(" -–—|:")
     channel = str(uploader or "").strip()
     parts = _SEP.split(text, maxsplit=1)
     if len(parts) == 2 and all(p.strip() for p in parts):
         artist, album = parts[0].strip(), _clean_album(parts[1].strip())
-    elif _TOPIC.search(channel) and text:
+    elif channel and text:
         artist, album = (_TOPIC.sub("", channel).strip() or None), _clean_album(text)
     else:
         artist, album = None, _clean_album(text)
-    return {"artist": artist, "album": album or None, "year": year}
+    return {"artist": artist, "album": album or None, "year": year, "type": kind}
+
+
+def vocab_genres(names: Any, limit: int = albums.MAX_GENRES) -> list[str]:
+    """The given genre names mapped to the closed vocabulary (TAG-079: synonyms resolved, unknown names dropped), deduplicated, at most `limit`."""
+    values = [n.strip() for n in names if isinstance(n, str) and n.strip()] if isinstance(names, list) else []
+    mapped = genre_filter.filter_tags([f"genre:{v}" for v in values])
+    return list(dict.fromkeys(t.partition(":")[2] for t in mapped))[:limit]
+
+
+def _suggest_genres(hint: dict[str, Any], candidates: list[dict[str, Any]], tracks: list[dict[str, Any]]) -> list[str]:
+    """Genres of the matched Discogs release, else MusicBrainz for the first track; [] on any failure."""
+    try:
+        pick = next((c for c in candidates if c.get("best")), None) or next((c for c in candidates[:1] if c["score"] >= BEST_MIN_SCORE), None)
+        found = vocab_genres(pick.get("genres"), MAX_SUGGESTED_GENRES) if pick else []
+        if not found and hint["artist"] and tracks:
+            found = vocab_genres([t.partition(":")[2] for t in genre_lookup.suggest_tags(hint["artist"], tracks[0]["title"]) if t.startswith("genre:")], MAX_SUGGESTED_GENRES)
+        return found
+    except Exception as exc:
+        log.warning("album genre suggestion failed: %s", exc)
+        return []
 
 
 def _http(exc: Exception) -> HTTPException:
@@ -143,6 +188,7 @@ def preview(uid: str, owner: bool, url: str, songs: list[dict[str, Any]]) -> dic
         "guess": hint,
         "tracks": tracks,
         "candidates": candidates,
+        "genres": _suggest_genres(hint, candidates, tracks),
         "searchError": error,
     }
 
@@ -203,7 +249,8 @@ def _fallback_payload(raw: Any, selected: list[dict[str, Any]], list_id: str) ->
         "title": title,
         "artist": str(data.get("artist") or "").strip()[: albums.MAX_TEXT],
         "year": timeutil.valid_year(year) if isinstance(year, int) and not isinstance(year, bool) else None,
-        "genres": [],
+        "genres": albums._genres({"genres": vocab_genres(data.get("genres"))}),
+        "type": albums.clean_type(data.get("type")),
         "rymUrl": None,
         "links": {"discogs": None, "rateyourmusic": None, "youtube": None, "wikipedia": None},
         "source": {"type": "youtube", "id": list_id, "url": urlclean.playlist_url(list_id)},
@@ -219,6 +266,8 @@ def _commit_payload(body: dict[str, Any], selected: list[dict[str, Any]], list_i
     if isinstance(candidate, dict) and "source" not in candidate and isinstance(candidate.get("discogsId"), int):
         candidate = {**candidate, "source": {"type": "discogs", "id": str(candidate["discogsId"])}}
     payload = albums.validate(candidate)
+    if body.get("type"):
+        payload["type"] = albums.clean_type(body["type"])
     return payload, _mapping(body.get("mapping"), selected, {t["no"] for t in payload["tracks"]})
 
 
@@ -239,9 +288,9 @@ def commit(uid: str, owner: bool, body: dict[str, Any], songs: list[dict[str, An
         raise HTTPException(status_code=409, detail={"code": "already_exists", "id": existing["id"]})
     if not owner and len(songs) + len(fresh) > limits.max_songs():
         raise HTTPException(status_code=409, detail="library_full_songs")
-    views = _views(uid, owner, list_id, songs, fresh)
+    views, channel = _views(uid, owner, list_id, songs, fresh)
     for s in fresh:
-        _create(uid, _with_album_artist(views.get(s["videoId"]) or _minimal(s), payload["artist"]))
+        _create(uid, _with_album_artist(views.get(s["videoId"]) or _minimal(s), payload["artist"], channel), payload)
     ids = {s["position"]: have.get(s["videoId"], s["videoId"]) for s in selected}
     with deps.tx(uid, "albums commit"):
         items = albums.load(deps.albums_path(uid))
@@ -255,6 +304,7 @@ def commit(uid: str, owner: bool, body: dict[str, Any], songs: list[dict[str, An
         for pos, no in mapping.items():
             by_no[no]["songId"] = ids[pos]
         albums.save(deps.albums_path(uid), [album, *items])
+        fill_songs(uid, album, [have[s["videoId"]] for s in selected if s["videoId"] in have])
     album = album_covers.present_one(uid, album_covers.auto(uid, album))
     return {
         "album": album,
@@ -264,15 +314,15 @@ def commit(uid: str, owner: bool, body: dict[str, Any], songs: list[dict[str, An
     }
 
 
-def _views(uid: str, owner: bool, list_id: str, songs: list[dict[str, Any]], fresh: list[dict[str, Any]]) -> dict[str, dict[str, Any]]:
+def _views(uid: str, owner: bool, list_id: str, songs: list[dict[str, Any]], fresh: list[dict[str, Any]]) -> tuple[dict[str, dict[str, Any]], str]:
     if not fresh:
-        return {}
+        return {}, ""
     try:
         playlist_import.charge_listing(uid, owner)
         found = playlist_import.listing(list_id, songs)
     except Exception:
-        return {}
-    return {e["id"]: e for e in found["entries"] if e["state"] == "ok"}
+        return {}, ""
+    return {e["id"]: e for e in found["entries"] if e["state"] == "ok"}, str(found["playlist"].get("uploader") or "")
 
 
 def _minimal(selected: dict[str, Any]) -> dict[str, Any]:
@@ -280,15 +330,27 @@ def _minimal(selected: dict[str, Any]) -> dict[str, Any]:
             "duration": selected["durationS"], "thumbnail": None}
 
 
-def _with_album_artist(entry: dict[str, Any], album_artist: str) -> dict[str, Any]:
-    """A track with no artist of its own gets the album artist (never "Various Artists")."""
-    if entry["mainArtists"] or not album_artist or discogs_lookup._is_various(album_artist):
+def _with_album_artist(entry: dict[str, Any], album_artist: str, channel: str = "") -> dict[str, Any]:
+    """A track with no artist of its own, or only the uploader channel as its artist, gets the album artist (never "Various Artists")."""
+    if not album_artist or discogs_lookup._is_various(album_artist):
+        return entry
+    names = [credit_title.fold(a) for a in entry["mainArtists"]]
+    only_channel = bool(channel) and names == [credit_title.fold(channel)] and names != [credit_title.fold(album_artist)]
+    if names and not only_channel:
         return entry
     return {**entry, "mainArtists": credits_v1.pills(album_artist)}
 
 
-def _create(uid: str, entry: dict[str, Any]) -> None:
+def _album_tags(album: dict[str, Any]) -> list[str]:
+    return [f"genre:{g}" for g in vocab_genres(album.get("genres"))]
+
+
+def _create(uid: str, entry: dict[str, Any], album: dict[str, Any] | None = None) -> None:
     meta: dict[str, Any] = {"title": entry["title"], "mainArtists": entry["mainArtists"], "featuredArtists": entry["featuredArtists"]}
+    if album:
+        meta["albums"] = [album["title"]]
+        if album.get("year"):
+            meta["releaseYear"] = album["year"]
     if entry["withArtists"]:
         meta["withArtists"] = entry["withArtists"]
     if entry["version"]:
@@ -296,10 +358,47 @@ def _create(uid: str, entry: dict[str, Any]) -> None:
     probe = {"duration": entry["duration"], "thumbnail": entry["thumbnail"], "tags": []}
     link = Resolved(entry["id"], urlclean.watch_url(entry["id"]), probe)
     try:
-        downloads.add_metadata_only(uid, entry["id"], link, meta, [])
+        downloads.add_metadata_only(uid, entry["id"], link, meta, _album_tags(album) if album else [])
     except HTTPException as exc:
         if exc.status_code != 409:
             raise
+
+
+def fill_song(song: dict[str, Any], album: dict[str, Any], artist: str | None = None) -> bool:
+    """Copies the album's title, year, vocabulary genres and the track (else album) artist into the song's EMPTY fields; nothing non-empty is overwritten. Returns whether the song changed."""
+    changed = False
+    title, year = str(album.get("title") or "").strip(), album.get("year")
+    if title and not song.get("albums"):
+        song["albums"], changed = [title], True
+    if year and song.get("releaseYear") is None:
+        song["releaseYear"], changed = year, True
+    tags = _album_tags(album)
+    if tags and not library.genre_names(library.tag_list(song)):
+        song["tags"], changed = [*(song.get("tags") or []), *tags], True
+    who = str(artist or album.get("artist") or "").strip()
+    if who and not discogs_lookup._is_various(who) and not song.get("mainArtists"):
+        song["mainArtists"], changed = credits_v1.pills(who), True
+    return changed
+
+
+def fill_songs(uid: str, album: dict[str, Any], song_ids: list[str], artists: dict[str, str] | None = None) -> None:
+    """`fill_song` for these library songs, saved when any changed. Call inside `deps.tx`."""
+    wanted = set(song_ids)
+    if not wanted:
+        return
+    songs = library.load(deps.library_path(uid))
+    changed = False
+    for song in songs:
+        if song.get("id") in wanted:
+            changed = fill_song(song, album, (artists or {}).get(song["id"])) or changed
+    if changed:
+        deps.save_songs(uid, songs)
+
+
+def fill_linked(uid: str, album: dict[str, Any]) -> None:
+    """Fills the songs linked to the album's tracks (a track's own artist wins over the album artist). Call inside `deps.tx`."""
+    tracks = [t for t in album["tracks"] if t.get("songId")]
+    fill_songs(uid, album, [t["songId"] for t in tracks], {t["songId"]: str(t["artist"]) for t in tracks if t.get("artist")})
 
 
 # --- Discogs candidates --------------------------------------------------------------------------
@@ -404,6 +503,7 @@ def _score(album: str, artist: str, count: int | None, total: float | None, titl
 
 def _candidate(item: dict[str, Any], artist: str, album: str, count: int | None, total: float | None, plist: list[dict[str, Any]] | None = None) -> dict[str, Any]:
     ident = int(item["id"])
+    genres: list[str] = []
     head, _, tail = str(item.get("title") or "").partition(" - ")
     title, who, year, tracks = tail or head, (head if tail else ""), item.get("year"), None
     try:
@@ -412,6 +512,7 @@ def _candidate(item: dict[str, Any], artist: str, album: str, count: int | None,
         title = str(detail.get("title") or title)
         who = albums._artists(detail) or who
         year = detail.get("year") or year
+        genres = albums._genres({"genres": [*(detail.get("styles") or []), *(detail.get("genres") or [])]})
     except Exception:
         pass
     score = _score(album, artist, count, total, title, who, tracks)
@@ -422,7 +523,7 @@ def _candidate(item: dict[str, Any], artist: str, album: str, count: int | None,
         "formats": _texts(item.get("format")), "labels": _texts(item.get("label"), MAX_LABELS),
         "country": _text(item.get("country")), "catno": _text(item.get("catno")),
         "thumb": _text(item.get("thumb")) if str(item.get("thumb") or "").startswith("https://") else None,
-        "tracks": tracks or [],
+        "tracks": tracks or [], "genres": genres,
     }
     if plist is not None:
         out["matches"] = match_tracks(plist, tracks or [])

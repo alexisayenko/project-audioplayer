@@ -38,7 +38,7 @@ def test_preview_creates_nothing_and_returns_tracks_guess_and_matches(client, ha
     assert r.status_code == 200
     body = r.json()
     assert body["playlist"] == {"title": HALLU["title"], "uploader": "Hallucinogen - Topic", "count": 11, "url": f"https://www.youtube.com/playlist?list={LIST}"}
-    assert body["guess"] == {"artist": "Hallucinogen", "album": "Twisted", "year": 1995}
+    assert body["guess"] == {"artist": "Hallucinogen", "album": "Twisted", "year": 1995, "type": "album"}
     assert [(t["position"], t["videoId"], t["songId"]) for t in body["tracks"]] == [(i, HID[i - 1], None) for i in range(1, 12)]
     assert body["tracks"][0]["title"] == "LSD"
     assert body["tracks"][0]["durationS"] == 450
@@ -71,7 +71,7 @@ def test_preview_shows_existing_songs_and_survives_discogs_failures(client, hall
 def test_preview_without_a_guess_skips_the_search(client, yt, discogs):
     yt["data"] = {"title": "", "uploader": "", "entries": HALLU["entries"][:2]}
     body = pv(client).json()
-    assert body["guess"] == {"artist": None, "album": None, "year": None}
+    assert body["guess"] == {"artist": None, "album": None, "year": None, "type": "album"}
     assert body["candidates"] == []
     assert body["searchError"] is None
 
@@ -221,7 +221,7 @@ def test_a_playlist_youtube_link_survives_patch_and_get(client, discogs):
 
 
 def test_commit_gives_songs_without_an_artist_the_album_artist(client, yt, monkeypatch):
-    monkeypatch.setattr(album_youtube, "_views", lambda *a: {})
+    monkeypatch.setattr(album_youtube, "_views", lambda *a: ({}, ""))
     post_commit(client, commit_body(sel((1, A, "Intro", 60), (2, B, "Outro", 90)), fallback={"title": "My Album", "artist": "Derango"}))
     songs = library_ids(client)
     assert songs[A]["mainArtists"] == ["Derango"]
@@ -230,7 +230,7 @@ def test_commit_gives_songs_without_an_artist_the_album_artist(client, yt, monke
 
 @pytest.mark.parametrize("fallback", [{"title": "Comp", "artist": "Various Artists"}, {"title": "Solo"}])
 def test_commit_leaves_songs_artistless_for_various_artists_or_no_album_artist(client, yt, monkeypatch, fallback):
-    monkeypatch.setattr(album_youtube, "_views", lambda *a: {})
+    monkeypatch.setattr(album_youtube, "_views", lambda *a: ({}, ""))
     post_commit(client, commit_body(sel((1, A, "Intro", 60)), fallback=fallback))
     assert library_ids(client)[A]["mainArtists"] == []
 

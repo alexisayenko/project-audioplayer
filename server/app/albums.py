@@ -18,6 +18,7 @@ MAX_ALBUMS = 2000
 MAX_TRACKS = 500
 MAX_TEXT = 300
 MAX_GENRES = 20
+TYPES = ("album", "EP", "single", "compilation", "live", "soundtrack", "mix")
 ID_RE = re.compile(r"alb_[0-9a-f]{8}")
 _URL = re.compile(r"https://(?:www\.)?discogs\.com/(?:[a-z]{2}(?:-[A-Z]{2})?/)?(release|master)/(\d+)(?:[-/?#].*)?")
 _POS = re.compile(r"\s+")
@@ -162,6 +163,13 @@ def _clean_year(value: Any) -> int | None:
     if isinstance(value, bool) or not isinstance(value, int) or not 1900 <= value <= 2100:
         raise _bad_field("year")
     return value
+
+
+def clean_type(value: Any) -> str:
+    """A release type from TYPES (case-insensitive); anything else is "album"."""
+    text = value.strip().casefold() if isinstance(value, str) else ""
+    text = "mix" if text == "dj mix" else text
+    return next((t for t in TYPES if t.casefold() == text), "album")
 
 
 def parse_duration(value: Any) -> int | None:
@@ -335,7 +343,7 @@ def find_source(albums: list[dict[str, Any]], source: dict[str, Any]) -> dict[st
 
 def build(payload: dict[str, Any], existing: set[str]) -> dict[str, Any]:
     tracks = [{**t, "songId": None} for t in payload["tracks"]]
-    return {"id": new_id(existing), **{k: payload[k] for k in ("title", "artist", "year", "genres", "rymUrl", "links", "source")}, **({"discogsThumb": payload["discogsThumb"]} if payload.get("discogsThumb") else {}), "tracks": tracks, "created_at": timeutil.now_utc()}
+    return {"id": new_id(existing), **{k: payload[k] for k in ("title", "artist", "year", "genres", "rymUrl", "links", "source")}, **({"discogsThumb": payload["discogsThumb"]} if payload.get("discogsThumb") else {}), **({"type": payload["type"]} if payload.get("type") else {}), "tracks": tracks, "created_at": timeutil.now_utc()}
 
 
 def summary(a: dict[str, Any]) -> dict[str, Any]:

@@ -50,6 +50,7 @@ def _create(uid: str, payload: dict[str, Any], song_ids: Any = None) -> dict[str
             raise HTTPException(status_code=409, detail="album_limit")
         item = albums.build(payload, {a["id"] for a in items})
         linked = album_youtube.auto_link(item, song_ids, library.load(deps.library_path(uid))) if isinstance(song_ids, list) else None
+        album_youtube.fill_linked(uid, item)
         albums.save(deps.albums_path(uid), [item, *items])
     item = album_covers.auto(uid, item)
     if linked is None:
@@ -156,6 +157,7 @@ def link_song(album_id: str, no: int, body: AlbumLinkRequest, user: User):
             raise HTTPException(status_code=409, detail={"code": "already_linked", "no": other["no"]})
         track["songId"] = body.songId
         albums.save(deps.albums_path(uid), items)
+        album_youtube.fill_linked(uid, {**album, "tracks": [track]})
     return _out(uid, album)
 
 
