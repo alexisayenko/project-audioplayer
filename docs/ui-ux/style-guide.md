@@ -112,7 +112,7 @@ The app was styled after the Soviet "Vega 108 Stereo" turntable: walnut veneer
 bars, matte black panel rows, chrome bezels, piano keys and a ridged knob. That
 code (`Theme.swift`, piano buttons, wood background, the deck) is deleted.
 Decision: ADR-0007 in [`../tech/decisions.md`](../tech/decisions.md). Sketches:
-[`vega-108/`](vega-108/) (`sketch-1.png` to `sketch-9.png`), generated from the
+[`vega-108/`](vega-108/) (`sketch-1.webp` to `sketch-9.webp`), generated from the
 prompts in [`design-prompts.md`](design-prompts.md).
 
 ## Web UI (Electrophone, web; updated 2026-10-13)

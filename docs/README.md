@@ -225,8 +225,8 @@ docs/
 │   ├── style-guide.md                  # visual + interaction standards
 │   ├── performance-guide.md            # end-to-end UX performance
 │   ├── screens/                        # entry: screens/README.md
-│   ├── alt-themes/ mockups1/ mockups2/ # PNG theme and mockup explorations
-│   ├── vega-108/                       # PNG turntable sketches
+│   ├── alt-themes/ mockups1/ mockups2/ # WebP theme and mockup explorations
+│   ├── vega-108/                       # WebP turntable sketches
 │   ├── design-prompts.md               # design-tool prompts
 │   ├── journeys.md                     # multi-screen paths
 │   └── screen-flow.md                  # navigation maps and flows (Mermaid)

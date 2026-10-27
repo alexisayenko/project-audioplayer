@@ -11,7 +11,7 @@ ui-ux/
 ├── style-guide.md        # visual + interaction standards
 ├── performance-guide.md  # end-to-end UX performance standards
 ├── design-prompts.md     # prompts for graphical iOS sketches (A Vega 108, B open style)
-├── vega-108/             # nine Vega 108 turntable sketches (sketch-1..9.png)
+├── vega-108/             # nine Vega 108 turntable sketches (sketch-1..9.webp)
 ├── screens/              # one file per screen (page) — where the user is
 │   └── README.md         # entry: screens section
 ├── journeys.md           # one section per multi-screen path — the sequence

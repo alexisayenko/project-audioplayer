@@ -2,6 +2,10 @@
 
 What shipped, newest first. One line each; the web UI and server are live at https://electrophone.cc. Everything listed here is deployed except the sections marked "built, not deployed" (the 2026-10-14 release went out once the SSH access in [task-0027](tasks/task-0027.md) was restored; the live visualizer files match `origin/main` as of 2026-10-15). Why: [tech/decisions.md](tech/decisions.md); runbook: [tech/deploy.md](tech/deploy.md).
 
+## 2026-10-27 (Docs: UI/UX images compressed)
+
+- Docs (task-0122 F13): the 38 design PNGs in `docs/ui-ux` (`alt-themes`, `mockups1`, `mockups2`, `vega-108`) are now WebP of the same pixel size, quality 85; 43 MB became 4.2 MB. Same file names with the `.webp` extension; the old PNGs are removed from the working tree only, git history is not rewritten, so the repository pack is unchanged.
+
 ## 2026-10-27 (iOS: Library play glyph and a shorter pinned header; in source, not in a build)
 
 - iOS (IOS-117, IOS-118; UI/UX audit L4 and L7; both schemes build, all unit tests pass, checked in the iPhone SE simulator in light, dark and accessibility2, not run on a device): songs on the phone show a small play badge on their cover so the cover's job is visible (a row tap still opens Song Details), with a pressed state, and the glyph on the cover is now light in dark mode too. The Library search field and filter chips scroll away with the list, so the pinned header on an iPhone SE drops from about 280 pt to about 160 pt (title, Songs/Albums switch and controls stay pinned); the collapse-on-scroll logic is removed. Library v5 spec updated.
