@@ -314,6 +314,7 @@ export const api = {
   job: (id) => request('GET', `/jobs/${q(id)}`),
   albumSuggestLinks: (body) => request('POST', '/albums/suggest-links', body),
   albumDiscogsFind: (body) => request('POST', '/albums/discogs/search', body),
+  albumDiscogsResolve: (body) => request('POST', '/albums/discogs/resolve', body),
   albumDiscogsSearch: (body) => request('POST', '/albums/discogs-search', body),
   albumCoverCandidates: (id, signal) => request('GET', `/albums/${q(id)}/cover/candidates`, undefined, signal),
   setAlbumCover: (id, choice) => request('PUT', `/albums/${q(id)}/cover`, choice),

@@ -17,15 +17,25 @@ export function mergeGenres(current, picked) {
   return have;
 }
 
-export function discogsFinder({ form, editor, onPick, search = api.albumDiscogsFind }) {
+export function discogsFinder({ form, editor, onPick, search = api.albumDiscogsFind, resolve = api.albumDiscogsResolve }) {
   const status = el('p', { class: 't-caption muted discogs-status', role: 'status' });
   const list = el('ul', { class: 'discogs-list', 'aria-label': 'Discogs releases' });
   const btn = el('button', { class: 'btn outline small discogs-find', type: 'button' }, icon('search', 'inline'), 'Find on Discogs');
   const dismiss = el('button', { class: 'link-btn t-caption', type: 'button', hidden: true }, 'Dismiss');
-  const clear = () => { list.replaceChildren(); dismiss.hidden = true; };
+  const showAll = el('button', { class: 'link-btn t-caption discogs-all', type: 'button', hidden: true }, 'Show all releases');
+  const clear = () => { list.replaceChildren(); dismiss.hidden = true; showAll.hidden = true; };
   dismiss.addEventListener('click', () => { clear(); status.textContent = ''; });
 
-  function pick(c) {
+  async function pick(c) {
+    if (c.kind === 'master' && !c.type) {
+      status.textContent = 'Reading the album on Discogs...';
+      try {
+        const res = await resolve({ kind: 'master', id: c.id });
+        if (res?.candidate) c = { ...c, ...res.candidate };
+      } catch (ex) {
+        status.textContent = '';
+      }
+    }
     if (c.url) form.links.inputs.discogs.value = c.url;
     if (c.year) form.yearIn.value = String(c.year);
     if (c.type) form.typeSel.value = normalType(c.type);
@@ -50,7 +60,7 @@ export function discogsFinder({ form, editor, onPick, search = api.albumDiscogsF
           el('span', { class: 'sub-line' }, el('span', { class: 'sub t-subhead' }, candidateMeta(c))))));
   }
 
-  btn.addEventListener('click', async () => {
+  async function run(all) {
     const artist = form.artist();
     const title = form.title();
     if (!title && !artist) { status.textContent = 'Type an album artist or title first.'; return; }
@@ -60,17 +70,21 @@ export function discogsFinder({ form, editor, onPick, search = api.albumDiscogsF
     clear();
     let res;
     try {
-      res = await search({ artist, title, year: Number(form.year()) || null });
+      res = await search({ artist, title, year: Number(form.year()) || null, ...(all ? { all: true } : {}) });
     } catch (ex) {
       res = { candidates: [], searchError: 'discogs_failed' };
     }
     btn.disabled = false;
     btn.removeAttribute('aria-busy');
     const found = Array.isArray(res?.candidates) ? res.candidates : [];
-    status.textContent = found.length ? 'Pick the release to fill the year, genres, type and link.' : (ERRORS[res?.searchError] || 'No releases found on Discogs.');
+    status.textContent = found.length ? (all ? 'Pick the release to fill the year, genres, type and link.' : 'Pick the album to fill the year, genres, type and link.') : (ERRORS[res?.searchError] || 'No releases found on Discogs.');
     list.replaceChildren(...found.map(row));
     dismiss.hidden = !found.length;
-  });
+    showAll.hidden = all || !found.length;
+  }
 
-  return { node: el('div', { class: 'discogs-finder' }, el('div', { class: 'row discogs-bar' }, btn, dismiss), status, list), pick, btn, list, status };
+  btn.addEventListener('click', () => run(false));
+  showAll.addEventListener('click', () => run(true));
+
+  return { node: el('div', { class: 'discogs-finder' }, el('div', { class: 'row discogs-bar' }, btn, dismiss), status, list, showAll), pick, btn, list, status, showAll };
 }
