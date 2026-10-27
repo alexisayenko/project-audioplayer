@@ -50,7 +50,7 @@ test('WEB-175: the main app redirects the old Analyze and Synthesize hashes to t
   for (const h of ['#/studio/simple', '#/studio/synthesize', '#/studio/simple/']) assert.equal(studioSiteUrl(h), 'https://studio.electrophone.cc/#/synthesize', h);
   for (const h of ['', '#/studio', '#/studio/other', '#/library', undefined]) assert.equal(studioSiteUrl(h), null, String(h));
   const app = read('./app.js');
-  assert.match(app, /function route\(\) \{\n  const studioSite = studioSiteUrl\(location\.hash\);\n  if \(studioSite\) \{\n    location\.replace\(studioSite\);\n    return;\n  \}/);
+  assert.match(app, /function route\(soft = false\) \{\n  const studioSite = studioSiteUrl\(location\.hash\);\n  if \(studioSite\) \{\n    location\.replace\(studioSite\);\n    return;\n  \}/);
   assert.doesNotMatch(app, /studio\/tools|studio\/simple/);
 });
 
