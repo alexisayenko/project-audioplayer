@@ -36,7 +36,7 @@ targets:
     sources:
       - Tests
       - path: ../server/tests/fixtures
-        includes: [token_cases.json, url_clean_cases.json, tag_cases.json]
+        includes: [token_cases.json, url_clean_cases.json, tag_cases.json, play_recorder_cases.json]
         buildPhase: resources
     dependencies:
       - target: AudioPlayer
