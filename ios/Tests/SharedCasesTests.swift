@@ -124,6 +124,22 @@ final class TagCasesTests: XCTestCase {
         for c in try cases().decade_tag { XCTAssertEqual(decadeTag(c.year), c.tag, String(describing: c.year)) }
     }
 
+    func testDecadeTagFollowsTheCurrentYearPlusOneLikeTheWeb() {
+        func at(_ year: Int) -> Date { DateComponents(calendar: .current, year: year, month: 6, day: 1).date! }
+        XCTAssertNil(decadeTag(2030, now: at(2026)))
+        XCTAssertEqual(decadeTag(2027, now: at(2026)), "decade:20s")
+        XCTAssertEqual(decadeTag(2030, now: at(2029)), "decade:30s")
+        XCTAssertNil(decadeTag(1949, now: at(2029)))
+        XCTAssertEqual(decadeTag(2170, now: at(2169)), "decade:70s")
+        XCTAssertEqual(maxReleaseYear(at(2026)), 2027)
+    }
+
+    func testWithDecadeReplacesTheDerivedTagAndStopsAtTheLimit() {
+        let now = DateComponents(calendar: .current, year: 2030, month: 6, day: 1).date!
+        XCTAssertEqual(withDecade(["genre:house", "decade:20s"], 2031, now: now), ["genre:house", "decade:30s"])
+        XCTAssertEqual(withDecade(["genre:house"], 2032, now: now), ["genre:house"])
+    }
+
     func testDecadeRankMatchesTheSharedCases() throws {
         for c in try cases().decade_rank { XCTAssertEqual(decadeRank(c.tag), c.rank, c.tag) }
     }

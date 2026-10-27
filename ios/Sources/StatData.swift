@@ -80,7 +80,7 @@ enum StatData {
     static let neutral = -1
     static let other = "Other"
 
-    static var maxYear: Int { Calendar.current.component(.year, from: Date()) + 1 }
+    static var maxYear: Int { maxReleaseYear() }
     static func validYear(_ v: Int?) -> Bool { v.map { (1900...maxYear).contains($0) } ?? false }
     static func validBPM(_ v: Double?) -> Bool { v.map { $0.isFinite && $0 >= 20 && $0 <= 300 } ?? false }
 

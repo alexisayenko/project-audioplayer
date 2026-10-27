@@ -116,16 +116,19 @@ func splitTag(_ tag: String) -> (key: String, value: String) {
     return (String(tag[..<i]), String(tag[tag.index(after: i)...]))
 }
 
-func decadeTag(_ year: Int?) -> String? {
-    guard let y = year, (1950...2029).contains(y) else { return nil }
+/// Latest allowed release year: the current year plus one (as `maxYear` in the web and `max_year` on the server).
+func maxReleaseYear(_ now: Date = Date()) -> Int { Calendar.current.component(.year, from: now) + 1 }
+
+func decadeTag(_ year: Int?, now: Date = Date()) -> String? {
+    guard let y = year, (1950...maxReleaseYear(now)).contains(y) else { return nil }
     return String(format: "decade:%02ds", y % 100 - y % 10)
 }
 
 /// The year a song is shown with and its decade follows: its version's year when the version has one, else the release year (as the server does).
 func displayYear(_ year: Int?, versionYear: Int?) -> Int? { versionYear ?? year }
 
-func withDecade(_ tags: [String], _ year: Int?) -> [String] {
-    guard let derived = decadeTag(year) else { return tags }
+func withDecade(_ tags: [String], _ year: Int?, now: Date = Date()) -> [String] {
+    guard let derived = decadeTag(year, now: now) else { return tags }
     var out: [String] = []
     var placed = false
     for t in tags {
