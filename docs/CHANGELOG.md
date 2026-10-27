@@ -2,9 +2,9 @@
 
 What shipped, newest first. One line each; the web UI and server are live at https://electrophone.cc. Everything listed here is deployed except the sections marked "built, not deployed" (the 2026-10-14 release went out once the SSH access in [task-0027](tasks/task-0027.md) was restored; the live visualizer files match `origin/main` as of 2026-10-15). Why: [tech/decisions.md](tech/decisions.md); runbook: [tech/deploy.md](tech/deploy.md).
 
-## 2026-10-27 (Web: "Use the Discogs title" only where the titles differ; built, not deployed)
+## 2026-10-27 (Web: "Use the Discogs title" only where the titles differ; deployed in `e6a2e01`)
 
-- Web (LIB-270; unit tests only): on the Add album Review step the per-track checkbox "Use the Discogs title" shows only on a matched row whose YouTube title differs from the Discogs title (`titlesDiffer` in `album-wizard-model.js`: case, spacing, punctuation, accents and "&" or "and" are ignored; a bracketed version counts as a difference). Equal titles and unmatched rows have no checkbox, it follows live edits of the title, it stays unticked by default, and the create payload is unchanged for hidden rows.
+- Web (LIB-270; unit tests and `scripts/check.sh` pass, /health ready after 6 s, served `app.js` byte-identical to `web/dist/app.js`, not seen in a browser): on the Add album Review step the per-track checkbox "Use the Discogs title" shows only on a matched row whose YouTube title differs from the Discogs title (`titlesDiffer` in `album-wizard-model.js`: case, spacing, punctuation, accents and "&" or "and" are ignored; a bracketed version counts as a difference). Equal titles and unmatched rows have no checkbox, it follows live edits of the title, it stays unticked by default, and the create payload is unchanged for hidden rows.
 
 ## 2026-10-27 (Web: Add album wizard follow-ups; deployed in `3efff60`)
 
