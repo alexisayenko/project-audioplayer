@@ -29,6 +29,22 @@ struct ServerStatus: View {
     }
 }
 
+/// On a list page whose downloads need the server: said once while the server cannot be reached, with a Retry that asks it again.
+struct OfflineDownloadNote: View {
+    let retrying: Bool
+    let retry: () -> Void
+
+    var body: some View {
+        HStack(spacing: DS.Space.space2) {
+            Image(systemName: "wifi.slash").font(.system(size: DS.Icon.iconInline)).foregroundStyle(DS.Color.inkMuted).accessibilityHidden(true)
+            Text(retrying ? "Checking…" : "Offline. Downloads need the server.").font(T.caption).foregroundStyle(DS.Color.ink)
+            Spacer(minLength: 0)
+            Button("Retry", action: retry).font(T.caption.weight(.semibold)).foregroundStyle(DS.Color.accentInk)
+                .frame(minWidth: DS.Space.hit, minHeight: DS.Space.hit).disabled(retrying)
+        }.padding(.horizontal, DS.Space.space3).librarySlab(radius: DS.Radius.radiusKey)
+    }
+}
+
 extension ServerLink {
     var ledColor: Color {
         switch reachable {

@@ -10,6 +10,7 @@ struct LibrarySongRow: View {
     let waiting: Bool
     var arriving = false
     var offline = false
+    var retry = false
     var listenedCount: Int? = nil
     var toggleQueue: (() -> Void)? = nil
     let play: () -> Void
@@ -129,7 +130,7 @@ struct LibrarySongRow: View {
                 .frame(maxWidth: fullWidth ? .infinity : nil, minHeight: DS.Space.hit)
         } else if !onPhone && !noAudio {
             Button(action: download) {
-                Text("Download").font(T.caption.weight(.semibold)).foregroundStyle(DS.Color.accentInk)
+                Text(retry ? "Retry" : "Download").font(T.caption.weight(.semibold)).foregroundStyle(DS.Color.accentInk)
                     .padding(.horizontal, DS.Space.space3).frame(maxWidth: fullWidth ? .infinity : nil, minHeight: DS.Component.iconButton)
                     .overlay(Capsule().strokeBorder(DS.Color.accentInk, lineWidth: DS.Stroke.strokeThin))
                     .frame(minHeight: DS.Space.hit).contentShape(Rectangle())
@@ -163,7 +164,8 @@ struct LibrarySongRow: View {
             return waiting ? "waiting for the server" : "downloading \(Int(progress * 100)) percent"
         }
         if noAudio { return "no audio yet" }
-        return offline ? "on server, offline" : "on server"
+        if offline { return "on server, offline" }
+        return retry ? "on server, download failed" : "on server"
     }
     private var playState: String {
         if !playing { return "" }

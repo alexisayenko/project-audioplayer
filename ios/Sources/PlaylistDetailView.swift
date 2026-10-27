@@ -14,6 +14,7 @@ struct PlaylistDetailView: View {
     @State private var confirmDelete = false
     @State private var pickingSongs = false
     @State private var downloading = false
+    @State private var retrying = false
     @State private var toast: String?
 
     private var detail: PlaylistDetail? { store.details[id] }
@@ -54,6 +55,7 @@ struct PlaylistDetailView: View {
 
     @ViewBuilder private var extra: some View {
         if !missing.isEmpty {
+            if server.reachable == false { OfflineDownloadNote(retrying: retrying) { retryServer() } }
             Button { downloadMissing() } label: {
                 Label(downloading ? "Downloading…" : "Download \(missing.count) missing \(missing.count == 1 ? "song" : "songs")", systemImage: "arrow.down.circle")
             }.buttonStyle(DSButtonStyle(kind: .outline)).disabled(downloading || server.reachable == false)
@@ -110,7 +112,16 @@ struct PlaylistDetailView: View {
         }
     }
 
+    private func retryServer() {
+        retrying = true
+        Task {
+            await store.loadDetail(id, settings)
+            retrying = false
+        }
+    }
+
     private func downloadMissing() {
+        guard server.reachable != false else { toast = "Can't reach the server"; return }
         let wanted = missing
         downloading = true
         Task {

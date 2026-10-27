@@ -9,6 +9,7 @@ struct AlbumDetailView: View {
     @EnvironmentObject private var settings: Settings
     @EnvironmentObject private var downloader: AlbumDownloader
     @State private var planning = false
+    @State private var retrying = false
     @State private var toast: String?
 
     private var album: Album? { store.album(id) }
@@ -49,11 +50,20 @@ struct AlbumDetailView: View {
         (album?.tracks ?? []).compactMap(\.songId).filter { songs[$0] != nil && !library.contains($0) }.count
     }
 
+    private func retryServer() {
+        retrying = true
+        Task {
+            await store.refresh(settings)
+            retrying = false
+        }
+    }
+
     @ViewBuilder private func downloadControls(_ songs: [String: Track]) -> some View {
         if let run = downloader.run(for: id) {
             AlbumRunCard(run: run, cancel: { downloader.cancel(id) }, dismiss: { downloader.dismissResult(id) })
         } else {
             let count = pending(songs)
+            if count > 0 && server.reachable == false { OfflineDownloadNote(retrying: retrying) { retryServer() } }
             Button { planning = true } label: {
                 Label(count > 0 ? "Download album (\(count))" : "All linked tracks are on this iPhone", systemImage: "arrow.down.circle")
             }

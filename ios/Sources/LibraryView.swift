@@ -255,7 +255,7 @@ struct LibraryView: View {
         let transferring = tracked || anonymous != nil
         return LiveProgress(id: track.id, tracked: tracked, fallback: anonymous) { progress in
             LibrarySongRow(track: track, progress: progress, onPhone: onPhone, playing: current, isPlaying: player.isPlaying,
-                           queued: queued, waiting: server.waiting.contains(track.id), offline: signedIn && server.reachable == false,
+                           queued: queued, waiting: server.waiting.contains(track.id), offline: signedIn && server.reachable == false, retry: server.failed.contains(track.id),
                            listenedCount: signedIn && listening.loaded ? listening.entries[track.id]?.listened?.all ?? 0 : nil,
                            toggleQueue: onPhone && !current ? { toggleQueued(track) } : nil,
                            play: { hideKeyboard(); play(track, in: matches) },
