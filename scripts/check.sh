@@ -7,6 +7,11 @@ if ! command -v node >/dev/null 2>&1 && command -v wsl >/dev/null 2>&1; then
   exec wsl sh -c "cd \"\$(wslpath '$(pwd -W 2>/dev/null || pwd)')\" && sh scripts/check.sh"
 fi
 
+if ! node scripts/build-web.mjs --check; then
+  echo "FAIL: web/dist is stale (rebuild with node scripts/build-web.mjs and commit web/dist)"
+  exit 1
+fi
+
 total=0
 failed=0
 empty=0

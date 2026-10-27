@@ -162,7 +162,7 @@ Notes per layer:
 
 ## Local checks and deploy
 
-- `scripts/check.sh` runs from the repo root: web tests
+- `scripts/check.sh` runs from the repo root: the `web/dist` freshness check (`node scripts/build-web.mjs --check`, the same gate as `deploy.sh`; commit the rebuilt `web/dist` after a web source change), web tests
   (each `web/js/*.test.mjs` run separately with `node --test`; a test file with no tests fails the check), the
   duplicate rule-ID check over `docs/specs/*.md`, and the server
   pytest suite (prints the summary line). It ends with `check ok`
