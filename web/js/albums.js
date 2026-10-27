@@ -1,7 +1,7 @@
 import { api } from './api.js';
 import { store } from './store.js';
 import { player } from './player.js';
-import { chipField } from './chip-field.js';
+import { genreEditor, GENRE_MAX } from './album-genre-editor.js';
 import { serviceIcons, LABELS } from './service-icons.js';
 import { can } from './guest.js';
 import { playlistsOn } from './playlists-store.js';
@@ -304,34 +304,7 @@ export function openAlbumCard(album, opener = null) {
   if (!cachedTree()) loadGenreTree().then((t) => { if (t && dlg.open && dlg.querySelector('.album-card-head')) paint(); });
 }
 
-export const GENRE_MAX = 20;
-
-function genreTags(list) {
-  const out = [];
-  for (const g of list || []) {
-    const t = `genre:${String(g).trim()}`;
-    if (t.length > 6 && out.length < GENRE_MAX && !out.some((x) => x.toLowerCase() === t.toLowerCase())) out.push(t);
-  }
-  return out;
-}
-
-function genreEditor(initial) {
-  let tags = genreTags(initial);
-  const subs = new Set();
-  const notify = () => { for (const f of subs) f(); };
-  const editor = {
-    peek: () => tags,
-    addTags(add) {
-      tags = genreTags([...tags, ...add].map((t) => t.slice(6)));
-      notify();
-    },
-    removeTag(t) { tags = tags.filter((x) => x !== t); notify(); },
-    subscribe(f) { subs.add(f); return () => subs.delete(f); },
-  };
-  const field = chipField('genre', editor, { cap: GENRE_MAX });
-  notify();
-  return { node: field.node, get: () => tags.map((t) => t.slice(6)), commit: field.commit };
-}
+export { GENRE_MAX };
 
 const linkedIds = (a) => (a.tracks || []).filter((t) => t.songId).map((t) => t.songId);
 
