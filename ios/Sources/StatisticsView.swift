@@ -204,7 +204,7 @@ private struct StatsSongsTab: View {
     let loaded: Bool
     let hasAudio: (Track) -> Bool
 
-    @AppStorage("ios.stats.color") private var colorRaw = StatsColor.decade.rawValue
+    @StoredValue("ios.stats.color") private var colorRaw = StatsColor.decade.rawValue
     @State private var points: [StatPoint] = []
     @State private var groups: [StatGroup] = []
     @State private var skipped = 0

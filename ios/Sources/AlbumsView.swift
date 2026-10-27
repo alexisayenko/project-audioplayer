@@ -55,8 +55,8 @@ struct AlbumsView: View {
     @EnvironmentObject private var library: LibraryStore
     @EnvironmentObject private var settings: Settings
     @Environment(\.dynamicTypeSize) private var typeSize
-    @AppStorage("albums.sort") private var sortRaw = AlbumSort.added.rawValue
-    @AppStorage("albums.reversed") private var reversed = false
+    @StoredValue("albums.sort") private var sortRaw = AlbumSort.added.rawValue
+    @StoredValue("albums.reversed") private var reversed = false
     @State private var path: [AlbumRoute] = []
     @State private var search = ""
     @State private var onPhoneOnly = false
