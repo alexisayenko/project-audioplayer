@@ -2,10 +2,13 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { installDom } from './test-dom.mjs';
 import * as c from './credits.js';
-import * as dt from './display-title.js';
-import { trackSub } from './track-sub.js';
 
 installDom();
+
+const displayTitle = (song) => {
+  const { title, remix } = c.creditParts(song);
+  return { title, remix };
+};
 
 const A = { title: 'The Only Way Is Up', mainArtists: ['Martin Garrix', 'Tiesto'], featuredArtists: [], releaseYear: null };
 const B = { title: 'What Is Love', mainArtists: ['Haddaway'], featuredArtists: [], releaseYear: 1993 };
@@ -98,16 +101,16 @@ test('sort and search keys', () => {
 });
 
 test('legacy-only songs keep the old behaviour', () => {
-  assert.deepEqual(dt.displayTitle({ title: 'Song', remixer: '  ' }), { title: 'Song', remix: '' });
-  assert.equal(dt.displayString({ title: 'Song', remixer: 'A - B | C' }), 'Song (A, B, C)');
-  assert.equal(dt.displayString({ title: 'Song (Kav Verhouzer Remix)', remixer: 'Kav Verhouzer - Bob' }), 'Song (Kav Verhouzer Remix) (Bob)');
-  assert.equal(dt.displayString(null), '');
+  assert.deepEqual(displayTitle({ title: 'Song', remixer: '  ' }), { title: 'Song', remix: '' });
+  assert.equal(c.titleLine({ title: 'Song', remixer: 'A - B | C' }), 'Song (A, B, C)');
+  assert.equal(c.titleLine({ title: 'Song (Kav Verhouzer Remix)', remixer: 'Kav Verhouzer - Bob' }), 'Song (Kav Verhouzer Remix) (Bob)');
+  assert.equal(c.titleLine(null), '');
   const song = { title: 'Song', remixer: 'Kav Verhouzer Remix', remix_year: 2024 };
-  assert.equal(dt.remixTooltip(song), 'Kav Verhouzer Remix (2024)');
-  assert.equal(dt.remixTooltip({ title: 'Song', remix_year: 2024 }), '');
-  assert.equal(dt.titleNodes(song)[2].title, 'Kav Verhouzer Remix (2024)');
-  assert.equal(dt.subtitleString({ title: 'x', artist: 'Kato feat. Jon', year: 2026 }), 'Kato feat. Jon · 2026');
-  assert.equal(trackSub({ artist: ' A ', year: 2001 }), 'A · 2001');
+  assert.equal(c.versionTooltip(song), 'Kav Verhouzer Remix (2024)');
+  assert.equal(c.versionTooltip({ title: 'Song', remix_year: 2024 }), '');
+  assert.equal(c.titleNodes(song)[2].title, 'Kav Verhouzer Remix (2024)');
+  assert.equal(c.subtitle({ title: 'x', artist: 'Kato feat. Jon', year: 2026 }), 'Kato feat. Jon · 2026');
+  assert.equal(c.subtitle({ artist: ' A ', year: 2001 }), 'A · 2001');
   assert.equal(c.artistLine({ title: 'x', artist: 'A & B' }), 'A & B');
   assert.equal(c.tooltipLine({ title: 'Song', remixer: 'Kav', artist: 'Zed' }), 'Song (Kav) - Zed');
   assert.equal(c.tooltipLine({ title: 'Song' }), 'Song');

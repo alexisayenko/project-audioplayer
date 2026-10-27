@@ -56,8 +56,8 @@ Other `tags`/`sources` uses (`library.clean_tags`, `genre_filter`, `sources_of`)
 | `add.js` | `paintMeta`: `[v.artist, v.album, v.year]`; "Already in your library": `[song.title, song.artist]` | form |
 | `metadata-apply.js` | `cur.year`; `suggestionText(sug, cur)` uses `artist`, `title` | form |
 | `edit-dialog.js` | `dialogHead('Edit song', null)`, delete text `"${s.title}"`, `patchBody` | display |
-| `display-title.js` | `displayTitle` (title plus remixer pills, deduped against the title), `displayString`, `remixTooltip` (uses `remix_year`), `titleNodes`, `subtitleString` (`artist · year`) | display (becomes a facade over `credits.js`) |
-| `track-sub.js` | `trackSub`: `artist · year` | display |
+| `display-title.js` | `displayTitle` (title plus remixer pills, deduped against the title), `displayString`, `remixTooltip` (uses `remix_year`), `titleNodes`, `subtitleString` (`artist · year`) | display (was a facade over `credits.js`; removed, task-0122 F6) |
+| `track-sub.js` | `trackSub`: `artist · year` | display (removed, task-0122 F6; `credits.subtitle`) |
 | `library-rows.js` | `displayString`, `titleNodes`, `trackSub`, tooltip `${full} - ${s.artist}` | display |
 | `library-data.js` | sort `artist` (`a.artist`, then `title`), `year` sort, search hay `[title, artist, album, remixer, tags]` | display |
 | `player.js` | `fullTitle`, mini player (`mini-title` via `titleNodes`, `mini-artist` = `song.artist`), `player-title`, `player-sub` = `subtitleString`, `document.title` | display |
@@ -316,8 +316,8 @@ One owner per file. A builder never edits a file owned by another; shared behavi
 | --- | --- |
 | `web/js/credits.js` (new) | pure: `joinNames`, `creditParts`, `artistLine`, `titleLine`, `displayLine`, `detailsLines`, `versionTooltip`, `titleNodes`, `subtitle`, `sortKey`, `searchText`, `releasedYear`; legacy-only songs (no `artists` array) take the old code path unchanged |
 | `web/js/credits.test.mjs` (new) | table tests incl. the legacy-only equivalence cases from `display-title.test.mjs` |
-| `web/js/display-title.js` | thin re-exports of `credits.js` under the old names (`displayTitle`, `displayString`, `remixTooltip`, `titleNodes`, `subtitleString`), so existing imports keep working |
-| `web/js/track-sub.js` | `trackSub` delegates to `credits.subtitle` |
+| `web/js/display-title.js` | thin re-exports of `credits.js` under the old names (`displayTitle`, `displayString`, `remixTooltip`, `titleNodes`, `subtitleString`), so existing imports keep working (removed later, task-0122 F6) |
+| `web/js/track-sub.js` | `trackSub` delegates to `credits.subtitle` (removed later, task-0122 F6) |
 | `web/js/library-rows.js`, `library-data.js`, `player.js`, `player-ui.js`, `player-media.js`, `share-open.js`, `share-ui.js`, `song-card.js`, `stats.js`, `stats-table.js`, `genres.js`, `viz-ui.js`, `bulk.js`, `edit-dialog.js` | use `credits.js` for names, tooltips, aria labels, sort and search keys, queue, mini player, share, now playing, edit dialog head (shows the display line) and delete confirmation |
 | tests: `display-title.test.mjs`, `display-rows.test.mjs`, `song-card.test.mjs`, `library.test.mjs`, `stats-table.test.mjs`, `marquee.test.mjs`, `genres.test.mjs`, `share.test.mjs`, `player.test.mjs` | existing legacy-only fixtures must stay green unmodified |
 | `docs/specs/library.md`, `docs/specs/playback.md`, `docs/specs/share.md`, `docs/specs/stats.md` | LIB-134 text, ids LIB-135..145, PLY-142..145, SHARE-018, STA-041 |

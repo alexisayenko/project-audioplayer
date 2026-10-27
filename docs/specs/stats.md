@@ -14,7 +14,7 @@ Code: `web/js/stats.js` (page), `stats-chart.js` (canvas render and pointer/keyb
 
 ## Interaction
 
-- STA-010 MUST: hovering a dot highlights it and shows a tooltip with the title (remix part via `display-title.js`), artist, year and BPM; clicking a dot opens the song card (falls back to the edit dialog if `song-card.js` is missing). Status: implemented
+- STA-010 MUST: hovering a dot highlights it and shows a tooltip with the title (remix part via `credits.js` `titleNodes`), artist, year and BPM; clicking a dot opens the song card (falls back to the edit dialog if `song-card.js` is missing). Status: implemented
 - STA-011 MUST: dragging on empty chart draws a rubber-band rectangle that selects the visible dots inside it; a floating panel reads "N selected:" with Show in Library, Add to queue, Add to playlist... (a signed-in user; opens the playlist picker, PLS-126), Play and Clear. Add to queue and Play call `player.addListed` / `player.playListed` with the selected songs, exactly like the Library buttons (auto-download behaviour included); Clear (or Escape, or a click on empty chart) empties the selection. Show in Library is shown disabled with the tooltip "Coming soon" until Library gets an id filter. Status: implemented (Show in Library: planned)
 - STA-012 MUST: the wheel zooms both axes around the cursor (limited to 2 years and 8 BPM minimum span); Shift+drag or middle-button drag pans; double-click, `0` or the Reset button restores the full view. Status: implemented (not checked in a browser)
 

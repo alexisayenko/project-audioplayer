@@ -337,7 +337,7 @@ test('trail level steps at 3 counts; levels 0..8 are exactly palette colours 1..
 
 test('now sector and brightest trail colour are told apart: dE2000 is about 9', async () => {
   const B = await import('./viz-bars.js');
-  const { deltaE2000 } = await import('./viz-deltae.js');
+  const { deltaE2000 } = await import('./test-deltae.mjs');
   const path = B.trailPath(FALLBACK_COLORS.ice2);
   const d = deltaE2000(B.trailColor(path, 8), B.sectorColor(path));
   assert.ok(d > 8 && d < 11, `dE ${d}`);
@@ -484,7 +484,7 @@ test('glow does not change other modes: sector off output is unchanged with glow
 
 test('trail floor: every trail level is visible against the ice2 background (dE2000 >= 10, reflection >= 6)', async () => {
   const B = await import('./viz-bars.js');
-  const { deltaE2000 } = await import('./viz-deltae.js');
+  const { deltaE2000 } = await import('./test-deltae.mjs');
   const { bg } = FALLBACK_COLORS.ice2;
   const path = B.trailPath(FALLBACK_COLORS.ice2);
   const over = (c, a) => c.map((v, i) => Math.min(255, Math.round(bg[i] + v * a)));

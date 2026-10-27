@@ -1,9 +1,14 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { installDom } from './test-dom.mjs';
-import { displayTitle, displayString } from './display-title.js';
+import { creditParts, titleLine as displayString, versionTooltip as remixTooltip, titleNodes, subtitle as subtitleString } from './credits.js';
 
 installDom();
+
+const displayTitle = (song) => {
+  const { title, remix } = creditParts(song);
+  return { title, remix };
+};
 
 test('empty or missing remix gives no parenthesis', () => {
   assert.deepEqual(displayTitle({ title: 'Song', remixer: '' }), { title: 'Song', remix: '' });
@@ -31,8 +36,6 @@ test('Cyrillic and parentheses in the title', () => {
   assert.equal(displayString({ title: 'Song (Live)', remixer: 'X' }), 'Song (Live) (X)');
 });
 
-import { remixTooltip, titleNodes } from './display-title.js';
-
 test('remix year goes into the tooltip of the remix part only', () => {
   const song = { title: 'Song', remixer: 'Kav Verhouzer Remix', remix_year: 2024 };
   assert.equal(remixTooltip(song), 'Kav Verhouzer Remix (2024)');
@@ -50,8 +53,7 @@ test('titleNodes puts a real space between title and remix', () => {
   assert.equal(titleNodes({ title: 'Song' }).length, 1);
 });
 
-test('subtitleString never repeats remix info (it lives in the title parenthetical)', async () => {
-  const { subtitleString } = await import('./display-title.js');
+test('subtitleString never repeats remix info (it lives in the title parenthetical)', () => {
   const song = { title: 'Turn the Lights Off (S.A.R.A.H. Remix)', artist: 'Kato feat. Jon', year: 2026, remixer: 'S.A.R.A.H. Remix' };
   assert.equal(subtitleString(song), 'Kato feat. Jon · 2026');
   assert.equal(displayString(song), 'Turn the Lights Off (S.A.R.A.H. Remix)');
@@ -61,8 +63,7 @@ test('subtitleString never repeats remix info (it lives in the title parenthetic
   assert.equal(subtitleString({ title: 'x', remixer: '' }), '');
 });
 
-test('subtitleString is Artist · Year and never contains the album', async () => {
-  const { subtitleString } = await import('./display-title.js');
+test('subtitleString is Artist · Year and never contains the album', () => {
   const same = { title: 'Tell It to My Heart', artist: 'Taylor Dayne', album: 'Tell It to My Heart', year: 1987 };
   assert.equal(subtitleString(same), 'Taylor Dayne · 1987');
   const other = { title: 'Song', artist: 'A', album: 'Other Album', year: 2001 };
@@ -70,4 +71,14 @@ test('subtitleString is Artist · Year and never contains the album', async () =
   assert.equal(subtitleString({ title: 'x', artist: 'A', album: 'Alb' }), 'A');
   assert.equal(subtitleString({ title: 'x', album: 'Alb', year: 1999 }), '1999');
   assert.equal(subtitleString({ title: 'x', album: 'Alb' }), '');
+});
+
+test('subtitle of artist and year', () => {
+  assert.equal(subtitleString({ artist: 'Kato', year: 2010 }), 'Kato · 2010');
+  assert.equal(subtitleString({ artist: 'Kato', year: null }), 'Kato');
+  assert.equal(subtitleString({ artist: '', year: 2010 }), '2010');
+  assert.equal(subtitleString({ artist: null, year: null }), '');
+  assert.equal(subtitleString({ artist: '  ', year: '  ' }), '');
+  assert.equal(subtitleString({ artist: ' Kato ', year: 1999 }), 'Kato · 1999');
+  assert.equal(subtitleString({}), '');
 });
