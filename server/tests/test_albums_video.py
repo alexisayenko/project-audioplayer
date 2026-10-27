@@ -462,3 +462,68 @@ def test_create_falls_back_to_the_thumbnail_when_the_discogs_cover_fails(client,
     b["album"]["coverUrl"] = "https://i.discogs.com/a.jpg"
     assert client.post("/albums/from-video", json=b, headers=H).status_code == 202
     assert tried == ["https://i.discogs.com/a.jpg", DETAILS["thumbnail"]]
+
+
+COVER_URL = "https://i.discogs.com/a.jpg"
+
+
+def song_covers():
+    from app import library
+    return {s["id"]: s for s in library.load(deps.library_path(OWNER_UID))}
+
+
+def with_cover(rows, **extra):
+    b = body(rows, **extra)
+    b["album"]["coverUrl"] = COVER_URL
+    return b
+
+
+@pytest.fixture
+def real_cover(monkeypatch):
+    monkeypatch.setattr(album_covers, "fetch_jpeg", lambda url: b"jpeg-bytes")
+    monkeypatch.setattr(album_covers, "auto", lambda uid, album: album)
+
+
+def test_cover_to_songs_covers_only_the_new_songs(client, video, real_cover):
+    first = client.post("/albums/from-video", json=with_cover([track(0, 300, "One"), track(300, 630, "Two", ("Beta",))]), headers=H).json()
+    old_one, old_two = first["songIds"]
+    assert song_covers()[old_one].get("cover_source") != "custom"
+    client.delete(f"/albums/{first['albumId']}", headers=H)
+    mine = song_covers()
+    mine[old_two].update(cover=f"covers/{old_two}.jpg", cover_v="mine", cover_source="custom")
+    deps.save_songs(OWNER_UID, list(mine.values()))
+    rows = [track(0, 300, "One", useExistingSongId=old_one), track(300, 630, "Two", ("Beta",), useExistingSongId=old_two), track(700, 900, "Four")]
+    r = client.post("/albums/from-video", json=with_cover(rows, coverToSongs=True), headers=H)
+    assert r.status_code == 202, r.text
+    new = r.json()["songIds"][2]
+    songs = song_covers()
+    assert (songs[new]["cover"], songs[new]["cover_source"]) == (f"covers/{new}.jpg", "custom")
+    assert (deps.covers_dir(OWNER_UID) / f"{new}.jpg").read_bytes() == b"jpeg-bytes"
+    assert songs[old_one].get("cover_source") != "custom" and songs[old_one].get("cover") != f"covers/{old_one}.jpg"
+    assert songs[old_two]["cover_v"] == "mine"
+
+
+@pytest.mark.parametrize("extra", [{}, {"coverToSongs": False}, {"coverToSongs": "yes"}])
+def test_cover_to_songs_off_leaves_the_song_covers_alone(client, video, real_cover, extra):
+    ids = client.post("/albums/from-video", json=with_cover(None, **extra), headers=H).json()["songIds"]
+    assert "custom" not in {song_covers()[i].get("cover_source") for i in ids}
+    assert not any((deps.covers_dir(OWNER_UID) / f"{i}.jpg").exists() for i in ids)
+
+
+def test_cover_to_songs_without_an_album_cover_still_creates_the_album(client, video, real_cover):
+    r = client.post("/albums/from-video", json=body(coverToSongs=True), headers=H)
+    assert r.status_code == 202, r.text
+    assert len(r.json()["songIds"]) == 3
+    assert "custom" not in {s.get("cover_source") for s in song_covers().values()}
+
+
+def test_cover_to_songs_survives_a_failure_and_a_resubmit_does_not_reapply(client, video, real_cover, monkeypatch):
+    def boom(*a, **k):
+        raise OSError("disk")
+
+    monkeypatch.setattr(album_covers, "apply_to_songs", boom)
+    first = client.post("/albums/from-video", json=with_cover(None, coverToSongs=True), headers=H)
+    assert first.status_code == 202
+    monkeypatch.setattr(album_covers, "apply_to_songs", lambda *a, **k: pytest.fail("re-applied"))
+    again = client.post("/albums/from-video", json=with_cover(None, coverToSongs=True), headers=H)
+    assert (again.status_code, again.json()["albumId"]) == (202, first.json()["albumId"])

@@ -10,7 +10,7 @@ from typing import Any
 
 from fastapi import HTTPException
 
-from . import album_preview, album_youtube, albums, credits, deps, extractor, library, limits, playlist_import, previewcache, sources, tracklist, urlclean, users, video_split
+from . import album_covers, album_preview, album_youtube, albums, credits, deps, extractor, library, limits, playlist_import, previewcache, sources, tracklist, urlclean, users, video_split
 from .problems import Problem
 
 MAX_SECONDS = video_split.MAX_SECONDS
@@ -316,6 +316,8 @@ def create(uid: str, owner: bool, body: Any) -> dict[str, Any]:
             record = _album_record(uid, vid, album, tracks, ids, key)
         job = _submit(uid, owner, job_id, vid, album, fades, thumbnail, fresh)
     album_preview.store_cover(uid, record, album["coverUrl"], thumbnail)
+    if data.get("coverToSongs") is True:
+        album_covers.apply_to_new_songs(uid, record["id"], [sid for _, sid in missing])
     return {"jobId": job["job_id"], "albumId": record["id"], "songIds": ids}
 
 

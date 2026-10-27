@@ -7,6 +7,10 @@ What shipped, newest first. One line each; the web UI and server are live at htt
 - Server: `POST /albums/discogs/search` lists one candidate per album, the Discogs master (original year, track count, cover, master link; releases only for albums without a master, deduplicated by artist and title, earliest year first), with ids, links and styles; `all: true` lists every release as before; new `POST /albums/discogs/resolve` returns a picked master or release with its type and tracklist with lengths (API-301, API-309, task-0120, decision KC1).
 - Web: "Find on Discogs" shows those rows, a "Show all releases" link, and reads a master's type when it is picked (LIB-257, LIB-264).
 
+## 2026-10-27 (Server: album art for new songs and track numbers on album create; built, not deployed)
+
+- Server (API-266, API-303; server tests pass, not deployed): `POST /albums/from-video` and the new form of `POST /albums/youtube/commit` take an optional `coverToSongs: true` that copies the stored album cover onto only the songs that request created (never reused or existing songs, never on a repeated request; failures swallowed), and the playlist commit takes an optional `selected[].trackNo` (1 to 999, unique; 422 `bad_selection`) that numbers the album tracks when every item has one. Without them nothing changes.
+
 ## 2026-10-27 (Release: server and web deployed as `5305ff0`)
 
 - Deployed to https://electrophone.cc after a green `scripts/check.sh` (web 272 files, scripts, rule IDs, tokens, server 4937 passed): everything marked "to deploy" below, that is the artist fallback for YouTube album commits, the track number kept out of the artist in time-coded lists (ADD-199), album "Use for songs" (`POST /albums/{id}/cover/to-songs`), the album Type select height, the Library Songs, Albums and Drafts switch without a rebuild (LIB-263), the new web bundle hash, and the task-0122 server work (F4 module layering, F5 migration registry, F7 credits cleanup, F10 `error` key on plain refusals, F14 `backgroundjob` base; the F2 corrupt-file protection was already live).

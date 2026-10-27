@@ -302,7 +302,7 @@ def _bad(code: str) -> HTTPException:
 def _selected(raw: Any) -> list[dict[str, Any]]:
     if not isinstance(raw, list) or not raw or len(raw) > MAX_SELECTED:
         raise _bad("bad_selection")
-    out, seen_pos, seen_vid = [], set(), set()
+    out, seen_pos, seen_vid, seen_no = [], set(), set(), set()
     for item in raw:
         pos = item.get("position") if isinstance(item, dict) else None
         vid = str(item.get("videoId") or "") if isinstance(item, dict) else ""
@@ -321,6 +321,12 @@ def _selected(raw: Any) -> list[dict[str, Any]]:
             if item["version"] is not None and not isinstance(item["version"], str):
                 raise _bad("bad_selection")
             row["version"] = (item["version"] or "").strip()[: albums.MAX_TEXT] or None
+        number = item.get("trackNo")
+        if number is not None:
+            if isinstance(number, bool) or not isinstance(number, int) or not 0 < number < 1000 or number in seen_no:
+                raise _bad("bad_selection")
+            seen_no.add(number)
+            row["trackNo"] = number
         out.append(row)
     return sorted(out, key=lambda s: s["position"])
 
@@ -374,12 +380,15 @@ def _album_payload(raw: Any, selected: list[dict[str, Any]], list_id: str, playl
 
     a = album_preview.clean_album(raw)
     links = {**a["links"], "youtube": playlist_link}
+    numbered = all("trackNo" in s for s in selected)
+    order = sorted(selected, key=lambda s: s["trackNo"]) if numbered else selected
+    numbers = {s["position"]: (s["trackNo"] if numbered else i) for i, s in enumerate(order, 1)}
     payload = {
         "title": a["title"], "artist": a["artist"], "year": a["year"], "genres": a["genres"], "type": a["type"], "rymUrl": links["rateyourmusic"], "links": links,
         "source": {"type": "youtube", "id": list_id, "url": urlclean.playlist_url(list_id)},
-        "tracks": [{"no": i, "title": s["title"], "durationS": s["durationS"]} for i, s in enumerate(selected, 1)],
+        "tracks": [{"no": numbers[s["position"]], "title": s["title"], "durationS": s["durationS"]} for s in order],
     }
-    return payload, {s["position"]: i for i, s in enumerate(selected, 1)}, a["coverUrl"]
+    return payload, numbers, a["coverUrl"]
 
 
 def _commit_payload(body: dict[str, Any], selected: list[dict[str, Any]], list_id: str) -> tuple[dict[str, Any], dict[int, int]]:
@@ -440,6 +449,8 @@ def commit(uid: str, owner: bool, body: dict[str, Any], songs: list[dict[str, An
         from . import album_preview
 
         album_preview.store_cover(uid, album, cover_url, extractor.cover_url(selected[0]["videoId"]))
+        if body.get("coverToSongs") is True:
+            album_covers.apply_to_new_songs(uid, album["id"], [s["videoId"] for s in fresh])
         album = next((a for a in albums.load(deps.albums_path(uid)) if a["id"] == album["id"]), album)
         album = album_covers.present_one(uid, album)
     else:

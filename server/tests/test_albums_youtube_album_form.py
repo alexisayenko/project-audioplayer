@@ -181,3 +181,72 @@ def test_commit_twice_is_a_conflict(client, playlist, covers, no_discogs):
     assert post_commit(client, album_body(chosen(1, 2))).status_code == 201
     again = post_commit(client, album_body(chosen(1, 2)))
     assert again.status_code == 409 and again.json()["detail"]["code"] == "already_exists"
+
+
+@pytest.fixture
+def real_covers(monkeypatch):
+    monkeypatch.setattr(album_covers, "fetch_jpeg", lambda url: b"jpeg-bytes")
+    monkeypatch.setattr(album_covers, "auto", lambda uid, album: album)
+
+
+def stored_songs():
+    from app import deps, library
+    from tests.test_library import OWNER_UID
+    return {s["id"]: s for s in library.load(deps.library_path(OWNER_UID))}
+
+
+def test_cover_to_songs_covers_only_the_songs_this_commit_created(client, playlist, real_covers, no_discogs):
+    assert post_commit(client, {"playlistUrl": PL_URL, "selected": chosen(1), "fallback": {"title": "Seed"}}).status_code == 201
+    other = "https://www.youtube.com/playlist?list=PLsecond12345"
+    r = post_commit(client, {**album_body(chosen(1, 2, 3), title="Second"), "playlistUrl": other, "coverToSongs": True})
+    assert r.status_code == 201, r.text
+    songs = stored_songs()
+    for n in (2, 3):
+        assert (songs[HID[n - 1]].get("cover"), songs[HID[n - 1]].get("cover_source")) == (f"covers/{HID[n - 1]}.jpg", "custom")
+    assert songs[HID[0]].get("cover_source") != "custom"
+
+
+def test_cover_to_songs_leaves_a_custom_song_cover_of_a_reused_song(client, playlist, real_covers, no_discogs):
+    from app import deps, library
+    from tests.test_library import OWNER_UID
+    assert post_commit(client, {"playlistUrl": PL_URL, "selected": chosen(1), "fallback": {"title": "Seed"}}).status_code == 201
+    songs = library.load(deps.library_path(OWNER_UID))
+    songs[0].update(cover=f"covers/{HID[0]}.jpg", cover_v="mine", cover_source="custom")
+    deps.save_songs(OWNER_UID, songs)
+    other = "https://www.youtube.com/playlist?list=PLsecond12345"
+    assert post_commit(client, {**album_body(chosen(1, 2), title="Second"), "playlistUrl": other, "coverToSongs": True}).status_code == 201
+    assert stored_songs()[HID[0]]["cover_v"] == "mine"
+
+
+@pytest.mark.parametrize("extra", [{}, {"coverToSongs": False}])
+def test_cover_to_songs_off_leaves_song_covers_alone(client, playlist, real_covers, no_discogs, extra):
+    assert post_commit(client, {**album_body(chosen(1, 2)), **extra}).status_code == 201
+    assert "custom" not in {s.get("cover_source") for s in stored_songs().values()}
+
+
+def test_cover_to_songs_without_an_album_cover_does_not_fail(client, playlist, real_covers, no_discogs):
+    r = post_commit(client, {**album_body(chosen(1, 2), coverUrl=None), "coverToSongs": True})
+    assert r.status_code == 201, r.text
+    assert "custom" not in {s.get("cover_source") for s in stored_songs().values()}
+
+
+def test_track_numbers_on_all_selected_items_number_the_album_tracks(client, playlist, covers, no_discogs):
+    selected = chosen(1, 2, 3, **{"1": {"trackNo": 5}, "2": {"trackNo": 2}, "3": {"trackNo": 9}})
+    r = post_commit(client, album_body(selected))
+    assert r.status_code == 201, r.text
+    album = r.json()["album"]
+    assert [(t["no"], t["title"], t["songId"]) for t in album["tracks"]] == [(2, "Track 2", HID[1]), (5, "Track 1", HID[0]), (9, "Track 3", HID[2])]
+    assert (r.json()["linked"], r.json()["unlinked"]) == (3, 0)
+
+
+def test_track_numbers_on_only_some_items_are_ignored(client, playlist, covers, no_discogs):
+    r = post_commit(client, album_body(chosen(1, 2, 3, **{"1": {"trackNo": 5}})))
+    assert r.status_code == 201, r.text
+    assert [(t["no"], t["songId"]) for t in r.json()["album"]["tracks"]] == [(1, HID[0]), (2, HID[1]), (3, HID[2])]
+
+
+@pytest.mark.parametrize("numbers", [(1, 1), (0, 1), (1000, 1), (True, 2), ("1", 2), (1.5, 2)])
+def test_bad_track_numbers_are_refused_and_create_nothing(client, playlist, covers, no_discogs, numbers):
+    selected = chosen(1, 2, **{"1": {"trackNo": numbers[0]}, "2": {"trackNo": numbers[1]}})
+    assert post_commit(client, album_body(selected)).json()["detail"] == "bad_selection"
+    assert library_ids(client) == {}

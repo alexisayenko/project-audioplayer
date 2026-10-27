@@ -187,8 +187,18 @@ def auto(uid: str, album: dict[str, Any]) -> dict[str, Any]:
     return album
 
 
-def apply_to_songs(uid: str, album_id: str, overwrite: bool = False) -> dict[str, Any] | None:
-    """Copy the album's own cover to every linked song that exists in the library (task-0120, API-305), in one library write. A song whose cover the user chose (`custom`, or the pinned placeholder `default`) is kept unless `overwrite`; an automatic or missing cover is replaced; a song that already has this very image is left. Returns `{linked, applied, unchanged, skipped, failed}`, None for an unknown album; raises `no_cover` when the album has no cover of its own."""
+def apply_to_new_songs(uid: str, album_id: str, song_ids: Any) -> None:
+    """The album cover onto the songs a create request just made (`coverToSongs`); every failure, an album without a cover included, is swallowed (a new album never fails for its cover)."""
+    try:
+        only = {s for s in song_ids if isinstance(s, str)}
+        if only:
+            apply_to_songs(uid, album_id, only=only)
+    except Exception as exc:
+        log.warning("album cover to new songs: %s", type(exc).__name__)
+
+
+def apply_to_songs(uid: str, album_id: str, overwrite: bool = False, only: set[str] | None = None) -> dict[str, Any] | None:
+    """Copy the album's own cover to every linked song that exists in the library (task-0120, API-305), in one library write; `only` limits it to those song ids. A song whose cover the user chose (`custom`, or the pinned placeholder `default`) is kept unless `overwrite`; an automatic or missing cover is replaced; a song that already has this very image is left. Returns `{linked, applied, unchanged, skipped, failed}`, None for an unknown album; raises `no_cover` when the album has no cover of its own."""
     with deps.tx(uid, f"album cover to songs {album_id}"):
         album = next((a for a in albums.load(deps.albums_path(uid)) if a["id"] == album_id), None)
         if album is None:
@@ -201,7 +211,7 @@ def apply_to_songs(uid: str, album_id: str, overwrite: bool = False) -> dict[str
         version = coverimg.version_of(jpeg)
         songs = library.load(deps.library_path(uid))
         by_id = {s.get("id"): s for s in songs}
-        ids = list(dict.fromkeys(t["songId"] for t in album.get("tracks") or [] if isinstance(t, dict) and t.get("songId") in by_id))
+        ids = list(dict.fromkeys(t["songId"] for t in album.get("tracks") or [] if isinstance(t, dict) and t.get("songId") in by_id and (only is None or t.get("songId") in only)))
         result = {"linked": len(ids), "applied": 0, "unchanged": 0, "skipped": 0, "failed": 0}
         for sid in ids:
             song = by_id[sid]
