@@ -6,10 +6,8 @@ from typing import Any
 
 from fastapi import APIRouter, Depends
 from fastapi.concurrency import run_in_threadpool
-from fastapi.responses import JSONResponse
 
-from .. import deps, metafill
-from ..problems import Problem
+from .. import backgroundjob, deps, metafill
 
 router = APIRouter()
 
@@ -23,13 +21,8 @@ async def get_metafill(user: dict[str, Any] = Depends(deps.require_token)):
 async def start_metafill(user: dict[str, Any] = Depends(deps.require_token)):
     """Start getting metadata: 202, 200 when there is nothing to do, 409 when a job is running (yours or another user's)."""
     kind, state = await run_in_threadpool(metafill.start, user["uid"])
-    if kind == "running":
-        raise Problem(409, "metadata_running", "Getting metadata is already running.")
-    if kind == "busy":
-        raise Problem(409, "metadata_busy", "Another metadata run is in progress on the server. Try again later.")
-    if kind == "nothing":
-        return JSONResponse(state, status_code=200)
-    return state
+    return backgroundjob.start_reply(kind, state, ("metadata_running", "Getting metadata is already running."),
+                                     ("metadata_busy", "Another metadata run is in progress on the server. Try again later."))
 
 
 @router.delete("/me/backfill/metadata")

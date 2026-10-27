@@ -6,10 +6,8 @@ from typing import Any
 
 from fastapi import APIRouter, Depends
 from fastapi.concurrency import run_in_threadpool
-from fastapi.responses import JSONResponse
 
-from .. import backfill, deps
-from ..problems import Problem
+from .. import backfill, backgroundjob, deps
 
 router = APIRouter()
 
@@ -23,13 +21,8 @@ async def get_backfill(user: dict[str, Any] = Depends(deps.require_token)):
 async def start_backfill(user: dict[str, Any] = Depends(deps.require_token)):
     """Start detecting missing BPMs: 202, 200 when there is nothing to do, 409 when a job is running (yours or another user's)."""
     kind, state = await run_in_threadpool(backfill.start, user["uid"])
-    if kind == "running":
-        raise Problem(409, "backfill_running", "A BPM detection is already running.")
-    if kind == "busy":
-        raise Problem(409, "backfill_busy", "Another BPM detection is running on the server. Try again later.")
-    if kind == "nothing":
-        return JSONResponse(state, status_code=200)
-    return state
+    return backgroundjob.start_reply(kind, state, ("backfill_running", "A BPM detection is already running."),
+                                     ("backfill_busy", "Another BPM detection is running on the server. Try again later."))
 
 
 @router.delete("/me/backfill/bpm")

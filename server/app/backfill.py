@@ -11,15 +11,12 @@ import threading
 import time
 from typing import Any
 
-from . import bpm, deps, library
+from . import backgroundjob, bpm, deps, library
 
 log = logging.getLogger(__name__)
 
 SONG_TIMEOUT = 60.0
 NICE = 10
-_lock = threading.Lock()
-_jobs: dict[str, Job] = {}
-_active: str | None = None
 
 
 def _sleep() -> float:
@@ -36,21 +33,6 @@ def _batch() -> int:
         return 10
 
 
-class Job:
-    def __init__(self, uid: str, total: int) -> None:
-        self.uid = uid
-        self.state = "running"
-        self.total = total
-        self.done = 0
-        self.failed = 0
-        self.skipped = 0
-        self.started_at = library.now_utc()
-        self.finished_at: str | None = None
-        self.last_error: str | None = None
-        self.cancel = threading.Event()
-        self.thread: threading.Thread | None = None
-
-
 def candidates(uid: str) -> list[str]:
     """Ids of the user's songs with a bpm of null whose audio file is on the server."""
     out = []
@@ -58,53 +40,6 @@ def candidates(uid: str) -> list[str]:
         if song.get("bpm") is None and library.has_file(song) and (deps.audio_dir(uid) / library.file_name(song)).is_file():
             out.append(song["id"])
     return out
-
-
-def status(uid: str) -> dict[str, Any]:
-    job = _jobs.get(uid)
-    cand = len(candidates(uid))
-    if job is None:
-        return {"state": "idle", "candidates": cand, "total": 0, "done": 0, "failed": 0, "skipped": 0,
-                "started_at": None, "finished_at": None}
-    out = {"state": job.state, "candidates": cand, "total": job.total, "done": job.done, "failed": job.failed,
-           "skipped": job.skipped, "started_at": job.started_at, "finished_at": job.finished_at}
-    if job.last_error:
-        out["last_error"] = job.last_error
-    return out
-
-
-def start(uid: str) -> tuple[str, dict[str, Any] | None]:
-    """('started', state) | ('nothing', state) | ('running', None) | ('busy', None)."""
-    global _active
-    with _lock:
-        if _active is not None:
-            return ("running" if _active == uid else "busy"), None
-        ids = candidates(uid)
-        if not ids:
-            return "nothing", status(uid)
-        job = Job(uid, len(ids))
-        _jobs[uid] = job
-        _active = uid
-        job.thread = threading.Thread(target=_run, args=(job, ids), name="bpm-backfill", daemon=True)
-        job.thread.start()
-    return "started", status(uid)
-
-
-def cancel(uid: str) -> dict[str, Any]:
-    job = _jobs.get(uid)
-    if job is not None and job.state == "running":
-        job.cancel.set()
-    return status(uid)
-
-
-def reset() -> None:
-    global _active
-    for job in _jobs.values():
-        job.cancel.set()
-        if job.thread is not None:
-            job.thread.join(5)
-    _jobs.clear()
-    _active = None
 
 
 def _detect(path) -> int | None:
@@ -127,7 +62,7 @@ def _detect(path) -> int | None:
     return box.get("v")
 
 
-def _flush(job: Job, results: dict[str, int]) -> None:
+def _flush(job: backgroundjob.Job, results: dict[str, int]) -> None:
     if not results:
         return
     uid = job.uid
@@ -160,39 +95,35 @@ def _process(uid: str, vid: str) -> int | None:
     return -1 if value is None else value
 
 
-def _run(job: Job, ids: list[str]) -> None:
-    global _active
+def _work(job: backgroundjob.Job, ids: list[str]) -> None:
     try:
-        try:
-            os.nice(NICE)
-        except (AttributeError, OSError):
-            pass
-        uid = job.uid
-        pending: dict[str, int] = {}
-        batch = _batch()
-        for vid in ids:
-            if job.cancel.is_set():
-                break
-            outcome = _process(uid, vid)
-            if outcome is None:
-                job.skipped += 1
-                continue
-            if outcome < 0:
-                job.failed += 1
-            else:
-                pending[vid] = outcome
-                job.done += 1
-            if len(pending) >= batch:
-                _flush(job, pending)
-            time.sleep(_sleep())
-        _flush(job, pending)
-        job.state = "cancelled" if job.cancel.is_set() else "done"
-    except Exception as exc:
-        log.exception("bpm backfill crashed")
-        job.last_error = str(exc)[:200]
-        job.state = "error"
-    finally:
-        job.finished_at = library.now_utc()
-        with _lock:
-            if _active == job.uid:
-                _active = None
+        os.nice(NICE)
+    except (AttributeError, OSError):
+        pass
+    uid = job.uid
+    pending: dict[str, int] = {}
+    batch = _batch()
+    for vid in ids:
+        if job.cancel.is_set():
+            break
+        outcome = _process(uid, vid)
+        if outcome is None:
+            job.skipped += 1
+            continue
+        if outcome < 0:
+            job.failed += 1
+        else:
+            pending[vid] = outcome
+            job.done += 1
+        if len(pending) >= batch:
+            _flush(job, pending)
+        time.sleep(_sleep())
+    _flush(job, pending)
+
+
+_runner = backgroundjob.Runner("bpm backfill", ("done", "failed", "skipped"), candidates, _work)
+_jobs = _runner.jobs
+status = _runner.status
+start = _runner.start
+cancel = _runner.cancel
+reset = _runner.reset
