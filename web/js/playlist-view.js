@@ -10,7 +10,8 @@ import { openSongCard } from './lazy-ui.js';
 import { isRowControl, keepCovers } from './row-cover.js';
 import { disposeAll } from './marquee.js';
 import { LIBRARY_FRESH_MS } from './constants.js';
-import { songRow, coverTile, paintDownloadRows } from './library-rows.js';
+import { paintDownloadRows } from './library-rows.js';
+import { captureFocus, restoreFocus, headNodes, actionButtons, listRow, paintStatus } from './playlist-paint.js';
 import { playlistStore } from './playlists-store.js';
 import { totalText, moveId, insertId, exportName, queueNotes, addedText } from './playlists-model.js';
 import { playSongs } from './playlist-play.js';
@@ -18,22 +19,6 @@ import { addSongsPanel } from './playlist-add.js';
 import { createOrderSync, attachDrag } from './playlist-order.js';
 import { playlistForm } from './playlist-dialogs.js';
 import { deleteWithUndo } from './playlists-list.js';
-
-const FOCUSABLE = 'button, a[href]';
-
-function captureFocus(list) {
-  const active = document.activeElement;
-  const row = active?.closest?.('li.song');
-  if (!row || !list.contains(row)) return null;
-  return { id: row.dataset.id, index: [...row.querySelectorAll(FOCUSABLE)].indexOf(active) };
-}
-
-function restoreFocus(list, saved) {
-  if (!saved) return;
-  const row = [...list.querySelectorAll('li.song')].find((r) => r.dataset.id === saved.id);
-  const target = row && [...row.querySelectorAll(FOCUSABLE)][Math.max(0, saved.index)];
-  target?.focus();
-}
 
 export function renderPlaylistPage(root, id) {
   let detail = null;
@@ -68,76 +53,29 @@ export function renderPlaylistPage(root, id) {
     },
   });
 
-  function summaryLine() {
-    return totalText(songsNow());
-  }
-
   function paintHead() {
     if (!detail) { head.replaceChildren(); return; }
-    const first = store.get(ids[0]);
-    head.replaceChildren(
-      el('p', { class: 't-eyebrow' }, 'ELECTROPHONE'),
-      el('div', { class: 'pl-hero' },
-        coverTile(first),
-        el('div', { class: 'pl-meta' },
-          el('h1', { class: 't-display' }, detail.name),
-          detail.description ? el('p', { class: 'pl-desc-text muted t-subhead' }, detail.description) : null,
-          el('p', { class: 'muted t-subhead', 'data-role': 'summary' }, summaryLine()))));
+    head.replaceChildren(...headNodes({ detail, first: store.get(ids[0]), summary: totalText(songsNow()) }));
   }
 
   function paintActions() {
     if (!detail) { actions.replaceChildren(); return; }
-    const none = !ids.length;
-    actions.replaceChildren(
-      el('button', { class: 'btn primary glow', type: 'button', disabled: none, onclick: () => playAll(false) }, icon('play', 'action'), 'Play playlist'),
-      el('button', { class: 'btn outline', type: 'button', disabled: none, onclick: addAllToQueue }, icon('listAdd', 'action'), 'Add to queue'),
-      el('button', { class: 'btn outline', type: 'button', disabled: none, onclick: () => playAll(true) }, icon('shuffle', 'action'), 'Shuffle'),
-      el('button', { class: 'btn outline', type: 'button', onclick: (e) => exportList(e.currentTarget) }, icon('download', 'action'), 'Export'),
-      el('button', { class: 'btn outline', type: 'button', onclick: editDetails }, icon('pencil', 'action'), 'Edit'),
-      el('button', { class: 'btn danger', type: 'button', onclick: removePlaylist }, icon('trash', 'action'), 'Delete'));
-  }
-
-  function listRow(s) {
-    const title = titleLine(s);
-    const row = songRow(s, player.current, null, null);
-    row.classList.add('pl-song');
-    row.append(el('div', { class: 'pl-ctl' },
-      el('button', { class: 'icon pl-grip', type: 'button', title: 'Drag to reorder, or press Alt with the Up or Down arrow', 'aria-label': `Reorder: ${title}. Press Alt with the Up or Down arrow to move.` }, icon('grip', 'inline')),
-      el('button', { class: 'icon pl-remove', type: 'button', title: 'Remove from playlist', 'aria-label': `Remove from playlist: ${title}`, onclick: () => removeSong(s.id) }, icon('clear', 'inline'))));
-    return row;
+    actions.replaceChildren(...actionButtons({ none: !ids.length, playAll, addAllToQueue, exportList, editDetails, removePlaylist }));
   }
 
   function paintRows() {
     if (list.classList.contains('is-dragging')) return;
     const saved = captureFocus(list);
     const prev = [...list.querySelectorAll('li.song')];
-    const rows = songsNow().map(listRow);
+    const rows = songsNow().map((song) => listRow(song, removeSong));
     keepCovers(prev, rows);
     disposeAll(list);
     list.replaceChildren(...rows);
     restoreFocus(list, saved);
   }
 
-  function paintStatus() {
-    if (missing) {
-      status.replaceChildren(el('div', { class: 'state card' },
-        el('p', { class: 't-headline' }, 'This playlist does not exist'),
-        el('p', { class: 'muted t-subhead' }, 'It may have been deleted.'),
-        el('a', { class: 'btn outline small', href: '#/playlists' }, 'Back to playlists')));
-    } else if (loadError) {
-      status.replaceChildren(el('div', { class: 'state card' },
-        el('p', { class: 'msg error', role: 'alert' }, loadError),
-        el('button', { class: 'btn', type: 'button', onclick: () => { loadError = null; paintStatus(); void load(); } }, 'Retry')));
-    } else if (!detail) {
-      status.replaceChildren(el('p', { class: 'muted t-subhead state', role: 'status' }, 'Loading the playlist...'));
-    } else if (!ids.length) {
-      status.replaceChildren(el('div', { class: 'state card' },
-        el('p', { class: 't-headline' }, 'No songs yet'),
-        el('p', { class: 'muted t-subhead' }, 'Search above to add songs, or use "Add to playlist" on a song in the Library.'),
-        el('a', { class: 'btn outline small', href: '#/library' }, 'Open Library')));
-    } else {
-      status.replaceChildren();
-    }
+  function paintLoadStatus() {
+    paintStatus(status, { missing, loadError, loaded: !!detail, empty: !ids.length, retry: () => { loadError = null; paintLoadStatus(); void load(); } });
   }
 
   function paintAll() {
@@ -145,7 +83,7 @@ export function renderPlaylistPage(root, id) {
     paintActions();
     group.hidden = !ids.length;
     paintRows();
-    paintStatus();
+    paintLoadStatus();
     adder.node.hidden = !detail;
     adder.refresh();
   }
@@ -334,7 +272,7 @@ export function renderPlaylistPage(root, id) {
   const flushOnHide = () => { if (sync.pending()) void sync.flush(); };
   window.addEventListener('pagehide', flushOnHide);
 
-  paintStatus();
+  paintLoadStatus();
   if (!store.loaded) {
     store.refresh({ maxAgeMs: LIBRARY_FRESH_MS }).catch(() => {}).then(() => load());
   } else {
