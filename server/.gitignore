@@ -5,3 +5,5 @@ __pycache__/
 library.json
 covers/
 .env
+backups-*/
+genre_eras.json
