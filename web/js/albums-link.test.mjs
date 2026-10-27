@@ -137,11 +137,18 @@ test('a linked song with unknown length shows a dash', async () => {
   assert.equal(candidateMeta(store.songs[0]), 'Derango');
 });
 
-test('every track has its own sub-row: Link icon when free, Unlink icon with name and length when linked; no accordion', async () => {
+test('tracks are an accordion: sub-row collapsed by default; Link icon when free, Unlink icon with name and length when linked', async () => {
   const v = await open(() => ok(ALBUM));
   const lis = [...v.dlg.querySelectorAll('.album-info-tracks li')];
-  assert.equal(v.dlg.querySelector('.album-row-btn'), null);
-  for (const li of lis) assert.ok(li.querySelector('.album-linked'));
+  for (const li of lis) {
+    assert.ok(li.querySelector('.album-linked'));
+    assert.equal(li.querySelector('.album-row-btn').getAttribute('aria-expanded'), 'false');
+    assert.equal(li.querySelector('.album-panel').hidden, true);
+  }
+  fire(lis[1].querySelector('.album-row-btn'), 'click');
+  assert.equal(lis[1].querySelector('.album-row-btn').getAttribute('aria-expanded'), 'true');
+  assert.equal(lis[1].querySelector('.album-panel').hidden, false);
+  assert.equal(lis[0].querySelector('.album-panel').hidden, true);
   const free = lis[0].querySelector('.album-link-btn');
   assert.equal(free.getAttribute('aria-label'), 'Link a song');
   assert.equal(free.title, 'Link a song');

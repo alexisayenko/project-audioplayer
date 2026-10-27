@@ -169,12 +169,12 @@ test('YouTube link: prefilled in the Edit dialog, kept in the info box after sav
   v.dlg.close();
 });
 
-test('the unlink button uses the chain-with-minus icon (no image file)', async () => {
+test('the unlink button uses the broken-chain icon (no image file)', async () => {
   const { ICONS, icon } = await import('./icons.js');
-  assert.ok(ICONS.linkMinus);
-  assert.equal((ICONS.linkMinus.d.match(/<path/g) || []).length, 3);
-  assert.equal(ICONS.linkMinus.d.includes('<image'), false);
-  assert.equal(icon('linkMinus', 'inline').getAttribute('viewBox'), '0 0 24 24');
+  assert.ok(ICONS.unlink);
+  assert.equal((ICONS.unlink.d.match(/<path/g) || []).length, 6);
+  assert.equal(ICONS.unlink.d.includes('<image'), false);
+  assert.equal(icon('unlink', 'inline').getAttribute('viewBox'), '0 0 24 24');
   const album = { ...ALBUM, tracks: [{ no: 1, title: 'Intro', durationS: 65, songId: 'u2' }] };
   const v = await open(() => ok(album));
   const btn = v.dlg.querySelector('.album-unlink');

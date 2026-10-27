@@ -5,7 +5,7 @@ import { albumFields } from './album-form.js';
 import { discogsFinder } from './album-discogs.js';
 import { icon } from './icons.js';
 import {
-  FADE_TYPES, stateOf, endOf, formatClock, parseClock, rowIssue, trackLabel, issues, summary, offsetAll, sortRows, isSorted,
+  stateOf, endOf, formatClock, parseClock, rowIssue, trackLabel, issues, summary, sortRows, isSorted,
   addRow, renumber, payload, youtubeAt, previewErrorText, createErrorText,
 } from './album-video-model.js';
 import { mountSplitProgress } from './album-video-progress.js';
@@ -87,7 +87,6 @@ export function createVideoFlow({ body, say, genreEditor, isLive, setBusy, hideF
     const rows = el('ul', { class: 'av-rows' });
     const sortBtn = el('button', { class: 'btn outline small', type: 'button', hidden: true, onclick: () => { sortRows(st); drawRows(); paint(); } }, 'Sort by start time');
     const toggleAll = el('button', { class: 'link-btn t-caption av-select-all', type: 'button' });
-    const fadesBox = el('input', { type: 'checkbox', checked: st.fades, onchange: () => { st.fades = fadesBox.checked; st.fadesTouched = true; } });
 
     function paint() {
       stat.textContent = summary(st);
@@ -126,18 +125,6 @@ export function createVideoFlow({ body, say, genreEditor, isLive, setBusy, hideF
       input.addEventListener('change', () => {
         if (!r.badStart) { input.value = formatClock(r.start); r.startText = input.value; }
       });
-      return input;
-    }
-
-    function endField() {
-      const input = el('input', { type: 'text', class: 'av-end-input', value: formatClock(st.endTime), inputMode: 'numeric', autocomplete: 'off', 'aria-label': 'End of the last track', placeholder: '00:00:00' });
-      input.addEventListener('input', () => {
-        const t = parseClock(input.value);
-        st.badEnd = t === null;
-        if (t !== null) st.endTime = t;
-        paint();
-      });
-      input.addEventListener('change', () => { if (!st.badEnd) input.value = formatClock(st.endTime); });
       return input;
     }
 
@@ -218,16 +205,6 @@ export function createVideoFlow({ body, say, genreEditor, isLive, setBusy, hideF
       paint();
     });
 
-    const delta = el('input', { type: 'number', class: 'av-delta', value: '1', min: '0', step: '1', inputMode: 'numeric', id: 'av-delta', 'aria-label': 'Seconds to shift' });
-    const shift = (sign) => {
-      const n = Math.floor(Number(delta.value));
-      if (!Number.isFinite(n) || n <= 0) { delta.focus(); return; }
-      offsetAll(st, sign * n);
-      drawRows();
-      paint();
-    };
-    const earlier = el('button', { class: 'btn outline small', type: 'button', onclick: () => shift(-1) }, 'Earlier');
-    const later = el('button', { class: 'btn outline small', type: 'button', onclick: () => shift(1) }, 'Later');
     const artistAll = el('button', { class: 'btn outline small', type: 'button', onclick: () => {
       if (!st.album.albumArtist.trim()) { say('Type the album artist first.'); return; }
       say('');
@@ -255,20 +232,21 @@ export function createVideoFlow({ body, say, genreEditor, isLive, setBusy, hideF
     for (const n of [form.titleF, form.artistsF, form.yearIn, ...Object.values(form.links.inputs)]) n.addEventListener('input', syncAlbum);
     form.typeSel.addEventListener('change', () => {
       st.album.type = form.typeSel.value;
-      if (!st.fadesTouched) { st.fades = FADE_TYPES.has(st.album.type); fadesBox.checked = st.fades; }
     });
 
-    const finder = discogsFinder({ form, editor });
+    const coverImg = el('img', { class: 'cover av-cover', alt: 'Album cover', width: '96', height: '96' });
+    const paintCover = () => {
+      if (st.album.coverUrl) coverImg.src = st.album.coverUrl;
+      coverImg.hidden = !st.album.coverUrl;
+    };
+    coverImg.addEventListener('error', () => { coverImg.hidden = true; });
+    paintCover();
+    const finder = discogsFinder({ form, editor, onPick: (c) => { if (c.cover) { st.album.coverUrl = c.cover; paintCover(); } } });
+    const matched = st.discogsMatch ? el('div', { class: 'muted t-caption av-matched' }, 'Matched on Discogs: ', el('a', { href: st.discogsMatch, target: '_blank', rel: 'noopener noreferrer' }, st.discogsMatch.replace('https://www.', ''))) : null;
     const head = el('div', { class: 'av-head' },
       el('div', { class: 't-headline' }, st.videoTitle || 'YouTube video'),
       el('div', { class: 'muted t-caption' }, [st.uploader, st.duration ? formatClock(st.duration) : '', SOURCE_NOTE[st.source]].filter(Boolean).join(' · ')),
       ...st.warnings.map((w) => el('div', { class: 'muted t-caption av-warn' }, w)));
-
-    const advanced = el('details', { class: 'av-advanced' },
-      el('summary', { class: 't-subhead' }, 'Advanced'),
-      el('div', { class: 'av-shift' },
-        el('label', { class: 't-caption', htmlFor: 'av-delta' }, 'Shift all times by'), delta, el('span', { class: 't-caption muted' }, 'seconds'), earlier, later),
-      el('div', { class: 'av-shift' }, el('label', { class: 't-caption' }, 'End of the last track'), endField()));
 
     const cancel = el('button', { class: 'btn outline', type: 'button', onclick: () => { say(''); onBack(); } }, 'Back');
 
@@ -301,12 +279,10 @@ export function createVideoFlow({ body, say, genreEditor, isLive, setBusy, hideF
     create.addEventListener('click', () => { void submit(); });
 
     body.replaceChildren(el('div', { class: 'add-card album-video' },
-      head, form.node, finder.node,
+      head, ...(matched ? [matched] : []), coverImg, form.node, finder.node,
       el('div', { class: 'av-bar-row' }, stat, toggleAll),
       rows,
       el('div', { class: 'av-bottom' }, addBtn, artistAll, sortBtn, paste),
-      advanced,
-      el('label', { class: 'av-fades t-subhead' }, fadesBox, 'Fade each track in and out for 1 s'),
       problems,
       el('p', { class: 't-caption muted' }, 'Tick the tracks to create. The whole split counts as one add.'),
       el('div', { class: 'add-foot' }, cancel, create)));

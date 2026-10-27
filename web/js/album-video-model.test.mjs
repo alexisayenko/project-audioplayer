@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   videoLink, youtubeAt, formatClock, parseClock, lengthText, splitArtists, joinArtists, stateOf, endOf, rowIssue, issues,
-  summary, offsetAll, sortRows, isSorted, addRow, payload, previewErrorText, createErrorText,
+  summary, sortRows, isSorted, addRow, payload, previewErrorText, createErrorText,
 } from './album-video-model.js';
 
 const PV = {
@@ -49,11 +49,9 @@ test('stateOf: matches start unticked, album defaults from the preview', () => {
   assert.equal(st.rows[0].artists, 'A & B');
   assert.equal(st.album.type, 'mix');
   assert.equal(st.album.year, '2020');
-  assert.equal(st.fades, true);
   assert.equal(st.endTime, 3600);
   assert.equal(endOf(st, 0), 600);
   assert.equal(endOf(st, 2), 3600);
-  assert.equal(stateOf({ ...PV, album: { ...PV.album, type: 'album' } }).fades, false);
   assert.equal(stateOf({ ...PV, album: { ...PV.album, type: 'weird' } }).album.type, 'album');
 });
 
@@ -90,19 +88,12 @@ test('validation: order, bounds, titles, year, at least one track', () => {
   st.endTime = 1800;
   assert.match(rowIssue(st, 2), /after it starts/);
   st.endTime = 3600;
-  st.badEnd = true;
-  assert.match(issues(st)[0], /last end time/);
-  st.badEnd = false;
   for (const r of st.rows) r.include = false;
   assert.match(issues(st)[0], /at least one/);
 });
 
-test('offset clamps, sort and add keep the rows consistent', () => {
+test('sort and add keep the rows consistent', () => {
   const st = stateOf(PV);
-  offsetAll(st, -5);
-  assert.deepEqual(st.rows.map((r) => r.start), [0, 595, 1795]);
-  offsetAll(st, 5000);
-  assert.deepEqual(st.rows.map((r) => r.start), [3600, 3600, 3600]);
   st.rows[0].start = 900;
   st.rows[1].start = 100;
   assert.equal(isSorted(st), false);
@@ -130,7 +121,7 @@ test('payload follows the create contract', () => {
   assert.equal(p.tracks[1].useExistingSongId, 's9');
   assert.equal(p.tracks[1].version, 'Remix');
   assert.equal(p.tracks[2].end, 3600);
-  assert.equal(p.fades, true);
+  assert.equal('fades' in p, false);
   st.rows[1].include = false;
   assert.equal(payload(st).tracks[1].useExistingSongId, null);
   st.album.year = '';
@@ -179,4 +170,11 @@ test('trackClock gives m:ss or h:mm:ss; trackLabel joins artist, title, version 
   assert.deepEqual(trackLabel(st, 1), { name: 'C - Two', version: 'Remix', length: '20:00' });
   st.rows[0].artists = '';
   assert.equal(trackLabel(st, 0).name, 'One');
+});
+
+test('stateOf: an auto-matched Discogs link is kept as discogsMatch and the Discogs cover wins over the thumbnail', () => {
+  const st = stateOf({ ...PV, album: { title: 'Crystal City', albumArtist: 'Robert Parker', type: 'album', year: 2016, coverUrl: 'https://i.discogs.com/c.jpg' }, links: { discogs: 'https://www.discogs.com/master/1022405' }, discogsMatch: 'https://www.discogs.com/master/1022405' }, 'u');
+  assert.equal(st.discogsMatch, 'https://www.discogs.com/master/1022405');
+  assert.equal(st.album.coverUrl, 'https://i.discogs.com/c.jpg');
+  assert.equal(stateOf(PV).discogsMatch, '');
 });

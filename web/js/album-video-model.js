@@ -4,7 +4,6 @@ export const MAX_TRACKS = 100;
 export const MAX_SECONDS = 4 * 3600;
 export const ALBUM_TYPES = [['album', 'Album'], ['EP', 'EP'], ['single', 'Single'], ['mix', 'Mix'], ['compilation', 'Compilation']];
 export const normalType = (t) => ALBUM_TYPES.find(([k]) => k.toLowerCase() === String(t ?? '').toLowerCase())?.[0] || 'album';
-export const FADE_TYPES = new Set(['mix', 'compilation']);
 
 const HOSTS = new Set(['youtube.com', 'www.youtube.com', 'm.youtube.com', 'music.youtube.com']);
 const VIDEO_ID = /^[A-Za-z0-9_-]{11}$/;
@@ -96,6 +95,7 @@ export function stateOf(preview, address = '') {
     duration: Number(preview.duration) || 0,
     source: preview.source || 'none',
     rawText: String(preview.rawText ?? ''),
+    discogsMatch: typeof preview.discogsMatch === 'string' ? preview.discogsMatch : '',
     warnings: Array.isArray(preview.warnings) ? preview.warnings.filter(Boolean).map(String) : [],
     rows: tracks,
     endTime: Number(preview.duration) || 0,
@@ -108,9 +108,6 @@ export function stateOf(preview, address = '') {
       links: { ...extraLinks(preview.links), youtube: preview.url || address },
       coverUrl: a.coverUrl || preview.thumbnail || null,
     },
-    fades: FADE_TYPES.has(type),
-    fadesTouched: false,
-    badEnd: false,
   };
 }
 
@@ -143,7 +140,6 @@ export function rowIssue(st, i) {
 export function issues(st) {
   const out = [];
   const included = st.rows.filter((r) => r.include);
-  if (st.badEnd) out.push('The last end time must look like 1:02:30.');
   if (!st.album.title.trim()) out.push('Give the album a title.');
   if (!included.length) out.push('Tick at least one track.');
   if (included.length > MAX_TRACKS) out.push(`At most ${MAX_TRACKS} tracks.`);
@@ -161,14 +157,6 @@ export function summary(st) {
   if (included.length) parts.push(lengthText(total));
   if (warns) parts.push(`${warns} ${plural(warns, 'warning', 'warnings')}`);
   return parts.join(' · ');
-}
-
-export function offsetAll(st, delta) {
-  const cap = st.endTime || Infinity;
-  for (const r of st.rows) {
-    r.start = Math.min(Math.max(0, r.start + delta), cap);
-    r.startText = formatClock(r.start);
-  }
 }
 
 export function sortRows(st) {
@@ -220,7 +208,6 @@ export function payload(st) {
       trackNo: r.no,
       useExistingSongId: r.include && r.useExisting && r.match ? r.match.songId : null,
     })),
-    fades: st.fades,
   };
 }
 

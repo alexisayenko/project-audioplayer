@@ -217,6 +217,30 @@ export function openAlbumCard(album, opener = null) {
   let cur = album;
   let buttons = null;
 
+  let openNo = null;
+  const rowKeys = (e) => {
+    if (!['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(e.key)) return;
+    const rows = [...dlg.querySelectorAll('.album-row-btn')];
+    const at = rows.indexOf(e.currentTarget);
+    if (at < 0) return;
+    e.preventDefault();
+    let next = Math.max(0, Math.min(rows.length - 1, at + (e.key === 'ArrowDown' ? 1 : -1)));
+    if (e.key === 'Home') next = 0;
+    else if (e.key === 'End') next = rows.length - 1;
+    rows[next].focus();
+  };
+  const panelId = (t) => `album-panel-${cur.id}-${t.no}`;
+
+  function setOpen(no) {
+    openNo = openNo === no ? null : no;
+    for (const li of dlg.querySelectorAll('.album-info-tracks li')) {
+      const on = Number(li.dataset.no) === openNo;
+      li.querySelector('.album-row-btn').setAttribute('aria-expanded', String(on));
+      li.querySelector('.album-panel').hidden = !on;
+      li.classList.toggle('open', on);
+    }
+  }
+
   function trackRow(t) {
     const linked = t.songId ? store.get(t.songId) : null;
     let sub;
@@ -225,7 +249,7 @@ export function openAlbumCard(album, opener = null) {
         const btn = e.currentTarget;
         btn.disabled = true;
         try { paint(await api.unlinkTrack(cur.id, t.no)); } catch (ex) { btn.disabled = false; toast(ex.message); }
-      } }, icon('linkMinus', 'inline'));
+      } }, icon('unlink', 'inline'));
       const name = linked
         ? el('button', { type: 'button', class: 'link-btn t-caption album-linked-name', title: 'Song info', onclick: (e) => { void openSongCard(linked, e.currentTarget); } }, displayLine(linked))
         : el('span', { class: 'album-linked-name' }, 'Linked song');
@@ -234,12 +258,13 @@ export function openAlbumCard(album, opener = null) {
       sub = el('div', { class: 'album-linked album-unlinked t-caption' },
         el('button', { type: 'button', class: 'icon sq-btn album-link-btn', title: 'Link a song', 'aria-label': 'Link a song', onclick: () => openLinkPopup(cur, t, paint) }, icon('link', 'inline')));
     }
-    return el('li', { class: 'album-track', 'data-no': String(t.no) },
-      el('div', { class: 'album-track-line' },
-        el('span', { class: 'album-no muted t-caption' }, `${t.no}.`),
-        el('span', { class: 'album-name t-subhead' }, t.title),
-        el('span', { class: 'album-len muted t-caption' }, lengthText(t.durationS))),
-      sub);
+    const on = openNo === t.no;
+    const btn = el('button', { type: 'button', class: 'album-row-btn album-track-line', 'aria-expanded': String(on), 'aria-controls': panelId(t), onclick: () => setOpen(t.no), onkeydown: rowKeys },
+      el('span', { class: 'album-no muted t-caption' }, `${t.no}.`),
+      el('span', { class: 'album-name t-subhead' }, t.title),
+      el('span', { class: 'album-len muted t-caption' }, lengthText(t.durationS)));
+    return el('li', { class: `album-track${on ? ' open' : ''}`, 'data-no': String(t.no) },
+      btn, el('div', { class: 'album-panel', id: panelId(t), hidden: !on }, sub));
   }
 
   function paint(next) {

@@ -82,8 +82,7 @@ test('a video link calls the preview and shows the editable table; nothing is cr
   assert.equal(rows()[0].querySelector('.av-start').value, '00:00:00');
   assert.equal(rows()[0].querySelector('.av-artist').value, 'A & B');
   assert.equal(rows()[1].querySelector('.av-version').value, 'Remix');
-  assert.ok(!q('.av-advanced').open);
-  assert.equal(q('.av-advanced .av-end-input').value, '01:00:00');
+  assert.equal(q('.av-advanced'), null);
   assert.equal(rows()[0].textContent.includes('to 00:10:00'), false);
   const yt = rows()[2].querySelector('a.av-yt');
   assert.equal(yt.href, 'https://youtu.be/yeUFSnA9Puk?t=1800');
@@ -125,7 +124,6 @@ test('edits to start, artist, title, version and the album header reach the crea
   typeInto(r[0].querySelector('.av-title'), 'Opening');
   typeInto(r[0].querySelector('.av-artist'), 'X & Y & Z');
   typeInto(r[0].querySelector('.av-version'), 'Radio Edit');
-  typeInto(q('.av-advanced .av-end-input'), '1:00:30');
   tokens('Album title', 'My Mix');
   tokens('Album artists', 'Various');
   const year = qa('.album-fields input').find((i) => i.getAttribute('aria-label') === 'Year');
@@ -140,28 +138,9 @@ test('edits to start, artist, title, version and the album header reach the crea
   assert.deepEqual(body.album, { title: 'My Mix', albumArtist: 'Various', type: 'single', year: 2019, genres: [], coverUrl: 'https://i/t.jpg' });
   assert.deepEqual(body.tracks[0], { include: true, start: 0, end: 600, artists: ['X', 'Y', 'Z'], title: 'Opening', version: 'Radio Edit', trackNo: 1, useExistingSongId: null });
   assert.equal(body.tracks[2].start, 1890);
-  assert.equal(body.tracks[2].end, 3630);
+  assert.equal(body.tracks[2].end, 3600);
   assert.equal(body.tracks[1].include, false);
-  assert.equal(body.fades, false);
-  D().close();
-});
-
-test('fades follow the type until the user ticks the box', async () => {
-  const calls = server();
-  await open();
-  const box = q('.av-fades input');
-  assert.equal(box.checked, true);
-  const type = q('.album-fields select');
-  type.value = 'album';
-  fire(type, 'change');
-  assert.equal(box.checked, false);
-  tick(box, true);
-  type.value = 'single';
-  fire(type, 'change');
-  assert.equal(box.checked, true);
-  fire(createBtn(), 'click');
-  await settle();
-  assert.equal(post(calls, '/albums/from-video').fades, true);
+  assert.equal('fades' in body, false);
   D().close();
 });
 
@@ -178,13 +157,6 @@ test('add, remove, select all or none, offset all and sort keep the table consis
   assert.equal(createBtn().disabled, true);
   assert.match(q('.av-problems').textContent, /at least one/);
   fire(q('.av-select-all'), 'click');
-
-  const delta = q('.av-delta');
-  delta.value = '10';
-  fire(qa('button').find((b) => b.textContent === 'Later'), 'click');
-  assert.equal(rows()[1].querySelector('.av-start').value, '00:10:10');
-  fire(qa('button').find((b) => b.textContent === 'Earlier'), 'click');
-  assert.equal(rows()[1].querySelector('.av-start').value, '00:10:00');
 
   fire(qa('button').find((b) => /^Add a track/.test(b.textContent)), 'click');
   assert.equal(rows().length, 4);
@@ -373,17 +345,6 @@ test('type defaults to Album when the preview has none, and is never forced to M
   D().close();
 });
 
-test('the Advanced disclosure holds the shift control with the seconds label; Earlier and Later move every start', async () => {
-  server();
-  await open();
-  const adv = q('details.av-advanced');
-  assert.equal(adv.querySelector('summary').textContent, 'Advanced');
-  assert.ok(adv.textContent.includes('seconds'));
-  assert.equal(qa('button').filter((b) => b.textContent === 'Earlier' || b.textContent === 'Later').every((b) => adv.contains(b)), true);
-  assert.equal(q('.av-bar-row').nextSibling, q('ul.av-rows'));
-  D().close();
-});
-
 test('backdrop: inner clicks, padding clicks and a drag that started inside never close; a plain backdrop click closes unless the form is dirty', async () => {
   server();
   await open();
@@ -449,5 +410,25 @@ test('a row with a problem shows the marker and message while collapsed', async 
   assert.equal(row.querySelector('.av-issue').hidden, false);
   assert.match(row.querySelector('.av-label').textContent, /A & B/);
   assert.match(q('.av-problems').textContent, /Title is empty/);
+  D().close();
+});
+
+test('an auto-matched Discogs release shows the muted line and its cover, and the create body carries the Discogs cover', async () => {
+  const calls = server({ preview: () => ok({ ...PV, album: { ...PV.album, coverUrl: 'https://i.discogs.com/c.jpg' }, links: { discogs: 'https://www.discogs.com/master/1022405' }, discogsMatch: 'https://www.discogs.com/master/1022405' }) });
+  await open();
+  assert.match(q('.av-matched').textContent, /^Matched on Discogs/);
+  assert.equal(q('.av-matched a').getAttribute('href'), 'https://www.discogs.com/master/1022405');
+  assert.equal(q('img.av-cover').getAttribute('src'), 'https://i.discogs.com/c.jpg');
+  fire(createBtn(), 'click');
+  await settle();
+  assert.equal(post(calls, '/albums/from-video').album.coverUrl, 'https://i.discogs.com/c.jpg');
+  D().close();
+});
+
+test('without a match there is no Matched line and the cover is the thumbnail', async () => {
+  server();
+  await open();
+  assert.equal(q('.av-matched'), null);
+  assert.equal(q('img.av-cover').getAttribute('src'), 'https://i/t.jpg');
   D().close();
 });
