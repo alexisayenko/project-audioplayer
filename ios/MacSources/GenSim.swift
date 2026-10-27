@@ -105,7 +105,7 @@ final class GenSim {
             let dt = Double(deg[ls[i].t.id]!)
             ls[i].strength = (ls[i].related ? 0.15 : 1) / min(ds, dt)
             ls[i].dist = (ls[i].related ? 1.6 : 1) * linkDistance + ls[i].s.r + ls[i].t.r
-            ls[i].bias = ds / (ds + dt)
+            ls[i].bias = dt / (ds + dt)
         }
         links = ls
     }
