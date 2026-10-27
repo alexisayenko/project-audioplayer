@@ -4,13 +4,10 @@ from __future__ import annotations
 
 import json
 import logging
-import os
-import shutil
 from pathlib import Path
 from typing import Any
 
-from . import deps, genre_eras as eras, users
-from .jsonio import write_json_atomic
+from . import deps, genre_eras as eras, migration, users
 
 BACKUP_DIR = "backups-genre-eras-seed"
 MARKER_VERSION = 2
@@ -20,24 +17,15 @@ _log = logging.getLogger(__name__)
 
 
 def enabled() -> bool:
-    return os.environ.get("AUDIO_GENRE_ERAS_SEED", "1").strip() != "0"
-
-
-def base_dir() -> Path:
-    return deps.SYNC.data_repo if deps.SYNC else deps.data_root()
+    return migration.enabled("AUDIO_GENRE_ERAS_SEED")
 
 
 def marker_path() -> Path:
-    return base_dir() / BACKUP_DIR / "applied.json"
+    return migration.base_dir() / BACKUP_DIR / migration.MARKER_FILE
 
 
 def _handled() -> set[str]:
-    try:
-        marker = json.loads(marker_path().read_text(encoding="utf-8"))
-    except (OSError, ValueError):
-        return set()
-    if not isinstance(marker, dict):
-        return set()
+    marker = migration.read_marker(marker_path())
     if marker.get("marker") == 1:
         return set(LEGACY_GENRES)
     genres = marker.get("genres")
@@ -58,14 +46,11 @@ def _apply(handled: set[str], pending: dict[str, list[dict[str, Any]]]) -> int:
         added = 0
         if todo:
             if eras.path().exists():
-                backup = marker_path().parent / eras.FILE_NAME
-                backup.parent.mkdir(parents=True, exist_ok=True)
-                if not backup.exists():
-                    shutil.copy2(eras.path(), backup)
+                migration.backup_once(eras.path(), marker_path().parent / eras.FILE_NAME)
             doc.update(todo)
             eras.save(doc)
             added = sum(len(rows) for rows in todo.values())
-        write_json_atomic(marker_path(), {"marker": MARKER_VERSION, "genres": sorted(handled | set(pending)), "eras": added})
+        migration.write_marker(marker_path(), {"marker": MARKER_VERSION, "genres": sorted(handled | set(pending)), "eras": added})
     return added
 
 
