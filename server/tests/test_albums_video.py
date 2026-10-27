@@ -105,6 +105,16 @@ def test_preview_errors(client, video):
     assert client.post("/albums/from-video/preview", json={"url": URL}).status_code == 401
 
 
+def test_preview_allow_empty_gives_no_tracks_instead_of_422(client, video):
+    video["details"]["description"] = "nothing here"
+    previewcache.clear()
+    r = client.post("/albums/from-video/preview", json={"url": URL, "allowEmpty": True}, headers=H)
+    data = r.json()
+    assert (r.status_code, data["source"], data["tracks"], data["warnings"], data["uploader"], data["duration"]) == (200, "none", [], [], "Chan", 3600.0)
+    assert data["album"]["albumArtist"] and data["album"]["title"]
+    assert pv(client).status_code == 422
+
+
 def test_preview_limits_are_413(client, video, multi):
     a = who(multi, ALICE)
     video["details"] = {**DETAILS, "duration": 5 * 3600}

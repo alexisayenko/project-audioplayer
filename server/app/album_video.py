@@ -92,8 +92,8 @@ def _tracks_out(found: Any, duration: float | None, songs: list[dict[str, Any]])
     return out
 
 
-def _parsed(details: dict[str, Any], text: str | None) -> tuple[Any, str, str]:
-    """(result, source, rawText): a pasted text, else the chapters, else the description; a result needs at least two tracks."""
+def _parsed(details: dict[str, Any], text: str | None, allow_empty: bool = False) -> tuple[Any, str, str]:
+    """(result, source, rawText): a pasted text, else the chapters, else the description; a result needs at least two tracks. With `allow_empty` a video without a track list gives no tracks and source "none" (the Add album wizard pastes the list later)."""
     duration = _number(details["duration"])
     if text is not None:
         pasted = tracklist.parse_tracklist(text, duration)
@@ -107,10 +107,12 @@ def _parsed(details: dict[str, Any], text: str | None) -> tuple[Any, str, str]:
     found = tracklist.parse_tracklist(description, duration) if description.strip() else None
     if found is not None and len(found.tracks) >= MIN_TRACKS:
         return found, "description", description[:MAX_RAW_CHARS]
+    if allow_empty:
+        return tracklist.TracklistResult(), "none", ""
     raise _bad("no tracklist found")
 
 
-def preview(uid: str, owner: bool, url: Any, songs: list[dict[str, Any]], text: Any = None) -> dict[str, Any]:
+def preview(uid: str, owner: bool, url: Any, songs: list[dict[str, Any]], text: Any = None, allow_empty: bool = False) -> dict[str, Any]:
     """The video, its track list parsed from chapters, the description or `text`, and an album guess; nothing is created."""
     vid = video_id_of(url)
     if text is not None and (not isinstance(text, str) or len(text) > MAX_TEXT_CHARS):
@@ -119,7 +121,7 @@ def preview(uid: str, owner: bool, url: Any, songs: list[dict[str, Any]], text: 
     details = _details(vid)
     duration = _number(details["duration"])
     _check_size(duration, 0)
-    found, source, raw = _parsed(details, text)
+    found, source, raw = _parsed(details, text, allow_empty)
     _check_size(duration, len(found.tracks))
     tracks = _tracks_out(found, duration, songs)
     hint = album_youtube.guess(details["title"], details["uploader"], details["description"])

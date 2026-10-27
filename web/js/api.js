@@ -306,7 +306,7 @@ export const api = {
   patchAlbum: (id, body) => request('PATCH', `/albums/${q(id)}`, body),
   albumYoutubePreview: (url) => request('POST', '/albums/youtube/preview', { url }),
   albumYoutubeCommit: (body) => request('POST', '/albums/youtube/commit', body),
-  albumVideoPreview: (url) => request('POST', '/albums/from-video/preview', { url }),
+  albumVideoPreview: (url, allowEmpty = false) => request('POST', '/albums/from-video/preview', allowEmpty ? { url, allowEmpty: true } : { url }),
   albumVideoPreviewText: (body) => request('POST', '/albums/from-video/preview-text', body),
   albumFromVideo: (body) => request('POST', '/albums/from-video', body),
   job: (id) => request('GET', `/jobs/${q(id)}`),

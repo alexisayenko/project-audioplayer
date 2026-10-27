@@ -44,7 +44,7 @@ export function normalisePasted(text) {
 
 export function newDraft() {
   return {
-    step: 'link', address: '', url: '', kind: null, pasteText: '', needPaste: false,
+    step: 'link', address: '', url: '', kind: null, pasteText: '',
     preview: null, st: null, base: null, fields: { artist: '', album: '', year: '' }, edited: false,
     discogs: { key: '', state: 'idle', all: false, candidates: [], error: '', pick: null, resolved: null, auto: false },
     review: null, art: { chosen: null },
@@ -56,12 +56,21 @@ export function newDraft() {
 
 export function applyPreview(draft, kind, url, preview) {
   const st = kind === 'video' ? stateOf(preview, url) : playlistState(preview, url);
-  const keep = { address: draft.address, pasteText: draft.pasteText, pastedUsed: draft.pastedUsed || '', needPaste: draft.needPaste };
+  const keep = { address: draft.address, pasteText: draft.pasteText };
   Object.assign(draft, newDraft(), keep, { kind, url, preview, st, step: 'details' });
   draft.base = { artist: st.album.albumArtist, album: st.album.title, year: st.album.year };
   draft.fields = { ...draft.base };
   draft.album = { type: normalType(st.album.type), genres: [...st.album.genres], links: { ...st.album.links } };
   draft.art.chosen = null;
+  return draft;
+}
+
+export function applyTracks(draft, preview, text = '') {
+  const next = stateOf(preview, draft.url);
+  Object.assign(draft.st, { rows: next.rows, source: next.source, rawText: next.rawText, warnings: next.warnings, endTime: next.endTime || draft.st.endTime });
+  draft.pasteText = text;
+  draft.edited = true;
+  buildReview(draft);
   return draft;
 }
 

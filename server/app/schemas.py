@@ -26,6 +26,7 @@ class TrimIn(BaseModel):
 
 class AlbumPreviewRequest(BaseModel):
     url: str = Field(min_length=1, max_length=2000)
+    allowEmpty: bool = False
 
 
 class AlbumVideoTextRequest(BaseModel):

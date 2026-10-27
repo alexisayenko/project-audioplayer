@@ -7,7 +7,7 @@ Status: BUILT on the web, 2026-10-27, not deployed. Checked only in unit tests a
 Add album accepts ONLY:
 
 1. a YouTube playlist link;
-2. a time-coded YouTube video link (chapters or description). A video without time codes keeps the paste-a-track-list fallback (time-coded text, or a lengths-only list, LIB-261).
+2. a YouTube video link, normally time-coded (chapters or description). A video without time codes is NOT blocked at step 1: it goes on with no tracks, and the Review step offers "No time codes? Paste a track list" (time-coded text, or a lengths-only list, LIB-261); the same step offers "Edit or paste a track list" when the found time codes look wrong.
 
 The field says "YouTube playlist or video address". Any other address is refused with "Add album takes a YouTube playlist or a video with time codes. Paste one of those."; a Discogs link also gets "Discogs fills the details after you add the YouTube link." The Discogs-release-address mode is gone (web only; `POST /albums/preview` stays on the server for shipped clients). Discogs remains the metadata filler: year, type, genres, cover, link, tracklist with lengths.
 
@@ -17,7 +17,7 @@ Case built now: no pre-existing tracks in the library. Linking tracks that alrea
 
 | # | Step | What the user does | Calls |
 | --- | --- | --- | --- |
-| 1 | Link | Enters the address, presses Fetch (the accent button inside the field, at its right end). A video with no time codes opens the paste box. | playlist: `POST /albums/youtube/preview`; video: `POST /albums/from-video/preview` or `/preview-text` |
+| 1 | Link | Enters the address, presses Fetch (the accent button inside the field, at its right end). A video with no time codes still goes on (no tracks yet). | playlist: `POST /albums/youtube/preview`; video: `POST /albums/from-video/preview` or `/preview-text` |
 | 2 | Details | Sees Artist, Album name and Year suggested from the title, channel and description (the server's guess, `album` of the preview). Artist and Album name are token pills like the song form (LIB-266); Year is wide enough for four digits. The found tracks are NOT listed here: one line, a link to the video or playlist, reads "channel · title · N tracks · h:mm:ss". An artist taken from a non-Topic channel name is flagged for a check. Adjusts the three fields. | none; Next starts the Discogs search |
 | 3 | Discogs | Confirms the album: ONE row per Discogs master (a deduplicated release when it has no master), "Show all releases", or "None of these". | `POST /albums/discogs/search {artist, title, year, all?}` (API-301), `POST /albums/discogs/resolve` (API-309) |
 | 4 | Review | One screen: album strip with Type; album art; genres; the Discogs tracklist with the matching YouTube track under each; one final button. | `POST /albums/genres/suggest` (API-310) |
@@ -54,8 +54,8 @@ Step 3 is skipped when exactly one candidate has the same artist and album title
 
 - One draft object (`album-wizard-model.js`) is owned by the shell; steps render from it and write back on input, so Back never loses typed text, the Discogs pick, the pairing, ticks or genres.
 - Next validates only the current step. Back never validates.
-- Fetch with an unchanged address (and unchanged pasted text) reuses the stored preview and makes no call.
-- Changing the address after the user edited anything asks once: "Start over from this link? Your edits to the album and tracks will be replaced." The button becomes "Replace my edits"; typing in the field cancels the question.
+- Fetch with an unchanged address reuses the stored preview and makes no call.
+- Changing the address after the user edited anything asks once: "Start over from this link? Your edits to the album and tracks will be replaced." The Fetch button becomes "Replace" (accessible name "Replace my edits"); typing in the field cancels the question.
 - Changing Artist, Album name or Year makes Next search Discogs again and drops the pick and the review (the genre pills the user edited are kept). Unchanged fields reuse the list and the pick.
 - A dirty draft is not closed by a backdrop click (existing `backdropClose` rule); Cancel and Esc close.
 - Enter in the address field fetches; Enter in a Details field goes next; Enter in a row field closes only that row editor.
@@ -70,8 +70,8 @@ All texts reuse the existing helpers (`previewErrorText`, `youtubeErrorText`, `c
 | Mix, private list | Link | the existing Mix and private messages |
 | Not YouTube (also Discogs) | Link | section 1 |
 | 400, 404, 413, 429, 502 on preview | Link | existing texts; field and address kept |
-| Video with no time codes (422 or no tracks) | Link | paste box opens: "No track list was found in this video. Paste it below." |
-| Pasted text without tracks | Link | "No tracks found in this text. Each line needs a time, like 03:45 Artist - Title." |
+| Video with no time codes | Review | "No time codes were found in this video, so there are no YouTube tracks yet." and the link "No time codes? Paste a track list"; the final button stays disabled |
+| Pasted text without tracks | Review (paste box) | "No tracks found in this text. Each line needs a time, like 03:45 Artist - Title." |
 | Playlist without playable videos | Link | "This playlist has no playable videos." |
 | Offline (`navigator.onLine` false) or the server unreachable | any step with a call | "You are offline. Adding an album needs the server." or "The server could not be reached. Check the connection and try again." Nothing is lost. |
 | Library or storage full, hourly limit, album limit | Review | the existing create texts; the draft is kept |

@@ -139,7 +139,7 @@ test('other links get a clear error and no request; a Discogs link gets one extr
 test('Fetch reads the video and step 2 suggests artist, album and year without listing the tracks', async () => {
   const calls = server();
   await fetchStep();
-  assert.deepEqual(post(calls, '/albums/from-video/preview'), { url: VIDEO });
+  assert.deepEqual(post(calls, '/albums/from-video/preview'), { url: VIDEO, allowEmpty: true });
   assert.match(stepText(), /^Step 2 of 5 · Details$/);
   assert.deepEqual(tokenFields().map(pills), [['Hallucinogen'], ['Twisted']]);
   assert.equal(yearIn().value, '1995');
@@ -433,26 +433,70 @@ test('a problem blocks the button and is said in the problems line', async () =>
   D().close();
 });
 
-test('a video without time codes opens the paste box; lengths-only text is sent as time codes', async () => {
-  const calls = server({ preview: () => ({ status: 422, body: { detail: 'no tracklist found' } }) });
+const NO_CODES = { ...PV, source: 'none', tracks: [], warnings: [] };
+
+test('step 1 has no paste box; a video without time codes still gets through steps 2 and 3', async () => {
+  const calls = server({ preview: () => ok(NO_CODES) });
   await fetchStep();
-  assert.match(q('.wiz-paste').textContent, /No track list was found in this video/);
-  assert.equal(q('.wiz-paste').hidden, false);
-  assert.match(stepText(), /Link/);
-  type(q('.wiz-paste textarea'), '1 A - One 3:45\n2 Two 4:00');
-  await go();
-  assert.equal(post(calls, '/albums/from-video/preview-text').text, '00:00:00 A - One\n00:03:45 Two');
+  assert.equal(q('.wiz-paste'), null);
+  assert.equal(post(calls, '/albums/from-video/preview').allowEmpty, true);
   assert.match(stepText(), /Details/);
+  assert.equal(q('.wiz-source').textContent, 'Topic · Hallucinogen - Twisted (1995) [FULL ALBUM] · 20:00');
+  await go();
+  await settle();
+  assert.match(stepText(), /Review/);
   D().close();
 });
 
-test('pasted text with no tracks stays in the paste box with a hint', async () => {
-  server({ preview: () => ({ status: 422, body: {} }), previewText: () => ({ status: 422, body: {} }) });
+test('Review of a video without time codes is empty with the paste action; lengths-only text is sent as time codes and fills the matches', async () => {
+  const calls = server({ preview: () => ok(NO_CODES) });
   await fetchStep();
-  type(q('.wiz-paste textarea'), 'nothing useful');
   await go();
-  assert.match(q('.wiz-msg').textContent, /No tracks found in this text/);
-  assert.match(stepText(), /Link/);
+  await settle();
+  assert.equal(rows().filter((r) => r.querySelector('select')).length, 4);
+  assert.match(q('.wiz-no-tracks').textContent, /No time codes were found/);
+  assert.equal(q('.wiz-no-tracks').hidden, false);
+  assert.equal(nextBtn().disabled, true);
+  assert.match(q('.av-problems').textContent, /Tick at least one track/);
+  const toggle = q('.wiz-paste-toggle');
+  assert.equal(toggle.textContent, 'No time codes? Paste a track list');
+  assert.equal(q('.wiz-paste').hidden, true);
+  fire(toggle, 'click');
+  assert.equal(q('.wiz-paste').hidden, false);
+  type(q('.wiz-paste textarea'), '1 Hallucinogen - LSD 5:00\n2 Snakey Shaker 4:40\n3 Gloople 8:20');
+  fire(q('.wiz-paste-apply'), 'click');
+  await settle();
+  assert.equal(post(calls, '/albums/from-video/preview-text').text, '00:00:00 Hallucinogen - LSD\n00:05:00 Snakey Shaker\n00:09:40 Gloople');
+  assert.match(stepText(), /Review/);
+  assert.equal(q('.wiz-no-tracks').hidden, true);
+  assert.equal(q('.wiz-paste-toggle').textContent, 'Edit or paste a track list');
+  assert.ok(rows().some((r) => /LSD/.test(r.textContent)));
+  assert.equal(nextBtn().disabled, false);
+  D().close();
+});
+
+test('pasted text with no tracks keeps the paste box with a hint and changes nothing', async () => {
+  server({ preview: () => ok(NO_CODES), previewText: () => ({ status: 422, body: {} }) });
+  await fetchStep();
+  await go();
+  await settle();
+  fire(q('.wiz-paste-toggle'), 'click');
+  type(q('.wiz-paste textarea'), 'nothing useful');
+  fire(q('.wiz-paste-apply'), 'click');
+  await settle();
+  assert.match(q('.wiz-paste-note').textContent, /No tracks found in this text/);
+  assert.equal(q('.wiz-paste').hidden, false);
+  assert.equal(nextBtn().disabled, true);
+  D().close();
+});
+
+test('a video with time codes offers "Edit or paste a track list" in Review', async () => {
+  server();
+  await fetchStep();
+  await go();
+  await settle();
+  assert.equal(q('.wiz-no-tracks').hidden, true);
+  assert.equal(q('.wiz-paste-toggle').textContent, 'Edit or paste a track list');
   D().close();
 });
 

@@ -17,7 +17,7 @@ User = Annotated[dict[str, Any], Depends(deps.require_token)]
 @router.post("/albums/from-video/preview", responses=deps.responses(400, 404, 413, 422, 429, 502))
 async def preview_video(req: AlbumPreviewRequest, user: User):
     songs = await run_in_threadpool(deps.load_songs, user["uid"])
-    return await run_in_threadpool(album_video.preview, user["uid"], user["owner"], req.url, songs)
+    return await run_in_threadpool(album_video.preview, user["uid"], user["owner"], req.url, songs, None, req.allowEmpty)
 
 
 @router.post("/albums/from-video/preview-text", responses=deps.responses(400, 404, 413, 422, 429, 502))

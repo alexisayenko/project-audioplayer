@@ -7,6 +7,7 @@ import {
   OFFLINE_MESSAGE,
 } from './album-wizard-model.js';
 import { mountRows } from './album-wizard-rows.js';
+import { mountPaste } from './album-wizard-paste.js';
 import { artPicker, genreArea, typeSelect } from './album-wizard-extras.js';
 
 export const NETWORK_MESSAGE = 'The server could not be reached. Check the connection and try again.';
@@ -43,6 +44,9 @@ export function mountReview(ctx) {
   const problems = el('p', { class: 't-caption muted av-problems', role: 'status' });
   const quota = el('p', { class: 't-caption muted album-quota', hidden: draft.kind !== 'playlist' });
   const rows = mountRows(ctx, (redraw, focus) => { if (redraw) rows.draw(focus); paint(); });
+  const bare = draft.kind === 'video' && draft.st.rows.length === 0;
+  const noTracks = el('p', { class: 'muted t-subhead wiz-no-tracks', hidden: !bare }, 'No time codes were found in this video, so there are no YouTube tracks yet.');
+  const paste = draft.kind === 'video' ? mountPaste(ctx, { empty: bare }).node : null;
 
   function paint() {
     const issues = createIssues(draft);
@@ -67,7 +71,9 @@ export function mountReview(ctx) {
         ? 'The Discogs tracklist, with the matching track from the YouTube address under each. Pick another, or skip a track.'
         : 'The tracks found at the YouTube address.'),
       el('div', { class: 'av-bar-row' }, stat, toggle),
+      noTracks,
       rows.node,
+      paste,
       problems,
       draft.kind === 'video'
         ? el('p', { class: 't-caption muted' }, 'Tick the tracks to import. The whole split counts as one add.')

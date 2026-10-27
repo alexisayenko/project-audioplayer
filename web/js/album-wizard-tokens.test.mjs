@@ -66,6 +66,20 @@ test('the channel is only flagged when it became the artist and is not a Topic c
   assert.equal(fromChannel(d), false);
 });
 
+test('applyTracks fills a video that had no time codes and rebuilds the review without touching the fields', () => {
+  const d = make('video', { ...VIDEO, source: 'none', tracks: [] });
+  assert.equal(d.st.rows.length, 0);
+  d.fields.album = 'Edited';
+  M.buildReview(d);
+  assert.deepEqual(M.createIssues(d), ['Tick at least one track.']);
+  M.applyTracks(d, { ...VIDEO, source: 'pasted' }, 'x');
+  assert.equal(d.st.rows.length, 3);
+  assert.equal(d.st.source, 'pasted');
+  assert.equal(d.fields.album, 'Edited');
+  assert.equal(d.pasteText, 'x');
+  assert.equal(M.createIssues(d).length, 0);
+});
+
 test('CSS: the Year input keeps four digits plus its padding in any row and the Fetch button sits inside the address well', () => {
   const css = readFileSync(new URL('../albums.css', import.meta.url), 'utf8');
   const rule = css.match(/input\[type=text\]\.album-year \{([^}]*)\}/)?.[1] || '';
