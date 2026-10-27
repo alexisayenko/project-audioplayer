@@ -12,7 +12,9 @@ import { genreChip } from './genre-chip.js';
 import { loadGenreTree, cachedTree } from './genre-tree.js';
 import { songMatches } from './song-match.js';
 import { playlistLink, MIX_MESSAGE, PRIVATE_MESSAGE } from './playlist-link.js';
-import { startDownloads, mountDownloadStatus } from './albums-youtube.js';
+import { mountDownloadStatus } from './albums-youtube.js';
+import { createYoutubeFlow } from './album-youtube-flow.js';
+import { ALBUMS_CHANGED, fold, lengthText, fetchErrorText, errorCode } from './album-candidates.js';
 import { albumCoverImg, albumCoverSection } from './albums-cover.js';
 import { createVideoFlow } from './album-video.js';
 import { videoLink } from './album-video-model.js';
@@ -31,18 +33,12 @@ import { ROW_FLASH_MS } from './constants.js';
 import { countOf, totalTime, albumLength, bpmRange, FACETS, facetValues, matchesFacets, matchesQuery, ALBUM_SORTS, albumPrefs, sortedAlbums, saveAlbumPrefs } from './albums-model.js';
 
 export { totalTime, bpmRange, facetValues, matchesFacets };
+export { ALBUMS_CHANGED, QUOTA_PER_HOUR, fetchErrorText, errorCode, youtubeErrorText, candidateLines, candidateBody, candidateRow, matchMap, autoMatch, candidatePayload } from './album-candidates.js';
 
 export const albumIdOf = (hash) => {
   const m = /^#\/library\/albums\/([^/?#]+)$/.exec(hash || '');
   return m ? decodeURIComponent(m[1]) : '';
 };
-
-export function fetchErrorText(ex) {
-  if (ex.status === 400 || ex.code === 'bad_url') return 'This is not a Discogs release link. Paste an address like discogs.com/release/545650-Derango-Tumult.';
-  if (ex.status === 404 || ex.code === 'not_found') return 'Discogs has no release at this address.';
-  if (ex.status === 503 || ex.code === 'discogs_unavailable') return 'Discogs is not available right now. Try again later.';
-  return ex.message || 'The release could not be fetched.';
-}
 
 function totalNode(tracks) {
   const len = albumLength(tracks);
@@ -66,23 +62,11 @@ export function albumHead(a, tag = 'span', onName = null) {
     genres.length ? el('div', { class: 'chips album-genres' }, genres.map((g) => el('span', { class: 'chip tint' }, g))) : null);
 }
 
-const lengthText =(s) => (Number.isFinite(s) && s >= 0 ? fmtTime(s) : '');
 const trackLine = (t) => el('li', { class: 'album-track' },
   el('span', { class: 'album-no muted t-caption' }, t.no),
   el('span', { class: 'album-name t-subhead' }, t.title),
   el('span', { class: 'album-len muted t-caption' }, lengthText(t.durationS)));
 const trackList = (tracks) => el('ol', { class: 'album-tracks' }, tracks.map(trackLine));
-
-function matchMark(c, m) {
-  if (!c) return null;
-  if (m) return el('span', { class: 'album-match t-caption' }, `→ ${m.no}. ${m.title}`);
-  return el('span', { class: 'album-match album-nomatch muted t-caption' }, 'no match');
-}
-
-function searchErrorText(code) {
-  if (!code) return '';
-  return code === 'discogs_unavailable' ? 'Discogs is not available right now.' : 'The Discogs search failed.';
-}
 
 const httpUrl = (v) => (typeof v === 'string' && /^https?:\/\/\S+$/i.test(v.trim()) ? v.trim() : null);
 
@@ -156,7 +140,6 @@ function linkFields(album) {
   });
 }
 
-const fold = (s) => String(s ?? '').normalize('NFD').replaceAll(/\p{M}/gu, '').toLowerCase().trim();
 const songLength = (s) => (Number.isFinite(s?.duration) && s.duration > 0 ? fmtTime(s.duration) : '-');
 
 export function candidateMeta(s) {
@@ -674,102 +657,6 @@ function paintCurrent(list) {
   for (const li of list.querySelectorAll('li.album-row')) rowPaints.get(li)?.();
 }
 
-export const ALBUMS_CHANGED = 'albums-changed';
-
-const countOfList = (x) => (Array.isArray(x) ? x.length : Number(x) || 0);
-
-export function errorCode(ex) {
-  const d = ex?.data?.detail;
-  return ex?.code || (typeof d === 'string' ? d : d?.code) || '';
-}
-
-export function youtubeErrorText(ex) {
-  const code = errorCode(ex);
-  if (code === 'library_full_songs') return 'Your library is full. Remove some songs and try again.';
-  if (code === 'bad_selection' || code === 'bad_mapping' || code === 'bad_album') return 'The selection could not be saved. Reload the playlist and try again.';
-  if (ex.status === 400 || ex.code === 'bad_url') return 'This is not a valid YouTube playlist link.';
-  if (ex.status === 404 || code === 'not_found') return 'YouTube has no playlist at this address, or it is private.';
-  if (ex.status === 502 || code === 'youtube_failed') return 'YouTube could not be read right now. Try again later.';
-  return ex.message || 'The playlist could not be read.';
-}
-
-const list = (v) => (Array.isArray(v) ? v.filter(Boolean).map(String) : []);
-
-export function candidateLines(c) {
-  const head = [c.artist, c.title].filter(Boolean).join(' - ');
-  const tracks = c.trackCount ? `${c.trackCount} ${plural(c.trackCount, 'track', 'tracks')}` : '';
-  const sub = [c.year, tracks].filter(Boolean).join(' · ');
-  const labels = list(c.labels).join(', ');
-  const catnoText = c.catno ? String(c.catno) : '';
-  const catnoSuffix = catnoText ? ` (${c.catno})` : '';
-  const label = labels ? `${labels}${catnoSuffix}` : catnoText;
-  const meta = [list(c.formats).join(', '), label, c.country].filter(Boolean).join(' · ');
-  return { head, sub, meta };
-}
-
-export function candidateBody(c) {
-  const { head, sub, meta } = candidateLines(c);
-  const art = el('span', { class: 'row-cover album-cand-cover' }, el('span', { class: 'cover-mark', 'aria-hidden': 'true' }, icon('coverPlaceholder')));
-  if (typeof c.thumb === 'string' && /^https?:\/\//i.test(c.thumb)) {
-    const img = el('img', { class: 'cover', alt: '', loading: 'lazy', referrerpolicy: 'no-referrer', src: c.thumb });
-    img.addEventListener('error', () => img.remove());
-    art.append(img);
-  }
-  return [art,
-    el('span', { class: 'info album-cand-text' },
-      el('span', { class: 'album-cand-head' },
-        el('span', { class: 'album-cand-title t-headline' }, head),
-        c.best ? el('span', { class: 'chip tint album-best' }, 'Best match') : null),
-      sub ? el('span', { class: 'album-cand-sub muted t-caption' }, sub) : null,
-      meta ? el('span', { class: 'album-cand-meta muted t-caption' }, meta) : null)];
-}
-
-export function candidateRow(c, onPick) {
-  const { head, sub, meta } = candidateLines(c);
-  return el('button', { class: 'pl-pick-item album-cand', type: 'button', title: [head, sub, meta].filter(Boolean).join('\n'), onclick: onPick }, ...candidateBody(c));
-}
-
-export function matchMap(c) {
-  const m = new Map();
-  const raw = c?.matches && typeof c.matches === 'object' && !Array.isArray(c.matches) ? c.matches : {};
-  const titles = new Map((Array.isArray(c?.tracks) ? c.tracks : []).map((t) => [t.no, t.title]));
-  for (const [key, no] of Object.entries(raw)) {
-    const pos = Number(key);
-    if (Number.isInteger(pos) && Number.isInteger(no)) m.set(pos, { position: pos, no, title: titles.get(no) || '' });
-  }
-  return m;
-}
-
-export function autoMatch(tracks, candTracks) {
-  const ct = Array.isArray(candTracks) ? candTracks : [];
-  const used = new Set();
-  const out = {};
-  for (const t of tracks) {
-    const hit = ct.find((x) => !used.has(x.no) && fold(x.title) === fold(t.title));
-    if (hit) { used.add(hit.no); out[t.position] = hit.no; }
-  }
-  for (const t of tracks) {
-    if (t.position in out) continue;
-    const ft = fold(t.title);
-    const hit = ct.find((x) => !used.has(x.no) && fold(x.title).length >= 3 && ft.includes(fold(x.title)));
-    if (hit) { used.add(hit.no); out[t.position] = hit.no; }
-  }
-  if (!Object.keys(out).length && ct.length === tracks.length) tracks.forEach((t, i) => { out[t.position] = ct[i].no; });
-  return out;
-}
-
-export function candidatePayload(c, playlistUrl) {
-  return {
-    title: c.title, artist: c.artist, year: c.year ?? null, genres: list(c.genres),
-    ...(c.source && typeof c.source === 'object' ? { source: c.source } : {}),
-    ...(Number.isInteger(c.discogsId) ? { discogsId: c.discogsId } : {}),
-    tracks: Array.isArray(c.tracks) ? c.tracks : [],
-    links: { ...c.links, discogs: c.url, youtube: playlistUrl },
-  };
-}
-
-export const QUOTA_PER_HOUR = 20;
-
 export function openAddAlbum(opener = null) {
   const dlg = document.getElementById('add-dialog');
   const url = el('input', { type: 'text', placeholder: 'Discogs release, YouTube playlist or video address', 'aria-label': 'Discogs release, YouTube playlist or video address', autocomplete: 'off', inputMode: 'url' });
@@ -782,8 +669,6 @@ export function openAddAlbum(opener = null) {
     message.replaceChildren(text ? el('p', { class: 'msg error' }, text, ...tail) : '');
   };
   let live = true;
-  let yt = null;
-  let owner = false;
   const video = createVideoFlow({
     body, say, genreEditor, isLive: () => live,
     setBusy: (on) => { fetchBtn.disabled = on; },
@@ -795,6 +680,14 @@ export function openAddAlbum(opener = null) {
       void store.refresh().catch(() => {});
       if (albumId) location.hash = `#/library/albums/${encodeURIComponent(albumId)}`;
     },
+  });
+
+  const youtube = createYoutubeFlow({
+    body, say, close: () => dlg.close(), isLive: () => live, openAlbumCard,
+    setBusy: (on) => { fetchBtn.disabled = on; },
+    hideForm: () => { form.hidden = true; },
+    showForm: () => { form.hidden = false; url.focus(); },
+    clearUrl: () => { url.value = ''; },
   });
 
   function paintPreview(preview) {
@@ -846,233 +739,6 @@ export function openAddAlbum(opener = null) {
     }
   }
 
-  const chosen = () => (yt && yt.sel >= 0 ? yt.candidates[yt.sel] || null : null);
-
-  function applyDefaults() {
-    const c = chosen();
-    const mp = c ? matchMap(c) : null;
-    for (const t of yt.tracks) {
-      if (yt.manual.has(t.position)) continue;
-      yt.checked[t.position] = mp ? mp.has(t.position) : true;
-    }
-  }
-
-  function pickCandidate(i) {
-    yt.sel = i;
-    yt.expanded = false;
-    applyDefaults();
-    renderYt();
-  }
-
-  async function searchAgain() {
-    yt.searching = true;
-    renderYt();
-    try {
-      const r = await api.albumDiscogsSearch({
-        artist: yt.searchArtist.trim() || undefined,
-        album: yt.searchAlbum.trim() || undefined,
-        trackCount: yt.tracks.length,
-        durationsS: yt.tracks.map((t) => t.durationS),
-        playlistTracks: yt.tracks.map(({ position, title, durationS }) => ({ position, title, durationS })),
-      });
-      if (!live) return;
-      yt.candidates = Array.isArray(r?.candidates) ? r.candidates : [];
-      yt.searchError = '';
-      const best = yt.candidates.findIndex((c) => c.best);
-      yt.sel = yt.candidates.length ? Math.max(0, best) : -1;
-    } catch (ex) {
-      if (!live) return;
-      yt.searchError = ex.status === 503 || errorCode(ex) === 'discogs_unavailable' ? 'Discogs is not available right now.' : (ex.message || 'The search failed.');
-      yt.candidates = [];
-      yt.sel = -1;
-    }
-    yt.searching = false;
-    yt.expanded = false;
-    applyDefaults();
-    renderYt();
-  }
-
-  async function addPasted(address) {
-    say('');
-    fetchBtn.disabled = true;
-    try {
-      const pv = await api.albumPreview(address);
-      if (!live) return;
-      const cand = {
-        url: address, title: pv.title, artist: pv.artist, year: pv.year, trackCount: (pv.tracks || []).length, genres: pv.genres, source: pv.source,
-        tracks: pv.tracks || [], links: { discogs: address }, matches: autoMatch(yt.tracks, pv.tracks),
-      };
-      yt.candidates = [cand, ...yt.candidates];
-      yt.sel = 0;
-      yt.expanded = false;
-      form.hidden = true;
-      url.value = '';
-      applyDefaults();
-      renderYt();
-    } catch (ex) {
-      if (live) say(fetchErrorText(ex));
-    } finally {
-      fetchBtn.disabled = false;
-    }
-  }
-
-  async function commit(create) {
-    const c = chosen();
-    const positions = yt.tracks.filter((t) => yt.checked[t.position]).map((t) => t.position);
-    const fallback = { title: yt.fb.title.trim(), artist: yt.fb.artist.trim(), year: /^\d{1,4}$/.test(yt.fb.year.trim()) ? Number(yt.fb.year.trim()) : null };
-    if (!c && !fallback.title) { say('Give the album a title.'); return; }
-    say('');
-    create.disabled = true;
-    try {
-      const { candidate, mapping } = await candidateWithMapping(c, positions);
-      const selected = yt.tracks.filter((t) => yt.checked[t.position]).map(({ position, videoId, title, durationS }) => ({ position, videoId, title, durationS: durationS ?? null }));
-      const r = await api.albumYoutubeCommit({ playlistUrl: yt.url, selected, candidate, mapping, fallback });
-      dlg.close();
-      window.dispatchEvent(new Event(ALBUMS_CHANGED));
-      const ids = (r.songs || []).map((s) => s.songId);
-      const k = await startDownloads(ids);
-      const linked = countOfList(r.linked);
-      const unlinked = countOfList(r.unlinked);
-      toast(`Album created, ${linked} ${plural(linked, 'song', 'songs')} linked, ${unlinked} not matched; downloading ${k} ${plural(k, 'track', 'tracks')}`);
-    } catch (ex) {
-      create.disabled = false;
-      sayCommitError(ex);
-    }
-  }
-
-  async function candidateWithMapping(c, positions) {
-    if (!c) return { candidate: null, mapping: {} };
-    let candidate = candidatePayload(c, yt.url);
-    if (!candidate.tracks.length) {
-      const pv = await api.albumPreview(c.url);
-      candidate = { ...candidate, tracks: pv.tracks || [], genres: candidate.genres.length ? candidate.genres : list(pv.genres), source: candidate.source || pv.source };
-    }
-    const mapping = {};
-    const mp = matchMap(c);
-    for (const pos of positions) if (mp.has(pos)) mapping[pos] = mp.get(pos).no;
-    return { candidate, mapping };
-  }
-
-  function sayCommitError(ex) {
-    if (ex.status !== 409 || errorCode(ex) !== 'already_exists') { say(youtubeErrorText(ex)); return; }
-    const existing = ex.data?.id ?? ex.data?.detail?.id;
-    say('This album already exists.', existing ? el('button', { class: 'link-btn t-caption', type: 'button', onclick: () => { void api.album(existing).then((full) => { dlg.close(); openAlbumCard(full); }, (error_) => say(error_.message)); } }, 'Open it') : null);
-  }
-
-  function candidateRadio(c, i, on) {
-    const radio = el('input', { type: 'radio', name: 'album-cand', 'aria-label': `${candidateLines(c).head}`, checked: on, onchange: () => pickCandidate(i) });
-    const { head, sub, meta } = candidateLines(c);
-    return el('label', { class: 'pl-pick-item album-cand album-cand-radio', title: [head, sub, meta].filter(Boolean).join('\n') }, radio, ...candidateBody(c));
-  }
-
-  function renderPicker(c) {
-    const box = el('div', { class: 'album-picker' });
-    if (yt.searching) {
-      box.append(el('p', { class: 'muted t-caption', role: 'status' }, 'Searching Discogs...'));
-    } else if (yt.candidates.length) {
-      const open = el('a', { class: 'btn outline small album-open-discogs', href: c?.url || '#', target: '_blank', rel: 'noopener' }, 'Open on Discogs');
-      const change = el('button', { class: 'link-btn t-caption album-change', type: 'button', 'aria-expanded': String(yt.expanded), onclick: () => { yt.expanded = !yt.expanded; renderYt(); } }, yt.expanded ? 'Hide list' : 'Change');
-      let radios = c ? [candidateRadio(c, yt.sel, true)] : [];
-      if (yt.expanded) radios = yt.candidates.map((x, i) => el('div', { class: 'album-cand-item' }, candidateRadio(x, i, i === yt.sel)));
-      box.append(el('div', { class: 'album-picked', role: 'radiogroup', 'aria-label': 'Discogs release' },
-        ...radios),
-        el('div', { class: 'album-picker-actions' }, change, ...(c ? [open] : [])));
-    } else {
-      box.append(el('p', { class: 'muted t-subhead' }, yt.searchError || 'No matching releases found.'));
-    }
-    const artist = el('input', { type: 'text', 'aria-label': 'Artist', placeholder: 'Artist', autocomplete: 'off', value: yt.searchArtist });
-    const album = el('input', { type: 'text', 'aria-label': 'Album', placeholder: 'Album', autocomplete: 'off', value: yt.searchAlbum });
-    artist.addEventListener('input', () => { yt.searchArtist = artist.value; });
-    album.addEventListener('input', () => { yt.searchAlbum = album.value; });
-    const again = el('button', { class: 'btn outline small', type: 'submit', disabled: yt.searching }, 'Search again');
-    const searchForm = el('form', { class: 'album-search' }, artist, album, again);
-    searchForm.addEventListener('submit', (e) => { e.preventDefault(); void searchAgain(); });
-    const paste = el('button', { class: 'link-btn t-caption', type: 'button', onclick: () => { form.hidden = false; url.focus(); } }, 'Paste a Discogs link');
-    box.append(searchForm, paste);
-    return box;
-  }
-
-  function renderFallback() {
-    const field = (key, label, extra = {}) => {
-      const input = el('input', { type: 'text', 'aria-label': label, placeholder: label, autocomplete: 'off', value: yt.fb[key], ...extra });
-      input.addEventListener('input', () => { yt.fb[key] = input.value; });
-      return input;
-    };
-    return el('div', { class: 'album-fallback' },
-      el('p', { class: 't-caption muted' }, 'The album will be created from the playlist alone. Check its details:'),
-      field('title', 'Title'), field('artist', 'Artist'), field('year', 'Year', { inputMode: 'numeric' }));
-  }
-
-  function renderYt() {
-    const c = chosen();
-    const mp = c ? matchMap(c) : new Map();
-    const selected = yt.tracks.filter((t) => yt.checked[t.position]);
-    const toDownload = selected.filter((t) => !t.songId).length;
-    const guessLine = [[yt.guess.artist, yt.guess.album].filter(Boolean).join(' - '), yt.guess.year].filter(Boolean).join(' · ');
-    const head = el('div', { class: 'album-yt-head' },
-      el('div', { class: 't-headline' }, yt.playlist.title || 'YouTube playlist'),
-      guessLine ? el('div', { class: 'muted t-caption album-guess' }, `Looks like: ${guessLine}`) : null);
-    const allOn = yt.tracks.length > 0 && selected.length === yt.tracks.length;
-    const toggleAll = el('button', { class: 'link-btn t-caption album-select-all', type: 'button', onclick: () => {
-      for (const t of yt.tracks) { yt.checked[t.position] = !allOn; yt.manual.add(t.position); }
-      renderYt();
-    } }, allOn ? 'Select none' : 'Select all');
-    const rows = yt.tracks.map((t) => {
-      const box = el('input', { type: 'checkbox', checked: !!yt.checked[t.position], 'aria-label': `Track ${t.position}: ${t.title}`, onchange: (e) => { yt.checked[t.position] = e.currentTarget.checked; yt.manual.add(t.position); renderYt(); } });
-      const m = mp.get(t.position);
-      return el('li', { class: 'album-yt-track' }, el('label', { class: 'album-yt-row' },
-        box,
-        el('span', { class: 'album-no muted t-caption' }, `${t.position}.`),
-        el('span', { class: 'album-yt-title t-subhead' }, t.title),
-        t.songId ? el('span', { class: 'chip tint album-in-library' }, 'In library') : null,
-        el('span', { class: 'album-len muted t-caption' }, lengthText(t.durationS)),
-        matchMark(c, m)));
-    });
-    const create = el('button', { class: 'btn primary glow', type: 'button' }, icon('plus', 'nav'), toDownload > 0 ? `Create album and download ${toDownload} ${plural(toDownload, 'track', 'tracks')}` : 'Create album');
-    create.disabled = selected.length === 0 && !c;
-    create.addEventListener('click', () => { void commit(create); });
-    const cancel = el('button', { class: 'btn outline', type: 'button', onclick: () => dlg.close() }, 'Cancel');
-    body.replaceChildren(el('div', { class: 'add-card album-yt' },
-      head,
-      renderPicker(c),
-      c || yt.searching ? null : renderFallback(),
-      el('div', { class: 'album-yt-bar' }, el('span', { class: 't-caption muted album-yt-count', role: 'status' }, `${selected.length} of ${yt.tracks.length} selected`), toggleAll),
-      el('ul', { class: 'album-yt-tracks' }, rows),
-      owner ? null : el('p', { class: 't-caption muted album-quota' }, `${toDownload} selected, up to ${QUOTA_PER_HOUR} fetches an hour, it pauses and resumes`),
-      el('div', { class: 'add-foot' }, cancel, create)));
-  }
-
-  async function startYoutube(address) {
-    say('');
-    body.replaceChildren(el('p', { class: 'muted t-subhead', role: 'status' }, 'Reading the playlist...'));
-    fetchBtn.disabled = true;
-    try {
-      const r = await api.albumYoutubePreview(address);
-      if (!live) return;
-      const tracks = Array.isArray(r.tracks) ? r.tracks : [];
-      const guess = r.guess || {};
-      const candidates = Array.isArray(r.candidates) ? r.candidates : [];
-      const best = candidates.findIndex((c) => c.best);
-      yt = {
-        url: address, playlist: r.playlist || {}, guess, tracks, candidates,
-        sel: candidates.length ? Math.max(0, best) : -1,
-        searchError: searchErrorText(r.searchError),
-        expanded: false, searching: false, manual: new Set(), checked: {},
-        searchArtist: guess.artist || '', searchAlbum: guess.album || '',
-        fb: { title: guess.album || r.playlist?.title || '', artist: guess.artist || '', year: guess.year ? String(guess.year) : '' },
-      };
-      form.hidden = true;
-      applyDefaults();
-      renderYt();
-      void api.me().then((m) => { if (live && m?.owner === true) { owner = true; renderYt(); } }, () => {});
-    } catch (ex) {
-      body.replaceChildren();
-      if (live) say(youtubeErrorText(ex));
-    } finally {
-      fetchBtn.disabled = false;
-    }
-  }
-
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
     const address = url.value.trim();
@@ -1080,9 +746,9 @@ export function openAddAlbum(opener = null) {
     const pl = playlistLink(address);
     if (pl?.kind === 'mix') { say(MIX_MESSAGE); return; }
     if (pl?.kind === 'private') { say(PRIVATE_MESSAGE); return; }
-    if (pl) { await startYoutube(pl.url); return; }
+    if (pl) { await youtube.start(pl.url); return; }
     if (videoLink(address)) { await video.start(address); return; }
-    if (yt) { await addPasted(address); return; }
+    if (youtube.active()) { await youtube.addPasted(address); return; }
     await loadPreview(address);
   });
 
