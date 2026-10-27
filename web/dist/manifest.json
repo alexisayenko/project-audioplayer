@@ -1,6 +1,6 @@
 {
   "esbuild": "0.27.7",
-  "sources": "3003a38e3f7dd0dbe8c02ca0b6c7de4ed6f9e39793baed000a86ff020fcc276c",
+  "sources": "c3e9c6b40d2105ce6ac15a15459e38776eb9f48e2245a02da4f8e19d6023ea6c",
   "modules": [
     "js/about.js",
     "js/add-preview.js",
@@ -8,11 +8,14 @@
     "js/add.js",
     "js/album-candidates.js",
     "js/album-discogs.js",
+    "js/album-draft-model.js",
+    "js/album-draft-view.js",
     "js/album-form.js",
     "js/album-video-model.js",
     "js/album-video-progress.js",
     "js/album-video.js",
     "js/album-youtube-flow.js",
+    "js/album-youtube-model.js",
     "js/albums-cover.js",
     "js/albums-model.js",
     "js/albums-youtube.js",
@@ -70,7 +73,6 @@
     "js/genre-desc.js",
     "js/genre-disc.js",
     "js/genre-dock.js",
-    "js/genre-drill.js",
     "js/genre-focus.js",
     "js/genre-force-body.js",
     "js/genre-force-draw.js",
@@ -83,6 +85,7 @@
     "js/genre-graph.js",
     "js/genre-layout-store.js",
     "js/genre-layout.js",
+    "js/genre-legacy.js",
     "js/genre-levels.js",
     "js/genre-map-graph.js",
     "js/genre-playing.js",
@@ -305,17 +308,17 @@
   "tier1": [
     "dist/app.js",
     "dist/icons.js",
-    "dist/chunk-YHQKJ22N.js",
-    "dist/chunk-VUWT3Y4Y.js",
-    "dist/chunk-3CXGY2QA.js",
-    "dist/chunk-CHBCNKBE.js",
+    "dist/chunk-POOE2EBE.js",
+    "dist/chunk-IZXMHZ23.js",
+    "dist/chunk-2X6OTV4U.js",
+    "dist/chunk-DDUC7YAS.js",
     "dist/chunk-EEQXK5JZ.js",
     "dist/chunk-WOT6VMZA.js"
   ],
   "tier2": [
-    "dist/lazy-ui-QIQA6Q2F.js",
+    "dist/lazy-ui-FYPBT56D.js",
     "dist/chunk-N44TH7US.js",
-    "dist/chunk-XQ3CFSLB.js",
-    "dist/lazy-genres-3P32NJWM.js"
+    "dist/chunk-DPYDGQ4X.js",
+    "dist/lazy-genres-HORBOKQX.js"
   ]
 }
