@@ -111,6 +111,7 @@ targets:
           - PlaybackPersistence.swift
           - PlayerService.swift
           - PlayQueue.swift
+          - NowPlaying.swift
           - PlayRecorder.swift
           - QueueAdvance.swift
           - ServerLink.swift

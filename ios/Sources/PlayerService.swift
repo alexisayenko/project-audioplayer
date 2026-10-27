@@ -516,65 +516,29 @@ final class PlayerService: ObservableObject {
     }
 
     private func updateNowPlaying() {
-        #if os(macOS)
-        if current == nil { MPNowPlayingInfoCenter.default().playbackState = .stopped }
-        else { MPNowPlayingInfoCenter.default().playbackState = isPlaying ? .playing : .paused }
-        #endif
         guard let track = current else {
-            MPNowPlayingInfoCenter.default().nowPlayingInfo = nil
+            NowPlaying.publish(nil, isPlaying: isPlaying)
             return
         }
         let text: (title: String, artist: String) = nowPlayingText?(track) ?? (track.title, track.artist)
-        var info: [String: Any] = [
-            MPMediaItemPropertyTitle: text.title,
-            MPMediaItemPropertyArtist: text.artist,
-            MPMediaItemPropertyPlaybackDuration: duration,
-            MPNowPlayingInfoPropertyElapsedPlaybackTime: position,
-            MPNowPlayingInfoPropertyPlaybackRate: isPlaying ? 1.0 : 0.0,
-        ]
-        if let album = track.album, !album.isEmpty { info[MPMediaItemPropertyAlbumTitle] = album }
-        if let artwork, artworkID == track.id { info[MPMediaItemPropertyArtwork] = artwork }
-        MPNowPlayingInfoCenter.default().nowPlayingInfo = info
+        NowPlaying.publish(
+            NowPlayingSnapshot(
+                track: track, title: text.title, artist: text.artist, duration: duration, position: position,
+                isPlaying: isPlaying, artwork: artworkID == track.id ? artwork : nil
+            ),
+            isPlaying: isPlaying
+        )
     }
 
     private func setupRemoteCommands() {
-        let center = MPRemoteCommandCenter.shared()
-        center.playCommand.addTarget { [weak self] _ in
-            Task { @MainActor in self?.resume() }
-            return .success
-        }
-        center.pauseCommand.addTarget { [weak self] _ in
-            Task { @MainActor in self?.pause() }
-            return .success
-        }
-        center.togglePlayPauseCommand.addTarget { [weak self] _ in
-            Task { @MainActor in self?.toggle() }
-            return .success
-        }
-        center.nextTrackCommand.addTarget { [weak self] _ in
-            Task { @MainActor in self?.next() }
-            return .success
-        }
-        center.previousTrackCommand.addTarget { [weak self] _ in
-            Task { @MainActor in self?.previous() }
-            return .success
-        }
-        #if os(macOS)
-        center.skipForwardCommand.preferredIntervals = [10]
-        center.skipBackwardCommand.preferredIntervals = [10]
-        center.skipForwardCommand.addTarget { [weak self] _ in
-            Task { @MainActor in self?.skip(by: 10) }
-            return .success
-        }
-        center.skipBackwardCommand.addTarget { [weak self] _ in
-            Task { @MainActor in self?.skip(by: -10) }
-            return .success
-        }
-        #endif
-        center.changePlaybackPositionCommand.addTarget { [weak self] event in
-            guard let event = event as? MPChangePlaybackPositionCommandEvent else { return .commandFailed }
-            Task { @MainActor in self?.seek(to: event.positionTime) }
-            return .success
-        }
+        RemoteCommands.install(RemoteHandlers(
+            play: { [weak self] in self?.resume() },
+            pause: { [weak self] in self?.pause() },
+            toggle: { [weak self] in self?.toggle() },
+            next: { [weak self] in self?.next() },
+            previous: { [weak self] in self?.previous() },
+            skip: { [weak self] seconds in self?.skip(by: seconds) },
+            seek: { [weak self] seconds in self?.seek(to: seconds) }
+        ))
     }
 }
