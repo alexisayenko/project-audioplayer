@@ -1,6 +1,6 @@
 {
   "esbuild": "0.27.7",
-  "sources": "0a2aafcb570a619329f468a17e12fc8f3c69aaef2511a3f0f2a061e0f9b0a1ce",
+  "sources": "c23ebd4ceb5399a45defc0da525f4f4449265bf323427b967801b65dc128aa8f",
   "modules": [
     "js/about.js",
     "js/add-preview.js",
@@ -23,6 +23,8 @@
     "js/album-wizard-review.js",
     "js/album-wizard-rows.js",
     "js/album-wizard-run.js",
+    "js/album-wizard-songlink.js",
+    "js/album-wizard-songpick.js",
     "js/album-wizard.js",
     "js/album-youtube-model.js",
     "js/albums-cover.js",
@@ -319,17 +321,17 @@
   "tier1": [
     "dist/app.js",
     "dist/icons.js",
-    "dist/chunk-EE7Z4TZ7.js",
-    "dist/chunk-UW6PF6XY.js",
-    "dist/chunk-J33MAFR3.js",
+    "dist/chunk-KC7F7UE2.js",
+    "dist/chunk-TF3SF2Z3.js",
+    "dist/chunk-K7LG6ZPN.js",
     "dist/chunk-DDUC7YAS.js",
     "dist/chunk-EEQXK5JZ.js",
     "dist/chunk-WOT6VMZA.js"
   ],
   "tier2": [
-    "dist/lazy-ui-B2ZQ22LV.js",
+    "dist/lazy-ui-P7PS3IGG.js",
     "dist/chunk-N44TH7US.js",
-    "dist/chunk-3QYP62XT.js",
-    "dist/lazy-genres-LDHJV4E2.js"
+    "dist/chunk-U66FOZYQ.js",
+    "dist/lazy-genres-IGRJKCBK.js"
   ]
 }
