@@ -34,7 +34,7 @@ struct MacAPI {
     private func send(_ req: URLRequest) async throws -> Data {
         let data: Data
         let response: URLResponse
-        do { (data, response) = try await URLSession.shared.data(for: req) }
+        do { (data, response) = try await APIClient.reporting { try await URLSession.shared.data(for: req) } }
         catch let e as URLError where e.code != .cancelled { throw APIError.unreachable }
         if let http = response as? HTTPURLResponse, !(200..<300).contains(http.statusCode) {
             var detail = ""

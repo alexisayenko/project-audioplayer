@@ -77,13 +77,34 @@ struct APIClient {
         return URLSession(configuration: c, delegate: delegate, delegateQueue: nil)
     }
 
+    /// Every request goes through here or `reporting`, so the server link learns of an unreachable server from any screen.
+    static func isNetworkFailure(_ error: URLError) -> Bool {
+        ![.cancelled, .dataNotAllowed, .internationalRoamingOff].contains(error.code)
+    }
+
+    /// An answer of any status marks the server reachable; a network-level failure marks it unreachable.
+    static func reporting<T>(_ work: () async throws -> T) async throws -> T {
+        do {
+            let value = try await work()
+            await ServerLink.note(reachable: true)
+            return value
+        } catch let error as URLError where isNetworkFailure(error) {
+            await ServerLink.note(reachable: false)
+            throw error
+        }
+    }
+
+    private func perform(_ req: URLRequest) async throws -> (Data, URLResponse) {
+        try await Self.reporting { try await URLSession.shared.data(for: req) }
+    }
+
     func verify() async throws {
-        let (data, response) = try await URLSession.shared.data(for: try await request(Endpoints.tags))
+        let (data, response) = try await perform(try await request(Endpoints.tags))
         try check(response, data: data)
     }
 
     func fetch(_ path: String) async throws -> Data {
-        let (data, response) = try await URLSession.shared.data(for: try await request(path))
+        let (data, response) = try await perform(try await request(path))
         try check(response, data: data)
         return data
     }
@@ -92,7 +113,7 @@ struct APIClient {
     func postPlays(_ body: Data) async throws -> Int {
         var req = try await request(Endpoints.plays, method: "POST", body: body)
         req.timeoutInterval = 30
-        let (_, response) = try await URLSession.shared.data(for: req)
+        let (_, response) = try await perform(req)
         return (response as? HTTPURLResponse)?.statusCode ?? 0
     }
 
@@ -102,7 +123,7 @@ struct APIClient {
         req.timeoutInterval = 20
         req.cachePolicy = .reloadIgnoringLocalCacheData
         if let etag { req.setValue(etag, forHTTPHeaderField: "If-None-Match") }
-        let (data, response) = try await URLSession.shared.data(for: req)
+        let (data, response) = try await perform(req)
         if (response as? HTTPURLResponse)?.statusCode == 304 { return nil }
         try check(response, data: data)
         let tag = (response as? HTTPURLResponse)?.value(forHTTPHeaderField: "ETag")
@@ -113,14 +134,14 @@ struct APIClient {
     func fetchAudio(_ id: String) async throws {
         var req = try await request(Endpoints.songAudio(id), method: "POST")
         req.timeoutInterval = 30
-        let (data, response) = try await URLSession.shared.data(for: req)
+        let (data, response) = try await perform(req)
         try check(response, data: data)
     }
 
     func genres() async throws -> [String] {
         var req = try await request(Endpoints.genres)
         req.timeoutInterval = 15
-        let (data, response) = try await URLSession.shared.data(for: req)
+        let (data, response) = try await perform(req)
         try check(response, data: data)
         guard let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any], let list = obj["genres"] as? [Any] else { return [] }
         return list.compactMap { $0 as? String }
@@ -131,7 +152,7 @@ struct APIClient {
         req.timeoutInterval = 30
         let data: Data
         let response: URLResponse
-        do { (data, response) = try await URLSession.shared.data(for: req) }
+        do { (data, response) = try await perform(req) }
         catch let e as URLError where e.code != .cancelled { throw APIError.unreachable }
         try check(response, data: data)
         return try JSONDecoder().decode([SearchResult].self, from: data)
@@ -147,7 +168,7 @@ struct APIClient {
         req.allowsConstrainedNetworkAccess = cellular
         let response: URLResponse
         do {
-            response = try await BackgroundDownloader.shared.fetch(track, request: req, onProgress: onProgress)
+            response = try await Self.reporting { try await BackgroundDownloader.shared.fetch(track, request: req, onProgress: onProgress) }
         } catch let e as URLError where e.code == .dataNotAllowed || e.code == .internationalRoamingOff {
             throw APIError.http(0, "Mobile data is off for downloads. Turn on Use mobile data in Settings.")
         }
@@ -161,13 +182,14 @@ struct APIClient {
             enum CodingKeys: String, CodingKey { case videoID = "video_id" }
         }
         let post = try await request(Endpoints.download, method: "POST", body: JSONEncoder().encode(Body(videoID: result.id)))
-        let (data, response) = try await URLSession.shared.data(for: post)
+        let (data, response) = try await perform(post)
         try check(response, data: data)
         let track = try JSONDecoder().decode(Track.self, from: data)
 
         let session = Self.downloadSession()
         defer { session.finishTasksAndInvalidate() }
-        let (tmp, fileResponse) = try await session.download(for: try await request(Endpoints.file(track.id)))
+        let fileRequest = try await request(Endpoints.file(track.id))
+        let (tmp, fileResponse) = try await Self.reporting { try await session.download(for: fileRequest) }
         try check(fileResponse)
         let dest = AudioFiles.reserve(track)
         try? FileManager.default.removeItem(at: dest)
@@ -183,7 +205,7 @@ struct APIClient {
         var req = try await request(path, method: method, body: data)
         req.timeoutInterval = timeout
         do {
-            let (out, response) = try await URLSession.shared.data(for: req)
+            let (out, response) = try await perform(req)
             try check(response, data: out)
             return out
         } catch let e as URLError {

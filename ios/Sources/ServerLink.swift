@@ -111,6 +111,14 @@ final class ServerLink: ObservableObject {
     private var bulkStreak: Set<String> = []
     private static let bulkConcurrency = 2
     private static let bulkMaxStreak = 3
+    private static weak var current: ServerLink?
+
+    init() { Self.current = self }
+
+    /// Fed by every `APIClient` request (see `APIClient.reporting`); publishes only when the state really changes.
+    static func note(reachable value: Bool) {
+        current?.setReachable(value)
+    }
 
     /// The percent of a running download, nil when the song is not arriving; read it where `board` is observed.
     func progress(of id: String) -> Double? {
@@ -148,35 +156,37 @@ final class ServerLink: ObservableObject {
     }
 
     private func recordSuccess() {
-        reachable = true
-        forbidden = false
-        unauthorized = false
-        failureMessage = nil
+        setReachable(true)
+        setStatus(forbidden: false, unauthorized: false, message: nil)
+    }
+
+    private func setStatus(forbidden newForbidden: Bool, unauthorized newUnauthorized: Bool, message: String?) {
+        if forbidden != newForbidden { forbidden = newForbidden }
+        if unauthorized != newUnauthorized { unauthorized = newUnauthorized }
+        if failureMessage != message { failureMessage = message }
     }
 
     private func record(_ error: Error) {
-        forbidden = false
-        unauthorized = false
         switch error {
         case let e as URLError where e.code != .cancelled:
-            reachable = false
-            failureMessage = e.code == .timedOut ? "The server took too long to answer. Try again." : "Can't reach the server. Check the connection and try again."
+            setReachable(false)
+            setStatus(forbidden: false, unauthorized: false,
+                      message: e.code == .timedOut ? "The server took too long to answer. Try again." : "Can't reach the server. Check the connection and try again.")
         case APIError.forbidden:
-            reachable = true
-            forbidden = true
-            failureMessage = APIError.forbiddenMessage
+            setReachable(true)
+            setStatus(forbidden: true, unauthorized: false, message: APIError.forbiddenMessage)
         case APIError.http(401, _):
-            reachable = true
-            unauthorized = true
-            failureMessage = "The server didn't accept your sign-in (401). Sign out and sign in again."
+            setReachable(true)
+            setStatus(forbidden: false, unauthorized: true, message: "The server didn't accept your sign-in (401). Sign out and sign in again.")
         case APIError.http(let code, let detail):
-            reachable = true
-            failureMessage = detail.isEmpty ? "The server answered with error \(code). Try again later." : "The server answered with error \(code): \(detail)"
+            setReachable(true)
+            setStatus(forbidden: false, unauthorized: false,
+                      message: detail.isEmpty ? "The server answered with error \(code). Try again later." : "The server answered with error \(code): \(detail)")
         case is DecodingError:
-            reachable = true
-            failureMessage = "The server's reply could not be read. Update the app and try again."
+            setReachable(true)
+            setStatus(forbidden: false, unauthorized: false, message: "The server's reply could not be read. Update the app and try again.")
         default:
-            failureMessage = error.localizedDescription
+            setStatus(forbidden: false, unauthorized: false, message: error.localizedDescription)
         }
         transferLog.error("request failed: \(String(describing: error), privacy: .public)")
     }
@@ -219,6 +229,10 @@ final class ServerLink: ObservableObject {
         }
     }
 
+    private func setFailed(_ id: String) {
+        if !failed.contains(id) { failed.insert(id) }
+    }
+
     private func clearFailure(_ id: String) {
         if failed.contains(id) { failed.remove(id) }
     }
@@ -257,9 +271,12 @@ final class ServerLink: ObservableObject {
         }
     }
 
-    func clearForbidden() { forbidden = false; unauthorized = false; failureMessage = nil }
+    func clearForbidden() { setStatus(forbidden: false, unauthorized: false, message: nil) }
 
-    func setReachable(_ value: Bool) { reachable = value }
+    func setReachable(_ value: Bool) {
+        guard reachable != value else { return }
+        reachable = value
+    }
 
     /// Copies a song that is on the server onto the phone; the Library shows it as "Downloading NN%" meanwhile.
     @discardableResult
@@ -281,6 +298,11 @@ final class ServerLink: ObservableObject {
     private func fetch(_ track: Track, settings: Settings, into library: LibraryStore, quiet: Bool) async -> FetchOutcome {
         if library.contains(track.id) { return .done }
         guard !book.contains(track.id) else { return .busy }
+        guard reachable != false else {
+            setFailed(track.id)
+            if !quiet { notice = "Can't reach the server. Check the connection and try again." }
+            return .failed(mobileDataMessage: nil)
+        }
         let gen = begin(track)
         defer { end(track.id, generation: gen) }
         switch await copy(track, settings: settings, from: 0, span: 1) {
@@ -289,7 +311,7 @@ final class ServerLink: ObservableObject {
             clearFailure(track.id)
             return .done
         case .failure(let f):
-            failed.insert(track.id)
+            setFailed(track.id)
             if !quiet { notice = f.mobileDataMessage ?? "Couldn't download \"\(track.title)\". Check the server and try again." }
             return .failed(mobileDataMessage: f.mobileDataMessage)
         }
