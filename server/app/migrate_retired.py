@@ -5,12 +5,10 @@ from __future__ import annotations
 import hashlib
 import json
 import logging
-import os
-import shutil
 from pathlib import Path
 from typing import Any
 
-from . import deps, library
+from . import deps, library, migration
 from .jsonio import write_json_atomic
 from .tags import namespace
 
@@ -20,7 +18,7 @@ _log = logging.getLogger(__name__)
 
 
 def enabled() -> bool:
-    return os.environ.get("AUDIO_GENRE_RETIRED", "1").strip() != "0"
+    return migration.enabled("AUDIO_GENRE_RETIRED")
 
 
 def load_names(path: Path | None = None) -> list[str]:
@@ -36,28 +34,23 @@ def digest(names: list[str]) -> str:
     return hashlib.sha256(json.dumps(sorted(names)).encode("utf-8")).hexdigest()
 
 
-def base_dir() -> Path:
-    return deps.SYNC.data_repo if deps.SYNC else deps.data_root()
-
-
 def backup_path(uid: str) -> Path:
     """`<repo root>/backups-genre-retired/<uid>/library.json`: beside, not inside, the git-added `audioplayer/` tree."""
-    return base_dir() / BACKUP_DIR / uid / "library.json"
+    return migration.user_backup(BACKUP_DIR, uid)
 
 
 def marker_path(uid: str) -> Path:
-    return backup_path(uid).parent / "applied.json"
+    return migration.marker_beside(backup_path(uid))
 
 
 def report_path(uid: str) -> Path:
-    return backup_path(uid).parent / "report.json"
+    return migration.user_backup(BACKUP_DIR, uid, "report.json")
 
 
 def applied_names(uid: str) -> set[str]:
     try:
-        doc = json.loads(marker_path(uid).read_text(encoding="utf-8"))
-        return {str(n) for n in doc["applied"]}
-    except (OSError, ValueError, KeyError, TypeError):
+        return {str(n) for n in migration.read_marker(marker_path(uid))["applied"]}
+    except (KeyError, TypeError):
         return set()
 
 
@@ -96,10 +89,7 @@ def _apply(uid: str, lib: Path, names: list[str]) -> dict[str, Any]:
         doc = library.load_doc(lib)
         result = apply_retired(doc["songs"], todo)
         if result["touched"]:
-            backup = backup_path(uid)
-            if not backup.exists():
-                backup.parent.mkdir(parents=True, exist_ok=True)
-                shutil.copy2(lib, backup)
+            migration.backup_once(lib, backup_path(uid))
             library.save_doc(lib, doc)
         applied = sorted(done | set(names))
         marker = backup_path(uid).parent
@@ -111,7 +101,7 @@ def _apply(uid: str, lib: Path, names: list[str]) -> dict[str, Any]:
                 runs = []
             run = {"names": todo, "removed": result["removed"], "songs_touched": len(result["touched"]), "touched": result["touched"], "left_without_genre": result["empty"]}
             write_json_atomic(report_path(uid), {"uid": uid, "runs": [*runs, run]})
-        write_json_atomic(marker_path(uid), {"sha256": digest(applied), "applied": applied})
+        migration.write_marker(marker_path(uid), {"sha256": digest(applied), "applied": applied})
     return result
 
 
@@ -123,8 +113,7 @@ def run() -> int:
     total = 0
     try:
         names = load_names()
-        users_dir = deps.data_root() / "users"
-        libs = sorted(users_dir.glob("*/library.json")) if users_dir.is_dir() else []
+        libs = migration.libraries()
     except Exception:
         _log.exception("retired genres failed; the libraries are unchanged")
         return 0
