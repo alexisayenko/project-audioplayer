@@ -2,6 +2,11 @@
 
 What shipped, newest first. One line each; the web UI and server are live at https://electrophone.cc. Everything listed here is deployed except the sections marked "built, not deployed" (the 2026-10-14 release went out once the SSH access in [task-0027](tasks/task-0027.md) was restored; the live visualizer files match `origin/main` as of 2026-10-15). Why: [tech/decisions.md](tech/decisions.md); runbook: [tech/deploy.md](tech/deploy.md).
 
+## 2026-10-27 (Server and web: one Discogs row per album; to deploy)
+
+- Server: `POST /albums/discogs/search` lists one candidate per album, the Discogs master (original year, track count, cover, master link; releases only for albums without a master, deduplicated by artist and title, earliest year first), with ids, links and styles; `all: true` lists every release as before; new `POST /albums/discogs/resolve` returns a picked master or release with its type and tracklist with lengths (API-301, API-309, task-0120, decision KC1).
+- Web: "Find on Discogs" shows those rows, a "Show all releases" link, and reads a master's type when it is picked (LIB-257, LIB-264).
+
 ## 2026-10-27 (Release: server and web deployed as `5305ff0`)
 
 - Deployed to https://electrophone.cc after a green `scripts/check.sh` (web 272 files, scripts, rule IDs, tokens, server 4937 passed): everything marked "to deploy" below, that is the artist fallback for YouTube album commits, the track number kept out of the artist in time-coded lists (ADD-199), album "Use for songs" (`POST /albums/{id}/cover/to-songs`), the album Type select height, the Library Songs, Albums and Drafts switch without a rebuild (LIB-263), the new web bundle hash, and the task-0122 server work (F4 module layering, F5 migration registry, F7 credits cleanup, F10 `error` key on plain refusals, F14 `backgroundjob` base; the F2 corrupt-file protection was already live).
