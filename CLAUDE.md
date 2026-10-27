@@ -83,3 +83,4 @@ Task-file updates ship with the work they describe
 - [docs/README.md](docs/README.md) — docs subtree map
 - [docs/tech/ci-cd.md](docs/tech/ci-cd.md) — CI/CD playbook
 - [docs/tech/architecture.md](docs/tech/architecture.md) — server/app design, setup, TestFlight
+- [docs/product/ux-preferences.md](docs/product/ux-preferences.md) — Alex's UI/UX rulebook; read before any UI work

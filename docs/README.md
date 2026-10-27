@@ -245,6 +245,7 @@ Obsolete docs go to `archive/docs/` at repo root, not inside
 | Source material — quantities, lists, corpora | [`content/`](content/) | Sourcing data, citing a fact, planning ingest |
 | Project milestones (launches, releases, evidence) | [`milestones.md`](milestones.md) | Looking up when an event happened, or what shipped in a release |
 | Product core idea + section glossary | [`product/README.md`](product/README.md) | Orienting on what the product is at the conceptual level |
+| Alex's UI/UX preferences rulebook | [`product/ux-preferences.md`](product/ux-preferences.md) | Before building or changing any UI |
 | Product entities (one file per noun) | [`product/concepts/`](product/concepts/) | Modeling a stable noun the product reasons about |
 | Deploy, rollback, signup switch of the live server | [`tech/deploy.md`](tech/deploy.md) | Shipping a change or operating electrophone.cc |
 | Cross-folder feature specs (one file per verb) | [`product/features/`](product/features/) | Implementing or scoping a specific user-facing capability |
