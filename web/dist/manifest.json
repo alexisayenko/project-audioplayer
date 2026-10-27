@@ -1,6 +1,6 @@
 {
   "esbuild": "0.27.7",
-  "sources": "5599f7757a8ebc4437fd4ec9efd1aca01566204352fa9b1d69cc55ee1d1188ba",
+  "sources": "17dc38e5a1787de1860a36e9a39a0217bacf631f94ab5a91bcb8a7eb6597cd81",
   "modules": [
     "js/about.js",
     "js/add-preview.js",
