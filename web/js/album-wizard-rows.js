@@ -19,8 +19,8 @@ export function mountRows(ctx, onChange) {
     const n = nameOf({ ...r, artists: trackArtists(draft, r) });
     return n.version ? `${n.name} [${n.version}]` : n.name;
   };
-  const optionText = (r, i, rows) => {
-    const owner = rows.find((x) => x.disc && x.src === r);
+  const optionText = (r, i, rows, self) => {
+    const owner = rows.find((x) => x !== self && x.disc && x.src === r);
     const len = clock(estLength(draft, r));
     return `${i + 1}. ${srcName(r)}${len ? ` (${len})` : ''}${owner ? ` - used for track ${owner.disc.no}` : ''}`;
   };
@@ -53,7 +53,7 @@ export function mountRows(ctx, onChange) {
     if (!row.disc) return el('div', { class: 'wiz-match muted t-caption' }, 'Not on the Discogs list. Tick it to add it after the others.');
     const select = el('select', { 'aria-label': `YouTube track for ${row.disc.no}. ${row.disc.title}`, 'data-row': row.id },
       el('option', { value: '', selected: !row.src }, 'No match, skip this track'),
-      ...draft.st.rows.map((r, i) => el('option', { value: String(r.key), selected: row.src === r }, optionText(r, i, rows))));
+      ...draft.st.rows.map((r, i) => el('option', { value: String(r.key), selected: row.src === r }, optionText(r, i, rows, row))));
     select.addEventListener('change', () => {
       reassign(draft, row.disc.no, select.value === '' ? null : Number(select.value));
       ctx.touch();

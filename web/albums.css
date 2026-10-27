@@ -228,3 +228,4 @@
 .wiz-row .av-use { display: inline-flex; align-items: center; gap: var(--space-1); }
 .wiz-run { gap: var(--space-4); }
 .wiz-progress, .wiz-dl { min-width: 0; }
+.wiz-details .field .album-year { width: 6ch; text-align: center; }
