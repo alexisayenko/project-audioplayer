@@ -319,6 +319,7 @@ export const api = {
   setAlbumCover: (id, choice) => request('PUT', `/albums/${q(id)}/cover`, choice),
   uploadAlbumCover: (id, file) => request('PUT', `/albums/${q(id)}/cover`, file, undefined, true),
   removeAlbumCover: (id) => request('DELETE', `/albums/${q(id)}/cover`),
+  albumCoverToSongs: (id, overwrite = false) => request('POST', `/albums/${q(id)}/cover/to-songs`, { overwrite }),
   deleteAlbum: (id) => request('DELETE', `/albums/${q(id)}`),
   playlists: () => request('GET', '/playlists').then((d) => (Array.isArray(d?.playlists) ? d.playlists : [])),
   playlistDetail: (id) => request('GET', `/playlists/${q(id)}`),

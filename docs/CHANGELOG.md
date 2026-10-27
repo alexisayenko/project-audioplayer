@@ -4,6 +4,7 @@ What shipped, newest first. One line each; the web UI and server are live at htt
 
 ## 2026-10-27 (Web: album popups and infobox; to deploy)
 
+- Server and web: the album Edit dialog has a "Use for songs" button that copies the album's own cover to every linked song in one request (`POST /albums/{id}/cover/to-songs`); songs whose cover the user chose are kept until a second click confirms replacing them, and it reports "Set art on N songs" (LIB-262, API-305, task-0120; to deploy; iOS not built).
 - Server and web: "Suggest links" button in the Links panel of Add album (both flows) and Edit album finds a Discogs master (else release) and an English Wikipedia album article for the artist and title and fills only the empty link fields (LIB-260, API-304, task-0120; to deploy).
 - Server and web: Add album from a YouTube playlist now uses the video popup (shared form, Discogs auto-match and cover, one-line track labels with pencil, suggested genres, links from the description); the Discogs picker and track mapping are gone from the web (LIB-259, API-302, API-303, task-0120; to deploy).
 - Web: the v1 Genres screen is removed and "Genres map v2" is now simply the Genres map at `#/genres` (`#/genres2` redirects); one sidebar item, one title; v1 outline, radial view, legend and toolbar code and CSS deleted, the v1 vocabulary stays as the tag vocabulary (GEN-101, WEB-084, task-0096; git tag `genres-map-v1`).
