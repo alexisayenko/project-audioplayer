@@ -5,6 +5,7 @@ import { toast } from './dom.js';
 import { player as playerApi, initPlayer, pausePlayer } from './player.js';
 import { lazyVisualizer } from './viz-lazy.js';
 import { lazyRoute } from './lazy-route.js';
+import { keepsLibrary, warmOnIntent } from './route-keep.js';
 import { loadingNote } from './loading-note.js';
 import { startBackgroundLoad } from './prefetch.js';
 import { isShareHash } from './share-hash.js';
@@ -105,7 +106,7 @@ function markActiveNav(navName) {
   }
 }
 
-function route() {
+function route(soft = false) {
   const studioSite = studioSiteUrl(location.hash);
   if (studioSite) {
     location.replace(studioSite);
@@ -120,11 +121,15 @@ function route() {
   if (name === 'library') saveLibraryView(navName);
   currentNav = navName;
   document.body.classList.remove('signed-out');
-  if (cleanup) cleanup();
-  view.replaceChildren();
-  document.body.dataset.route = name;
-  syncLegal(legalEl, legalCtx());
-  cleanup = routes[name](view) || null;
+  if (keepsLibrary({ soft, name, current: document.body.dataset.route, cleanup, hasContent: view.firstChild })) {
+    cleanup.retarget();
+  } else {
+    if (cleanup) cleanup();
+    view.replaceChildren();
+    document.body.dataset.route = name;
+    syncLegal(legalEl, legalCtx());
+    cleanup = routes[name](view) || null;
+  }
   if (name === 'playback') void viz.ensure().catch(() => {});
   markActiveNav(navName);
   help?.sync(navName);
@@ -140,6 +145,7 @@ const viz = lazyVisualizer({ player: playerApi });
 initShare();
 const help = initHelpNav();
 const libNav = initLibraryNav();
+warmOnIntent(document.getElementById('nav'), loadUi);
 document.getElementById('library-toggle')?.addEventListener('click', () => {
   if (!isLibraryRoute(currentNav)) location.hash = libraryHashFor(savedLibraryView());
 });
@@ -159,7 +165,7 @@ sideToggle.addEventListener('click', () => {
   setCollapsed(next);
   saveCollapsed(defaultStorage(), next);
 });
-window.addEventListener('hashchange', route);
+window.addEventListener('hashchange', () => route(true));
 const stage = view.parentNode;
 let shownGuest = false;
 

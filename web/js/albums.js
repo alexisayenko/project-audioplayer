@@ -759,6 +759,7 @@ export function openAddAlbum(opener = null) {
 
 export function mountAlbums(pane, id = albumIdOf(location.hash)) {
   let gone = false;
+  let refreshList = null;
   const cleanups = [];
   const body = el('div', { class: 'albums' });
   pane.replaceChildren(body);
@@ -850,6 +851,7 @@ export function mountAlbums(pane, id = albumIdOf(location.hash)) {
       all = full;
       paintAll();
     }
+    refreshList = loadList;
 
     function pruneSelections() {
       for (const f of FACETS) {
@@ -945,5 +947,6 @@ export function mountAlbums(pane, id = albumIdOf(location.hash)) {
   const started = id ? showPage() : showList();
   const unmount = () => { gone = true; for (const f of cleanups) f(); };
   unmount.ready = started;
+  unmount.refresh = () => { void refreshList?.(); };
   return unmount;
 }

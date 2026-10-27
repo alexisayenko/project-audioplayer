@@ -22,6 +22,7 @@ import { chipNodes, matchSummary } from './library-chips.js';
 import { lazyPane } from './library-panes.js';
 import { flashedId, clearFlash, scrollToRow } from './row-flash.js';
 import { paintStatus } from './library-status.js';
+import { whenIdle } from './idle-task.js';
 
 export { filterByTags, visibleSongs } from './library-data.js';
 
@@ -93,7 +94,7 @@ export function renderLibrary(root) {
   const draftsPane = el('div', { class: 'lib-pane drafts', id: 'lib-drafts', hidden: true });
   const albumsPane = el('div', { class: 'lib-pane', id: 'lib-albums', hidden: true });
   let gone = false;
-  const albumsLazy = lazyPane(albumsPane, { module: 'albums', mount: 'mountAlbums', noun: 'albums', isGone: () => gone });
+  const albumsLazy = lazyPane(albumsPane, { module: 'albums', mount: 'mountAlbums', noun: 'albums', isGone: () => gone, freshMs: LIBRARY_FRESH_MS });
   const draftsLazy = lazyPane(draftsPane, { module: 'drafts', mount: 'mountDrafts', noun: 'drafts', clear: true, isGone: () => gone });
 
   const addSong = can('add') ? el('button', { class: 'btn primary glow', type: 'button', onclick: (e) => openAdd(undefined, e.currentTarget) }, icon('plus', 'action'), 'Add song') : null;
@@ -137,6 +138,10 @@ export function renderLibrary(root) {
     return drafting && m ? m[1].split('/')[0] : 'songs';
   }
 
+  let mountedAlbum = null;
+  let stale = false;
+  const albumRoute = () => /^#\/library\/albums\/([^/?#]+)$/.exec(location.hash)?.[1] || '';
+
   function setView(view) {
     prefs.view = view;
     songsPane.hidden = view !== 'songs';
@@ -146,20 +151,50 @@ export function renderLibrary(root) {
     if (addAlbum) addAlbum.hidden = view !== 'albums';
     const heading = root.querySelector('#lib-title');
     if (heading) heading.textContent = { songs: 'Library', albums: 'Albums', drafts: 'Drafts' }[view];
+    if (view === 'songs' && stale) renderAll();
     if (view === 'drafts') draftsLazy.show();
-    if (view === 'albums') albumsLazy.show();
+    if (view === 'albums') {
+      mountedAlbum = albumRoute();
+      albumsLazy.show();
+    }
     paintTotal();
+  }
+
+  // A Songs/Albums/Drafts switch keeps this page (and its rows) alive instead of rebuilding it.
+  function retarget() {
+    const view = routeView();
+    if (view === 'albums' && albumRoute() !== mountedAlbum) albumsLazy.remount();
+    setView(view);
+    if (view === 'songs') void load();
   }
 
   function renderChips() {
     cats.replaceChildren(...chipNodes(renderAll));
   }
 
+  // While Albums or Drafts is showing, the song rows are rebuilt once when the browser is idle, so Songs is ready before it is clicked.
+  let cancelIdle = null;
+  function renderLater() {
+    stale = true;
+    if (cancelIdle) return;
+    cancelIdle = whenIdle(() => {
+      cancelIdle = null;
+      if (gone || !stale) return;
+      renderChips();
+      paintList();
+    });
+  }
+
   function renderList() {
+    paintTotal();
+    if (songsPane.hidden) renderLater(); else paintList();
+  }
+
+  function paintList() {
+    stale = false;
     const songs = visibleSongs();
     const cur = player.current;
     const filtered = !!(prefs.sel.size || prefs.never || prefs.refs || prefs.query.trim());
-    paintTotal();
     savePrefs();
     summary.textContent = store.loaded && store.songs.length && filtered ? matchSummary(songs.length) : '';
     playAll.hidden = !(store.loaded && songs.length);
@@ -238,7 +273,7 @@ export function renderLibrary(root) {
   renderAll();
   if (!isGuest()) {
     void getListening().then((d) => {
-      if (gone || !d) return;
+      if (gone || !d || listeningData()?.songs === d.songs) return;
       setListening(d);
       paintSort();
       renderAll();
@@ -247,5 +282,7 @@ export function renderLibrary(root) {
 
   const unmountScrollTop = mountScrollTop();
 
-  return () => { gone = true; window.removeEventListener('server-starting', onStarting); unmountScrollTop(); unsub(); unsubDrafts?.(); draftsLazy.dispose(); albumsLazy.dispose(); window.removeEventListener('albums-total', onAlbumsTotal); unsubPlayer(); unsubRefs(); unsubDl(); unregister(); clearFlash(); const d = document.getElementById('filter-sheet'); if (d.open) d.close(); };
+  const cleanup = () => { gone = true; cancelIdle?.();window.removeEventListener('server-starting', onStarting); unmountScrollTop(); unsub(); unsubDrafts?.(); draftsLazy.dispose(); albumsLazy.dispose(); window.removeEventListener('albums-total', onAlbumsTotal); unsubPlayer(); unsubRefs(); unsubDl(); unregister(); clearFlash(); const d = document.getElementById('filter-sheet'); if (d.open) d.close(); };
+  cleanup.retarget = retarget;
+  return cleanup;
 }

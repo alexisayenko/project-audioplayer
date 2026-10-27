@@ -1,17 +1,26 @@
 import { el } from './dom.js';
 import { loadUi } from './lazy-ui.js';
 
-export function lazyPane(pane, { module, mount, noun, clear = false, isGone }) {
+export function lazyPane(pane, { module, mount, noun, clear = false, isGone, freshMs = 0, now = Date.now }) {
   let unmount = null;
   let loading = false;
+  let mountedAt = 0;
   function show() {
-    if (unmount || loading) return;
+    if (unmount) {
+      if (freshMs > 0 && now() - mountedAt > freshMs) {
+        mountedAt = now();
+        unmount.refresh?.();
+      }
+      return;
+    }
+    if (loading) return;
     loading = true;
     pane.replaceChildren(el('p', { class: 'muted t-subhead state', role: 'status' }, `Loading ${noun}...`));
     loadUi(module).then((m) => {
       loading = false;
       if (isGone()) return;
       if (clear) pane.replaceChildren();
+      mountedAt = now();
       unmount = m[mount](pane);
     }, () => {
       loading = false;
@@ -21,5 +30,6 @@ export function lazyPane(pane, { module, mount, noun, clear = false, isGone }) {
         el('button', { class: 'btn', type: 'button', onclick: show }, 'Retry')));
     });
   }
-  return { show, dispose: () => unmount?.() };
+  const dispose = () => { unmount?.(); unmount = null; };
+  return { show, dispose, remount: () => { dispose(); show(); } };
 }
