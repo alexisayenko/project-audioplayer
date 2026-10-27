@@ -8,7 +8,7 @@ globalThis.history = { replaceState: (a, b, url) => { location.hash = url; } };
 globalThis.setInterval = () => 0;
 const nav = document.createElement('nav');
 nav.setAttribute('id', 'nav');
-for (const r of ['library', 'playback', 'playlists', 'genres', 'genres2', 'settings']) {
+for (const r of ['library', 'playback', 'playlists', 'genres', 'settings']) {
   const a = document.createElement('a');
   a.dataset.route = r;
   nav.append(a);
@@ -69,7 +69,7 @@ test('signing in leaves guest mode: banner and guest classes go away and the lib
   assert.equal(document.getElementById('guest-banner'), null);
 });
 
-test('#/genres opens the radial Genres map, #/genres-rework redirects to it', async () => {
+test('#/genres opens the Genres map with the dock, #/genres-rework and #/genres2 redirect to it', async () => {
   const activeRoute = () => [...document.querySelectorAll('#nav a')].filter((a) => a.classList.contains('active')).map((a) => a.dataset.route);
   location.hash = '#/genres';
   dom.window.dispatch('hashchange');
@@ -78,6 +78,7 @@ test('#/genres opens the radial Genres map, #/genres-rework redirects to it', as
   assert.ok(document.getElementById('view').querySelector('.gmr-canvas'));
   assert.equal(document.getElementById('view').querySelector('h1').textContent, 'Genres map');
   assert.deepEqual(activeRoute(), ['genres']);
+  assert.ok(document.getElementById('view').querySelector('.gmr-dock'));
   location.hash = '#/genres-rework';
   dom.window.dispatch('hashchange');
   await flush();
@@ -86,18 +87,10 @@ test('#/genres opens the radial Genres map, #/genres-rework redirects to it', as
   assert.deepEqual(activeRoute(), ['genres']);
 });
 
-test('#/genres2 opens Genres map v2 with the dock; #/genres stays without it', async () => {
-  const activeRoute = () => [...document.querySelectorAll('#nav a')].filter((a) => a.classList.contains('active')).map((a) => a.dataset.route);
+test('#/genres2 redirects to #/genres', async () => {
   location.hash = '#/genres2';
   dom.window.dispatch('hashchange');
   await flush();
-  assert.equal(document.body.dataset.route, 'genres2');
-  assert.ok(document.getElementById('view').querySelector('.gmr-dock'));
-  assert.equal(document.getElementById('view').querySelector('h1').textContent, 'Genres map v2');
-  assert.deepEqual(activeRoute(), ['genres2']);
-  location.hash = '#/genres';
-  dom.window.dispatch('hashchange');
-  await flush();
-  assert.equal(document.getElementById('view').querySelector('.gmr-dock'), null);
-  assert.deepEqual(activeRoute(), ['genres']);
+  assert.equal(location.hash, '#/genres');
+  assert.equal(document.body.dataset.route, 'genres');
 });

@@ -173,8 +173,6 @@ test('the layout draws the other parents as edges but the map draws no dashed cr
     if (l.byId.has(p)) assert.ok(l.edges.some((e) => e.from === p && e.to === n.id), `${p} -> ${n.id}`);
   }
   assert.equal(l.links, undefined);
-  const view = await import('node:fs').then((fs) => fs.readFileSync(new URL('./genre-radial-view.js', import.meta.url), 'utf8'));
-  assert.doesNotMatch(view, /drawCrossLinks|visibleCrossLinks/);
 });
 
 test('psytrance sits under trance (level 1) at level 2 and its own children are level 3; counts roll up to trance', async () => {

@@ -115,7 +115,7 @@ test('cardSections splits parents, groups, subgenres and related', () => {
   assert.deepEqual(s.groups, []);
 });
 
-test('showGenreOnMap on the Genres map v2 route notifies instead of navigating', () => {
+test('showGenreOnMap on the old #/genres2 route notifies instead of navigating', () => {
   const loc = { hash: '#/genres2' };
   showGenreOnMap('jungle', loc);
   assert.equal(loc.hash, '#/genres2');

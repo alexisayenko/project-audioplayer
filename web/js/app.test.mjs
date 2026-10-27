@@ -8,7 +8,7 @@ globalThis.history = { replaceState: (a, b, url) => { location.hash = url; } };
 globalThis.setInterval = (fn, ms) => { if (ms === 30000) globalThis.__poll = fn; return 0; };
 const nav = document.createElement('nav');
 nav.setAttribute('id', 'nav');
-for (const r of ['library', 'playback', 'playlists', 'genres', 'genres2', 'settings']) {
+for (const r of ['library', 'playback', 'playlists', 'genres', 'settings']) {
   const a = document.createElement('a');
   a.dataset.route = r;
   nav.append(a);

@@ -123,7 +123,7 @@ Scanned and left as full genres without a row (no microgenre signal): the broad 
 
 ## Synthwave family candidates for structure v2 (2026-10-25)
 
-Not added to Genres map v2 with the Synthwave and Vapor clusters (GEN-105); each waits for the owner's Rate Your Music (RYM) page, since Wikipedia alone does not attest a genre ([source policy](genre-terminology.md#source-policy-for-new-genres)). No v1 data changes.
+Not added to Genres map with the Synthwave and Vapor clusters (GEN-105); each waits for the owner's Rate Your Music (RYM) page, since Wikipedia alone does not attest a genre ([source policy](genre-terminology.md#source-policy-for-new-genres)). No v1 data changes.
 
 | Candidate | Relation | Note |
 |---|---|---|

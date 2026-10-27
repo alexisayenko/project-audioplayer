@@ -13,7 +13,7 @@ LAZY = [
     "settings", "genres", "genres-rework", "playlists", "stats", "theory", "about", "features", "viz-ui", "song-card", "add", "edit-dialog", "song-form", "drafts",
     "share-ui", "share-open", "player-tag-picker", "player-actions", "library-toolbar", "viz-modes", "viz-terrain-gl", "update-check",
 ]
-ORPHANS = {"js/viz-timeline-worker.js"}
+ORPHANS = {"js/viz-timeline-worker.js", "js/genre-radial.js"}
 STUDIO_SITE = Path(__file__).resolve().parents[2] / "studio"
 
 

@@ -30,8 +30,7 @@ const routes = {
   library: renderLibrary,
   playback: renderPlayback,
   playlists: lazyRoute(() => import('./playlists.js'), 'renderPlaylists'),
-  genres: lazyRoute(() => import('./genres-rework.js'), 'renderGenresRework'),
-  genres2: lazyRoute(() => import('./genres-rework.js'), 'renderGenresMapV2'),
+  genres: lazyRoute(() => import('./genres-rework.js'), 'renderGenresMap'),
   'genres-classic': lazyRoute(() => import('./genres.js'), 'renderGenres'),
   stats: lazyRoute(() => import('./stats.js'), 'renderStats'),
   theory: lazyRoute(() => import('./theory.js'), 'renderTheory'),
@@ -88,7 +87,7 @@ function resolveRoute() {
   }
   firstRoute = false;
   if (name.startsWith('playlists/')) name = 'playlists';
-  if (name === 'genres-rework') {
+  if (name === 'genres-rework' || name === 'genres2') {
     name = 'genres';
     history.replaceState(null, '', '#/genres');
   }
