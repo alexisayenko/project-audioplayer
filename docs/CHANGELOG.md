@@ -2,6 +2,10 @@
 
 What shipped, newest first. One line each; the web UI and server are live at https://electrophone.cc. Everything listed here is deployed except the sections marked "built, not deployed" (the 2026-10-14 release went out once the SSH access in [task-0027](tasks/task-0027.md) was restored; the live visualizer files match `origin/main` as of 2026-10-15). Why: [tech/decisions.md](tech/decisions.md); runbook: [tech/deploy.md](tech/deploy.md).
 
+## 2026-10-27 (iOS TestFlight build 20261036)
+
+- iOS: TestFlight build 20261036 uploaded 2026-10-27 (archive and export from `2dedebf0`, whose `ios/` is that of `8af0b3eb`; uploaded by `xcodebuild -exportArchive` with `destination=upload` and `testFlightInternalTestingOnly`; processing at the time of writing; internal group "Alex" only). Both schemes build and `AudioPlayerTests` pass (173 tests). It adds the render-jitter fix, the Library play glyph and shorter header, the offline check with Retry on album and playlist pages, the HIG fixes H1, H4, H6 and H7, and the player structure and port tests; none of it is checked on a device yet. No server or web change.
+
 ## 2026-10-27 (Server and web: one Discogs row per album; to deploy)
 
 - Server: `POST /albums/discogs/search` lists one candidate per album, the Discogs master (original year, track count, cover, master link; releases only for albums without a master, deduplicated by artist and title, earliest year first), with ids, links and styles; `all: true` lists every release as before; new `POST /albums/discogs/resolve` returns a picked master or release with its type and tracklist with lengths (API-301, API-309, task-0120, decision KC1).
@@ -18,11 +22,11 @@ What shipped, newest first. One line each; the web UI and server are live at htt
 - Docs and repo (task-0122 F13): the tracked dev files `edited.json`, `server/genre_eras.json` and `server/backups-*/applied.json` are gone and the `docs/ui-ux` PNGs are WebP; production keeps its data in `/var/lib/audioplayer`, not in `server/`, so the pull touched nothing it uses.
 - Check fix: `studio-nav.test.mjs` pinned `route()` without the `soft` parameter that the Library keepalive added; the pin now matches `route(soft = false)`.
 
-## 2026-10-27 (iOS: back swipe, drawer rows, large text and Increase Contrast; in source, not in a build)
+## 2026-10-27 (iOS: back swipe, drawer rows, large text and Increase Contrast; in build 20261036)
 
 - iOS (IOS-120 to IOS-123; HIG audit H1, H4, H6, H7; both schemes build, all unit tests pass, checked in the simulator in light and dark, at the largest text size and with Increase Contrast, not run on a device): the edge swipe now goes back on Song Details, album and playlist screens (the drawer's edge strip used to sit above them and open the menu instead; it now exists only on root screens, the menu button opens the drawer everywhere else). A left swipe that closes the drawer no longer opens the row it started on (rows activate on release, like any button). Text follows the system size up to the largest accessibility size, with symbols, transport keys and the BPM badge growing with it and the drawer, Songs and Albums switch, Settings rows and the BPM card re-laid out instead of breaking words. With Increase Contrast on, cards, fields, pills, progress bars and the switch get a visible 1pt outline and progress fills darken; without it nothing changes. Playback, queue, downloads and offline use are unchanged.
 
-## 2026-10-27 (iOS: Albums and Playlists know when the server is offline; in source, not in a build)
+## 2026-10-27 (iOS: Albums and Playlists know when the server is offline; in build 20261036)
 
 - iOS (IOS-119; offline check, owner decision JZ1; both schemes build, all unit tests pass, checked in the simulator against a mock server, not run on a device): the album and playlist screens used to keep offering "Download album" and "Download" when the server was gone, and a tap showed "Downloading 0%" with no message. Cause: only the catalog sync and the check told the app the server was unreachable. Now every API call reports it (an answer of any status means reachable, a network failure means unreachable), so Albums, Playlists and their pages show "Offline" on the rows, a disabled Download album with the note "Offline. Downloads need the server." and Retry, no download starts while offline, and a download that fails leaves a "Retry" on its row. Nothing publishes unless the state really changed. Playback, queue and background downloads are unchanged.
 
@@ -30,7 +34,7 @@ What shipped, newest first. One line each; the web UI and server are live at htt
 
 - Docs (task-0122 F13): the 38 design PNGs in `docs/ui-ux` (`alt-themes`, `mockups1`, `mockups2`, `vega-108`) are now WebP of the same pixel size, quality 85; 43 MB became 4.2 MB. Same file names with the `.webp` extension; the old PNGs are removed from the working tree only, git history is not rewritten, so the repository pack is unchanged.
 
-## 2026-10-27 (iOS: Library play glyph and a shorter pinned header; in source, not in a build)
+## 2026-10-27 (iOS: Library play glyph and a shorter pinned header; in build 20261036)
 
 - iOS (IOS-117, IOS-118; UI/UX audit L4 and L7; both schemes build, all unit tests pass, checked in the iPhone SE simulator in light, dark and accessibility2, not run on a device): songs on the phone show a small play badge on their cover so the cover's job is visible (a row tap still opens Song Details), with a pressed state, and the glyph on the cover is now light in dark mode too. The Library search field and filter chips scroll away with the list, so the pinned header on an iPhone SE drops from about 280 pt to about 160 pt (title, Songs/Albums switch and controls stay pinned); the collapse-on-scroll logic is removed. Library v5 spec updated.
 
@@ -38,7 +42,7 @@ What shipped, newest first. One line each; the web UI and server are live at htt
 
 - Web (LIB-263; to deploy with the web bundle): clicking Songs, Albums or Drafts in the sidebar no longer rebuilds the whole Library page. Cause (measured on 800 songs and 40 albums): every click tore the page down, built all song rows again (twice, because the library refresh, the listening stats and the references each re-rendered it) and re-fetched `/library` and `/albums`, 1.2 to 6.7 s on a loaded machine. Now the page stays mounted and only the visible pane changes (3 to 75 ms), hidden song rows are rebuilt once at idle, an unchanged background library refresh does not re-render, a mounted Albums pane refreshes in place when older than 15 s, and hovering the Albums or Drafts item loads its module early
 
-## 2026-10-27 (iOS: UI jitter while downloading and playing; in source, not in a build)
+## 2026-10-27 (iOS: UI jitter while downloading and playing; in build 20261036)
 
 - iOS (IOS-116; both schemes build, all unit tests pass, measured in the simulator with a 1500-song library, not run on a device): the screen no longer stutters while songs download or play. Causes found: every download tick rebuilt the Library list (filter and sort of the whole library twice), the hidden Settings tab and the root view; the playback position checkpoint (every 5 s) rewrote UserDefaults and `@AppStorage` re-rendered the always-alive Statistics chart each time. Fixes: the percent of a download lives in its own `TransferProgress` and reaches only the rows that show it, throttled by `ProgressGate`; the Library results are computed once per change; Statistics and Albums use `@StoredValue`; redundant `ServerLink` publishes are skipped. Debug build, simulator, two downloads at a time: 3 to 54 frames per second while downloading, longest stall 1.7 s to 0.22 s, stalls every 5 s while playing gone. The recent PlayerService, NowPlaying and QueueAdvance refactor (IOS-115) added no publishes; the 0.5 s position clock was already separate.
 
@@ -58,7 +62,7 @@ What shipped, newest first. One line each; the web UI and server are live at htt
 - Server and web: Add album from a single YouTube video uses the same title, artist, year, type and genre guess as the playlist flow ("Artist - Album (2025) [FULL ALBUM]" is an Album, not a Mix), reads Discogs, Wikipedia and RateYourMusic links from the description and prefills from the Discogs release, and has a "Find on Discogs" button (`POST /albums/discogs/search`) (API-300, API-301, LIB-257, task-0120; to deploy, focused tests only).
 - Server and web: Add album from a YouTube video without a Discogs link in the description searches Discogs masters for the guessed artist and album and applies the one exact match (link, year, genres, type, cover; "Matched on Discogs" line), otherwise offers the candidates; master links work like release links; the cover is the Discogs image (also for Find on Discogs picks), the thumbnail only as a fallback, and the Add dialog shows a cover preview (API-300, LIB-252, task-0120; to deploy, focused tests only).
 
-## 2026-10-27 (iOS: player structure and port tests of the architecture audit; in source, not in a build)
+## 2026-10-27 (iOS: player structure and port tests of the architecture audit; in build 20261036)
 
 - iOS (task-0122 F9, IOS-115; both schemes build, 150 `AudioPlayerTests` and the new `ElectrophoneMacTests` pass, played in the simulator, not run on a device): `PlayerService` keeps the AVPlayer and the API the views use; the next, previous, reorder and tag-removal rules are pure and tested (`QueueAdvance`), Now Playing and the remote commands are wired in `NowPlaying.swift`, the artwork fetch is `ArtworkLoader` with the server address injected, and `Components.swift` is split by job. No behaviour change.
 - iOS and macOS tests (task-0122 F3, IOS-108): shared case files `play_recorder_cases.json`, `live_bpm_cases.json`, `gen_graph_cases.json` and `gen_sim_cases.json` check `PlayRecorder`, the Live BPM port, `GenData.swift` and `GenSim.swift` against the web, with web tests on the same files. Two drifts fixed: Swift `decadeTag` stopped at 2029 (it now follows the current year plus one like the web and the server), and the macOS force simulation split the link pull by the source degree instead of the target degree.

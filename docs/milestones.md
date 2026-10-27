@@ -16,7 +16,7 @@ the detail. Newest first; several events on one date are fine.
 
 - 2026-10-14 — public read-only guest view ADR-0018, audio visualizer, copyright note and no-index, BPM backfill and year-range changes deployed to LXC 106 after SSH access was restored, see [task-0027](tasks/task-0027.md); later visualizer and share-link work (task-0028) is live too.
 - 2026-10-14 — domain `electrophone.cc` bought; migration phases 0-3 done (zone active, both hostnames serve the app, Google and Apple sign-in verified); iOS URL, canonical redirect and HSTS open, see [task-0026](tasks/task-0026.md), ADR-0019.
-- 2026-10-14 — iOS TestFlight builds 20261020 to 20261035 uploaded (20261035 on 2026-10-27).
+- 2026-10-14 — iOS TestFlight builds 20261020 to 20261036 uploaded (20261035 and 20261036 on 2026-10-27).
 - 2026-10-13 — server and web UI deployed live at https://play.isayenko.net (perkunas LXC `tools`, ADR-0004).
 - 2026-10-13 — ADR-0010 accepted; server side of the catalog (task-0006: audio state, `/catalog`, metadata-only add) built and tested.
 - 2026-10-13 — concept "catalog and audio" proposed (ADR-0010): Library lists every
