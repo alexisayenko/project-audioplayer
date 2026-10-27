@@ -65,17 +65,17 @@ def test_preview_from_the_description_creates_nothing(client, video, tmp_path):
     assert data["rawText"] == TEXT
     assert [(t["index"], t["start"], t["end"], t["artists"], t["title"], t["version"], t["match"]) for t in data["tracks"]] == [
         (0, 0, 300, ["Alpha"], "One", None, None), (1, 300, 630, ["Beta"], "Two", "Remix", None), (2, 630, 3600.0, ["Alpha"], "Three", None, None)]
-    assert set(data["tracks"][0]) == {"index", "start", "end", "artists", "title", "version", "trackNo", "warnings", "match"}
+    assert set(data["tracks"][0]) == {"index", "start", "end", "artists", "artist", "title", "version", "trackNo", "warnings", "match"}
     assert data["warnings"] == []
     assert data["album"] == {"title": "Forest Mix", "albumArtist": "Various Artists", "type": "album", "year": 2019, "coverUrl": DETAILS["thumbnail"]}
     assert library_ids(client) == {}
     assert client.get("/albums", headers=H).json() == []
 
 
-def test_preview_prefers_chapters_and_types_a_long_mix(client, video):
+def test_preview_prefers_chapters_and_a_long_video_is_not_a_mix_by_length(client, video):
     video["details"]["chapters"] = [{"start_time": i * 600, "end_time": (i + 1) * 600, "title": f"Chapter {i}"} for i in range(6)]
     data = pv(client).json()
-    assert (data["source"], data["rawText"], data["album"]["type"]) == ("chapters", "", "mix")
+    assert (data["source"], data["rawText"], data["album"]["type"]) == ("chapters", "", "album")
     assert len(data["tracks"]) == 6
 
 
@@ -317,3 +317,52 @@ def test_video_details_reads_title_description_and_chapters(monkeypatch):
     info = None
     with pytest.raises(ValueError):
         extractor.video_details(VID)
+
+
+def test_preview_guesses_the_album_from_a_full_album_video(client, video, monkeypatch):
+    from app import album_youtube
+    monkeypatch.setattr(album_youtube, "_suggest_genres", lambda hint, candidates, tracks: ["Psytrance", "Goa Trance"])
+    video["details"].update(title="Astral Projection – For All Mankind (2025) [FULL ALBUM]", uploader="Banjankri", duration=3000.0, description="",
+                            chapters=[{"start_time": i * 300, "end_time": (i + 1) * 300, "title": f"Track {i}"} for i in range(9)])
+    data = pv(client).json()
+    assert data["guess"] == {"artist": "Astral Projection", "album": "For All Mankind", "year": 2025, "type": "album"}
+    assert (data["album"]["title"], data["album"]["albumArtist"], data["album"]["year"], data["album"]["type"]) == ("For All Mankind", "Astral Projection", 2025, "album")
+    assert data["genres"] == ["Psytrance", "Goa Trance"]
+    assert all(t["artist"] == "Astral Projection" and t["artists"] == ["Astral Projection"] for t in data["tracks"])
+
+
+DESC_LINKS = ("Astral Projection - For All Mankind\nBuy: https://www.discogs.com/release/35142581-Astral-Projection-For-All-Mankind.\n"
+              "https://en.wikipedia.org/wiki/For_All_Mankind_(album)\nhttps://example.com/x\n")
+
+
+def _astral(video, description=DESC_LINKS):
+    video["details"].update(title="Astral Projection – For All Mankind (2025) [FULL ALBUM]", uploader="Banjankri", duration=3000.0, description=description,
+                            chapters=[{"start_time": i * 300, "end_time": (i + 1) * 300, "title": f"Track {i}"} for i in range(9)])
+
+
+def test_preview_reads_links_from_the_description_and_prefills_from_discogs(client, video, monkeypatch):
+    from app import discogs_lookup
+    monkeypatch.setenv("DISCOGS_TOKEN", "t")
+    release = {"title": "For All Mankind", "artists": [{"name": "Astral Projection"}], "year": 2025, "genres": ["Electronic"], "styles": ["Goa Trance", "Psy-Trance"],
+               "formats": [{"name": "File", "descriptions": ["Album"]}], "images": [{"uri": "https://i.discogs.com/big.jpg"}], "tracklist": [{"title": "One", "type_": "track"}]}
+    monkeypatch.setattr(discogs_lookup, "_get", lambda path, params=None: release if path == "releases/35142581" else {})
+    _astral(video)
+    data = pv(client).json()
+    assert data["links"] == {"discogs": "https://www.discogs.com/release/35142581", "wikipedia": "https://en.wikipedia.org/wiki/For_All_Mankind_(album)", "rateyourmusic": None}
+    assert (data["album"]["title"], data["album"]["albumArtist"], data["album"]["year"], data["album"]["type"], data["album"]["coverUrl"]) == (
+        "For All Mankind", "Astral Projection", 2025, "album", "https://i.discogs.com/big.jpg")
+    assert data["genres"]
+
+
+def test_a_failing_discogs_link_keeps_the_guess_and_the_links(client, video, monkeypatch):
+    from app import discogs_lookup
+    monkeypatch.setenv("DISCOGS_TOKEN", "t")
+
+    def boom(path, params=None):
+        raise OSError("down")
+
+    monkeypatch.setattr(discogs_lookup, "_get", boom)
+    _astral(video)
+    data = pv(client).json()
+    assert data["links"]["discogs"] == "https://www.discogs.com/release/35142581"
+    assert (data["album"]["title"], data["album"]["albumArtist"], data["album"]["year"]) == ("For All Mankind", "Astral Projection", 2025)

@@ -17,8 +17,6 @@ from .version_norm import normalize_version
 
 MAX_SECONDS = video_split.MAX_SECONDS
 MAX_TRACKS = video_split.MAX_TRACKS
-MIX_MIN_SECONDS = 20 * 60
-MIX_MIN_TRACKS = 6
 MIN_TRACKS = 2
 MAX_TEXT_CHARS = 50000
 MAX_RAW_CHARS = 20000
@@ -104,30 +102,35 @@ def _tracks_out(found: Any, duration: float | None, songs: list[dict[str, Any]])
     return out
 
 
-def _album_artist(tracks: list[dict[str, Any]], uploader: str) -> str:
+def _album_artist(tracks: list[dict[str, Any]], hint: dict[str, Any], uploader: str) -> str:
     named = [tuple(t["artists"]) for t in tracks if t["artists"]]
     if not named:
-        return _TOPIC.sub("", uploader).strip() or VARIOUS
+        return hint["artist"] or _TOPIC.sub("", uploader).strip() or VARIOUS
     folded = {tuple(playlist_import._fold(a) for a in names) for names in named}
     if len(folded) == 1 and len(named) == len(tracks):
         return " & ".join(named[0])
     return VARIOUS
 
 
-def _album_title(details: dict[str, Any], artist: str) -> str:
-    hint = album_youtube.guess(details["title"], details["uploader"], details["description"])
+def _album_title(details: dict[str, Any], hint: dict[str, Any], artist: str) -> str:
     head, album = hint["artist"], hint["album"]
     if album and head and (playlist_import._fold(head) == playlist_import._fold(artist) or playlist_import._fold(head) in VARIOUS_HEADS):
         return album
     return (f"{head} - {album}" if head and album else album) or details["title"].strip()
 
 
-def _album_out(details: dict[str, Any], tracks: list[dict[str, Any]], duration: float | None) -> dict[str, Any]:
-    artist = _album_artist(tracks, details["uploader"])
-    mix = duration is not None and duration > MIX_MIN_SECONDS and len(tracks) >= MIX_MIN_TRACKS
+def _default_artists(tracks: list[dict[str, Any]], artist: str) -> None:
+    """Tracks without an artist take the album artist (not "Various Artists"); `artist` is the joined text."""
+    for t in tracks:
+        if not t["artists"] and artist != VARIOUS:
+            t["artists"] = [artist]
+        t["artist"] = " & ".join(t["artists"])
+
+
+def _album_out(details: dict[str, Any], hint: dict[str, Any], artist: str) -> dict[str, Any]:
     return {
-        "title": _album_title(details, artist)[: albums.MAX_TEXT], "albumArtist": artist, "type": "mix" if mix else "album",
-        "year": album_youtube.guess_year(details["title"], details["description"]), "coverUrl": details["thumbnail"],
+        "title": _album_title(details, hint, artist)[: albums.MAX_TEXT], "albumArtist": artist, "type": hint["type"],
+        "year": hint["year"], "coverUrl": details["thumbnail"],
     }
 
 
@@ -161,9 +164,25 @@ def preview(uid: str, owner: bool, url: Any, songs: list[dict[str, Any]], text: 
     found, source, raw = _parsed(details, text)
     _check_size(duration, len(found.tracks))
     tracks = _tracks_out(found, duration, songs)
+    hint = album_youtube.guess(details["title"], details["uploader"], details["description"])
+    links = album_youtube.description_links(details["description"])
+    info = album_youtube.release_info(links["discogs"]) if links["discogs"] else None
+    if info and album_youtube.matches_guess(hint, info):
+        links["discogs"] = info["url"]
+        hint = {"artist": info["artist"] or hint["artist"], "album": info["title"], "year": info["year"] or hint["year"], "type": info["type"] or hint["type"]}
+    else:
+        info = None
+    artist = _album_artist(tracks, hint, details["uploader"])
+    _default_artists(tracks, artist)
+    listing = [{"position": t["index"] + 1, "title": t["title"], "durationS": round(t["end"] - t["start"]) if t["end"] is not None else None} for t in tracks]
+    genres = info["genres"] if info and info["genres"] else album_youtube.suggest(hint, listing)[1]
+    album = _album_out(details, hint, artist)
+    if info and info["cover"]:
+        album["coverUrl"] = info["cover"]
     return {
         "videoId": vid, "url": urlclean.watch_url(vid), "title": details["title"], "uploader": details["uploader"], "thumbnail": details["thumbnail"],
-        "duration": duration, "source": source, "rawText": raw, "tracks": tracks, "album": _album_out(details, tracks, duration),
+        "duration": duration, "source": source, "rawText": raw, "tracks": tracks, "album": album,
+        "guess": hint, "genres": genres, "links": links,
         "warnings": list(found.warnings),
     }
 

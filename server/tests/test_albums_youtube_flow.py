@@ -238,3 +238,23 @@ def test_commit_leaves_songs_artistless_for_various_artists_or_no_album_artist(c
 def test_with_album_artist_keeps_a_track_artist():
     entry = {"mainArtists": ["Own"], "title": "t"}
     assert album_youtube._with_album_artist(entry, "Album Artist") is entry
+
+
+def test_discogs_find_lists_releases_with_type_and_year_first(client, hallu, discogs):
+    discogs["data"]["database/search"] = {"results": [
+        {"id": 77002, "type": "release", "title": "Hallucinogen - Twisted", "year": "2005", "country": "EU", "format": ["CD", "Compilation"], "label": ["Other"]},
+        *HALLU_SEARCH["results"]]}
+    r = client.post("/albums/discogs/search", json={"artist": "Hallucinogen", "title": "Twisted", "year": 1995}, headers=H)
+    data = r.json()
+    assert (r.status_code, data["searchError"], data["candidates"][0]["id"], data["candidates"][0]["year"], data["candidates"][0]["type"]) == (200, None, 77001, 1995, "album")
+    assert {"id", "url", "title", "artist", "year", "country", "label", "trackCount", "cover", "genres", "type"} == set(data["candidates"][0])
+    assert data["candidates"][0]["label"] == "Dragonfly Records" and data["candidates"][1]["type"] == "compilation"
+
+
+def test_discogs_find_without_a_token_or_on_failure_is_an_empty_list(client, hallu, discogs, monkeypatch):
+    monkeypatch.delenv("DISCOGS_TOKEN")
+    r = client.post("/albums/discogs/search", json={"artist": "A", "title": "B"}, headers=H)
+    assert (r.status_code, r.json()) == (200, {"candidates": [], "searchError": "discogs_unavailable"})
+    monkeypatch.setenv("DISCOGS_TOKEN", "t")
+    discogs["data"].pop("database/search", None)
+    assert client.post("/albums/discogs/search", json={"artist": "A", "title": "B"}, headers=H).json()["candidates"] == []

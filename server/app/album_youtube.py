@@ -7,6 +7,7 @@ import logging
 import os
 import re
 import urllib.error
+import urllib.parse
 from collections.abc import Iterator
 from typing import Any
 
@@ -123,6 +124,72 @@ def _suggest_genres(hint: dict[str, Any], candidates: list[dict[str, Any]], trac
         return []
 
 
+def suggest(hint: dict[str, Any], tracks: list[dict[str, Any]]) -> tuple[list[dict[str, Any]], list[str], str | None]:
+    """Discogs candidates, suggested vocabulary genres and a search error code for a guess and tracks [{position, title, durationS}]; shared by the playlist and the video preview."""
+    candidates: list[dict[str, Any]] = []
+    error = None
+    if hint["artist"] or hint["album"]:
+        try:
+            candidates = search(hint["artist"], hint["album"], len(tracks), [t["durationS"] for t in tracks], tracks)["candidates"]
+        except HTTPException as exc:
+            error = exc.detail if exc.detail in ("discogs_unavailable", "discogs_failed") else "discogs_failed"
+    return candidates, _suggest_genres(hint, candidates, tracks), error
+
+
+_LINK_TEXT = re.compile(r"https?://[^\s<>\"'\]]+")
+
+
+def description_links(description: Any) -> dict[str, str | None]:
+    """The first Discogs release or master, Wikipedia and RateYourMusic album links in a video description, normalised; absent kinds are None."""
+    found: dict[str, str | None] = {"discogs": None, "wikipedia": None, "rateyourmusic": None}
+    for raw in _LINK_TEXT.findall(str(description or "")[:20000]):
+        url = raw.rstrip(".,;:!?")
+        while url.endswith(")") and url.count(")") > url.count("("):
+            url = url[:-1]
+        host = urllib.parse.urlsplit(url).hostname or ""
+        key = "discogs" if host.endswith("discogs.com") else "wikipedia" if host.endswith("wikipedia.org") else "rateyourmusic" if host.endswith("rateyourmusic.com") else None
+        if key is None or found[key]:
+            continue
+        try:
+            found[key] = discogs_lookup.clean_url(url) if key == "discogs" else albums.clean_link(key, url.replace("http://", "https://", 1))
+        except albums.AlbumError:
+            continue
+    return found
+
+
+def release_info(link: str) -> dict[str, Any] | None:
+    """One Discogs release or master link fetched: {url, title, artist, year, genres (vocabulary, at most 4), type, cover, trackCount}; None on any failure."""
+    try:
+        kind, ident = albums.parse_url(link)
+        if kind == "master":
+            main = albums._fetch(f"masters/{ident}").get("main_release")
+            if not isinstance(main, int) or main <= 0:
+                return None
+            ident = main
+        detail = albums._fetch(f"releases/{ident}")
+        title = str(detail.get("title") or "").strip()[: albums.MAX_TEXT]
+        if not title:
+            return None
+        images = [i for i in detail.get("images") or [] if isinstance(i, dict)]
+        cover = next((c for c in (str(i.get("uri") or i.get("resource_url") or "") for i in images) if c.startswith("https://")), None) or (
+            str(detail.get("thumb")) if str(detail.get("thumb") or "").startswith("https://") else None)
+        return {
+            "url": f"https://www.discogs.com/release/{ident}", "title": title, "artist": discogs_lookup._DISAMBIG.sub("", albums._artists(detail)).rstrip()[: albums.MAX_TEXT],
+            "year": timeutil.valid_year(detail.get("year")) if detail.get("year") else None,
+            "genres": vocab_genres([*(detail.get("styles") or []), *(detail.get("genres") or [])], MAX_SUGGESTED_GENRES),
+            "type": format_type([d for f in detail.get("formats") or [] if isinstance(f, dict) for d in [*(f.get("descriptions") or []), f.get("name")]]),
+            "cover": cover, "trackCount": len(albums._flat_tracks(detail)),
+        }
+    except Exception as exc:
+        log.warning("discogs release lookup failed: %s", type(exc).__name__)
+        return None
+
+
+def matches_guess(hint: dict[str, Any], info: dict[str, Any]) -> bool:
+    """A Discogs release agrees with the parsed guess: no guessed album, or a similar album title."""
+    return not hint["album"] or _sim(hint["album"], info["title"]) >= SUBSTRING_SCORE
+
+
 def _http(exc: Exception) -> HTTPException:
     if extractor.error_code(exc) in ("not_found", "private"):
         return HTTPException(status_code=404, detail="not_found")
@@ -176,19 +243,13 @@ def preview(uid: str, owner: bool, url: str, songs: list[dict[str, Any]]) -> dic
     tracks = [{"position": i, "videoId": e["id"], "title": e["title"], "durationS": _seconds(e["duration"]), "url": e["url"], "songId": have.get(e["id"])} for i, e in usable]
     meta = found["playlist"]
     hint = guess(meta["title"], meta["uploader"], meta.get("description"))
-    candidates: list[dict[str, Any]] = []
-    error = None
-    if hint["artist"] or hint["album"]:
-        try:
-            candidates = search(hint["artist"], hint["album"], len(tracks), [t["durationS"] for t in tracks], tracks)["candidates"]
-        except HTTPException as exc:
-            error = exc.detail if exc.detail in ("discogs_unavailable", "discogs_failed") else "discogs_failed"
+    candidates, genres, error = suggest(hint, tracks)
     return {
         "playlist": {"title": meta["title"] or "", "uploader": meta["uploader"] or None, "count": len(tracks), "url": meta["url"]},
         "guess": hint,
         "tracks": tracks,
         "candidates": candidates,
-        "genres": _suggest_genres(hint, candidates, tracks),
+        "genres": genres,
         "searchError": error,
     }
 
@@ -463,6 +524,31 @@ def search(artist: Any, album: Any, track_count: Any, durations: Any, playlist_t
     candidates.sort(key=lambda c: (-c["score"], c["discogsId"]))
     _mark_best(candidates)
     return {"candidates": candidates}
+
+
+_FORMAT_TYPES = (("EP", "EP"), ("Single", "single"), ("Maxi-Single", "single"), ("Compilation", "compilation"), ("Mini-Album", "EP"), ("Album", "album"), ("LP", "album"))
+
+
+def format_type(formats: Any) -> str | None:
+    """The album type of a Discogs `format` list (descriptions such as "Album", "EP", "Single"), or None."""
+    words = {str(f).strip().lower(): kind for f, kind in _FORMAT_TYPES}
+    return next((words[str(f).strip().lower()] for f in formats if str(f).strip().lower() in words), None) if isinstance(formats, list) else None
+
+
+def find_releases(artist: Any, title: Any, year: Any = None) -> dict[str, Any]:
+    """Discogs releases for an artist and album title: {candidates: [{id, url, title, artist, year, country, label, trackCount, cover, genres, type}], searchError}; failures give an empty list and a code."""
+    try:
+        found = search(artist, title, None, None)["candidates"]
+    except HTTPException as exc:
+        return {"candidates": [], "searchError": exc.detail if exc.detail in ("discogs_unavailable", "discogs_failed") else "discogs_failed"}
+    wanted = timeutil.valid_year(year) if isinstance(year, int) and not isinstance(year, bool) else None
+    found.sort(key=lambda c: (c["year"] != wanted if wanted else False, -c["score"], c["discogsId"]))
+    out = [{
+        "id": c["discogsId"], "url": c["url"], "title": c["title"], "artist": c["artist"], "year": c["year"], "country": c["country"],
+        "label": (c["labels"] or [None])[0], "trackCount": c["trackCount"], "cover": c["thumb"], "genres": c["genres"][:MAX_SUGGESTED_GENRES],
+        "type": format_type(c["formats"]),
+    } for c in found]
+    return {"candidates": out, "searchError": None}
 
 
 def _playlist_tracks(raw: Any) -> list[dict[str, Any]] | None:

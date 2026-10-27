@@ -79,6 +79,11 @@ async def youtube_commit(body: dict[str, Any], user: User):
     return await run_in_threadpool(album_youtube.commit, user["uid"], user["owner"], body, songs)
 
 
+@router.post("/albums/discogs/search")
+async def discogs_find(body: dict[str, Any], user: User):
+    return await run_in_threadpool(album_youtube.find_releases, body.get("artist"), body.get("title"), body.get("year"))
+
+
 @router.post("/albums/discogs-search", responses=deps.responses(502, 503))
 async def discogs_search(req: AlbumSearchRequest, user: User):
     return await run_in_threadpool(album_youtube.search, req.artist, req.album, req.trackCount, req.durationsS, [t.model_dump() for t in req.playlistTracks] if req.playlistTracks is not None else None)
