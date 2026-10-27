@@ -221,30 +221,27 @@ test('one confident Discogs master skips step 3 and lands on the review with the
   D().close();
 });
 
-test('"Use the Discogs title" shows only where the Discogs and video titles differ', async () => {
+test('the Review step has no "Use the Discogs title" checkbox and shows the Discogs title on matched rows', async () => {
   server();
   await fetchStep();
   await go();
-  const use = (row) => row.querySelector('.av-use-disc');
-  assert.equal(use(rows()[0]).hidden, true);
-  assert.equal(use(rows()[1]), null);
-  assert.equal(use(rows()[2]).hidden, false);
-  assert.equal(use(rows()[2]).querySelector('input').checked, false);
-  assert.equal(use(rows()[3]).hidden, true);
+  assert.equal(q('.av-use-disc'), null);
+  assert.equal(D().textContent.includes('Use the Discogs title'), false);
+  assert.match(rows()[2].querySelector('.av-label').textContent, /^Gloople \[Remix\]$/);
+  assert.equal(rows()[2].querySelector('input.av-title').value, 'Gloople');
+  assert.equal(rows()[2].querySelector('input.av-version').value, 'Remix');
   D().close();
 });
 
-test('editing the video title to match the Discogs one hides "Use the Discogs title"', async () => {
-  server();
+test('editing the title of a matched row keeps the edit as the final title', async () => {
+  const calls = server();
   await fetchStep();
   await go();
   const row = rows()[2];
-  const title = row.querySelector('input.av-title') || row.querySelector('.av-title');
-  type(title, 'gloople (remix)');
-  assert.equal(row.querySelector('.av-use-disc').hidden, true);
-  type(title, 'Gloople');
-  assert.equal(row.querySelector('.av-use-disc').hidden, false);
+  type(row.querySelector('input.av-title'), 'Gloople Reloaded');
+  assert.match(row.querySelector('.av-label').textContent, /^Gloople Reloaded \[Remix\]$/);
   D().close();
+  assert.equal(count(calls, '/albums/from-video'), 0);
 });
 
 test('Back from the review steps over the skipped Discogs step and keeps the typed values', async () => {
@@ -930,7 +927,7 @@ test('Link to a song in the library picks a song by search and sends its id for 
   await settle();
   const after = rows()[0];
   assert.equal(after.querySelector('.wiz-linked').textContent, 'Linked: Other - Elsewhere');
-  assert.equal(after.querySelector('.av-use:not(.av-use-disc) input').checked, true);
+  assert.equal(after.querySelector('.av-use input').checked, true);
   assert.equal(after.querySelector('.av-inc input').checked, true);
   assert.equal(linkBtn(after).textContent, 'Change song');
   fire(nextBtn(), 'click');

@@ -5,6 +5,7 @@ import { parseTrackList, startsOf } from './album-tracklist.js';
 import { normalType } from './album-draft-model.js';
 import { fold } from './album-candidates.js';
 import { splitTokens } from './tokens.js';
+import { suggest } from './credits-split.js';
 
 export const STEPS = ['link', 'details', 'discogs', 'review', 'run'];
 export const STEP_LABEL = { link: 'Link', details: 'Details', discogs: 'Discogs', review: 'Review', run: 'Import' };
@@ -117,11 +118,13 @@ export function discTracks(draft) {
   return Array.isArray(t) ? t.filter((x) => Number.isInteger(x.no) && x.title) : [];
 }
 
-const titleKey = (s) => plain(String(s ?? '').replaceAll(/['’ʼ`]/g, '').replaceAll('&', ' and '));
-
-export const titlesDiffer = (youtube, disc) => !!String(youtube ?? '').trim() && titleKey(youtube) !== titleKey(disc);
-
-export const offersDiscTitle = (row) => !!(row.disc && row.src && titlesDiffer(row.src.title, row.disc.title));
+export function splitDiscTitle(title, artist = '') {
+  const text = String(title ?? '').trim();
+  const read = suggest(artist, text, '', {});
+  const version = read.version?.name;
+  const whole = { title: text, version: '' };
+  return version && read.title && read.notes.includes('version_in_title') && !read.featuredArtists.length && text.startsWith(read.title) ? { title: read.title, version } : whole;
+}
 
 const fullKey = (s) => plain(s);
 const baseKey = (s) => plain(String(s ?? '').replaceAll(/[([][^)\]]*[)\]]/g, ' '));
@@ -153,9 +156,18 @@ export function buildReview(draft) {
   const matched = disc.length ? matchTracks(src, disc) : new Map();
   for (const d of disc) assign.set(d.no, matched.get(d.no) ?? null);
   const taken = new Set(matched.values());
-  const state = new Map(src.map((r) => [r.key, { include: disc.length && !taken.has(r.key) ? false : defaultInclude(r), useExisting: false, useDisc: false, link: null }]));
-  draft.review = { assign, state, disc };
+  const state = new Map(src.map((r) => [r.key, { include: disc.length && !taken.has(r.key) ? false : defaultInclude(r), useExisting: false, link: null }]));
+  draft.review = { assign, state, disc, titles: new Map() };
   return draft.review;
+}
+
+export function discTitleParts(draft, row) {
+  const edited = draft.review.titles.get(row.disc.no);
+  return edited ? { ...edited } : splitDiscTitle(row.disc.title, trackArtists(draft, row.src));
+}
+
+export function editDiscTitle(draft, row, key, value) {
+  draft.review.titles.set(row.disc.no, { ...discTitleParts(draft, row), [key]: value });
 }
 
 export function reviewRows(draft) {
@@ -282,7 +294,7 @@ export function reviewView(draft) {
     r.artists = trackArtists(draft, row.src);
     if (row.disc) {
       r.no = row.disc.no;
-      if ((row.st.useDisc && offersDiscTitle(row)) || !r.title.trim()) { r.title = row.disc.title; r.version = ''; }
+      Object.assign(r, discTitleParts(draft, row));
     } else if (hasDisc) {
       extra += 1;
       r.no = extra;

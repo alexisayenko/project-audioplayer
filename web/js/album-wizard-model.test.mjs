@@ -175,41 +175,66 @@ test('Use existing links the library song and ticks the track', () => {
   assert.equal(t.include, true);
 });
 
-test('the Discogs title replaces the video title only on request', () => {
+const WITH_MIX = { ...DISC, tracks: DISC.tracks.map((t) => (t.no === 4 ? { ...t, title: 'Spirit Guide (Metal Mix)' } : t.no === 1 ? { ...t, title: 'LSD (Live)' } : t)) };
+const byNo = (d) => Object.fromEntries(M.createPayload(d).tracks.map((t) => [t.trackNo, [t.title, t.version]]));
+
+test('the title of a matched row follows the Discogs track, split like the song form does', () => {
   const d = make();
-  d.discogs.resolved = DISC;
+  d.discogs.resolved = WITH_MIX;
   M.buildReview(d);
-  const key = d.st.rows[2].key;
-  assert.equal(M.createPayload(d).tracks[2].title, 'Gloople');
-  d.review.state.get(key).useDisc = true;
-  const t = M.createPayload(d).tracks[2];
-  assert.equal(t.title, 'Gloople (Remix)');
-  assert.equal(t.version, null);
+  const tracks = byNo(d);
+  assert.deepEqual(tracks[1], ['LSD', 'Live']);
+  assert.deepEqual(tracks[3], ['Gloople', 'Remix']);
+  assert.deepEqual(tracks[4], ['Spirit Guide (Metal Mix)', null]);
+  assert.equal(M.reviewRows(d).find((r) => r.id === 'd2').src, null);
 });
 
-test('the Discogs title is offered only where it differs from the video title after normalising', () => {
-  assert.equal(M.titlesDiffer('LSD', 'LSD'), false);
-  assert.equal(M.titlesDiffer('  Rock & Roll ', 'rock AND roll'), false);
-  assert.equal(M.titlesDiffer('Café   del Mar!', 'Cafe del mar'), false);
-  assert.equal(M.titlesDiffer("Don't Stop", 'Dont Stop'), false);
-  assert.equal(M.titlesDiffer('Gloople', 'Gloople (Remix)'), true);
-  assert.equal(M.titlesDiffer('Gloople (Metal Mix)', 'Gloople'), true);
-  assert.equal(M.titlesDiffer('Snakey', 'Snake Shaker'), true);
-  assert.equal(M.titlesDiffer('', 'Gloople'), false);
-  const d = make();
-  d.discogs.resolved = DISC;
-  M.buildReview(d);
-  const offers = Object.fromEntries(M.reviewRows(d).map((r) => [r.id, M.offersDiscTitle(r)]));
-  assert.deepEqual([offers.d1, offers.d2, offers.d3, offers.d4], [false, false, true, false]);
+test('splitDiscTitle splits only a version the song form recognises, never a feature or an unknown bracket', () => {
+  assert.deepEqual(M.splitDiscTitle('Gloople (Remix)', 'Guest'), { title: 'Gloople', version: 'Remix' });
+  assert.deepEqual(M.splitDiscTitle('Foo (Bar Remix)'), { title: 'Foo', version: 'Bar Remix' });
+  assert.deepEqual(M.splitDiscTitle('State Of Mind (Metal Mix)'), { title: 'State Of Mind (Metal Mix)', version: '' });
+  assert.deepEqual(M.splitDiscTitle('Song (feat. X) (Live)'), { title: 'Song (feat. X) (Live)', version: '' });
+  assert.deepEqual(M.splitDiscTitle('Plain'), { title: 'Plain', version: '' });
 });
 
-test('a ticked Discogs title on a row where the titles are equal leaves the create payload as it was', () => {
+test('re-assigning the video track recomputes the automatic title', () => {
   const d = make();
-  d.discogs.resolved = DISC;
+  d.discogs.resolved = WITH_MIX;
   M.buildReview(d);
-  const before = M.createPayload(d).tracks.map((t) => [t.title, t.version]);
-  d.review.state.get(d.st.rows[0].key).useDisc = true;
-  assert.deepEqual(M.createPayload(d).tracks.map((t) => [t.title, t.version]), before);
+  M.reassign(d, 4, d.st.rows[0].key);
+  const tracks = byNo(d);
+  assert.deepEqual(tracks[4], ['Spirit Guide (Metal Mix)', null]);
+  assert.deepEqual(tracks[1], ['LSD', 'Live']);
+  M.reassign(d, 4, null);
+  M.reassign(d, 2, d.st.rows[1].key);
+  assert.deepEqual(M.reviewView(d).rows[1].title, 'Snakey Shaker');
+});
+
+test('a title the user edited wins and survives re-assigning the match', () => {
+  const d = make();
+  d.discogs.resolved = WITH_MIX;
+  M.buildReview(d);
+  const row = M.reviewRows(d).find((r) => r.id === 'd4');
+  M.editDiscTitle(d, row, 'title', 'Mine');
+  assert.deepEqual(byNo(d)[4], ['Mine', null]);
+  M.reassign(d, 4, d.st.rows[0].key);
+  assert.deepEqual(byNo(d)[4], ['Mine', null]);
+  assert.deepEqual(M.discTitleParts(d, M.reviewRows(d).find((r) => r.id === 'd4')), { title: 'Mine', version: '' });
+  M.editDiscTitle(d, M.reviewRows(d).find((r) => r.id === 'd4'), 'version', 'Edit');
+  assert.deepEqual(byNo(d)[4], ['Mine', 'Edit']);
+});
+
+test('without a Discogs pick, and for leftover tracks, the video titles stay', () => {
+  const d = make();
+  M.buildReview(d);
+  assert.deepEqual(M.createPayload(d).tracks.map((t) => [t.title, t.version]), [['LSD', null], ['Spirit Guide', null], ['Gloople', 'Remix']]);
+  d.discogs.resolved = WITH_MIX;
+  M.buildReview(d);
+  M.reassign(d, 3, null);
+  const view = M.reviewView(d);
+  const left = view.rows.find((r) => r.title === 'Gloople');
+  assert.equal(left.version, 'Remix');
+  assert.equal(left.no, 5);
 });
 
 test('issues block a bad start or an empty selection', () => {

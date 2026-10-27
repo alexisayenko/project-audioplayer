@@ -3,7 +3,7 @@ import { icon } from './icons.js';
 import { nameOf, trackClock } from './album-draft-model.js';
 import { formatClock, parseClock } from './album-video-model.js';
 import {
-  reviewRows, reassign, reviewView, rowIssueFor, estLength, lengthGap, trackArtists, offersDiscTitle, LENGTH_WARN_S,
+  reviewRows, reassign, reviewView, rowIssueFor, estLength, lengthGap, trackArtists, discTitleParts, editDiscTitle, LENGTH_WARN_S,
 } from './album-wizard-model.js';
 import { effectiveMatch, linkText, linkSong, unlinkSong } from './album-wizard-songlink.js';
 import { songPicker } from './album-wizard-songpick.js';
@@ -19,6 +19,12 @@ export function mountRows(ctx, onChange) {
   const srcName = (r) => {
     const n = nameOf({ ...r, artists: trackArtists(draft, r) });
     return n.version ? `${n.name} [${n.version}]` : n.name;
+  };
+  const rowName = (row) => {
+    if (!row.disc) return srcName(row.src);
+    if (!row.src) return row.disc.title;
+    const t = discTitleParts(draft, row);
+    return t.version ? `${t.title} [${t.version}]` : t.title;
   };
   const optionText = (r, i, rows, self) => {
     const owner = rows.find((x) => x !== self && x.disc && x.src === r);
@@ -44,6 +50,16 @@ export function mountRows(ctx, onChange) {
     input.addEventListener('input', () => {
       r[key] = input.value;
       if (key === 'artists' && !input.value.trim()) r.artists = '';
+      ctx.touch();
+      onChange();
+    });
+    return input;
+  }
+
+  function discField(row, key, label, extra = {}) {
+    const input = el('input', { type: 'text', value: discTitleParts(draft, row)[key], autocomplete: 'off', 'aria-label': `${label} of ${row.disc.title}`, placeholder: label, ...extra });
+    input.addEventListener('input', () => {
+      editDiscTitle(draft, row, key, input.value);
       ctx.touch();
       onChange();
     });
@@ -91,7 +107,7 @@ export function mountRows(ctx, onChange) {
 
   function rowNode(row, rows) {
     const { disc, src, st } = row;
-    const name = disc ? disc.title : srcName(src);
+    const name = rowName(row);
     const no = disc ? disc.no : '';
     const lenText = disc ? clock(disc.durationS) : clock(estLength(draft, src));
     const box = el('input', { type: 'checkbox', checked: !!st?.include, disabled: !src, 'aria-label': `Import ${no ? `track ${no}` : name}` });
@@ -100,11 +116,9 @@ export function mountRows(ctx, onChange) {
     const fields = src ? [
       ...(video ? [startField(src)] : []),
       textField(src, 'artists', 'Artist', { class: 'av-artist' }),
-      textField(src, 'title', 'Title', { class: 'av-title' }),
-      textField(src, 'version', 'Version', { class: 'av-version' }),
+      disc ? discField(row, 'title', 'Title', { class: 'av-title' }) : textField(src, 'title', 'Title', { class: 'av-title' }),
+      disc ? discField(row, 'version', 'Version', { class: 'av-version' }) : textField(src, 'version', 'Version', { class: 'av-version' }),
     ] : [];
-    const useDisc = disc && src ? el('label', { class: 't-caption av-use av-use-disc', hidden: !offersDiscTitle(row) }, el('input', { type: 'checkbox', checked: !!st.useDisc }), 'Use the Discogs title') : null;
-    useDisc?.querySelector('input').addEventListener('change', (e) => { st.useDisc = e.target.checked; ctx.touch(); onChange(); });
     const line2 = el('div', { class: 'av-line2', hidden: true }, ...fields);
     const issue = el('p', { class: 'av-issue t-caption', role: 'alert', hidden: true });
     const meta = [];
@@ -132,7 +146,6 @@ export function mountRows(ctx, onChange) {
         lenText ? el('span', { class: 'av-time muted t-caption' }, lenText) : null),
       matchLine(row, rows),
       line2,
-      useDisc,
       meta.length ? el('div', { class: 'av-meta' }, ...meta) : null,
       slot,
       issue);
@@ -149,7 +162,7 @@ export function mountRows(ctx, onChange) {
       edit?.setAttribute('aria-expanded', 'false');
       edit?.focus();
     });
-    ui.set(row.id, { issue, row, lineName, useDisc });
+    ui.set(row.id, { issue, row, lineName });
     return li;
   }
 
@@ -172,12 +185,11 @@ export function mountRows(ctx, onChange) {
 
   function paintRows() {
     const view = reviewView(draft);
-    for (const { issue, row, lineName, useDisc } of ui.values()) {
-      if (useDisc) useDisc.hidden = !offersDiscTitle(row);
+    for (const { issue, row, lineName } of ui.values()) {
       const bad = row.src && row.st?.include ? rowIssueFor(draft, view, row.src) : '';
       issue.textContent = bad;
       issue.hidden = !bad;
-      if (!row.disc && row.src) lineName.childNodes[0].textContent = srcName(row.src);
+      if (row.src) lineName.childNodes[0].textContent = rowName(row);
     }
   }
 

@@ -2,6 +2,10 @@
 
 What shipped, newest first. One line each; the web UI and server are live at https://electrophone.cc. Everything listed here is deployed except the sections marked "built, not deployed" (the 2026-10-14 release went out once the SSH access in [task-0027](tasks/task-0027.md) was restored; the live visualizer files match `origin/main` as of 2026-10-15). Why: [tech/decisions.md](tech/decisions.md); runbook: [tech/deploy.md](tech/deploy.md).
 
+## 2026-10-28 (Web: Add album takes the Discogs titles automatically; built, not deployed)
+
+- Web (LIB-270, owner request "change titles automatically"; unit tests pass): on the Review step a row with a Discogs track and a YouTube match takes the Discogs title for the new song; the checkbox "Use the Discogs title" (`titlesDiffer`, `offersDiscTitle`) is removed. A version the song form's title reader recognises (`splitDiscTitle`) goes into the version field, other brackets such as "(Metal Mix)" stay in the title; re-assigning the YouTube track recomputes the title, a title typed in the pencil wins and survives it; leftover and unmatched tracks keep their YouTube titles.
+
 ## 2026-10-28 (Web and server: paste a Discogs link in Add album; Review hint removed; deployed in `c917fe7`)
 
 - Web (LIB-267, owner request; unit tests and `scripts/check.sh` pass, /health ready after 6 s, unauthenticated `POST /albums/discogs/resolve` answers 401, served `app.js` byte-identical to `web/dist/app.js`, not seen in a browser): step 3 of the Add album wizard has an always-visible field "Paste a Discogs link" with a "Use" button inside it; a master or release address (language prefix, slug, query, `api.discogs.com`, `r123`/`m123`) is read with `POST /albums/discogs/resolve`, listed first as "From your link", selected, and used by the later steps (tracklist with lengths, cover, genres, Discogs link). Inline errors for a bad link, a missing album, a Discogs failure or rate limit, and a missing token; clearing the field restores the previous selection.
