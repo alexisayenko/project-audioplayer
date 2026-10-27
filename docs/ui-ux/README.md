@@ -14,7 +14,8 @@ ui-ux/
 ├── vega-108/             # nine Vega 108 turntable sketches (sketch-1..9.png)
 ├── screens/              # one file per screen (page) — where the user is
 │   └── README.md         # entry: screens section
-└── journeys.md           # one section per multi-screen path — the sequence
+├── journeys.md           # one section per multi-screen path — the sequence
+└── screen-flow.md        # Mermaid navigation maps, key flows and song states, read from the code
 ```
 
 ## Common slots

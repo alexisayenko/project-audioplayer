@@ -163,6 +163,9 @@ and rules):
   per screen (folder pre-scaffolded; multiple screens guaranteed)
 - [`ui-ux/journeys.md`](ui-ux/journeys.md) — multi-screen paths
   (extracts to `journeys/` when entries accrue)
+- [`ui-ux/screen-flow.md`](ui-ux/screen-flow.md) — Mermaid maps of the
+  iOS, web and macOS navigation, the key flows and the song audio and offline
+  states, read from the code
 
 Deeper sub-folders add an entry doc when the first real file lands.
 
@@ -225,7 +228,8 @@ docs/
 │   ├── alt-themes/ mockups1/ mockups2/ # PNG theme and mockup explorations
 │   ├── vega-108/                       # PNG turntable sketches
 │   ├── design-prompts.md               # design-tool prompts
-│   └── journeys.md                     # multi-screen paths
+│   ├── journeys.md                     # multi-screen paths
+│   └── screen-flow.md                  # navigation maps and flows (Mermaid)
 ├── README.md                           # this file
 └── concerns.md                         # cross-cutting axes (C1, C2, …)
 ```
