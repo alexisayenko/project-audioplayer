@@ -44,3 +44,11 @@ docs/brand/invoices/*
 
 /BUILD
 .wrangler/
+
+# Dev-run output: a server started inside server/ with AUDIO_DATA_DIR unset (default ".") writes its data and migration backups there
+/edited.json
+server/backups-*/
+server/genre_eras.json
+server/users/
+server/library.json
+server/downloads/

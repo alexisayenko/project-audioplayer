@@ -155,7 +155,7 @@ pip install -U 'yt-dlp[default]'                    # run daily (cron); YouTube 
 Then open `http://<host>:8000/`, sign in with Google or Apple (scripts send `X-API-Token`). Env:
 `AUDIO_API_TOKEN` (required), `AUDIO_DOWNLOAD_DIR` (default `downloads`),
 `AUDIO_DATA_DIR` (default `.`, plain-file `library.json` and `covers/` when
-`AUDIO_DATA_REPO` is unset), `AUDIO_DATA_REPO` / `AUDIO_COVERS_REPO` /
+`AUDIO_DATA_REPO` is unset; a dev server started in `server/` without it writes its data and migration backups there, which `.gitignore` covers: set it, or use `scripts/dev-local.sh`, which does), `AUDIO_DATA_REPO` / `AUDIO_COVERS_REPO` /
 `AUDIO_GIT_SSH_KEY` (git store, ADR-0005), `AUDIO_MUSIC_ROOT` /
 `AUDIO_HOSTS` / `AUDIO_HOSTS_FILE` (audio location),
 `AUDIO_WEB_DIR` (default `../web`), `AUDIO_SESSION_SECRET` (cookie signing key; else derived from `AUDIO_API_TOKEN`), `GOOGLE_WEB_CLIENT_ID` / `APPLE_WEB_CLIENT_ID` / `APPLE_WEB_REDIRECT_URI` (web sign-in, served by `/auth/config`; the two client ids are also accepted as token audiences), `AUDIO_TAG_LOOKUP` / `AUDIO_GENRE_LOOKUP` (default on, `0`
