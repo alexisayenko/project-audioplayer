@@ -5,12 +5,10 @@ from __future__ import annotations
 import hashlib
 import json
 import logging
-import shutil
 from pathlib import Path
 from typing import Any
 
-from . import deps, library
-from .jsonio import write_json_atomic
+from . import deps, library, migration
 from .tags import namespace
 
 BACKUP_DIR = "backups-genre-rename"
@@ -22,24 +20,17 @@ def digest() -> str:
     return hashlib.sha256(json.dumps(RENAMES, sort_keys=True).encode("utf-8")).hexdigest()
 
 
-def base_dir() -> Path:
-    return deps.SYNC.data_repo if deps.SYNC else deps.data_root()
-
-
 def backup_path(uid: str) -> Path:
     """`<repo root>/backups-genre-rename/<uid>/library.json`: beside, not inside, the git-added `audioplayer/` tree."""
-    return base_dir() / BACKUP_DIR / uid / "library.json"
+    return migration.user_backup(BACKUP_DIR, uid)
 
 
 def marker_path(uid: str) -> Path:
-    return backup_path(uid).parent / "applied.json"
+    return migration.marker_beside(backup_path(uid))
 
 
 def _done(uid: str) -> bool:
-    try:
-        return json.loads(marker_path(uid).read_text(encoding="utf-8")).get("sha256") == digest()
-    except (OSError, ValueError, AttributeError):
-        return False
+    return migration.marker_has(marker_path(uid), "sha256", digest())
 
 
 def rename_tags(tags: list[str]) -> list[str]:
@@ -75,29 +66,12 @@ def _apply(uid: str, lib: Path) -> int:
         doc = library.load_doc(lib)
         changed = apply_renames(doc["songs"])
         if changed:
-            backup = backup_path(uid)
-            if not backup.exists():
-                backup.parent.mkdir(parents=True, exist_ok=True)
-                shutil.copy2(lib, backup)
+            migration.backup_once(lib, backup_path(uid))
             library.save_doc(lib, doc)
-        write_json_atomic(marker_path(uid), {"sha256": digest(), "songs": len(changed), "renames": RENAMES})
+        migration.write_marker(marker_path(uid), {"sha256": digest(), "songs": len(changed), "renames": RENAMES})
     return len(changed)
 
 
 def run() -> int:
     """Rename the genre tags in every user's library once; returns the number of songs changed. Never raises."""
-    users_dir = deps.data_root() / "users"
-    if not users_dir.is_dir():
-        return 0
-    total = 0
-    for lib in sorted(users_dir.glob("*/library.json")):
-        uid = lib.parent.name
-        try:
-            if _done(uid):
-                continue
-            n = _apply(uid, lib)
-            total += n
-            _log.info("genre tags renamed for %s: %d songs", uid[:8], n)
-        except Exception:
-            _log.exception("genre rename failed for %s; the library is unchanged", uid[:8])
-    return total
+    return migration.run_for_libraries(_done, _apply, "genre tags renamed for %s: %d songs", "genre rename failed for %s; the library is unchanged")
