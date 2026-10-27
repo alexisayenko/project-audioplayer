@@ -136,8 +136,13 @@
 .album-info-tracks { gap: var(--space-4); }
 .album-track-line { display: grid; grid-template-columns: 2.5ch minmax(0, 1fr) auto; align-items: baseline; gap: var(--space-2); }
 .album-track-line .album-len { text-align: right; }
+.album-info-tracks .album-row-btn { min-height: 0; padding: var(--space-1) 0; }
 .album-info-tracks .album-panel { padding: 0 0 var(--space-1) calc(2.5ch + var(--space-2)); }
-.album-info-tracks .album-linked { padding: 0; justify-content: flex-start; font-weight: 400; }
+.album-info-tracks .album-linked { padding: 0; justify-content: flex-start; font-weight: 400; gap: calc(var(--space-2) / 2); }
+.album-track-free { grid-template-columns: 2.5ch minmax(0, 1fr) auto auto; align-items: center; padding: var(--space-1) 0; }
+.album-track-free .sq-btn { position: relative; display: inline-grid; place-items: center; width: 24px; height: 24px; padding: 0; border: 0; background: none; box-shadow: none; color: var(--accent-strong); cursor: pointer; }
+.album-track-free .sq-btn::after { content: ""; position: absolute; inset: -10px; border-radius: 50%; }
+.album-track-free .sq-btn svg { width: 14px; height: 14px; }
 .album-linked .album-len { margin-left: auto; text-align: right; }
 .av-line1 { display: flex; align-items: center; gap: var(--space-2); min-width: 0; }
 .av-line2[hidden] { display: none; }

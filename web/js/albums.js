@@ -233,7 +233,7 @@ export function openAlbumCard(album, opener = null) {
 
   function setOpen(no) {
     openNo = openNo === no ? null : no;
-    for (const li of dlg.querySelectorAll('.album-info-tracks li')) {
+    for (const li of dlg.querySelectorAll('.album-info-tracks li:not(.unlinked)')) {
       const on = Number(li.dataset.no) === openNo;
       li.querySelector('.album-row-btn').setAttribute('aria-expanded', String(on));
       li.querySelector('.album-panel').hidden = !on;
@@ -243,21 +243,23 @@ export function openAlbumCard(album, opener = null) {
 
   function trackRow(t) {
     const linked = t.songId ? store.get(t.songId) : null;
-    let sub;
-    if (t.songId) {
-      const unlink = el('button', { type: 'button', class: 'icon sq-btn album-unlink', title: 'Unlink song', 'aria-label': 'Unlink song', onclick: async (e) => {
-        const btn = e.currentTarget;
-        btn.disabled = true;
-        try { paint(await api.unlinkTrack(cur.id, t.no)); } catch (ex) { btn.disabled = false; toast(ex.message); }
-      } }, icon('unlink', 'inline'));
-      const name = linked
-        ? el('button', { type: 'button', class: 'link-btn t-caption album-linked-name', title: 'Song info', onclick: (e) => { void openSongCard(linked, e.currentTarget); } }, displayLine(linked))
-        : el('span', { class: 'album-linked-name' }, 'Linked song');
-      sub = el('div', { class: 'album-linked t-caption' }, unlink, name, el('span', { class: 'album-len muted' }, songLength(linked)));
-    } else {
-      sub = el('div', { class: 'album-linked album-unlinked t-caption' },
-        el('button', { type: 'button', class: 'icon sq-btn album-link-btn', title: 'Link a song', 'aria-label': 'Link a song', onclick: () => openLinkPopup(cur, t, paint) }, icon('link', 'inline')));
+    if (!t.songId) {
+      return el('li', { class: 'album-track unlinked', 'data-no': String(t.no) },
+        el('div', { class: 'album-track-line album-track-free' },
+          el('span', { class: 'album-no muted t-caption' }, `${t.no}.`),
+          el('span', { class: 'album-name t-subhead' }, t.title),
+          el('button', { type: 'button', class: 'icon sq-btn album-link-btn', title: 'Link a song', 'aria-label': 'Link a song', onclick: () => openLinkPopup(cur, t, paint) }, icon('link', 'inline')),
+          el('span', { class: 'album-len muted t-caption' }, lengthText(t.durationS))));
     }
+    const unlink = el('button', { type: 'button', class: 'icon sq-btn album-unlink', title: 'Unlink song', 'aria-label': 'Unlink song', onclick: async (e) => {
+      const btn = e.currentTarget;
+      btn.disabled = true;
+      try { paint(await api.unlinkTrack(cur.id, t.no)); } catch (ex) { btn.disabled = false; toast(ex.message); }
+    } }, icon('unlink', 'inline'));
+    const name = linked
+      ? el('button', { type: 'button', class: 'link-btn t-caption album-linked-name', title: 'Song info', onclick: (e) => { void openSongCard(linked, e.currentTarget); } }, displayLine(linked))
+      : el('span', { class: 'album-linked-name' }, 'Linked song');
+    const sub = el('div', { class: 'album-linked t-caption' }, unlink, name, el('span', { class: 'album-len muted' }, songLength(linked)));
     const on = openNo === t.no;
     const btn = el('button', { type: 'button', class: 'album-row-btn album-track-line', 'aria-expanded': String(on), 'aria-controls': panelId(t), onclick: () => setOpen(t.no), onkeydown: rowKeys },
       el('span', { class: 'album-no muted t-caption' }, `${t.no}.`),

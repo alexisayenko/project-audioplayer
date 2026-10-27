@@ -140,7 +140,10 @@ test('a linked song with unknown length shows a dash', async () => {
 test('tracks are an accordion: sub-row collapsed by default; Link icon when free, Unlink icon with name and length when linked', async () => {
   const v = await open(() => ok(ALBUM));
   const lis = [...v.dlg.querySelectorAll('.album-info-tracks li')];
-  for (const li of lis) {
+  assert.equal(lis[0].querySelector('.album-row-btn'), null, 'an unlinked track is not an accordion');
+  assert.equal(lis[0].querySelector('.album-panel'), null);
+  assert.ok(lis[0].querySelector('.album-track-line .album-link-btn'), 'the link icon is on the collapsed row');
+  for (const li of lis.filter((x) => x.querySelector('.album-row-btn'))) {
     assert.ok(li.querySelector('.album-linked'));
     assert.equal(li.querySelector('.album-row-btn').getAttribute('aria-expanded'), 'false');
     assert.equal(li.querySelector('.album-panel').hidden, true);
@@ -148,7 +151,6 @@ test('tracks are an accordion: sub-row collapsed by default; Link icon when free
   fire(lis[1].querySelector('.album-row-btn'), 'click');
   assert.equal(lis[1].querySelector('.album-row-btn').getAttribute('aria-expanded'), 'true');
   assert.equal(lis[1].querySelector('.album-panel').hidden, false);
-  assert.equal(lis[0].querySelector('.album-panel').hidden, true);
   const free = lis[0].querySelector('.album-link-btn');
   assert.equal(free.getAttribute('aria-label'), 'Link a song');
   assert.equal(free.title, 'Link a song');
