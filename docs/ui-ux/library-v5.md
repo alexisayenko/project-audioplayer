@@ -298,7 +298,7 @@ Replaces the list slab only (header, search, chips and the controls line stay li
 
 | Screen | Pinned | Scrolls |
 | --- | --- | --- |
-| Library | Header (menu, title, +) and the controls line; hairline once content passes under | Song list; search and chips collapse on scroll down and return on scroll up |
+| Library | Header (menu, title, +), the Songs/Albums switch and the controls line; hairline once content passes under | Search field, chip row and the song list |
 | Settings, Statistics, Playlists | Header (menu or back, title, trailing action) | Everything below it |
 | Song Details | Back, title, Edit | Cover, facts, statistics, actions |
 | Now playing | Everything | Nothing: the main block does not scroll |
@@ -366,7 +366,7 @@ Every action-flow table has the columns: **User action → immediate UI response
 | Tap the Sort direction icon | Arrow flips (down: descending, up: ascending) and the bars reorder; circle tints / untints | Reversed flag toggles | none | Scroll to top |
 | Tap Play all matched | Toast "Playing N songs"; the label never changes | Queue = the playable songs of the result set | `player.playAll` (random start under Shuffle); stays on Library | Scroll unchanged |
 | Tap Clear all filters in the ellipsis menu | Search text, all filters, tag selections and both toggles clear; Clear all filters becomes disabled, the count turns `inkMuted` | Sort and direction untouched | none | Focus stays on the count; scroll to top; VO announces "Filters cleared, 455 songs" |
-| Scroll the list down | Search and chips collapse; header and controls line stay pinned (96 pt) with a hairline under them (screen M) | | none | |
+| Scroll the list down | Search and chips scroll away with the list; header, switch and controls line stay pinned (about 160 pt) with a hairline under them (screen M) | | none | |
 | Scroll up, tap the status bar, or reach the top | Search and chips come back | | none | Status bar tap also scrolls to top |
 | Tap the menu button | Left drawer opens (screen J) | | none | |
 | Tap Add (+) | Add sheet | | none | Back: scroll and filters unchanged |
@@ -523,7 +523,7 @@ Block: `music.note` icon, title "No songs yet", text "Your library is stored on 
 | Add song | Add sheet takes a pasted link (`AnonAddSheet`: link field, "Add", line "Sign in to search" + Sign in button) | | `POST /anon/downloads` on Add; row appears as "Downloading NN%" | Library shows the arriving row |
 | Sign in | Settings opens (account card) | | none | |
 
-### M. Library scrolled (collapsed), light and night
+### M. Library scrolled (search and chips gone), light and night
 
 **Purpose.** Show the pinned block while the list scrolls. **Entry.** Scrolling the list down past 24 pt. **Layout.** The search field and the chip row are gone; the header and the controls line stay (about 96 pt) with a `line` hairline under them; the list runs beneath, rows cut by the hairline. Night twin on dark tokens.
 
@@ -624,7 +624,7 @@ Downloaded ───┘
 
 State lives in one app-level object (NEW `LibraryQuery`: `search`, `selection`, `neverListened`, `downloadedOnly`, `sort`, `reversed`), not in `LibraryView` `@State`, so navigation cannot lose it.
 
-**Round trip to Song Details and back** keeps: search text, every selection and toggle, sort, direction, the scroll offset (the `ScrollView` stays in the stack), whether search and chips are collapsed, and the VO focus (back to the row that opened it). Returning from the Edit sheet, a
+**Round trip to Song Details and back** keeps: search text, every selection and toggle, sort, direction, the scroll offset (the `ScrollView` stays in the stack), and the VO focus (back to the row that opened it). Returning from the Edit sheet, a
 sheet, the Add sheet or the drawer is the same.
 
 ### 3.2 Play all matched semantics
@@ -759,7 +759,7 @@ Decisions from the 2026-10-22 artifacts (Screens v53, Design System v37). Number
 | 31 | The count is the stack "N of M" (always that form; "songs" word dropped below 370 pt of row width; `selectInk` while narrowing, `inkMuted` otherwise); the header has no counter (menu, title, + only) | The header total "455 songs" and the count inside "Play all N" (#3) | 1.1, 1.4 |
 | 32 | "Play all matched" is an ellipsis-menu action, disabled at 0; the + stays the only filled cyan action | "Play all N" filled strong capsule with a fixed-width number | 1.4, 3.2 |
 | 33 | Category "Era" is now "Decades"; chronological century blocks with compact decade chips and Unknown (VoiceOver reads "2020s"); sheet subtitles "N genres / tags / decades / countries · M selected" | "Era" label, "2020s" labels, subtitle "32 in your library · 2 selected" (#7 label) | 1.3, 1.9, 3.7 |
-| 34 | The header block is pinned (header 52 + controls line 44 = about 96 pt); search and chip row collapse when the list scrolls down past 24 pt and return on scroll up, a status bar tap or the top; a `line` hairline appears under the pinned block once content scrolls under it | "List is not pinned" (a note of #22) and open question Q5 | 1.14, M |
+| 34 | The header block is pinned (header, Songs/Albums switch and controls line, about 160 pt on an iPhone SE); search and chip row are the first items of the list and scroll away with it (revised 2026-10-27, owner decision L7; before, they collapsed on scroll down); a `line` hairline appears under the pinned block once content scrolls under it | "List is not pinned" (a note of #22) and open question Q5 | 1.14, M |
 | 35 | Scrolling rules for the other screens: the header stays pinned and only the content scrolls (Settings, Statistics, Song Details, Playlists); Now playing's main block does not scroll; sheets pin their title row (filter sheets also the meta line) and have no pinned bottom button | none (new) | 1.14 |
 | 36 | Filter sheets apply LIVE: no "Show N songs" button, no Cancel; **Done** (`selectInk`) in the title row; the meta line shows "N genres · M selected" on the left and the live "K songs match" on the right; dismiss by Done, swipe down or tap outside, the selection stays; per-category Clear stays absent | The bottom "Show N songs" button, the "closes by the bottom button" rule, the subtitle "N in your library · M selected" | 1.9 |
 | 37 | Filter sheet detents: medium (about 55%) by default so the list stays visible and visibly updates, large (about 92%) for Tags, when the search field is focused or when dragged up; Decades fits its content; background layout stays in place behind the sheet; the list keeps its scroll position on open and close | The fixed `.fraction(0.8)` detent (`sheet-tall`) and "Library scrolled to top when the sheet closes" | 1.9, D |
@@ -779,7 +779,7 @@ Decisions from the 2026-10-22 artifacts (Screens v53, Design System v37). Number
 | Element | Today (file:line) | Spec |
 | --- | --- | --- |
 | State location | LV:23-36 `@State` in the view | App-level `LibraryQuery` (3.1) |
-| Pinned block | LV:154-194: one `ScrollView` holds header, search, chips, actions and the list; everything scrolls away | Header and controls line outside the scroll view; search and chips collapse on scroll (1.14) |
+| Pinned block | LV:154-194: one `ScrollView` holds header, search, chips, actions and the list; everything scrolls away | Header, switch and controls line outside the scroll view; search and chips scroll with the list (1.14) |
 | Header | LV:129-138: "455 songs" caption beside +; otherwise matches | Remove the count (1.1) |
 | Search field | LV:257-270: height 48, literal radius 16 (LV:269), slab fill, placeholder "Search songs or artists" (LV:260), clear x without a 44 hit | 44 high, `radiusKey`, `surfaceSunken`, new placeholder, 44 hit x, focus ring |
 | Search scope | LV:54-60: title, artist, album, tags; no remixer, no diacritic folding | 1.2 |
@@ -851,6 +851,6 @@ Decided since the first version of this spec (kept so the numbers stay stable):
 | # | Was | Decision |
 | --- | --- | --- |
 | Q4 | Filter-sheet counts: library-wide or narrowed? | Library-wide on the chips; the narrowed result is the live "N songs match" in the meta line (1.9) |
-| Q5 | Pin the results row under the status bar while scrolling a 455-song list? | Yes: the header and the controls line are pinned, about 96 pt; search and chips collapse (decision 34, 1.14) |
+| Q5 | Pin the results row under the status bar while scrolling a 455-song list? | Yes: the header, switch and controls line are pinned, about 160 pt; search and chips scroll away (decision 34, 1.14) |
 | Q7 | Play all N: show the result count or the playable count? | The button is "Play all matched" and carries no number; the count and the VO label use the result count, the toast explains the skips (decision 32, 3.2) |
 | Q8 | Cover tap on a server-only song starts a download: acceptable? | Yes, it downloads and never plays (decision 16, 3.4) |
