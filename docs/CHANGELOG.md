@@ -10,6 +10,7 @@ What shipped, newest first. One line each; the web UI and server are live at htt
 ## 2026-10-27 (Server: album art for new songs and track numbers on album create; built, not deployed)
 
 - Server (API-266, API-303; server tests pass, not deployed): `POST /albums/from-video` and the new form of `POST /albums/youtube/commit` take an optional `coverToSongs: true` that copies the stored album cover onto only the songs that request created (never reused or existing songs, never on a repeated request; failures swallowed), and the playlist commit takes an optional `selected[].trackNo` (1 to 999, unique; 422 `bad_selection`) that numbers the album tracks when every item has one. Without them nothing changes.
+- Server (API-310, task-0120, ADR-0045; server tests pass, not deployed): new `POST /albums/genres/suggest {artist, title, year?, discogs?, rym?}` answers `{suggestions: [{name, source, mapped, unmapped}], wikipediaPage, searchError}` for the Add album genre pills: Discogs names from the client, genres from text pasted from a Rate Your Music page (never fetched) and the Genre field of the English Wikipedia album infobox, each mapped to the genre vocabulary (names outside it are flagged `unmapped`, never added), merged and capped at 24. The Wikipedia lookup has a 5 second budget and an in-memory cache; a failure gives `searchError` `wikipedia_failed` and still returns the other sources.
 
 ## 2026-10-27 (Release: server and web deployed as `5305ff0`)
 
