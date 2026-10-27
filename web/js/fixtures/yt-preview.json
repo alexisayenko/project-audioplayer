@@ -8,7 +8,8 @@
   "guess": {
     "artist": "Hallucinogen",
     "album": "Twisted",
-    "year": 1995
+    "year": 1995,
+    "type": "album"
   },
   "tracks": [
     {
@@ -167,6 +168,10 @@
           "durationS": 490
         }
       ],
+      "genres": [
+        "Psy-Trance",
+        "Electronic"
+      ],
       "matches": {
         "1": 1,
         "2": 2,
@@ -181,6 +186,9 @@
         "11": null
       }
     }
+  ],
+  "genres": [
+    "psytrance"
   ],
   "searchError": null
 }

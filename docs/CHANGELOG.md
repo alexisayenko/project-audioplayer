@@ -6,6 +6,7 @@ What shipped, newest first. One line each; the web UI and server are live at htt
 
 - Server: adding an album from a YouTube playlist fills the songs (Album, year, vocabulary genres, artist; only empty fields of existing songs and of songs linked to a track), the preview guesses artist, album, year and type from the title, and suggests genres (LIB-256, CAT-061, API-298, API-299, task-0120; to deploy).
 - Web: Add album and Edit album popups reworked (no accidental close, token fields for title and artists, narrow year, Type select, one Genres field pre-filled from the preview, song-form Links panel, two-line track rows, Advanced time shift) and the album infobox shows the linked song under each track with Link and Unlink icons (LIB-253 to LIB-255, task-0120; to deploy, focused tests only).
+- Server and web: Add album from a single YouTube video uses the same title, artist, year, type and genre guess as the playlist flow ("Artist - Album (2025) [FULL ALBUM]" is an Album, not a Mix), reads Discogs, Wikipedia and RateYourMusic links from the description and prefills from the Discogs release, and has a "Find on Discogs" button (`POST /albums/discogs/search`) (API-300, API-301, LIB-257, task-0120; to deploy, focused tests only).
 
 ## 2026-10-27 (iOS: player structure and port tests of the architecture audit; in source, not in a build)
 

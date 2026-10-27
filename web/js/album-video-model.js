@@ -77,7 +77,8 @@ export function rowOf(t, i) {
 }
 
 export function stateOf(preview, address = '') {
-  const a = preview.album || { title: preview.title, albumArtist: preview.artist, year: preview.year, type: preview.type, genres: preview.genres };
+  const g = preview.guess || {};
+  const a = preview.album || { title: g.album ?? preview.title, albumArtist: g.artist ?? preview.artist, year: g.year ?? preview.year, type: g.type ?? preview.type };
   const tracks = (Array.isArray(preview.tracks) ? preview.tracks : []).map(rowOf);
   const type = normalType(a.type);
   return {
@@ -96,8 +97,8 @@ export function stateOf(preview, address = '') {
       albumArtist: String(a.albumArtist ?? ''),
       type,
       year: Number.isInteger(a.year) ? String(a.year) : '',
-      genres: Array.isArray(a.genres) ? a.genres.filter((g) => typeof g === 'string' && g.trim()) : [],
-      links: { youtube: preview.url || address },
+      genres: (Array.isArray(a.genres) ? a.genres : Array.isArray(preview.genres) ? preview.genres : []).filter((x) => typeof x === 'string' && x.trim()),
+      links: { ...extraLinks(preview.links), youtube: preview.url || address },
       coverUrl: a.coverUrl || preview.thumbnail || null,
     },
     fades: FADE_TYPES.has(type),

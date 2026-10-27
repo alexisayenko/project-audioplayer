@@ -60,7 +60,10 @@
     "title": "Twisted",
     "artist": "Hallucinogen",
     "year": 1995,
-    "genres": [],
+    "genres": [
+      "Psy-Trance",
+      "Electronic"
+    ],
     "discogsId": 77001,
     "tracks": [
       {

@@ -149,3 +149,23 @@ test('error texts', () => {
   assert.match(createErrorText({ status: 409, data: { detail: { code: 'already_exists', id: 'a1' } } }), /already exists/);
   assert.match(createErrorText({ status: 409, data: { detail: 'album_limit' } }), /album limit/);
 });
+
+test('stateOf: the server guess fills a single-token title, artist, year, type and genres', async () => {
+  const { tokenize } = await import('./tokens.js');
+  const st = stateOf({
+    ...PV, title: 'Astral Projection – For All Mankind (2025) [FULL ALBUM]', uploader: 'Banjankri',
+    album: { title: 'For All Mankind', albumArtist: 'Astral Projection', type: 'album', year: 2025, coverUrl: null },
+    guess: { artist: 'Astral Projection', album: 'For All Mankind', year: 2025, type: 'album' }, genres: ['Psytrance', 'Goa Trance'],
+  });
+  assert.deepEqual([st.album.title, st.album.albumArtist, st.album.year, st.album.type, st.album.genres], ['For All Mankind', 'Astral Projection', '2025', 'album', ['Psytrance', 'Goa Trance']]);
+  assert.equal(tokenize(st.album.title).length, 1);
+  assert.equal(stateOf({ ...PV, album: undefined, guess: { artist: 'X', album: 'Y', year: 2020, type: 'EP' }, genres: ['Ambient'] }).album.type, 'EP');
+  assert.equal(stateOf({ ...PV, album: { title: 'T' } }).album.type, 'album');
+});
+
+test('stateOf: links from the description prefill the Links section', () => {
+  const st = stateOf({ ...PV, links: { discogs: 'https://www.discogs.com/release/35142581', wikipedia: null, rateyourmusic: null } }, 'u');
+  assert.equal(st.album.links.discogs, 'https://www.discogs.com/release/35142581');
+  assert.equal(st.album.links.youtube, PV.url);
+  assert.equal(st.album.links.wikipedia, undefined);
+});

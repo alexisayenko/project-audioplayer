@@ -2,6 +2,7 @@ import { api } from './api.js';
 import { el, toast } from './dom.js';
 import { serviceIcon } from './service-icons.js';
 import { albumFields } from './album-form.js';
+import { discogsFinder } from './album-discogs.js';
 import { icon } from './icons.js';
 import {
   FADE_TYPES, stateOf, endOf, formatClock, parseClock, rowIssue, issues, summary, offsetAll, sortRows, isSorted,
@@ -229,6 +230,7 @@ export function createVideoFlow({ body, say, genreEditor, isLive, setBusy, hideF
       if (!st.fadesTouched) { st.fades = FADE_TYPES.has(st.album.type); fadesBox.checked = st.fades; }
     });
 
+    const finder = discogsFinder({ form, editor });
     const head = el('div', { class: 'av-head' },
       el('div', { class: 't-headline' }, st.videoTitle || 'YouTube video'),
       el('div', { class: 'muted t-caption' }, [st.uploader, st.duration ? formatClock(st.duration) : '', SOURCE_NOTE[st.source]].filter(Boolean).join(' · ')),
@@ -271,7 +273,7 @@ export function createVideoFlow({ body, say, genreEditor, isLive, setBusy, hideF
     create.addEventListener('click', () => { void submit(); });
 
     body.replaceChildren(el('div', { class: 'add-card album-video' },
-      head, form.node,
+      head, form.node, finder.node,
       el('div', { class: 'av-bar-row' }, stat, toggleAll),
       rows,
       el('div', { class: 'av-bottom' }, addBtn, artistAll, sortBtn, paste),
