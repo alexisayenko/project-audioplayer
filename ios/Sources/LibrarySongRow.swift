@@ -73,11 +73,16 @@ struct LibrarySongRow: View {
                         Image(systemName: isPlaying ? "pause.fill" : "play.fill")
                             .font(.system(size: DS.Icon.iconPlay)).foregroundStyle(DS.Color.surface)
                             .accessibilityHidden(true)
+                    } else if onPhone {
+                        Circle().fill(DS.Color.coverScrim).frame(width: DS.Component.iconButton, height: DS.Component.iconButton)
+                            .overlay {
+                                Image(systemName: "play.fill").font(.system(size: DS.Icon.iconInline)).foregroundStyle(DS.Color.surface)
+                            }.accessibilityHidden(true)
                     }
                 }
                 .clipShape(RoundedRectangle(cornerRadius: DS.Radius.radiusSm)).opacity(noAudio ? DS.Opacity.dim : 1)
                 .padding(typeSize.isAccessibilitySize ? 0 : DS.Space.space3).contentShape(Rectangle())
-        }.buttonStyle(LibraryPressStyle())
+        }.buttonStyle(LibraryCoverPressStyle())
     }
 
     private var textColumn: some View {
@@ -175,5 +180,13 @@ struct LibrarySongRow: View {
     }
     static let inert: () -> Void = {
         // Rows that are still arriving are not interactive.
+    }
+}
+
+struct LibraryCoverPressStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label.opacity(configuration.isPressed ? 0.8 : 1)
+            .scaleEffect(configuration.isPressed ? DS.Motion.enterScale : 1)
+            .dsAnimation(DS.Motion.durFast, value: configuration.isPressed)
     }
 }

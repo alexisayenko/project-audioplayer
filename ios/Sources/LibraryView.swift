@@ -23,10 +23,8 @@ struct LibraryView: View {
     @State private var toastID = 0
     @State private var queueTick = 0
     @State private var deleteTick = 0
-    @State private var collapsed = false
-    @State private var offset: CGFloat = 0
-    @State private var previousOffset: CGFloat = 0
-    @State private var ignoreScrollUntil = Date.distantPast
+    @State private var scrolledPast = false
+    @State private var toolsHeight: CGFloat = 0
     @State private var chipEnd: CGFloat = 0
     @State private var resetScroll = 0
     @State private var returnIndex = 0
@@ -68,10 +66,11 @@ struct LibraryView: View {
                                     .background(GeometryReader { geometry in
                                         Color.clear.preference(key: LibraryScrollOffset.self, value: geometry.frame(in: .named("library.scroll")).minY)
                                     })
+                                if !hideTools { libraryTools }
                                 if signedIn && server.reachable == false && !songs.isEmpty { offlineBanner }
                                 content(matches, queued: queued)
                                     .frame(minHeight: !loading && (songs.isEmpty || matches.isEmpty) && arriving.isEmpty
-                                           ? max(0, screen.size.height - pinnedHeight - DS.Space.space4) : nil)
+                                           ? max(0, screen.size.height - pinnedHeight - toolsHeight - DS.Space.space3 - DS.Space.space4) : nil)
                             }
                             .padding(.horizontal, DS.Space.space4).padding(.bottom, DS.Space.space4)
                             .frame(maxWidth: .infinity)
@@ -101,9 +100,7 @@ struct LibraryView: View {
                         .sheet(isPresented: $showSort) {
                             LibrarySortSheet(listeningAvailable: signedIn && listening.loaded, scrollTop: { scrollTop(proxy) })
                         }
-                        .sheet(item: $facet, onDismiss: {
-                            ignoreScrollUntil = Date().addingTimeInterval(DS.Motion.durSlow + DS.Motion.durFast)
-                        }) { category in
+                        .sheet(item: $facet) { category in
                             LibraryFilterSheet(category: category, values: category.values(songs), selection: $query.selection,
                                                resultCount: { tracks.count }).onDisappear { facetFocus = category }
                         }
@@ -123,9 +120,9 @@ struct LibraryView: View {
         .overlay(alignment: .top) { toastView }
         .sensoryFeedback(.success, trigger: queueTick).sensoryFeedback(.warning, trigger: deleteTick)
         .task(id: accountKey) { await listening.load(settings: settings, signedIn: signedIn, reset: true) }
-        .onChange(of: accountKey) { _, _ in query.clear(); path = []; collapsed = false; resetScroll += 1 }
+        .onChange(of: accountKey) { _, _ in query.clear(); path = []; resetScroll += 1 }
         .onChange(of: listening.loaded) { _, loaded in if !loaded { query.neverListened = false } }
-        .onChange(of: signedIn) { _, value in if !value { query.clear(); path = []; collapsed = false } }
+        .onChange(of: signedIn) { _, value in if !value { query.clear(); path = [] } }
         .onChange(of: path) { old, new in
             if new.isEmpty, let id = old.last {
                 if tracks.contains(where: { $0.id == id }) { rowFocus = id }
@@ -152,13 +149,6 @@ struct LibraryView: View {
             header
             if signedIn, let mode { LibraryModeSwitch(mode: mode).padding(.horizontal, DS.Space.space4) }
             if !hideTools {
-                VStack(spacing: 0) {
-                    LibrarySearchField(text: $query.search).padding(.horizontal, DS.Space.space4)
-                    chipRow
-                }
-                .frame(height: collapsed ? 0 : nil, alignment: .top)
-                .opacity(collapsed ? 0 : 1).clipped()
-                .accessibilityHidden(collapsed || facet != nil).allowsHitTesting(!collapsed && facet == nil)
                 LibraryControls(matches: matches.count, total: songs.count,
                                 enabled: !matches.isEmpty && !loading && !failed,
                                 canShowPlaying: player.current.map { current in songs.contains { $0.id == current.id } } ?? false,
@@ -166,11 +156,19 @@ struct LibraryView: View {
                                 sort: { hideKeyboard(); showSort = true }, play: { playMatched(matches) },
                                 scrollTop: { scrollTop(proxy) }).padding(.horizontal, DS.Space.space4)
             }
-            LibraryHairline().opacity(offset < -DS.Space.space1 ? 1 : 0)
+            LibraryHairline().opacity(scrolledPast ? 1 : 0)
         }
         .background(DS.Color.ground)
         .measuredHeight($pinnedHeight)
-        .dsAnimation(DS.Motion.durSlow, curve: DS.Motion.easeIo, value: collapsed)
+    }
+
+    private var libraryTools: some View {
+        VStack(spacing: 0) {
+            LibrarySearchField(text: $query.search)
+            chipRow.padding(.horizontal, -DS.Space.space4)
+        }
+        .measuredHeight($toolsHeight)
+        .accessibilityHidden(facet != nil)
     }
 
     private var chipRow: some View {
@@ -376,24 +374,15 @@ struct LibraryView: View {
         else { showHiddenPlaying = true }
     }
     private func reveal(_ id: String, proxy: ScrollViewProxy) {
-        collapsed = false
-        ignoreScrollUntil = Date().addingTimeInterval(DS.Motion.durSlow + DS.Motion.durFast)
         proxy.scrollTo(id, anchor: .center)
         rowFocus = id
     }
     private func scrollTop(_ proxy: ScrollViewProxy) {
-        collapsed = false; ignoreScrollUntil = Date().addingTimeInterval(DS.Motion.durSlow + DS.Motion.durFast)
         proxy.scrollTo("library.top", anchor: .top)
     }
     private func scrolled(_ next: CGFloat) {
-        offset = next
-        defer { previousOffset = next }
-        guard Date() >= ignoreScrollUntil, facet == nil, path.isEmpty else { return }
-        if next >= -DS.Space.space1 || next - previousOffset > DS.Space.space1 {
-            if collapsed { collapsed = false; ignoreScrollUntil = Date().addingTimeInterval(DS.Motion.durSlow + DS.Motion.durFast) }
-        } else if next < -DS.Space.space6 && previousOffset - next > DS.Space.space1 && !collapsed {
-            hideKeyboard(); collapsed = true; ignoreScrollUntil = Date().addingTimeInterval(DS.Motion.durSlow + DS.Motion.durFast)
-        }
+        let past = next < -DS.Space.space1
+        if past != scrolledPast { scrolledPast = past }
     }
     private func hideKeyboard() { UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil) }
 }
