@@ -302,7 +302,7 @@ def _bad(code: str) -> HTTPException:
 def _selected(raw: Any) -> list[dict[str, Any]]:
     if not isinstance(raw, list) or not raw or len(raw) > MAX_SELECTED:
         raise _bad("bad_selection")
-    out, seen_pos, seen_vid, seen_no = [], set(), set(), set()
+    out, seen_pos, seen_vid, seen_no, seen_song = [], set(), set(), set(), set()
     for item in raw:
         pos = item.get("position") if isinstance(item, dict) else None
         vid = str(item.get("videoId") or "") if isinstance(item, dict) else ""
@@ -327,6 +327,12 @@ def _selected(raw: Any) -> list[dict[str, Any]]:
                 raise _bad("bad_selection")
             seen_no.add(number)
             row["trackNo"] = number
+        song = item.get("useExistingSongId")
+        if song is not None:
+            if not isinstance(song, str) or not urlclean.is_valid_video_id(song) or song in seen_song:
+                raise _bad("bad_selection")
+            seen_song.add(song)
+            row["existing"] = song
         out.append(row)
     return sorted(out, key=lambda s: s["position"])
 
@@ -419,7 +425,14 @@ def commit(uid: str, owner: bool, body: dict[str, Any], songs: list[dict[str, An
         raise HTTPException(status_code=exc.status, detail={"code": exc.code, "key": exc.key} if exc.key else exc.code) from exc
     payload["links"] = {**payload["links"], "youtube": playlist_link}
     have = _song_ids(songs)
-    fresh = [s for s in selected if s["videoId"] not in have]
+    by_id = {str(s.get("id")) for s in songs}
+    linked = {s["position"]: s["existing"] for s in selected if s.get("existing") and s["videoId"] not in have}
+    if any(sid not in by_id for sid in linked.values()):
+        raise _bad("unknown_song")
+    ids = {s["position"]: linked.get(s["position"]) or have.get(s["videoId"], s["videoId"]) for s in selected}
+    if len(set(ids.values())) != len(ids):
+        raise _bad("bad_selection")
+    fresh = [s for s in selected if s["videoId"] not in have and s["position"] not in linked]
     with users.user_lock(uid):
         existing = albums.find_source(albums.load(deps.albums_path(uid)), payload["source"])
     if existing:
@@ -430,7 +443,6 @@ def commit(uid: str, owner: bool, body: dict[str, Any], songs: list[dict[str, An
     for s in fresh:
         entry = views.get(s["videoId"]) or _minimal(s)
         _create(uid, _with_album_artist(_with_track(entry, s) if new_form else entry, payload["artist"], channel), payload)
-    ids = {s["position"]: have.get(s["videoId"], s["videoId"]) for s in selected}
     with deps.tx(uid, "albums commit"):
         items = albums.load(deps.albums_path(uid))
         dup = albums.find_source(items, payload["source"])
