@@ -97,6 +97,7 @@ targets:
           - Platform.swift
           - APIClient.swift
           - APIModels.swift
+          - ArtworkLoader.swift
           - AudioFiles.swift
           - AuthService.swift
           - BackgroundDownloader.swift

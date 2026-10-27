@@ -50,6 +50,12 @@ final class PlayerService: ObservableObject {
     /// Recent play counts per song for the shuffle (IOS-105); nil or a nil result means no data, so the shuffle is uniform.
     var shuffleCounts: (@MainActor () -> [String: Int]?)?
 
+    /// Server address and token for covers; the apps set it to their `Settings`, the default reads the stored values.
+    var artworkServer: @MainActor () -> ArtworkServer = {
+        let settings = Settings()
+        return ArtworkServer(base: settings.serverURL, token: settings.token)
+    }
+
     private let player = AVPlayer()
     private let recorder = PlayRecorder()
     private var ranker = ShuffleRanker()
@@ -435,11 +441,13 @@ final class PlayerService: ObservableObject {
         artworkTask?.cancel()
         guard let track = current else { artwork = nil; artworkID = nil; return }
         if artworkID != track.id { artwork = nil; artworkID = nil }
+        let provider = artworkServer
+        let loader = ArtworkLoader { await MainActor.run { provider() } }
         artworkTask = Task { [weak self] in
             do {
-                let image = try await Self.artworkImage(for: track)
+                let image = try await loader.image(for: track)
                 guard let self, !Task.isCancelled, self.current?.id == track.id, let image else { return }
-                self.artwork = Self.makeArtwork(image)
+                self.artwork = ArtworkLoader.mediaArtwork(image)
                 self.artworkID = track.id
                 self.updateNowPlaying()
             } catch is CancellationError {
@@ -450,69 +458,14 @@ final class PlayerService: ObservableObject {
         }
     }
 
-    private nonisolated static func makeArtwork(_ image: PlatformImage) -> MPMediaItemArtwork {
-        MPMediaItemArtwork(boundsSize: image.size) { @Sendable _ in image }
-    }
-
-    private nonisolated static var artworkDirectory: URL {
-        FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask)[0].appendingPathComponent("artwork", isDirectory: true)
-    }
-
-    private nonisolated static func artworkFile(_ id: String) -> URL {
-        artworkDirectory.appendingPathComponent("\(id).jpg")
-    }
-
     private func thumbnailChanged(_ id: String, _ thumbnail: String?) {
         for i in queue.indices where queue[i].id == id { queue[i].thumbnail = thumbnail }
-        try? FileManager.default.removeItem(at: Self.artworkFile(id))
+        ArtworkLoader.removeCached(id)
         guard current?.id == id else { return }
         artwork = nil
         artworkID = nil
         refreshArtwork()
         updateNowPlaying()
-    }
-
-    private nonisolated static func artworkImage(for track: Track) async throws -> PlatformImage? {
-        let file = artworkFile(track.id)
-        if let data = try? Data(contentsOf: file), let img = PlatformImage(data: data) { return img }
-        try Task.checkCancellation()
-        var data = try await embeddedArtwork(track.fileURL)
-        try Task.checkCancellation()
-        if data == nil, let source = track.thumbnail { data = try await remoteArtwork(source) }
-        try Task.checkCancellation()
-        guard let data, let img = PlatformImage(data: data) else { return nil }
-        try? FileManager.default.createDirectory(at: artworkDirectory, withIntermediateDirectories: true)
-        try? (img.jpegRepresentation(quality: 0.9) ?? data).write(to: file, options: .atomic)
-        return img
-    }
-
-    private nonisolated static func embeddedArtwork(_ url: URL) async throws -> Data? {
-        guard FileManager.default.fileExists(atPath: url.path) else { return nil }
-        let items = try await AVURLAsset(url: url).load(.commonMetadata)
-        let art = AVMetadataItem.metadataItems(from: items, filteredByIdentifier: .commonIdentifierArtwork)
-        guard let item = art.first else { return nil }
-        return try await item.load(.dataValue)
-    }
-
-    private nonisolated static func remoteArtwork(_ source: String) async throws -> Data? {
-        if LocalCover.isLocal(source) { return LocalCover.data(for: source) }
-        let settings = await MainActor.run { Settings() }
-        let (base, token) = await MainActor.run { (settings.serverURL, settings.token) }
-        return try await withThrowingTaskGroup(of: Data?.self) { group in
-            group.addTask {
-                if source.hasPrefix("/") { return await CoverCache.data(for: source, baseURL: base, token: token) }
-                guard let url = CoverURL.resolve(source, baseURL: base, token: "") else { return nil }
-                var req = URLRequest(url: url)
-                req.timeoutInterval = 10
-                return try await URLSession.shared.data(for: req).0
-            }
-            group.addTask {
-                try await Task.sleep(for: .seconds(10))
-                throw URLError(.timedOut)
-            }
-            defer { group.cancelAll() }
-            return try await group.next() ?? nil
-        }
     }
 
     private func updateNowPlaying() {

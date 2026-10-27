@@ -23,6 +23,7 @@ struct AudioPlayerApp: App {
                 .environmentObject(libraryQuery)
                 .environmentObject(listening)
                 .task {
+                    player.artworkServer = { [settings] in ArtworkServer(base: settings.serverURL, token: settings.token) }
                     player.shuffleCounts = { [listening] in listening.recentCounts }
                     PlaybackPersistence.shared.install(player: player, library: library) { [library] in library.contains($0.id) }
                 }

@@ -19,6 +19,7 @@ struct ElectrophoneMacApp: App {
                 .environmentObject(AuthService.shared)
                 .environmentObject(nav)
                 .frame(minWidth: 900, minHeight: 600)
+                .task { player.artworkServer = { [settings] in ArtworkServer(base: settings.serverURL, token: settings.token) } }
         }
         .commands { MacCommands(player: player, nav: nav) }
     }
