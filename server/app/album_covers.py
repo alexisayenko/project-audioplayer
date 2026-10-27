@@ -6,7 +6,10 @@ import logging
 import urllib.parse
 from typing import Any
 
+from fastapi import HTTPException
+
 from . import albums, coverimg, deps, discogs_cover, discogs_lookup, library, urlclean, wiki_lookup
+from .jsonio import write_bytes_atomic
 
 log = logging.getLogger(__name__)
 
@@ -146,8 +149,6 @@ def store(uid: str, album_id: str, jpeg: bytes, source: str, url: str | None) ->
             return None
         dest = path_of(uid, album_id)
         dest.parent.mkdir(parents=True, exist_ok=True)
-        from .jsonio import write_bytes_atomic
-
         write_bytes_atomic(dest, jpeg)
         album["cover"] = {"source": source, "url": url, "v": coverimg.version_of(jpeg)}
         albums.save(deps.albums_path(uid), items)
@@ -184,6 +185,45 @@ def auto(uid: str, album: dict[str, Any]) -> dict[str, Any]:
     except Exception as exc:
         log.warning("album cover: automatic cover failed: %s", type(exc).__name__)
     return album
+
+
+def apply_to_songs(uid: str, album_id: str, overwrite: bool = False) -> dict[str, Any] | None:
+    """Copy the album's own cover to every linked song that exists in the library (task-0120, API-305), in one library write. A song whose cover the user chose (`custom`, or the pinned placeholder `default`) is kept unless `overwrite`; an automatic or missing cover is replaced; a song that already has this very image is left. Returns `{linked, applied, unchanged, skipped, failed}`, None for an unknown album; raises `no_cover` when the album has no cover of its own."""
+    with deps.tx(uid, f"album cover to songs {album_id}"):
+        album = next((a for a in albums.load(deps.albums_path(uid)) if a["id"] == album_id), None)
+        if album is None:
+            return None
+        own = _own(album)
+        src = path_of(uid, album_id)
+        if own["source"] is None or not src.is_file():
+            raise HTTPException(status_code=409, detail="no_cover")
+        jpeg = src.read_bytes()
+        version = coverimg.version_of(jpeg)
+        songs = library.load(deps.library_path(uid))
+        by_id = {s.get("id"): s for s in songs}
+        ids = list(dict.fromkeys(t["songId"] for t in album.get("tracks") or [] if isinstance(t, dict) and t.get("songId") in by_id))
+        result = {"linked": len(ids), "applied": 0, "unchanged": 0, "skipped": 0, "failed": 0}
+        for sid in ids:
+            song = by_id[sid]
+            chosen = song.get("cover_source") in ("custom", "default")
+            if song.get("cover") and song.get("cover_source") == "custom" and song.get("cover_v") == version:
+                result["unchanged"] += 1
+            elif chosen and not overwrite:
+                result["skipped"] += 1
+            else:
+                try:
+                    dest = deps.covers_dir(uid) / f"{sid}.jpg"
+                    dest.parent.mkdir(parents=True, exist_ok=True)
+                    write_bytes_atomic(dest, jpeg)
+                except OSError as exc:
+                    log.warning("album cover to songs: %s", type(exc).__name__)
+                    result["failed"] += 1
+                    continue
+                song.update(cover=f"covers/{sid}.jpg", cover_v=version, cover_off=None, cover_source="custom", updated_at=library.now_utc())
+                result["applied"] += 1
+        if result["applied"]:
+            deps.save_songs(uid, songs)
+        return result
 
 
 def present_one(uid: str, album: dict[str, Any]) -> dict[str, Any]:

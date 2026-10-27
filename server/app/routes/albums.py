@@ -10,7 +10,7 @@ from fastapi.concurrency import run_in_threadpool
 
 from .. import album_covers, album_links, album_youtube, albums, coverimg, coverupload, deps, library, users
 from ..problems import Problem
-from ..schemas import AlbumCoverRequest, AlbumLinkRequest, AlbumPatchRequest, AlbumPreviewRequest, AlbumSearchRequest
+from ..schemas import AlbumCoverRequest, AlbumCoverToSongsRequest, AlbumLinkRequest, AlbumPatchRequest, AlbumPreviewRequest, AlbumSearchRequest
 
 router = APIRouter()
 User = Annotated[dict[str, Any], Depends(deps.require_token)]
@@ -228,6 +228,15 @@ async def put_cover(album_id: str, request: Request, user: User):
     if album is None:
         raise HTTPException(status_code=404, detail="not_found")
     return await run_in_threadpool(_out, uid, album)
+
+
+@router.post("/albums/{album_id}/cover/to-songs", responses=deps.responses(404, 409, 422))
+def cover_to_songs(album_id: str, req: AlbumCoverToSongsRequest, user: User):
+    """Copy the album's own cover to its linked songs: `{overwrite?: bool}` -> `{linked, applied, unchanged, skipped, failed}`. Songs whose cover the user chose are skipped unless `overwrite`. 409 `no_cover` when the album has no cover of its own."""
+    result = album_covers.apply_to_songs(user["uid"], album_id, req.overwrite) if albums.ID_RE.fullmatch(album_id) else None
+    if result is None:
+        raise HTTPException(status_code=404, detail="not_found")
+    return result
 
 
 @router.delete("/albums/{album_id}/cover", responses=deps.responses(404))

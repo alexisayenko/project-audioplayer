@@ -57,6 +57,10 @@ class AlbumCoverRequest(BaseModel):
     url: str = Field(min_length=1, max_length=2048)
 
 
+class AlbumCoverToSongsRequest(BaseModel):
+    overwrite: bool = False
+
+
 class AlbumLinkRequest(BaseModel):
     songId: str = Field(min_length=1, max_length=64)
 
