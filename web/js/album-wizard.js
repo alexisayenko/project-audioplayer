@@ -18,6 +18,7 @@ export function openAddAlbum(opener = null, { pollMs } = {}) {
   let alive = true;
   let current = null;
   let working = false;
+  let onBusy = null;
 
   const stepLine = el('p', { class: 't-caption muted wiz-stepline', role: 'status' });
   const dots = el('ol', { class: 'wiz-dots', 'aria-hidden': 'true' }, ...STEPS.map((s) => el('li', { 'data-step': s })));
@@ -47,7 +48,9 @@ export function openAddAlbum(opener = null, { pollMs } = {}) {
       back.disabled = on;
       next.disabled = on || next.dataset.blocked === 'true';
       next.toggleAttribute('aria-busy', on);
+      onBusy?.(on);
     },
+    watchBusy: (fn) => { onBusy = fn; },
     go: (step) => show(step),
     submit: () => { if (!next.disabled && !working) void run(); },
     openExisting: (id) => el('button', { class: 'link-btn t-caption', type: 'button', onclick: () => { dlg.close(); location.hash = `#/library/albums/${encodeURIComponent(id)}`; } }, 'Open it'),
@@ -78,8 +81,9 @@ export function openAddAlbum(opener = null, { pollMs } = {}) {
     draft.step = step;
     say('');
     next.dataset.blocked = 'false';
+    onBusy = null;
     ctx.busy(false);
-    current = MOUNT[step](ctx);
+    current =MOUNT[step](ctx);
     body.replaceChildren(current.node);
     paintSteps(step);
     back.hidden = !current.back;

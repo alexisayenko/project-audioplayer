@@ -64,7 +64,8 @@ test('the real preview response fills step 2 and gives one labelled row per trac
   openAddAlbum();
   type(q('#wiz-url'), PLAYLIST);
   await next();
-  assert.deepEqual(qa('.wiz-details input').map((i) => i.value), ['Hallucinogen', 'Twisted', '1995']);
+  assert.deepEqual(qa('.wiz-details .token-field').map((f) => [...f.querySelectorAll('.token-text')].map((p) => p.textContent).join(' - ')), ['Hallucinogen', 'Twisted']);
+  assert.equal(q('.wiz-details .album-year').value, '1995');
   await next();
   await next();
   const rows = qa('li.wiz-row');

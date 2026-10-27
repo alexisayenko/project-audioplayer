@@ -17,8 +17,8 @@ Case built now: no pre-existing tracks in the library. Linking tracks that alrea
 
 | # | Step | What the user does | Calls |
 | --- | --- | --- | --- |
-| 1 | Link | Enters the address, presses Fetch. A video with no time codes opens the paste box. | playlist: `POST /albums/youtube/preview`; video: `POST /albums/from-video/preview` or `/preview-text` |
-| 2 | Details | Sees Artist, Album name and Year suggested from the title, channel and description (the server's guess, `album` of the preview). The found tracks are NOT listed here (one muted line says how many). Adjusts the three fields. | none; Next starts the Discogs search |
+| 1 | Link | Enters the address, presses Fetch (the accent button inside the field, at its right end). A video with no time codes opens the paste box. | playlist: `POST /albums/youtube/preview`; video: `POST /albums/from-video/preview` or `/preview-text` |
+| 2 | Details | Sees Artist, Album name and Year suggested from the title, channel and description (the server's guess, `album` of the preview). Artist and Album name are token pills like the song form (LIB-266); Year is wide enough for four digits. The found tracks are NOT listed here: one line, a link to the video or playlist, reads "channel · title · N tracks · h:mm:ss". An artist taken from a non-Topic channel name is flagged for a check. Adjusts the three fields. | none; Next starts the Discogs search |
 | 3 | Discogs | Confirms the album: ONE row per Discogs master (a deduplicated release when it has no master), "Show all releases", or "None of these". | `POST /albums/discogs/search {artist, title, year, all?}` (API-301), `POST /albums/discogs/resolve` (API-309) |
 | 4 | Review | One screen: album strip with Type; album art; genres; the Discogs tracklist with the matching YouTube track under each; one final button. | `POST /albums/genres/suggest` (API-310) |
 | 5 | Import | Watches the job. | video: `POST /albums/from-video` then `GET /jobs/{id}`; playlist: `POST /albums/youtube/commit` |

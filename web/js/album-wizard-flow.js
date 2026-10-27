@@ -1,6 +1,6 @@
 import { api } from './api.js';
 import { normalType } from './album-draft-model.js';
-import { searchKey, isConfident, buildReview, genresPayload, initialGenres, parseRym } from './album-wizard-model.js';
+import { artistName, searchKey, isConfident, buildReview, genresPayload, initialGenres, parseRym } from './album-wizard-model.js';
 
 export const DISCOGS_ERRORS = {
   discogs_unavailable: 'Discogs search is not set up on this server.',
@@ -29,7 +29,7 @@ export async function searchDiscogs(draft, { all = false, find = api.albumDiscog
   draft.discogs.state = 'loading';
   let res;
   try {
-    res = await find({ artist: f.artist.trim(), title: f.album.trim(), year: Number(f.year) || null, ...(all ? { all: true } : {}) });
+    res = await find({ artist: artistName(f.artist), title: f.album.trim(), year: Number(f.year) || null, ...(all ? { all: true } : {}) });
   } catch {
     res = { candidates: [], searchError: 'discogs_failed' };
   }

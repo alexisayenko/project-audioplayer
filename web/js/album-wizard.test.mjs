@@ -35,7 +35,11 @@ const count = (calls, url) => calls.filter((c) => c.url === url).length;
 const nextBtn = () => q('.wiz-next');
 const backBtn = () => q('.wiz-back');
 const type = (node, value) => { node.value = value; fire(node, 'input'); };
-const go = async () => { fire(nextBtn(), 'click'); await settle(); };
+const go = async () => { fire(q('.wiz-fetch') || nextBtn(), 'click'); await settle(); };
+const tokenFields = () => qa('.wiz-details .token-field');
+const pills = (node) => [...node.querySelectorAll('.token-text')].map((p) => p.textContent);
+const setToken = (node, value) => { node.value = value; fire(node, 'input'); };
+const yearIn = () => q('.wiz-details .album-year');
 const stepText = () => q('.wiz-stepline').textContent;
 const rows = () => qa('li.wiz-row');
 const selectedValue = (row) => [...row.querySelectorAll('option')].find((o) => o.selected || o.getAttribute('selected') !== null)?.value;
@@ -93,7 +97,28 @@ test('step 1 takes one address; the placeholder names the two kinds and the Disc
   assert.equal(q('#wiz-url').placeholder, 'YouTube playlist or video address');
   assert.match(stepText(), /^Step 1 of 5 · Link$/);
   assert.equal(backBtn().hidden, true);
-  assert.equal(nextBtn().textContent, 'Fetch');
+  assert.equal(nextBtn().hidden, true);
+  const btn = q('.wiz-well .wiz-fetch');
+  assert.equal(btn.textContent, 'Fetch');
+  assert.equal(btn.parentNode, q('#wiz-url').parentNode);
+  assert.equal(btn.disabled, true);
+  type(q('#wiz-url'), VIDEO);
+  assert.equal(btn.disabled, false);
+  D().close();
+});
+
+test('the Fetch button is disabled while the address is read and comes back after', async () => {
+  let release;
+  server({ preview: () => new Promise((r) => { release = () => r(ok(PV)); }) });
+  openAddAlbum();
+  type(q('#wiz-url'), VIDEO);
+  fire(q('.wiz-fetch'), 'click');
+  await settle();
+  assert.equal(q('.wiz-fetch').disabled, true);
+  assert.equal(q('.wiz-fetch').getAttribute('aria-busy'), '');
+  release();
+  await settle();
+  assert.match(stepText(), /Details/);
   D().close();
 });
 
@@ -116,10 +141,54 @@ test('Fetch reads the video and step 2 suggests artist, album and year without l
   await fetchStep();
   assert.deepEqual(post(calls, '/albums/from-video/preview'), { url: VIDEO });
   assert.match(stepText(), /^Step 2 of 5 · Details$/);
-  const fields = qa('.wiz-details input');
-  assert.deepEqual(fields.map((f) => f.value), ['Hallucinogen', 'Twisted', '1995']);
+  assert.deepEqual(tokenFields().map(pills), [['Hallucinogen'], ['Twisted']]);
+  assert.equal(yearIn().value, '1995');
   assert.equal(qa('li').filter((li) => /LSD/.test(li.textContent)).length, 0);
-  assert.match(q('.wiz-source').textContent, /3 tracks from the video chapters/);
+  assert.equal(q('.wiz-source').textContent, 'Topic · Hallucinogen - Twisted (1995) [FULL ALBUM] · 3 tracks · 20:00');
+  const link = q('.wiz-source a');
+  assert.equal(link.getAttribute('href'), 'https://youtu.be/yeUFSnA9Puk');
+  assert.equal(link.getAttribute('target'), '_blank');
+  assert.match(link.getAttribute('rel'), /noopener/);
+  D().close();
+});
+
+test('artist and album name are token pills: dashes split, the payload keeps one text and Discogs gets the joined artists', async () => {
+  const calls = server();
+  await fetchStep();
+  const [artist, album] = tokenFields();
+  setToken(artist, 'Hallucinogen - Simon Posford - Raja Ram');
+  setToken(album, 'Twisted - Remastered');
+  assert.deepEqual(pills(artist), ['Hallucinogen', 'Simon Posford', 'Raja Ram']);
+  assert.deepEqual(pills(album), ['Twisted', 'Remastered']);
+  await go();
+  assert.deepEqual(post(calls, '/albums/discogs/search'), { artist: 'Hallucinogen & Simon Posford & Raja Ram', title: 'Twisted - Remastered', year: 1995 });
+  D().close();
+});
+
+test('removing an artist pill with its x updates the draft; an emptied artist stops step 2', async () => {
+  const calls = server();
+  await fetchStep();
+  const [artist] = tokenFields();
+  setToken(artist, 'Hallucinogen - Simon Posford');
+  const remove = (name) => fire([...artist.querySelectorAll('.token-btn')].find((b) => b.getAttribute('aria-label') === `Remove ${name}`), 'click');
+  remove('Simon Posford');
+  assert.deepEqual(pills(artist), ['Hallucinogen']);
+  remove('Hallucinogen');
+  await go();
+  assert.match(q('.wiz-msg').textContent, /Give the album an artist/);
+  assert.equal(count(calls, '/albums/discogs/search'), 0);
+  D().close();
+});
+
+test('a channel name used as the artist is flagged for a check; a Topic channel is not', async () => {
+  server({ preview: () => ok({ ...PV, uploader: 'Panayotis Kritidis', title: 'Total Eclipse Delta Aquarids', album: { ...PV.album, albumArtist: 'Panayotis Kritidis', title: 'Total Eclipse Delta Aquarids' } }) });
+  await fetchStep();
+  assert.match(q('.wiz-details').textContent, /The artist is the channel name/);
+  assert.match(q('.wiz-source').textContent, /^Panayotis Kritidis · Total Eclipse Delta Aquarids · 3 tracks · 20:00$/);
+  D().close();
+  server();
+  await fetchStep();
+  assert.doesNotMatch(q('.wiz-details').textContent, /channel name/);
   D().close();
 });
 
@@ -153,7 +222,7 @@ test('one confident Discogs master skips step 3 and lands on the review with the
 test('Back from the review steps over the skipped Discogs step and keeps the typed values', async () => {
   const calls = server();
   await fetchStep();
-  type(qa('.wiz-details input')[0], 'Hallucinogen');
+  setToken(tokenFields()[0], 'Hallucinogen');
   await go();
   fire(backBtn(), 'click');
   await settle();
@@ -428,7 +497,8 @@ test('a playlist goes through the same steps and commits with trackNo, coverToSo
   const calls = server();
   await fetchStep(LIST);
   assert.deepEqual(post(calls, '/albums/youtube/preview'), { url: LIST });
-  assert.match(q('.wiz-source').textContent, /3 videos in the playlist/);
+  assert.equal(q('.wiz-source').textContent, 'Topic · Twisted · 3 tracks · 20:00');
+  assert.equal(q('.wiz-source a').getAttribute('href'), 'https://www.youtube.com/playlist?list=PLabcdefghij');
   await go();
   await settle();
   assert.match(nextBtn().textContent, /^Import and download 2 tracks$/);
@@ -456,13 +526,13 @@ test('a playlist with no playable videos says so', async () => {
 test('changing the address after edits asks once before replacing them', async () => {
   const calls = server();
   await fetchStep();
-  type(qa('.wiz-details input')[1], 'Twisted 2');
+  setToken(tokenFields()[1], 'Twisted 2');
   fire(backBtn(), 'click');
   await settle();
   type(q('#wiz-url'), 'https://youtu.be/zzzzzzzzzzz');
   await go();
   assert.match(q('.wiz-msg').textContent, /Start over from this link/);
-  assert.equal(nextBtn().textContent, 'Replace my edits');
+  assert.equal(q('.wiz-fetch').getAttribute('aria-label'), 'Replace my edits');
   assert.equal(count(calls, '/albums/from-video/preview'), 1);
   await go();
   assert.equal(count(calls, '/albums/from-video/preview'), 2);
@@ -489,11 +559,11 @@ test('closing stops any work and clears the dialog', async () => {
 test('required fields: an empty album name or a bad year stops step 2', async () => {
   const calls = server();
   await fetchStep();
-  type(qa('.wiz-details input')[1], '');
+  setToken(tokenFields()[1], '');
   await go();
   assert.match(q('.wiz-msg').textContent, /Give the album a name/);
-  type(qa('.wiz-details input')[1], 'Twisted');
-  type(qa('.wiz-details input')[2], '19');
+  setToken(tokenFields()[1], 'Twisted');
+  type(yearIn(), '19');
   await go();
   assert.match(q('.wiz-msg').textContent, /four digits/);
   assert.equal(count(calls, '/albums/discogs/search'), 0);

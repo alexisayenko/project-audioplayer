@@ -4,6 +4,7 @@ import { playlistState, issues as playlistIssues, payload as playlistPayload, su
 import { parseTrackList, startsOf } from './album-tracklist.js';
 import { normalType } from './album-draft-model.js';
 import { fold } from './album-candidates.js';
+import { splitTokens } from './tokens.js';
 
 export const STEPS = ['link', 'details', 'discogs', 'review', 'run'];
 export const STEP_LABEL = { link: 'Link', details: 'Details', discogs: 'Discogs', review: 'Review', run: 'Import' };
@@ -67,14 +68,16 @@ export function applyPreview(draft, kind, url, preview) {
 export const needsRestart = (draft, address) => !!draft.preview && draft.edited && String(address).trim() !== draft.address;
 export const sameSource = (draft, address) => !!draft.preview && String(address).trim() === draft.address;
 
-export const searchKey = (f) => [fold(f.artist), fold(f.album), String(f.year || '').trim()].join('|');
+export const artistName = (text) => splitTokens(text).join(' & ');
+
+export const searchKey = (f) => [fold(artistName(f.artist)), fold(f.album), String(f.year || '').trim()].join('|');
 
 const plain = (s) => fold(s).replaceAll(/[^\p{L}\p{N}]+/gu, ' ').trim();
 
 export function fieldIssues(fields) {
   const out = [];
   if (!fields.album.trim()) out.push('Give the album a name.');
-  if (!fields.artist.trim()) out.push('Give the album an artist.');
+  if (!artistName(fields.artist)) out.push('Give the album an artist.');
   const year = fields.year.trim();
   if (year && !/^\d{4}$/.test(year)) out.push('Year must have four digits.');
   return out;
@@ -83,7 +86,7 @@ export function fieldIssues(fields) {
 export function isConfident(candidates, fields) {
   const list = Array.isArray(candidates) ? candidates : [];
   const year = Number(fields.year) || 0;
-  const exact = list.filter((c) => plain(c.artist) === plain(fields.artist) && plain(c.title) === plain(fields.album)
+  const exact = list.filter((c) => plain(c.artist) === plain(artistName(fields.artist)) && plain(c.title) === plain(fields.album)
     && (!year || !c.year || Math.abs(c.year - year) <= 1));
   return exact.length === 1 ? exact[0] : null;
 }
@@ -196,7 +199,7 @@ export function ownArtists(draft, r) {
 export function trackArtists(draft, r) {
   const own = ownArtists(draft, r);
   if (own) return own;
-  const album = draft.fields.artist.trim();
+  const album = artistName(draft.fields.artist);
   return isVarious(album) ? '' : album;
 }
 
@@ -211,7 +214,7 @@ export function linksNow(draft) {
 
 export function albumNow(draft) {
   return {
-    title: draft.fields.album.trim(), albumArtist: draft.fields.artist.trim(), year: draft.fields.year.trim(), type: draft.album.type,
+    title: draft.fields.album.trim(), albumArtist: artistName(draft.fields.artist), year: draft.fields.year.trim(), type: draft.album.type,
     genres: draft.album.genres, links: linksNow(draft), coverUrl: draft.art.chosen || null,
   };
 }
@@ -303,7 +306,7 @@ export function parseRym(text) {
 
 export function genresPayload(draft, rymText = '') {
   return {
-    artist: draft.fields.artist.trim(), title: draft.fields.album.trim(), year: Number(draft.fields.year) || null,
+    artist: artistName(draft.fields.artist), title: draft.fields.album.trim(), year: Number(draft.fields.year) || null,
     discogs: names(draft.discogs.resolved || (draft.discogs.pick !== 'none' ? draft.discogs.pick : null)),
     ...(rymText ? { rym: rymText } : {}),
   };

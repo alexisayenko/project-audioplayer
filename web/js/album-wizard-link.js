@@ -29,9 +29,17 @@ export function mountLink(ctx) {
     if (on) area.focus();
   };
   toggle.addEventListener('click', () => showPaste(pasteBox.hidden, NO_TRACKLIST));
-  input.addEventListener('input', () => { if (confirming) { confirming = false; ctx.setNext('Next'); ctx.say(''); } });
+  const fetchBtn = el('button', { class: 'btn fill small wiz-fetch', type: 'button' }, 'Fetch');
+  let busy = false;
+  const paintFetch = () => { fetchBtn.disabled = busy || !input.value.trim(); };
+  ctx.watchBusy((on) => { busy = on; fetchBtn.toggleAttribute('aria-busy', on); paintFetch(); });
+  fetchBtn.addEventListener('click', () => ctx.submit());
+  paintFetch();
+  input.addEventListener('input', () => {
+    paintFetch();
+    if (confirming) { confirming = false; fetchBtn.textContent = 'Fetch'; ctx.say(''); }
+  });
   input.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); ctx.submit(); } });
-
   async function read(c, text) {
     const video = c.kind === 'video';
     ctx.busy(true, video ? 'Reading the video...' : 'Reading the playlist...');
@@ -65,12 +73,12 @@ export function mountLink(ctx) {
   }
 
   const node = el('div', { class: 'wiz-step wiz-link' },
-    el('div', { class: 'field' }, el('label', { for: 'wiz-url' }, 'YouTube playlist or video'), el('div', { class: 'well' }, input)),
+    el('div', { class: 'field' }, el('label', { for: 'wiz-url' }, 'YouTube playlist or video'), el('div', { class: 'well wiz-well' }, input, fetchBtn)),
     el('p', { class: 'muted t-caption' }, 'A playlist gives one track per video. A video needs time codes in its chapters or description.'),
     toggle, pasteBox);
 
   return {
-    node, back: false, focus: () => input.focus(), nextLabel: 'Fetch',
+    node, back: false, hideNext: true, focus: () => input.focus(),
     async run() {
       if (offline()) { ctx.say(OFFLINE_MESSAGE); return; }
       const address = input.value.trim();
@@ -86,10 +94,13 @@ export function mountLink(ctx) {
       if (!confirming && draft.preview && draft.edited && (needsRestart(draft, address) || sameSource(draft, address))) {
         confirming = true;
         ctx.say(RESTART_MESSAGE);
-        ctx.setNext('Replace my edits');
+        fetchBtn.textContent = 'Replace';
+        fetchBtn.setAttribute('aria-label', 'Replace my edits');
         return;
       }
       confirming = false;
+      fetchBtn.textContent = 'Fetch';
+      fetchBtn.removeAttribute('aria-label');
       ctx.say('');
       await read(c, text);
     },

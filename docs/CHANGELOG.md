@@ -2,6 +2,10 @@
 
 What shipped, newest first. One line each; the web UI and server are live at https://electrophone.cc. Everything listed here is deployed except the sections marked "built, not deployed" (the 2026-10-14 release went out once the SSH access in [task-0027](tasks/task-0027.md) was restored; the live visualizer files match `origin/main` as of 2026-10-15). Why: [tech/decisions.md](tech/decisions.md); runbook: [tech/deploy.md](tech/deploy.md).
 
+## 2026-10-27 (Web: Add album wizard follow-ups; built, not deployed)
+
+- Web (LIB-265, LIB-266; unit tests only): the Details step has Artist and Album name as the song form's token pills again (the draft keeps the token text, the artists are joined with " & " for Discogs and the create payload, so the server calls are unchanged); the Year input is wide enough for four digits in the wizard and the Edit dialog (the earlier fix lost to the global input width); the source line is a link to the video or playlist reading "channel · title · N tracks · h:mm:ss"; an artist that is only the channel name is flagged for a check; the Fetch button is back inside the address field.
+
 ## 2026-10-27 (iOS TestFlight build 20261036)
 
 - iOS: TestFlight build 20261036 uploaded 2026-10-27 (archive and export from `2dedebf0`, whose `ios/` is that of `8af0b3eb`; uploaded by `xcodebuild -exportArchive` with `destination=upload` and `testFlightInternalTestingOnly`; processing at the time of writing; internal group "Alex" only). Both schemes build and `AudioPlayerTests` pass (173 tests). It adds the render-jitter fix, the Library play glyph and shorter header, the offline check with Retry on album and playlist pages, the HIG fixes H1, H4, H6 and H7, and the player structure and port tests; none of it is checked on a device yet. No server or web change.

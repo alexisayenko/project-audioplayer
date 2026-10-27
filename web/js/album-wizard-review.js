@@ -3,7 +3,7 @@ import { el } from './dom.js';
 import { createErrorText } from './album-video-model.js';
 import { youtubeErrorText, errorCode, QUOTA_PER_HOUR } from './album-candidates.js';
 import {
-  buildReview, createIssues, createPayload, createLabel, summaryText, reviewRows, fieldIssues, offline, unreachable,
+  artistName, buildReview, createIssues, createPayload, createLabel, summaryText, reviewRows, fieldIssues, offline, unreachable,
   OFFLINE_MESSAGE,
 } from './album-wizard-model.js';
 import { mountRows } from './album-wizard-rows.js';
@@ -34,7 +34,7 @@ export function mountReview(ctx) {
   let owner = false;
   const strip = el('div', { class: 'wiz-strip' },
     el('div', { class: 'wiz-strip-text' },
-      el('div', { class: 't-headline' }, [draft.fields.artist, draft.fields.album].filter(Boolean).join(' - '), draft.fields.year ? ` · ${draft.fields.year}` : ''),
+      el('div', { class: 't-headline' }, [artistName(draft.fields.artist), draft.fields.album.trim()].filter(Boolean).join(' - '), draft.fields.year ? ` · ${draft.fields.year}` : ''),
       el('label', { class: 'wiz-type t-caption muted' }, 'Type ', typeSelect(ctx))));
   const art = artPicker({ ...ctx, repaint: () => {} });
   const genres = genreArea(ctx);
