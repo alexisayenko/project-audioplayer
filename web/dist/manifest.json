@@ -1,6 +1,6 @@
 {
   "esbuild": "0.27.7",
-  "sources": "c1834d7098ec5daec8f44834e1f592c8dae663c01a531ef2cef8fcd9254e2c06",
+  "sources": "0d7ab110326564ed6037e0201ad9099f58914afa5467a25db9cc8a8dbcb1e174",
   "modules": [
     "js/about.js",
     "js/add-preview.js",
@@ -319,17 +319,17 @@
   "tier1": [
     "dist/app.js",
     "dist/icons.js",
-    "dist/chunk-J6LQSZMS.js",
-    "dist/chunk-W5TE25T7.js",
-    "dist/chunk-IZXINQJH.js",
+    "dist/chunk-STYKR5VQ.js",
+    "dist/chunk-KZNVZFXJ.js",
+    "dist/chunk-GB5AHBGK.js",
     "dist/chunk-DDUC7YAS.js",
     "dist/chunk-EEQXK5JZ.js",
     "dist/chunk-WOT6VMZA.js"
   ],
   "tier2": [
-    "dist/lazy-ui-N4LUSSB5.js",
+    "dist/lazy-ui-3EDSR3EI.js",
     "dist/chunk-N44TH7US.js",
-    "dist/chunk-7J234I7L.js",
-    "dist/lazy-genres-5W45DSKQ.js"
+    "dist/chunk-W6X6CB5O.js",
+    "dist/lazy-genres-CMXDRFKS.js"
   ]
 }

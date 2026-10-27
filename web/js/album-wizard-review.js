@@ -8,7 +8,7 @@ import {
 } from './album-wizard-model.js';
 import { mountRows } from './album-wizard-rows.js';
 import { mountPaste } from './album-wizard-paste.js';
-import { artPicker, genreArea, typeSelect } from './album-wizard-extras.js';
+import { artPicker, genreArea, linkRows, typeSelect } from './album-wizard-extras.js';
 
 export const NETWORK_MESSAGE = 'The server could not be reached. Check the connection and try again.';
 
@@ -38,7 +38,10 @@ export function mountReview(ctx) {
       el('div', { class: 't-headline' }, [artistName(draft.fields.artist), draft.fields.album.trim()].filter(Boolean).join(' - '), draft.fields.year ? ` · ${draft.fields.year}` : ''),
       el('label', { class: 'wiz-type t-caption muted' }, 'Type ', typeSelect(ctx))));
   const art = artPicker({ ...ctx, repaint: () => {} });
-  const genres = genreArea(ctx);
+  let links = null;
+  const sub = { ...ctx, refreshLinks: () => links?.refresh() };
+  const genres = genreArea(sub);
+  links = linkRows(sub);
   const stat = el('p', { class: 't-subhead av-summary', role: 'status' });
   const toggle = el('button', { class: 'link-btn t-caption av-select-all', type: 'button' });
   const problems = el('p', { class: 't-caption muted av-problems', role: 'status' });
@@ -64,7 +67,7 @@ export function mountReview(ctx) {
   void api.me().then((m) => { if (ctx.live() && m?.owner === true) { owner = true; paint(); } }, () => {});
 
   const node = el('div', { class: 'wiz-step wiz-review' },
-    strip, art, genres.node,
+    strip, art, genres.node, links.node,
     el('section', { class: 'wiz-sec' },
       el('h3', { class: 't-headline' }, 'Tracks'),
       el('p', { class: 'muted t-caption' }, draft.review.disc.length

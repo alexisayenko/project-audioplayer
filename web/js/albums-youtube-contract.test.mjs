@@ -73,7 +73,7 @@ test('the real preview response fills step 2 and gives one labelled row per trac
   const labels = rows.map((r) => r.querySelector('.av-label').textContent.replace(/\s+/g, ' ').trim());
   assert.equal(labels[0], 'Hallucinogen - LSD (7:30)');
   assert.deepEqual(rows.map((r) => r.querySelector('input').checked), Array(11).fill(true));
-  assert.equal(rows[0].querySelector('a.av-yt').href, PREVIEW.tracks[0].url);
+  assert.equal(rows[0].querySelector('a.av-yt'), null);
   D().close();
 });
 

@@ -325,7 +325,7 @@ test('a pasted Rate Your Music link is stored as the album link; pasted genres b
   type(rym, 'https://rateyourmusic.com/release/album/hallucinogen/twisted/');
   fire(q('.wiz-rym button'), 'click');
   await settle();
-  assert.match(q('.wiz-links').textContent, /Rate Your Music/);
+  assert.equal(linkIn('rateyourmusic').value, 'https://rateyourmusic.com/release/album/hallucinogen/twisted/');
   type(rym, 'goa, zzz');
   fire(q('.wiz-rym button'), 'click');
   await settle();
@@ -337,6 +337,59 @@ test('a pasted Rate Your Music link is stored as the album link; pasted genres b
   assert.equal(body.album.links.rateyourmusic, 'https://rateyourmusic.com/release/album/hallucinogen/twisted/');
   assert.ok(body.album.genres.includes('goa trance'));
   D().close();
+});
+
+const linkIn = (key) => q(`.wiz-links input[data-key="${key}"]`);
+const linkOpen = (key) => linkIn(key).closest('.lk-row').querySelector('.lk-ico a');
+
+test('the review has editable link rows with an open button on the left, prefilled with the found links', async () => {
+  server();
+  await fetchStep();
+  await go();
+  await settle();
+  assert.equal(linkIn('discogs').value, 'https://www.discogs.com/master/7');
+  assert.equal(linkIn('youtube').value, 'https://youtu.be/yeUFSnA9Puk');
+  assert.equal(linkIn('rateyourmusic').value, '');
+  const open = linkOpen('discogs');
+  assert.equal(open.getAttribute('href'), 'https://www.discogs.com/master/7');
+  assert.equal(open.getAttribute('target'), '_blank');
+  assert.match(open.getAttribute('rel'), /noopener/);
+  assert.equal(linkOpen('rateyourmusic'), null);
+  assert.equal(linkIn('discogs').closest('.lk-row').firstElementChild.className, 'lk-ico');
+  D().close();
+});
+
+test('edited, cleared and invalid link rows go into the create payload instead of the found ones', async () => {
+  const calls = server();
+  await fetchStep();
+  await go();
+  await settle();
+  type(linkIn('discogs'), 'https://www.discogs.com/release/99');
+  assert.equal(linkOpen('discogs').getAttribute('href'), 'https://www.discogs.com/release/99');
+  type(linkIn('rateyourmusic'), 'https://rateyourmusic.com/release/album/h/t/');
+  type(linkIn('youtube'), '');
+  assert.equal(linkOpen('youtube'), null);
+  type(linkIn('wikipedia'), 'not a link');
+  assert.match(q('.wiz-links .lk-err:not([hidden])').textContent, /left out/);
+  fire(nextBtn(), 'click');
+  await settle();
+  const links = post(calls, '/albums/from-video').album.links;
+  assert.equal(links.discogs, 'https://www.discogs.com/release/99');
+  assert.equal(links.rateyourmusic, 'https://rateyourmusic.com/release/album/h/t/');
+  assert.equal('youtube' in links, false);
+  assert.equal('wikipedia' in links, false);
+});
+
+test('a link row warns, but does not block, when the host looks wrong', async () => {
+  const calls = server();
+  await fetchStep();
+  await go();
+  await settle();
+  type(linkIn('discogs'), 'https://example.com/x');
+  assert.match(q('.wiz-links .lk-err:not([hidden])').textContent, /does not look like a Discogs address/);
+  fire(nextBtn(), 'click');
+  await settle();
+  assert.equal(post(calls, '/albums/from-video').album.links.discogs, 'https://example.com/x');
 });
 
 test('Download, cut and import posts the album, art, genres and Discogs numbers, then shows the split progress and opens the album', async () => {

@@ -156,7 +156,7 @@ input[type=text].album-year { height: var(--hit); box-sizing: content-box; flex:
 .av-icons { display: inline-flex; align-items: center; gap: var(--space-1); margin-left: auto; }
 .av-icons .sq-btn { display: inline-grid; place-items: center; width: var(--control-sm); height: var(--control-sm); padding: 0; border: 0; background: none; color: var(--ink-muted); cursor: pointer; }
 .av-icons .sq-btn:hover, .av-icons .sq-btn:focus-visible { color: var(--ink); }
-.av-icons .av-yt { color: var(--brand-youtube); }
+.wiz-row .av-inc { min-width: 0; justify-content: flex-start; }
 .av-line2 { display: grid; gap: var(--space-2); grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
 .av-line2 .av-start { grid-column: 1 / -1; order: 0; }
 .av-line2 .av-title { grid-column: 1 / -1; order: 2; }
@@ -224,8 +224,6 @@ input[type=text].album-year { height: var(--hit); box-sizing: content-box; flex:
 .wiz-src { color: var(--ink-muted); font: var(--font-caption); }
 .wiz-rym { display: flex; align-items: center; gap: var(--space-2); }
 .wiz-rym input { flex: 1 1 auto; min-width: 0; }
-.wiz-links { margin: 0; }
-.wiz-links[hidden] { display: none; }
 .wiz-match { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-1) var(--space-3); min-width: 0; }
 .wiz-match select { flex: 1 1 12rem; min-width: 0; max-width: 100%; }
 .wiz-extras-head { margin-top: var(--space-2); }

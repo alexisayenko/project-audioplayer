@@ -1,8 +1,7 @@
 import { el } from './dom.js';
 import { icon } from './icons.js';
-import { serviceIcon } from './service-icons.js';
 import { nameOf, trackClock } from './album-draft-model.js';
-import { formatClock, parseClock, youtubeAt } from './album-video-model.js';
+import { formatClock, parseClock } from './album-video-model.js';
 import {
   reviewRows, reassign, reviewView, rowIssueFor, estLength, lengthGap, trackArtists, LENGTH_WARN_S,
 } from './album-wizard-model.js';
@@ -61,7 +60,6 @@ export function mountRows(ctx, onChange) {
     });
     const gap = row.src ? lengthGap(draft, row) : 0;
     return el('div', { class: 'wiz-match' },
-      el('span', { class: 'muted t-caption' }, video ? 'From the video:' : 'From the playlist:'),
       select,
       gap > LENGTH_WARN_S ? el('span', { class: 't-caption av-warn', title: `The lengths differ by ${gap} s` }, 'Length differs, check the match') : null);
   }
@@ -74,7 +72,6 @@ export function mountRows(ctx, onChange) {
     const box = el('input', { type: 'checkbox', checked: !!st?.include, disabled: !src, 'aria-label': `Import ${no ? `track ${no}` : name}` });
     if (st) box.addEventListener('change', () => { st.include = box.checked; if (!box.checked) st.useExisting = false; ctx.touch(); onChange(); });
     const edit = src ? el('button', { class: 'icon sq-btn av-edit', type: 'button', title: 'Edit track', 'aria-label': `Edit ${name}`, 'aria-expanded': 'false' }, icon('pencil', 'inline')) : null;
-    const yt = src ? el('a', { class: 'icon sq-btn av-yt', href: video ? youtubeAt(draft.st.videoId, src.start) : src.url, target: '_blank', rel: 'noopener', title: video ? 'Open in YouTube at this time' : 'Open the video in YouTube', 'aria-label': video ? 'Open in YouTube at this time' : 'Open the video in YouTube' }, serviceIcon('youtube', { size: 'inline' })) : null;
     const fields = src ? [
       ...(video ? [startField(src)] : []),
       textField(src, 'artists', 'Artist', { class: 'av-artist' }),
@@ -101,7 +98,7 @@ export function mountRows(ctx, onChange) {
         el('label', { class: 'av-inc' }, box),
         no ? el('span', { class: 'album-no muted t-caption' }, `${no}.`) : null,
         lineName,
-        el('span', { class: 'av-icons' }, edit, yt)),
+        el('span', { class: 'av-icons' }, edit)),
       matchLine(row, rows),
       line2,
       useDisc,

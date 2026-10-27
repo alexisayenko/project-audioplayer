@@ -50,7 +50,7 @@ export function newDraft() {
     review: null, art: { chosen: null },
     album: { type: 'album', genres: [], links: {} }, touched: { genres: false, type: false },
     genreHints: { key: '', state: 'idle', items: [], page: null, error: '' },
-    rym: { url: '', text: '' },
+    rym: { url: '', text: '' }, linkEdits: {},
   };
 }
 
@@ -212,13 +212,45 @@ export function trackArtists(draft, r) {
   return isVarious(album) ? '' : album;
 }
 
-export function linksNow(draft) {
+const httpUrl = (v) => (/^https?:\/\/\S+$/i.test(String(v || '').trim()) ? String(v).trim() : '');
+
+export function foundLinks(draft) {
   const links = { ...draft.album.links };
   const pick = draft.discogs.pick;
   if (pick && pick !== 'none' && pick.url) links.discogs = pick.url;
   if (draft.rym.url) links.rateyourmusic = draft.rym.url;
   if (!links.wikipedia && draft.genreHints.page) links.wikipedia = draft.genreHints.page;
+  if (!links.youtube) {
+    const own = draft.kind === 'video' ? draft.url : (draft.st?.playlist?.url || draft.url);
+    if (own) links.youtube = own;
+  }
   return links;
+}
+
+export function linksNow(draft) {
+  const links = foundLinks(draft);
+  for (const [key, value] of Object.entries(draft.linkEdits || {})) {
+    const url = httpUrl(value);
+    if (url) links[key] = url;
+    else delete links[key];
+  }
+  return links;
+}
+
+const LINK_HOSTS = { discogs: /(^|\.)discogs\.com$/i, rateyourmusic: /(^|\.)rateyourmusic\.com$/i, wikipedia: /(^|\.)wikipedia\.org$/i, youtube: /(^|\.)(youtube\.com|youtu\.be)$/i };
+const LINK_NAMES = { discogs: 'Discogs', rateyourmusic: 'Rate Your Music', wikipedia: 'Wikipedia', youtube: 'YouTube' };
+
+export function linkWarning(key, value) {
+  const text = String(value || '').trim();
+  if (!text) return '';
+  if (!httpUrl(text)) return 'Not a web address: it starts with https://. This link is left out.';
+  let host = '';
+  try { host = new URL(text).hostname; } catch { return 'Not a web address: it starts with https://. This link is left out.'; }
+  return LINK_HOSTS[key] && !LINK_HOSTS[key].test(host) ? `This does not look like a ${LINK_NAMES[key]} address. Check it.` : '';
+}
+
+export function setLinkEdit(draft, key, value) {
+  draft.linkEdits[key] = String(value || '').trim();
 }
 
 export function albumNow(draft) {

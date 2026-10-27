@@ -1,7 +1,8 @@
 import { el, plural } from './dom.js';
 import { genreEditor } from './album-genre-editor.js';
 import { ALBUM_TYPES } from './album-draft-model.js';
-import { artOptions, SOURCE_LABEL, linksNow, parseRym } from './album-wizard-model.js';
+import { artOptions, SOURCE_LABEL, linksNow, linkWarning, setLinkEdit, parseRym } from './album-wizard-model.js';
+import { albumLinksPanel } from './album-form.js';
 import { suggestGenres, seedGenres, applyRym } from './album-wizard-flow.js';
 
 export function artPicker(ctx) {
@@ -30,17 +31,11 @@ export function genreArea(ctx) {
   let seeding = false;
   const status = el('p', { class: 'muted t-caption', role: 'status' });
   const sugs = el('div', { class: 'wiz-sugs', 'aria-label': 'Suggested genres' });
-  const rymIn = el('input', { type: 'text', placeholder: 'Rate Your Music link or genres', 'aria-label': 'Rate Your Music link or genres', autocomplete: 'off' });
+  const rymIn = el('input', { type: 'text', placeholder: 'Paste genres from Rate Your Music', 'aria-label': 'Genres from Rate Your Music', autocomplete: 'off' });
   const rymAdd = el('button', { class: 'btn outline small', type: 'button' }, 'Add');
   const rymNote = el('p', { class: 'muted t-caption wiz-rym-note', role: 'status' });
-  const links = el('p', { class: 'wiz-links t-caption' });
 
-  const paintLinks = () => {
-    const all = linksNow(draft);
-    const rows = [['discogs', 'Discogs'], ['rateyourmusic', 'Rate Your Music'], ['wikipedia', 'Wikipedia']].filter(([k]) => all[k]);
-    links.replaceChildren(...rows.flatMap(([k, label], i) => [i ? ' · ' : '', el('a', { href: all[k], target: '_blank', rel: 'noopener noreferrer' }, label)]));
-    links.hidden = !rows.length;
-  };
+  const paintLinks = () => ctx.refreshLinks?.();
 
   const paintSugs = () => {
     const have = new Set(draft.album.genres.map((g) => g.toLowerCase()));
@@ -84,10 +79,10 @@ export function genreArea(ctx) {
 
   rymAdd.addEventListener('click', async () => {
     const parsed = parseRym(rymIn.value);
-    if (!parsed.url && !parsed.genres) { rymNote.textContent = 'Paste a Rate Your Music link, or the genres from its page.'; return; }
+    if (!parsed.url && !parsed.genres) { rymNote.textContent = 'Paste the genres from the Rate Your Music page.'; return; }
     if (parsed.url) {
-      applyRym(draft, rymIn.value);
-      rymNote.textContent = 'Linked. Rate Your Music cannot be read by the app, so paste its genres here too if you want them.';
+      setLinkEdit(draft, 'rateyourmusic', applyRym(draft, rymIn.value).url);
+      rymNote.textContent = 'Linked in the Links below. Rate Your Music cannot be read by the app, so paste its genres here too if you want them.';
       rymIn.value = '';
       ctx.touch();
       paintLinks();
@@ -113,7 +108,7 @@ export function genreArea(ctx) {
     node: el('section', { class: 'wiz-sec' },
       el('h3', { class: 't-headline' }, 'Genres'),
       ed.node, status, sugs,
-      el('div', { class: 'wiz-rym' }, rymIn, rymAdd), rymNote, links),
+      el('div', { class: 'wiz-rym' }, rymIn, rymAdd), rymNote),
   };
 }
 
@@ -123,4 +118,26 @@ export function typeSelect(ctx) {
   sel.value = draft.album.type;
   sel.addEventListener('change', () => { draft.album.type = sel.value; draft.touched.type = true; ctx.touch(); });
   return sel;
+}
+
+export function linkRows(ctx) {
+  const { draft } = ctx;
+  const lk = albumLinksPanel(linksNow(draft), 'wiz-links-body');
+  const warn = () => lk.panel.setErrors(Object.fromEntries(Object.keys(lk.inputs).map((k) => [k, linkWarning(k, lk.inputs[k].value)]).filter(([, w]) => w)));
+  for (const [key, inp] of Object.entries(lk.inputs)) {
+    inp.addEventListener('input', () => { setLinkEdit(draft, key, inp.value); warn(); ctx.touch(); });
+  }
+  warn();
+  return {
+    node: el('section', { class: 'wiz-sec wiz-links' }, lk.node),
+    refresh() {
+      const now = linksNow(draft);
+      for (const [key, inp] of Object.entries(lk.inputs)) {
+        if (globalThis.document?.activeElement === inp) continue;
+        inp.value = key in draft.linkEdits ? draft.linkEdits[key] : (now[key] || '');
+      }
+      lk.paint();
+      warn();
+    },
+  };
 }
