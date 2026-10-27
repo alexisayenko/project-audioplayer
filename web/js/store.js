@@ -11,12 +11,20 @@ export const store = {
 
   loadedAt: 0,
   pending: null,
+  sig: null,
 
   refresh({ maxAgeMs = 0 } = {}) {
     if (this.pending) return this.pending;
     if (maxAgeMs > 0 && this.loaded && Date.now() - this.loadedAt < maxAgeMs) return Promise.resolve();
     const run = (async () => {
-      this.songs = await api.library();
+      const songs = await api.library();
+      const sig = JSON.stringify(songs);
+      if (maxAgeMs > 0 && this.loaded && sig === this.sig) {
+        this.loadedAt = Date.now();
+        return;
+      }
+      this.songs = songs;
+      this.sig = sig;
       this.tags = tagCounts(this.songs);
       this.loaded = true;
       this.loadedAt = Date.now();
@@ -30,6 +38,7 @@ export const store = {
 
   insert(song) {
     this.songs = [...this.songs.filter((s) => s.id !== song.id), song];
+    this.sig = null;
     this.tags = tagCounts(this.songs);
     this.loaded = true;
     this.loadedAt = Date.now();

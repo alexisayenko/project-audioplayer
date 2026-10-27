@@ -70,3 +70,33 @@ test('WEB-116: concurrent refreshes share one request; maxAgeMs skips a fresh li
   await store.refresh({ maxAgeMs: 60000 });
   assert.equal(calls.length, 3, 'stale data is fetched again');
 });
+
+test('a background refresh that returns the same library does not notify; a changed one does; a plain refresh always does', async () => {
+  const songs = [{ id: 'a', tags: ['pop'] }, { id: 'b', tags: [] }];
+  let body = songs;
+  stubFetch(() => ({ body: { songs: body } }));
+  store.loaded = false;
+  store.pending = null;
+  await store.refresh();
+  let n = 0;
+  const off = store.subscribe(() => { n += 1; });
+  store.loadedAt = 0;
+  const first = store.songs;
+  await store.refresh({ maxAgeMs: 1 });
+  assert.equal(n, 0, 'identical data is not announced');
+  assert.equal(store.songs, first);
+  assert.ok(store.loadedAt > 0, 'but it counts as fresh');
+  body = [...songs, { id: 'c', tags: [] }];
+  store.loadedAt = 0;
+  await store.refresh({ maxAgeMs: 1 });
+  assert.equal(n, 1);
+  assert.equal(store.songs.length, 3);
+  await store.refresh();
+  assert.equal(n, 2, 'a plain refresh always announces');
+  store.insert({ id: 'd', tags: [] });
+  store.loadedAt = 0;
+  body = [...body, { id: 'd', tags: [] }];
+  await store.refresh({ maxAgeMs: 1 });
+  assert.equal(n, 4, 'insert invalidates the signature');
+  off();
+});
