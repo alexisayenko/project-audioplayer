@@ -1,6 +1,6 @@
 {
   "esbuild": "0.27.7",
-  "sources": "b032cb5219290c22988b98c1a6e149b23eda3ac7c90da87075507f737e90a331",
+  "sources": "046840a178c1d8165725f98bd7e3987d52894e7c3cfe46d092eadfacd6f1f483",
   "modules": [
     "js/about.js",
     "js/add-preview.js",
@@ -18,6 +18,7 @@
     "js/album-wizard-flow.js",
     "js/album-wizard-link.js",
     "js/album-wizard-model.js",
+    "js/album-wizard-paste.js",
     "js/album-wizard-pick.js",
     "js/album-wizard-review.js",
     "js/album-wizard-rows.js",
@@ -318,17 +319,17 @@
   "tier1": [
     "dist/app.js",
     "dist/icons.js",
-    "dist/chunk-5MRLF6C2.js",
-    "dist/chunk-LYTVPIPK.js",
-    "dist/chunk-WVQ2V436.js",
+    "dist/chunk-5QQEOKLA.js",
+    "dist/chunk-J2CFKE65.js",
+    "dist/chunk-ZY3RIRXV.js",
     "dist/chunk-DDUC7YAS.js",
     "dist/chunk-EEQXK5JZ.js",
     "dist/chunk-WOT6VMZA.js"
   ],
   "tier2": [
-    "dist/lazy-ui-J3W2AU5Q.js",
+    "dist/lazy-ui-X3TEFQRY.js",
     "dist/chunk-N44TH7US.js",
-    "dist/chunk-AEJOA3PP.js",
-    "dist/lazy-genres-IIEDGW6N.js"
+    "dist/chunk-MF65A4GQ.js",
+    "dist/lazy-genres-PUALRD7E.js"
   ]
 }
