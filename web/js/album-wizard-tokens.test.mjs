@@ -5,7 +5,7 @@ import { installDom } from './test-dom.mjs';
 
 installDom({ ids: ['toast', 'audio', 'mini-viz'] });
 const M = await import('./album-wizard-model.js');
-const { sourceLine, sourceParts, fromChannel } = await import('./album-wizard-details.js');
+const { sourceLine, sourceParts, sourceHead, sourceTail } = await import('./album-wizard-details.js');
 const { VIDEO, PLAYLIST } = await import('./album-wizard-fixture.mjs');
 
 const make = (kind = 'video', preview = kind === 'video' ? VIDEO : PLAYLIST) => {
@@ -53,17 +53,14 @@ test('the source line is channel, title, track count and total time; one track i
   assert.equal(sourceLine(p), 'Mix · 3 tracks · 15:00');
 });
 
-test('the channel is only flagged when it became the artist and is not a Topic channel', () => {
-  const d = make();
-  assert.equal(fromChannel(d), false);
-  d.st.uploader = 'Panayotis Kritidis';
-  d.base.artist = 'Panayotis Kritidis';
-  assert.equal(fromChannel(d), true);
-  d.base.artist = 'Delta Aquarids';
-  assert.equal(fromChannel(d), false);
-  d.st.uploader = 'Delta Aquarids - Topic';
-  d.base.artist = 'Delta Aquarids - Topic';
-  assert.equal(fromChannel(d), false);
+test('the source head is channel and title (the link), the tail is the count and time', () => {
+  const v = make();
+  assert.equal(sourceHead(v), 'Topic · Hallucinogen - Twisted (1995) [FULL ALBUM]');
+  assert.equal(sourceTail(v), ' · 3 tracks · 20:00');
+  const p = make('playlist');
+  p.st.playlist = { title: '', uploader: '' };
+  assert.equal(sourceHead(p), '');
+  assert.equal(sourceTail(p), '3 tracks · 20:00');
 });
 
 test('applyTracks fills a video that had no time codes and rebuilds the review without touching the fields', () => {

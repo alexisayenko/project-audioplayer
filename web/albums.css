@@ -128,7 +128,8 @@
 .album-yt-row2 { display: flex; flex-wrap: wrap; align-items: flex-end; gap: var(--space-3); }
 .album-yt-row2 .field { flex: 0 0 auto; }
 input[type=text].album-year { height: var(--hit); box-sizing: content-box; flex: none; width: 6ch; min-width: 6ch; text-align: center; font-variant-numeric: tabular-nums; }
-.album-yt-row2 select { height: var(--hit); width: auto; min-width: calc(var(--hit) * 3); }
+.album-yt-row2 select { width: auto; min-width: calc(var(--hit) * 3); }
+.album-yt-row2 select, .wiz-type select, .wiz-match select { height: var(--hit); }
 .album-links-panel { display: grid; gap: var(--space-2); }
 .album-edit-tracks { display: grid; gap: var(--space-2); margin-top: var(--space-4); }
 .album-edit-tracks h3 { margin: 0; }
@@ -209,7 +210,8 @@ input[type=text].album-year { height: var(--hit); box-sizing: content-box; flex:
 .wiz-sec h3 { margin: 0; }
 .wiz-strip { display: flex; align-items: center; gap: var(--space-3); }
 .wiz-strip-text { display: grid; gap: var(--space-1); min-width: 0; overflow-wrap: anywhere; }
-.wiz-type select { width: auto; min-height: var(--hit); }
+.wiz-type { display: flex; align-items: center; gap: var(--space-2); }
+.wiz-type select { width: auto; }
 .wiz-art { display: flex; flex-wrap: wrap; gap: var(--space-3); }
 .wiz-art-opt { display: grid; justify-items: center; gap: var(--space-1); cursor: pointer; }
 .wiz-art-opt input { width: auto; min-height: 0; }
@@ -225,7 +227,7 @@ input[type=text].album-year { height: var(--hit); box-sizing: content-box; flex:
 .wiz-links { margin: 0; }
 .wiz-links[hidden] { display: none; }
 .wiz-match { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-1) var(--space-3); min-width: 0; }
-.wiz-match select { flex: 1 1 12rem; min-width: 0; max-width: 100%; min-height: var(--hit); }
+.wiz-match select { flex: 1 1 12rem; min-width: 0; max-width: 100%; }
 .wiz-extras-head { margin-top: var(--space-2); }
 .wiz-row .av-use { display: inline-flex; align-items: center; gap: var(--space-1); }
 .wiz-run { gap: var(--space-4); }

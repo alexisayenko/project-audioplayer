@@ -149,6 +149,10 @@ test('Fetch reads the video and step 2 suggests artist, album and year without l
   assert.equal(link.getAttribute('href'), 'https://youtu.be/yeUFSnA9Puk');
   assert.equal(link.getAttribute('target'), '_blank');
   assert.match(link.getAttribute('rel'), /noopener/);
+  assert.equal(link.textContent, 'Topic · Hallucinogen - Twisted (1995) [FULL ALBUM]');
+  const tail = q('.wiz-source .wiz-source-tail');
+  assert.equal(tail.textContent, ' · 3 tracks · 20:00');
+  assert.equal(tail.closest('a'), null);
   D().close();
 });
 
@@ -180,15 +184,13 @@ test('removing an artist pill with its x updates the draft; an emptied artist st
   D().close();
 });
 
-test('a channel name used as the artist is flagged for a check; a Topic channel is not', async () => {
+test('a channel name used as the artist shows no hint; only channel and title are the link', async () => {
   server({ preview: () => ok({ ...PV, uploader: 'Panayotis Kritidis', title: 'Total Eclipse Delta Aquarids', album: { ...PV.album, albumArtist: 'Panayotis Kritidis', title: 'Total Eclipse Delta Aquarids' } }) });
   await fetchStep();
-  assert.match(q('.wiz-details').textContent, /The artist is the channel name/);
-  assert.match(q('.wiz-source').textContent, /^Panayotis Kritidis · Total Eclipse Delta Aquarids · 3 tracks · 20:00$/);
-  D().close();
-  server();
-  await fetchStep();
   assert.doesNotMatch(q('.wiz-details').textContent, /channel name/);
+  assert.deepEqual(pills(tokenFields()[0]), ['Panayotis Kritidis']);
+  assert.match(q('.wiz-source').textContent, /^Panayotis Kritidis · Total Eclipse Delta Aquarids · 3 tracks · 20:00$/);
+  assert.equal(q('.wiz-source a').textContent, 'Panayotis Kritidis · Total Eclipse Delta Aquarids');
   D().close();
 });
 
@@ -307,6 +309,7 @@ test('the review offers the art, genres with their sources, and flags names outs
   assert.match(sugs[1].title, /not in the genre tree/);
   assert.equal(sugs[1].getAttribute('aria-disabled'), 'true');
   assert.match(sugs[2].title, /Wikipedia/);
+  assert.doesNotMatch(q('.wiz-body').textContent, /Pick the genres that fit|Each shows where it came from/);
   fire(sugs[2], 'click');
   await settle();
   assert.equal(qa('.wiz-sug')[2].getAttribute('aria-pressed'), 'true');

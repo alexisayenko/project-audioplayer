@@ -72,7 +72,7 @@ export function genreArea(ctx) {
     status.textContent = rymText ? 'Reading the genres...' : 'Looking for genres on Discogs and Wikipedia...';
     await suggestGenres(draft, { rymText });
     if (!ctx.live()) return;
-    status.textContent = hints.error || (hints.items.length ? 'Pick the genres that fit. Each shows where it came from.' : 'No genre suggestions. Type a genre to add it.');
+    status.textContent = hints.error || (hints.items.length ? '' : 'No genre suggestions. Type a genre to add it.');
     if (!rymText && !draft.touched.genres) {
       seeding = true;
       ed.set(seedGenres(draft));
