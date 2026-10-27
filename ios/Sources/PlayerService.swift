@@ -33,25 +33,7 @@ final class PlayerService: ObservableObject {
         didSet { UserDefaults.standard.set(repeatMode.rawValue, forKey: "repeat") }
     }
 
-    enum RepeatMode: String {
-        case off, all, one
-
-        var next: RepeatMode {
-            switch self {
-            case .off: return .all
-            case .all: return .one
-            case .one: return .off
-            }
-        }
-
-        var spokenName: String {
-            switch self {
-            case .off: return "off"
-            case .all: return "whole list"
-            case .one: return "one song"
-            }
-        }
-    }
+    typealias RepeatMode = PlaybackRepeat
 
     @Published var volume: Double = 1 { didSet { player.volume = Float(volume) } }
     /// Set when the current item could not be played; cleared when another song loads.
@@ -190,14 +172,8 @@ final class PlayerService: ObservableObject {
 
     /// Reorders queue rows (`onMove` semantics: `to` is an insertion offset in the old order); the current song stays current.
     func moveQueueItem(from: IndexSet, to: Int) {
-        let source = from.filter { queue.indices.contains($0) }.sorted()
-        guard !source.isEmpty else { return }
         let playingID = current?.id
-        let moved = source.map { queue[$0] }
-        var rest = queue
-        for i in source.reversed() { rest.remove(at: i) }
-        let target = min(max(to - source.filter { $0 < to }.count, 0), rest.count)
-        rest.insert(contentsOf: moved, at: target)
+        let rest = QueueEdit.moved(queue, from: from, to: to)
         guard rest.map(\.id) != queue.map(\.id) else { return }
         queue = rest
         if let playingID, let at = queue.firstIndex(where: { $0.id == playingID }) { index = at }
@@ -222,12 +198,7 @@ final class PlayerService: ObservableObject {
     func removeQueueTag(_ tag: String) {
         let key = tag.lowercased()
         queueTags.removeAll { $0.lowercased() == key }
-        let drop = queue.indices.filter { i in
-            let id = queue[i].id
-            guard var tags = viaTags[id], tags.contains(key), !manual.contains(id), id != current?.id else { return false }
-            tags.remove(key)
-            return tags.isEmpty
-        }
+        let drop = QueueEdit.orphans(ids: queue.map(\.id), viaTags: viaTags, key: key, manual: manual, current: current?.id)
         for (id, var tags) in viaTags { tags.remove(key); viaTags[id] = tags.isEmpty ? nil : tags }
         removeFromQueue(at: IndexSet(drop))
     }
@@ -297,42 +268,37 @@ final class PlayerService: ObservableObject {
 
     func next() { advance(manual: true) }
 
+    private var cursor: QueueCursor? {
+        index.map { QueueCursor(ids: queue.map(\.id), index: $0, played: played, shuffle: shuffle, repeatMode: repeatMode) }
+    }
+
     private func advance(manual isManual: Bool) {
-        guard let index, let cur = current else { return }
-        if repeatMode == .one && !isManual { seek(to: 0); resume(); return }
-        var seen = played.contains(cur.id) ? played : played + [cur.id]
-        let n = queue.count
-        if shuffle {
-            var cand = queue.indices.filter { !seen.contains(queue[$0].id) }
-            var fresh = false
-            if cand.isEmpty {
-                guard repeatMode == .all else { return pause() }
-                seen = [cur.id]
-                fresh = true
-                cand = queue.indices.filter { $0 != index }
-                if cand.isEmpty { played = seen; seek(to: 0); resume(); return }
-            }
-            played = seen
-            let ids = queue.map(\.id)
-            let rank = ranker.rank(ids: ids, counts: pendingCounts(), fresh: fresh, last: cur.id, using: &rng)
-            return load(ShufflePick.best(cand, ids: ids, rank: rank) ?? cand[0])
+        guard let cursor else { return }
+        let outcome = QueueAdvance.next(cursor, manual: isManual) { candidates, fresh in
+            let rank = ranker.rank(ids: cursor.ids, counts: pendingCounts(), fresh: fresh, last: cursor.currentID, using: &rng)
+            return ShufflePick.best(candidates, ids: cursor.ids, rank: rank)
         }
-        played = seen
-        if index + 1 < n { load(index + 1) }
-        else if repeatMode == .all { load(0) }
-        else { pause() }
+        guard let outcome else { return }
+        played = outcome.played
+        apply(outcome.step, remember: true)
     }
 
     func previous() {
-        guard let index else { return }
-        if position > 3 { return seek(to: 0) }
-        if shuffle {
-            while let id = history.popLast() {
-                if let at = queue.firstIndex(where: { $0.id == id }), at != index { return load(at, remember: false) }
-            }
-            return seek(to: 0)
+        guard let cursor else { return }
+        let outcome = QueueAdvance.previous(cursor, position: position, history: history)
+        history = outcome.history
+        apply(outcome.step, remember: false)
+    }
+
+    private func apply(_ step: QueueStep, remember: Bool) {
+        switch step {
+        case .restart:
+            seek(to: 0)
+            resume()
+        case .rewind: seek(to: 0)
+        case .pause: pause()
+        case .load(let i): load(i, remember: remember)
         }
-        if index == 0 { seek(to: 0) } else { load(index - 1, remember: false) }
     }
 
     func seek(to seconds: Double) {
@@ -437,12 +403,7 @@ final class PlayerService: ObservableObject {
     }
 
     /// Whether Next would go somewhere.
-    var hasNext: Bool {
-        guard let index else { return false }
-        if repeatMode == .all { return !queue.isEmpty }
-        if shuffle { return queue.contains { !played.contains($0.id) && $0.id != current?.id } }
-        return index + 1 < queue.count
-    }
+    var hasNext: Bool { cursor.map(QueueAdvance.hasNext) ?? false }
 
     /// Moves a queue row; the current song stays current by identity.
     func moveInQueue(from i: Int, to j: Int) {

@@ -112,6 +112,7 @@ targets:
           - PlayerService.swift
           - PlayQueue.swift
           - PlayRecorder.swift
+          - QueueAdvance.swift
           - ServerLink.swift
           - ServiceIcons.swift
           - ShufflePick.swift
