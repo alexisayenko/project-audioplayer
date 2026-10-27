@@ -7,7 +7,7 @@ import os
 import re
 from typing import Any
 
-from . import album_youtube, discogs_lookup, timeutil, wiki_lookup
+from . import album_masters, album_youtube, discogs_lookup, timeutil, wiki_lookup
 
 log = logging.getLogger(__name__)
 _PAREN = re.compile(r"^(?P<base>.*?)(?: \((?P<paren>[^()]*)\))?$")
@@ -31,7 +31,7 @@ def _discogs(artist: str, title: str, year: int | None) -> tuple[str | None, lis
     matched = album_youtube.auto_match(hint, 0) if artist and title else None
     if matched:
         return matched["url"], [], None
-    found = album_youtube.find_releases(artist, title, year)
+    found = album_masters.find(artist, title, year)
     candidates = found["candidates"]
     for c in candidates:
         same = discogs_lookup._name(c["artist"]) == discogs_lookup._name(artist) and discogs_lookup._name(c["title"]) == discogs_lookup._name(title)

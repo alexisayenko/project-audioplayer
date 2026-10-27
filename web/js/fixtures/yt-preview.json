@@ -228,6 +228,10 @@
         "Electronic"
       ],
       "image": null,
+      "styles": [
+        "Psy-Trance"
+      ],
+      "masterId": null,
       "matches": {
         "1": 1,
         "2": 2,
@@ -275,7 +279,16 @@
         "Psy-Trance",
         "Electronic"
       ],
-      "type": "album"
+      "type": "album",
+      "kind": "release",
+      "styles": [
+        "Psy-Trance"
+      ],
+      "masterId": null,
+      "releaseId": 77001,
+      "links": {
+        "discogs": "https://www.discogs.com/release/77001"
+      }
     }
   ],
   "thumbnail": "https://i.ytimg.com/vi/hhhhhhhhh01/hqdefault.jpg"

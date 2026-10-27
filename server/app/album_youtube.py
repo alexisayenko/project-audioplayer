@@ -625,7 +625,7 @@ def format_type(formats: Any) -> str | None:
 
 
 def find_releases(artist: Any, title: Any, year: Any = None) -> dict[str, Any]:
-    """Discogs releases for an artist and album title: {candidates: [{id, url, title, artist, year, country, label, trackCount, cover, genres, type}], searchError}; failures give an empty list and a code."""
+    """Every Discogs release for an artist and album title: {candidates: [{id, url, title, artist, year, country, label, trackCount, cover, genres, type, kind}], searchError}; failures give an empty list and a code."""
     try:
         found = search(artist, title, None, None)["candidates"]
     except HTTPException as exc:
@@ -639,7 +639,7 @@ def public_candidates(found: list[dict[str, Any]]) -> list[dict[str, Any]]:
     return [{
         "id": c["discogsId"], "url": c["url"], "title": c["title"], "artist": c["artist"], "year": c["year"], "country": c["country"],
         "label": (c["labels"] or [None])[0], "trackCount": c["trackCount"], "cover": c.get("image") or c["thumb"], "genres": c["genres"][:MAX_SUGGESTED_GENRES],
-        "type": format_type(c["formats"]),
+        "type": format_type(c["formats"]), "kind": "release", "styles": c["styles"], "masterId": c["masterId"], "releaseId": c["discogsId"], "links": {"discogs": c["url"]},
     } for c in found]
 
 
@@ -714,7 +714,9 @@ def _score(album: str, artist: str, count: int | None, total: float | None, titl
 def _candidate(item: dict[str, Any], artist: str, album: str, count: int | None, total: float | None, plist: list[dict[str, Any]] | None = None) -> dict[str, Any]:
     ident = int(item["id"])
     genres: list[str] = []
+    styles: list[str] = []
     image = None
+    master = item.get("master_id")
     head, _, tail = str(item.get("title") or "").partition(" - ")
     title, who, year, tracks = tail or head, (head if tail else ""), item.get("year"), None
     try:
@@ -725,6 +727,8 @@ def _candidate(item: dict[str, Any], artist: str, album: str, count: int | None,
         who = albums._artists(detail) or who
         year = detail.get("year") or year
         genres = albums._genres({"genres": [*(detail.get("styles") or []), *(detail.get("genres") or [])]})
+        styles = [str(x) for x in detail.get("styles") or []][:MAX_SUGGESTED_GENRES]
+        master = detail.get("master_id") or master
     except Exception:
         pass
     score = _score(album, artist, count, total, title, who, tracks)
@@ -735,7 +739,8 @@ def _candidate(item: dict[str, Any], artist: str, album: str, count: int | None,
         "formats": _texts(item.get("format")), "labels": _texts(item.get("label"), MAX_LABELS),
         "country": _text(item.get("country")), "catno": _text(item.get("catno")),
         "thumb": _text(item.get("thumb")) if str(item.get("thumb") or "").startswith("https://") else None,
-        "tracks": tracks or [], "genres": genres, "image": image,
+        "tracks": tracks or [], "genres": genres, "image": image, "styles": styles,
+        "masterId": master if isinstance(master, int) and not isinstance(master, bool) and master > 0 else None,
     }
     if plist is not None:
         out["matches"] = match_tracks(plist, tracks or [])
