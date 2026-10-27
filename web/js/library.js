@@ -1,19 +1,16 @@
 import { store } from './store.js';
-import { startup } from './api.js';
 import { player } from './player.js';
 import { el, toast, plural } from './dom.js';
 import { icon } from './icons.js';
-import { loadingNote } from './loading-note.js';
 import { autodl } from './autodl.js';
-import { openAdd, openSongCard, openFilterSheet, loadUi } from './lazy-ui.js';
+import { openAdd, openSongCard, loadUi } from './lazy-ui.js';
 import { can, isGuest } from './guest.js';
 import { getListening } from './listening-data.js';
-import { ROW_FLASH_MS, LIBRARY_FRESH_MS, EAGER_COVERS } from './constants.js';
-import { findRowIndex, scrollTarget, registerRevealer } from './reveal.js';
-import { tagLabel, categoryOf, CATEGORIES } from './tagname.js';
-import { prefs, SORTS, savePrefs, visibleSongs, selectedIn, isUnsetKey, unsetCount, setListening, hasListening, neverCount, listeningData } from './library-data.js';
+import { LIBRARY_FRESH_MS, EAGER_COVERS } from './constants.js';
+import { findRowIndex, registerRevealer } from './reveal.js';
+import { prefs, SORTS, savePrefs, visibleSongs, setListening, hasListening, listeningData } from './library-data.js';
 import { songRow, paintDownloadRows } from './library-rows.js';
-import { loadReferences, onReferencesChange, cachedReferences, referenceSongIds, ROLES, roleLabel } from './references.js';
+import { loadReferences, onReferencesChange } from './references.js';
 import { disposeAll } from './marquee.js';
 import { isRowControl, keepCovers } from './row-cover.js';
 import { mountScrollTop } from './scroll-top.js';
@@ -21,14 +18,16 @@ import { searchBox } from './search-box.js';
 import { addAllToQueue, playAll as playAllSongs } from './play-all.js';
 import { draftStore } from './drafts-store.js';
 import { countText } from './drafts-model.js';
+import { chipNodes, matchSummary } from './library-chips.js';
+import { lazyPane } from './library-panes.js';
+import { flashedId, clearFlash, scrollToRow } from './row-flash.js';
+import { paintStatus } from './library-status.js';
 
 export { filterByTags, visibleSongs } from './library-data.js';
 
 if (typeof window !== 'undefined') window.addEventListener('auth-changed', () => { prefs.view = 'songs'; setListening(null); prefs.refs = ''; });
 
-let flashId = null;
 let albumsTotal = '';
-let flashTimer;
 
 export function prioritizeCovers(rows, count = EAGER_COVERS) {
   for (const row of rows.slice(0, count)) {
@@ -93,44 +92,9 @@ export function renderLibrary(root) {
   const songsPane = el('div', { class: 'lib-pane', id: 'lib-songs', });
   const draftsPane = el('div', { class: 'lib-pane drafts', id: 'lib-drafts', hidden: true });
   const albumsPane = el('div', { class: 'lib-pane', id: 'lib-albums', hidden: true });
-  let unmountAlbums = null;
-  let albumsLoading = false;
-  function showAlbums() {
-    if (unmountAlbums || albumsLoading) return;
-    albumsLoading = true;
-    albumsPane.replaceChildren(el('p', { class: 'muted t-subhead state', role: 'status' }, 'Loading albums...'));
-    loadUi('albums').then((m) => {
-      albumsLoading = false;
-      if (gone) return;
-      unmountAlbums = m.mountAlbums(albumsPane);
-    }, () => {
-      albumsLoading = false;
-      if (gone) return;
-      albumsPane.replaceChildren(el('div', { class: 'state card' },
-        el('p', { class: 'msg error', role: 'alert' }, 'Albums could not be loaded. Check the connection and try again.'),
-        el('button', { class: 'btn', type: 'button', onclick: showAlbums }, 'Retry')));
-    });
-  }
-  let unmountDrafts = null;
-  let draftsLoading = false;
   let gone = false;
-  function showDrafts() {
-    if (unmountDrafts || draftsLoading) return;
-    draftsLoading = true;
-    draftsPane.replaceChildren(el('p', { class: 'muted t-subhead state', role: 'status' }, 'Loading drafts...'));
-    loadUi('drafts').then((m) => {
-      draftsLoading = false;
-      if (gone) return;
-      draftsPane.replaceChildren();
-      unmountDrafts = m.mountDrafts(draftsPane);
-    }, () => {
-      draftsLoading = false;
-      if (gone) return;
-      draftsPane.replaceChildren(el('div', { class: 'state card' },
-        el('p', { class: 'msg error', role: 'alert' }, 'Drafts could not be loaded. Check the connection and try again.'),
-        el('button', { class: 'btn', type: 'button', onclick: showDrafts }, 'Retry')));
-    });
-  }
+  const albumsLazy = lazyPane(albumsPane, { module: 'albums', mount: 'mountAlbums', noun: 'albums', isGone: () => gone });
+  const draftsLazy = lazyPane(draftsPane, { module: 'drafts', mount: 'mountDrafts', noun: 'drafts', clear: true, isGone: () => gone });
 
   const addSong = can('add') ? el('button', { class: 'btn primary glow', type: 'button', onclick: (e) => openAdd(undefined, e.currentTarget) }, icon('plus', 'action'), 'Add song') : null;
   const addAlbum = can('add') ? el('button', { class: 'btn primary glow', type: 'button', hidden: true, onclick: (e) => { const o = e.currentTarget; void loadUi('albums').then((m) => m.openAddAlbum(o)); } }, icon('plus', 'action'), 'Add album') : null;
@@ -182,52 +146,13 @@ export function renderLibrary(root) {
     if (addAlbum) addAlbum.hidden = view !== 'albums';
     const heading = root.querySelector('#lib-title');
     if (heading) heading.textContent = { songs: 'Library', albums: 'Albums', drafts: 'Drafts' }[view];
-    if (view === 'drafts') showDrafts();
-    if (view === 'albums') showAlbums();
+    if (view === 'drafts') draftsLazy.show();
+    if (view === 'albums') albumsLazy.show();
     paintTotal();
   }
 
   function renderChips() {
-    for (const t of prefs.sel) if (!isUnsetKey(t) && !store.tags.some((x) => x.tag.toLocaleLowerCase() === t)) prefs.sel.delete(t);
-    const never = hasListening() ? neverCount() : 0;
-    const neverBtn = hasListening() ? el('button', {
-      class: `cat-chip${prefs.never ? ' on' : ''}`, type: 'button', 'aria-pressed': String(prefs.never), 'data-cat': 'never', disabled: !never && !prefs.never,
-      onclick: () => { prefs.never = !prefs.never; renderAll(); },
-    }, 'Never listened', el('small', { class: 't-caption' }, never)) : null;
-    cats.replaceChildren(...CATEGORIES.map((c) => {
-      const values = store.tags.filter((t) => categoryOf(t.tag) === c.id).length;
-      const n = selectedIn(c.id);
-      const b = el('button', {
-        class: `cat-chip${n ? ' on' : ''}`, type: 'button', disabled: !values && !unsetCount(c.id),
-        'aria-haspopup': 'dialog', 'data-cat': c.id,
-        onclick: () => openFilterSheet(c, b, renderAll),
-      }, c.name, el('small', { class: 't-caption' }, n || values));
-      b.setAttribute('aria-label', n ? `${c.name}, ${n} selected` : `${c.name}, ${values}`);
-      return b;
-    }), ...(neverBtn ? [neverBtn] : []), ...refsControls());
-  }
-
-  function refsControls() {
-    if (isGuest() || (!cachedReferences() && !prefs.refs)) return [];
-    const have = new Set(store.songs.map((s) => s.id));
-    const count = [...referenceSongIds()].filter((id) => have.has(id)).length;
-    if (!count && !prefs.refs) return [];
-    const on = !!prefs.refs;
-    const chip = el('button', {
-      class: `cat-chip${on ? ' on' : ''}`, type: 'button', 'aria-pressed': String(on), 'data-cat': 'refs',
-      title: 'Songs that are reference tracks for a genre',
-      onclick: () => { prefs.refs = on ? '' : 'any'; renderAll(); },
-    }, 'Reference tracks', el('small', { class: 't-caption' }, count));
-    if (!on) return [chip];
-    const role = el('select', { class: 'refs-role', 'aria-label': 'Reference role', onchange: (e) => { prefs.refs = e.target.value; renderAll(); } },
-      el('option', { value: 'any', selected: prefs.refs === 'any' }, 'All roles'),
-      ...ROLES.map((r) => el('option', { value: r, selected: prefs.refs === r }, roleLabel(r))));
-    return [chip, role];
-  }
-
-  function selectedNames() {
-    return [...prefs.sel].map((k) => (isUnsetKey(k) ? { unset: categoryOf(k) } : store.tags.find((t) => t.tag.toLocaleLowerCase() === k))).filter(Boolean).slice(0, 3)
-      .map((t) => (t.unset ? `${CATEGORIES.find((c) => c.id === t.unset).name}: not set` : tagLabel(t.tag)));
+    cats.replaceChildren(...chipNodes(renderAll));
   }
 
   function renderList() {
@@ -245,7 +170,7 @@ export function renderLibrary(root) {
     showPlaying.hidden = !(store.loaded && cur);
     const nothing = store.loaded && !store.songs.length;
     group.hidden = nothing || !store.loaded;
-    paintStatus(nothing);
+    paintLoadStatus(nothing);
     const data = isGuest() ? null : listeningData();
     group.classList.toggle('has-stats', !!data);
     const empty = !songs.length && store.loaded && store.songs.length
@@ -255,7 +180,7 @@ export function renderLibrary(root) {
     const focusedCls = ['row-cover', 'act-pl', 'act-queue', 'sq-btn'].find((c) => focusedEl?.classList?.contains(c));
     const focusedId = focusedCls ? focusedEl.closest('li.song')?.dataset.id : null;
     const prevRows = [...list.querySelectorAll('li.song')];
-    const rows = songs.map((s) => songRow(s, cur, flashId, data ? data.songs[s.id]?.listened?.all || 0 : null));
+    const rows = songs.map((s) => songRow(s, cur, flashedId(), data ? data.songs[s.id]?.listened?.all || 0 : null));
     prioritizeCovers(rows);
     keepCovers(prevRows, rows);
     disposeAll(list);
@@ -264,11 +189,6 @@ export function renderLibrary(root) {
   }
 
   const paintDownloads = () => paintDownloadRows(list, renderList);
-
-  function matchSummary(count) {
-    const names = prefs.sel.size ? ` · ${selectedNames().join(', ')}` : '';
-    return `${count} ${plural(count, 'song matches', 'songs match')}${names}`;
-  }
 
   function renderAll() { renderChips(); renderList(); }
 
@@ -282,32 +202,14 @@ export function renderLibrary(root) {
     renderAll();
   }
 
-  function scrollToRow(id) {
-    const row = list.querySelector(`li.song[data-id="${CSS.escape(id)}"]`);
-    if (!row) return;
-    const r = row.getBoundingClientRect();
-    const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
-    window.scrollTo({
-      top: scrollTarget({ rowTop: r.top, rowHeight: r.height, scrollY: window.scrollY, viewportH: window.innerHeight, docH: document.documentElement.scrollHeight }),
-      behavior: reduce ? 'auto' : 'smooth',
-    });
-    flashId = id;
-    row.classList.add('flash');
-    clearTimeout(flashTimer);
-    flashTimer = setTimeout(() => {
-      flashId = null;
-      list.querySelector('li.song.flash')?.classList.remove('flash');
-    }, ROW_FLASH_MS);
-  }
-
   function reveal(id) {
     if (!store.loaded || !store.get(id)) return;
-    if (findRowIndex(visibleSongs(), id) >= 0) { scrollToRow(id); return; }
+    if (findRowIndex(visibleSongs(), id) >= 0) { scrollToRow(list, id); return; }
     toast('Song is hidden by the current filters', {
       label: 'Show',
       run: () => {
         clearAllFilters();
-        scrollToRow(id);
+        scrollToRow(list, id);
       },
     });
   }
@@ -325,22 +227,8 @@ export function renderLibrary(root) {
   const unsubDl = autodl.onChange(paintDownloads);
 
   let loadError = null;
-  function paintStatus(nothing) {
-    if (loadError) {
-      status.replaceChildren(el('div', { class: 'state card' },
-        el('p', { class: 'msg error' }, loadError),
-        el('button', { class: 'btn', type: 'button', onclick: () => { loadError = null; void load(); renderList(); } }, 'Retry')));
-    } else if (!store.loaded) {
-      status.replaceChildren(startup.waiting ? loadingNote('Server is starting...') : el('p', { class: 'muted t-subhead state', role: 'status' }, 'Loading your library...'));
-    } else if (nothing) {
-      status.replaceChildren(el('div', { class: 'state card' },
-        el('p', { class: 't-headline' }, 'No songs yet'),
-        el('p', { class: 'muted t-subhead' }, 'Paste a YouTube or SoundCloud link to save the song to your library.'),
-        can('add') ? el('button', { class: 'btn primary glow', type: 'button', onclick: (e) => openAdd(undefined, e.currentTarget) }, icon('plus', 'action'), 'Add song') : null));
-    } else {
-      status.replaceChildren();
-    }
-  }
+  const retry = () => { loadError = null; void load(); renderList(); };
+  const paintLoadStatus = (nothing) => paintStatus(status, { loadError, nothing, retry });
   const load = () => store.refresh({ maxAgeMs: LIBRARY_FRESH_MS }).catch((e) => { loadError = e.message; renderList(); });
   const onStarting = () => { if (!store.loaded && !gone) renderList(); };
   window.addEventListener('server-starting', onStarting);
@@ -359,5 +247,5 @@ export function renderLibrary(root) {
 
   const unmountScrollTop = mountScrollTop();
 
-  return () => { gone = true; window.removeEventListener('server-starting', onStarting); unmountScrollTop(); unsub(); unsubDrafts?.(); unmountDrafts?.(); unmountAlbums?.(); window.removeEventListener('albums-total', onAlbumsTotal); unsubPlayer(); unsubRefs(); unsubDl(); unregister(); clearTimeout(flashTimer); flashId = null; const d = document.getElementById('filter-sheet'); if (d.open) d.close(); };
+  return () => { gone = true; window.removeEventListener('server-starting', onStarting); unmountScrollTop(); unsub(); unsubDrafts?.(); draftsLazy.dispose(); albumsLazy.dispose(); window.removeEventListener('albums-total', onAlbumsTotal); unsubPlayer(); unsubRefs(); unsubDl(); unregister(); clearFlash(); const d = document.getElementById('filter-sheet'); if (d.open) d.close(); };
 }
