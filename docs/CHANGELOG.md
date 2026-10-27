@@ -2,10 +2,10 @@
 
 What shipped, newest first. One line each; the web UI and server are live at https://electrophone.cc. Everything listed here is deployed except the sections marked "built, not deployed" (the 2026-10-14 release went out once the SSH access in [task-0027](tasks/task-0027.md) was restored; the live visualizer files match `origin/main` as of 2026-10-15). Why: [tech/decisions.md](tech/decisions.md); runbook: [tech/deploy.md](tech/deploy.md).
 
-## 2026-10-27 (Web: Add album wizard follow-ups; built, not deployed)
+## 2026-10-27 (Web: Add album wizard follow-ups; deployed in `3efff60`)
 
 - Web (LIB-265, LIB-266; unit tests only): the Details step has Artist and Album name as the song form's token pills again (the draft keeps the token text, the artists are joined with " & " for Discogs and the create payload, so the server calls are unchanged); the Year input is wide enough for four digits in the wizard and the Edit dialog (the earlier fix lost to the global input width); the source line is a link to the video or playlist reading "channel · title · N tracks · h:mm:ss"; an artist that is only the channel name is flagged for a check; the Fetch button is back inside the address field; the paste-a-track-list box moved from step 1 to the Review step, so a video without time codes goes through steps 1 to 3 and gets its YouTube tracks on Review ("No time codes? Paste a track list", or "Edit or paste a track list" when the found ones look wrong).
-- Server (API-264, additive; focused tests pass, not deployed): `POST /albums/from-video/preview` takes an optional `allowEmpty: true`; a video with no usable track list then answers 200 with `source: "none"` and `tracks: []` instead of 422.
+- Server (API-264, additive; deployed in `3efff60`): `POST /albums/from-video/preview` takes an optional `allowEmpty: true`; a video with no usable track list then answers 200 with `source: "none"` and `tracks: []` instead of 422.
 
 ## 2026-10-27 (iOS TestFlight build 20261036)
 
