@@ -1,6 +1,6 @@
 {
   "esbuild": "0.27.7",
-  "sources": "0e33fa428e72d68b810898d46e0a959d2b276ce3ef7c0e4783be0a3fdacc3ca5",
+  "sources": "304583c7b6488e381d89dcd700e5974912ea7eca9fb7fd9cec05cc99e715fb93",
   "modules": [
     "js/about.js",
     "js/add-preview.js",
@@ -113,6 +113,7 @@
     "js/icons.js",
     "js/identify-block.js",
     "js/identify-plan.js",
+    "js/idle-task.js",
     "js/input-modality.js",
     "js/lazy-route.js",
     "js/lazy-ui.js",
@@ -177,6 +178,7 @@
     "js/remix-year.js",
     "js/resume-position.js",
     "js/reveal.js",
+    "js/route-keep.js",
     "js/row-actions.js",
     "js/row-cover.js",
     "js/row-flash.js",
@@ -310,17 +312,17 @@
   "tier1": [
     "dist/app.js",
     "dist/icons.js",
-    "dist/chunk-O6D3CPYX.js",
-    "dist/chunk-QDXVUFJW.js",
-    "dist/chunk-7FKK54TS.js",
+    "dist/chunk-5BIVRCA4.js",
+    "dist/chunk-H5DMDVAL.js",
+    "dist/chunk-ERY4F2LR.js",
     "dist/chunk-DDUC7YAS.js",
     "dist/chunk-EEQXK5JZ.js",
     "dist/chunk-WOT6VMZA.js"
   ],
   "tier2": [
-    "dist/lazy-ui-X43DKYSU.js",
+    "dist/lazy-ui-FLUEAUS3.js",
     "dist/chunk-N44TH7US.js",
-    "dist/chunk-C5AJEPDI.js",
-    "dist/lazy-genres-SVTOXJFX.js"
+    "dist/chunk-OKDQ4LTO.js",
+    "dist/lazy-genres-3Z2KKM7P.js"
   ]
 }
