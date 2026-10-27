@@ -70,14 +70,10 @@ struct LibrarySongRow: View {
                 .overlay {
                     if playing {
                         DS.Color.coverScrim
-                        Image(systemName: isPlaying ? "pause.fill" : "play.fill")
-                            .font(.system(size: DS.Icon.iconPlay)).foregroundStyle(DS.Color.surface)
-                            .accessibilityHidden(true)
+                        CoverGlyph(symbol: isPlaying ? "pause.fill" : "play.fill", size: DS.Icon.iconPlay)
                     } else if onPhone {
                         Circle().fill(DS.Color.coverScrim).frame(width: DS.Component.iconButton, height: DS.Component.iconButton)
-                            .overlay {
-                                Image(systemName: "play.fill").font(.system(size: DS.Icon.iconInline)).foregroundStyle(DS.Color.surface)
-                            }.accessibilityHidden(true)
+                            .overlay { CoverGlyph(symbol: "play.fill", size: DS.Icon.iconInline) }
                     }
                 }
                 .clipShape(RoundedRectangle(cornerRadius: DS.Radius.radiusSm)).opacity(noAudio ? DS.Opacity.dim : 1)
@@ -188,5 +184,15 @@ struct LibraryCoverPressStyle: ButtonStyle {
         configuration.label.opacity(configuration.isPressed ? 0.8 : 1)
             .scaleEffect(configuration.isPressed ? DS.Motion.enterScale : 1)
             .dsAnimation(DS.Motion.durFast, value: configuration.isPressed)
+    }
+}
+
+private struct CoverGlyph: View {
+    let symbol: String
+    let size: CGFloat
+
+    var body: some View {
+        Image(systemName: symbol).font(.system(size: size)).foregroundStyle(DS.Color.surface)
+            .environment(\.colorScheme, .light).accessibilityHidden(true)
     }
 }
