@@ -9,7 +9,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from app import bpm, deps, downloads, extractor, identify, jobs, library, links, main, session, users
-from app.routes import analyze, lookup
+from app.routes import analyze
 from fastapi import HTTPException
 from app.problems import Problem
 from tests.test_library import ADIR, H, ODIR, OWNER_UID, VID, VID2, client  # noqa: F401
@@ -363,7 +363,7 @@ def test_metadata_with_a_soundcloud_source_uses_the_probe(client, monkeypatch):
     body = r.json()
     assert body["album"] == "Alb"
     assert body["year"] is None
-    assert lookup.source_info(SC_URL) == probe
+    assert links.source_info(SC_URL) == probe
 
 
 def test_add_rejects_unknown_country_and_unsupported_links(client):

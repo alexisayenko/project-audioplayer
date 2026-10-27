@@ -250,7 +250,8 @@ def test_resolve_public_rejects_mixed_answers(monkeypatch):
 import urllib.parse  # noqa: E402
 
 from app import downloads, wiki_lookup  # noqa: E402
-from app.routes import covers as covers_route  # noqa: E402
+from app import coverupload  # noqa: E402
+from app.problems import Problem  # noqa: E402
 
 
 def put_json(client, body, vid=VID):
@@ -289,7 +290,7 @@ def test_multipart_without_file_part_or_with_bad_image(client, song):
 
 def test_multipart_too_large(client, song, monkeypatch):
     monkeypatch.setattr(coverimg, "MAX_BYTES", 1000)
-    monkeypatch.setattr(covers_route, "MULTIPART_OVERHEAD", 200)
+    monkeypatch.setattr(coverupload, "MULTIPART_OVERHEAD", 200)
     assert put_multipart(client, bytes(5000)).status_code == 413
 
 
@@ -476,16 +477,16 @@ def test_suggestions_unknown_song_and_auth(client, song):
 
 
 def test_non_owner_fetches_are_rate_limited():
-    covers_route.reset_limits()
+    coverupload.reset_limits()
     user = {"uid": "u1", "owner": False}
     for _ in range(30):
-        covers_route._charge(covers_route._fetches, user)
-    with pytest.raises(covers_route.Problem) as exc:
-        covers_route._charge(covers_route._fetches, user)
+        coverupload.charge(coverupload.fetches, user)
+    with pytest.raises(Problem) as exc:
+        coverupload.charge(coverupload.fetches, user)
     assert exc.value.status == 429
     assert exc.value.code == "cover_limit"
-    covers_route._charge(covers_route._fetches, {"uid": "u1", "owner": True})
-    covers_route.reset_limits()
+    coverupload.charge(coverupload.fetches, {"uid": "u1", "owner": True})
+    coverupload.reset_limits()
 
 
 SUMMARY = "https://en.wikipedia.org/api/rest_v1/page/summary/"

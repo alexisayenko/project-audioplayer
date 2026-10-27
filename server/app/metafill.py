@@ -12,6 +12,7 @@ import time
 from typing import Any
 
 from . import credits, deps, genre_filter, genre_lookup, library, metadata, wiki_lookup
+from .links import source_info
 from .tags import namespace
 
 log = logging.getLogger(__name__)
@@ -116,8 +117,6 @@ def _urls(song: dict[str, Any]) -> list[str]:
 
 
 def _fetch(song: dict[str, Any]) -> dict[str, Any]:
-    from .routes.lookup import source_info
-
     urls = _urls(song)
     fetchers = [(lambda u=u: source_info(u)) for u in urls]
     version = song.get("version") if credits.has_version(song) else None

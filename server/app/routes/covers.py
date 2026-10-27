@@ -3,44 +3,21 @@
 from __future__ import annotations
 
 import json
-from email import policy
-from email.parser import BytesParser
 from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.concurrency import run_in_threadpool
 from pydantic import BaseModel, Field
 
-from .. import coverimg, deps, discogs_cover, downloads, library, wiki_lookup
+from .. import coverimg, coverupload, deps, discogs_cover, downloads, library, wiki_lookup
 from ..jsonio import write_bytes_atomic
 from ..problems import Problem
-from ..ratelimit import KeyedWindow
 
 router = APIRouter()
 
-PERIOD_S = 3600
-JSON_MAX_BYTES = 8192
-MULTIPART_OVERHEAD = 64 * 1024
 MAX_SUGGESTIONS = 4
 PINNED = ("custom", "default")
 CHOICE_HINT = 'Send {"url": "..."} or {"default": true}.'
-_fetches = KeyedWindow(30, PERIOD_S)
-_suggestions = KeyedWindow(60, PERIOD_S)
-
-
-def reset_limits() -> None:
-    _fetches.reset()
-    _suggestions.reset()
-
-
-def _charge(window: KeyedWindow, user: dict[str, Any]) -> None:
-    if user.get("owner"):
-        return
-    wait_s = window.charge(user["uid"], 1)
-    if wait_s:
-        minutes = max(1, int(-(-wait_s // 60)))
-        raise Problem(429, "cover_limit", f"Cover lookup limit reached. Try again in {minutes} min.",
-                      headers={"Retry-After": str(int(wait_s) + 1)}, retry_after_minutes=minutes)
 
 
 class CoverUrlRequest(BaseModel):
@@ -78,35 +55,6 @@ def _pin_default(uid: str, video_id: str) -> dict[str, Any]:
         return deps.public_song(uid, song)
 
 
-async def _body(request: Request, limit: int = coverimg.MAX_BYTES) -> bytes:
-    declared = request.headers.get("content-length", "")
-    if declared.isdigit() and int(declared) > limit:
-        raise coverimg.too_large()
-    chunks, size = [], 0
-    async for chunk in request.stream():
-        size += len(chunk)
-        if size > limit:
-            raise coverimg.too_large()
-        chunks.append(chunk)
-    return b"".join(chunks)
-
-
-def multipart_file(content_type: str, body: bytes) -> bytes:
-    """The bytes of the `file` part of a multipart/form-data body (stdlib parser, no extra dependency)."""
-    head = b"Content-Type: " + content_type.encode("latin-1", "replace") + b"\r\nMIME-Version: 1.0\r\n\r\n"
-    try:
-        message = BytesParser(policy=policy.default).parsebytes(head + body)
-        parts = list(message.iter_parts()) if message.is_multipart() else []
-    except Exception:
-        raise Problem(400, "cover_bad_body", "The upload could not be read.") from None
-    for part in parts:
-        if part.get_param("name", header="content-disposition") == "file":
-            data = part.get_payload(decode=True)
-            if data:
-                return data
-    raise Problem(422, "cover_no_file", "Send the image in a form field named file.")
-
-
 def json_choice(body: bytes) -> tuple[str, str]:
     """('default', '') or ('url', address) from a JSON body; anything else is refused."""
     try:
@@ -134,15 +82,15 @@ async def put_cover(video_id: str, request: Request, user: Annotated[dict[str, A
         raise Problem(415, "cover_bad_type", "Use a JPEG, PNG or WebP image.")
     await run_in_threadpool(_require_song, uid, video_id)
     if kind == "application/json":
-        choice, address = json_choice(await _body(request, JSON_MAX_BYTES))
+        choice, address = json_choice(await coverupload.read_body(request, coverupload.JSON_MAX_BYTES))
         if choice == "default":
             return await run_in_threadpool(_pin_default, uid, video_id)
-        _charge(_fetches, user)
+        coverupload.charge(coverupload.fetches, user)
         data = await run_in_threadpool(discogs_cover.fetch, address)
     elif kind == "multipart/form-data":
-        data = multipart_file(content_type, await _body(request, coverimg.MAX_BYTES + MULTIPART_OVERHEAD))
+        data = coverupload.multipart_file(content_type, await coverupload.read_body(request, coverimg.MAX_BYTES + coverupload.MULTIPART_OVERHEAD))
     else:
-        data = await _body(request)
+        data = await coverupload.read_body(request)
     jpeg = await run_in_threadpool(coverimg.normalize, data)
     return await run_in_threadpool(_store, uid, video_id, jpeg)
 
@@ -152,7 +100,7 @@ def cover_from_url(video_id: str, req: CoverUrlRequest, user: Annotated[dict[str
     deps.valid_id(video_id)
     uid = user["uid"]
     _require_song(uid, video_id)
-    _charge(_fetches, user)
+    coverupload.charge(coverupload.fetches, user)
     jpeg = coverimg.normalize(discogs_cover.fetch(req.url))
     return _store(uid, video_id, jpeg)
 
@@ -168,7 +116,7 @@ def cover_suggestions(video_id: str, user: Annotated[dict[str, Any], Depends(dep
     discogs = discogs_cover.parse_page(song.get("discogs_url") or "")
     if not links and not discogs:
         return {"suggestions": []}
-    _charge(_suggestions, user)
+    coverupload.charge(coverupload.suggestions, user)
     found = wiki_lookup.cover_candidates(links)[:MAX_SUGGESTIONS] if links else []
     extra = discogs_cover.suggestion(song.get("discogs_url")) if discogs else None
     if extra:

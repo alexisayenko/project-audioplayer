@@ -85,3 +85,11 @@ def resolve_link(text: str) -> Resolved:
     if probe.get("preview_only"):
         raise Refused(error_response(422, "preview_only", extractor.PREVIEW_ONLY_MESSAGE))
     return Resolved(probe["id"], probe["source_url"], probe)
+
+
+def source_info(url: str) -> dict[str, Any]:
+    """album, year and tags yt-dlp reports for one YouTube/SoundCloud link; raises when the link is unusable."""
+    link = resolve_link(url)
+    if link.probe is not None:
+        return link.probe
+    return extractor.preview(link.vid)

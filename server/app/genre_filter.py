@@ -6,6 +6,7 @@ import re
 from collections.abc import Iterable
 
 from . import genre_vocab, genres
+from .genre_aliases import ALIASES, PROGRESSIVE, PROGRESSIVE_ELECTRONIC, RETAGS
 
 _PLAIN = """
 danish swedish german british american french dutch italian spanish norwegian finnish russian polish australian canadian brazilian japanese korean
@@ -89,105 +90,11 @@ def is_genre(value: str) -> bool:
     return bool(stripped) and stripped not in DENY and stripped not in DROP and not _YEARISH.match(stripped)
 
 
-_DNB = "drum and bass"
-_LIQUID_DNB = "liquid drum and bass"
-_UPLIFTING_TRANCE = "uplifting trance"
-_PROG_HOUSE = "progressive house"
-ALIASES: dict[str, str] = {
-    "punk rock": "punk",
-    "electronic dance music": "edm",
-    "euroda": "eurodance",
-    "deep progressive": _PROG_HOUSE,
-    "mor": "middle of the road",
-    "retro-synth": "synthwave",
-    "советская волна": "sovietwave",
-    "советская-волна": "sovietwave",
-    "melodic progressive house": _PROG_HOUSE,
-    "hip-hop & rap": "hip hop",
-    "rock and indie": "indie rock",
-    "pop and chart": "pop",
-    "russian electro pop": "synthpop",
-    "russian electropop": "synthpop",
-    "dnb": _DNB,
-    "eurobeat": "eurodance",
-    "electro-funk": "electro",
-    "hair metal": "glam metal",
-    "pop metal": "glam metal",
-    "death/doom": "death-doom",
-    "d&b": _DNB,
-    "drum'n'bass": _DNB,
-    "drum n bass music": _DNB,
-    "drum & bass": _DNB,
-    "drum n bass": _DNB,
-    "euro pop": "europop",
-    "euro-disco": "euro disco",
-    "eurohouse": "euro house",
-    "electronic pop": "synthpop",
-    "festival progressive house": _PROG_HOUSE,
-    "festival trap": "trap",
-    "red disco": "disco",
-    "intelligent dance music": "idm",
-    "dance music": "edm",
-    "club music": "edm",
-    "electronic dance": "edm",
-    "dance": "edm",
-    "metal": "heavy metal",
-    "psychedelic trance": "psytrance",
-    "glam rock": "glam",
-    "bebop": "bop",
-    "chillout": "downtempo",
-    "afro house": "house",
-    "big room house": "house",
-    "french touch": "french house",
-    "melodic house": "house",
-    "dream house": "dream trance",
-    "chill step": "chillstep",
-    "outrun music": "outrun",
-    "ambient techno music": "ambient techno",
-    "intelligent techno": "ambient techno",
-    "outrun electro": "outrun",
-    "space synth": "spacesynth",
-    "synthdance": "spacesynth",
-    "synthesizer dance": "spacesynth",
-    "spacedance": "spacesynth",
-    "bard": "singer-songwriter",
-    "bard song": "singer-songwriter",
-    "авторская песня": "singer-songwriter",
-    "author song": "singer-songwriter",
-    "dream dance": "dream trance",
-    "anthem trance": _UPLIFTING_TRANCE,
-    "epic trance": _UPLIFTING_TRANCE,
-    "euphoric trance": _UPLIFTING_TRANCE,
-    "bubblegum dance": "eurodance",
-    "techstep": _DNB,
-    "liquid funk": _LIQUID_DNB,
-    "liquid dnb": _LIQUID_DNB,
-    "liquid drum n bass": _LIQUID_DNB,
-    "liquid drum & bass": _LIQUID_DNB,
-    "breakbeat hardcore": "breakbeat",
-    "jersey club": "breakbeat",
-    "techno pop": "synthpop",
-    "electropop": "synthpop",
-}
 _ALIAS_BY_KEY: dict[str, str] = {}
 for _a, _t in ALIASES.items():
     _ALIAS_BY_KEY[key(_a)] = _t
     _ALIAS_BY_KEY.setdefault(key(_t), _t)
 
-RETAGS: dict[str, str] = {
-    "appalachian folk": "folk",
-    "romantic": "classical",
-    "psychedelic": "psychedelic rock",
-    "nederpop": "pop",
-    "orchestral": "modern classical",
-    "alternative": "alternative rock",
-    "indie": "indie rock",
-    "dystopian": "darksynth",
-    "progressive": "progressive rock",
-    "⚈⚈": "glitch hop",
-}
-PROGRESSIVE = "progressive"
-PROGRESSIVE_ELECTRONIC = _PROG_HOUSE
 ELECTRONIC_CONTEXT: frozenset[str] = frozenset(key(v) for v in ("electronic", "club"))
 _RETAG_BY_KEY: dict[str, str] = {key(_a): _t for _a, _t in RETAGS.items()}
 

@@ -150,13 +150,13 @@ def test_image_download_keeps_the_ssrf_checks(client, song, api):
 
 
 def test_discogs_pages_share_the_cover_url_limit(client, song, api, monkeypatch):
-    from app.routes import covers as covers_route
+    from app import coverupload
 
     api.docs["masters/5659"] = not_found()
     calls = []
-    monkeypatch.setattr(covers_route, "_charge", lambda window, user: calls.append(window))
+    monkeypatch.setattr(coverupload, "charge", lambda window, user: calls.append(window))
     put_json(client, {"url": PAGE})
-    assert calls == [covers_route._fetches]
+    assert calls == [coverupload.fetches]
 
 
 def test_token_goes_only_to_discogs_hosts(monkeypatch):

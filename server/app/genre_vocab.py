@@ -16,7 +16,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-from . import genre_sources
+from . import genre_aliases, genre_sources
 
 DATA_DIR = Path(__file__).resolve().parent.parent / "data"
 DISCOGS_FILE = DATA_DIR / "genre_discogs.json"
@@ -304,13 +304,11 @@ def suggest(value: str, extra_names: dict[str, str] | None = None, limit: int = 
 
 def _aliases(v: Vocabulary) -> dict[str, str]:
     """Loose spelling to canonical name (ALIASES and RETAGS whose target is in the vocabulary), so a picker can resolve what a user types."""
-    from . import genre_filter
-
     out: dict[str, str] = {}
-    for table in (genre_filter.ALIASES, genre_filter.RETAGS):
+    for table in (genre_aliases.ALIASES, genre_aliases.RETAGS):
         for loose, target in table.items():
             name = target if target in v.entries else v.by_key.get(vkey(target))
-            if loose != genre_filter.PROGRESSIVE and name:
+            if loose != genre_aliases.PROGRESSIVE and name:
                 out[" ".join(loose.lower().split())] = name
     return dict(sorted(out.items()))
 

@@ -11,8 +11,8 @@ from fastapi import APIRouter, Depends, HTTPException
 from fastapi.concurrency import run_in_threadpool
 from fastapi.responses import StreamingResponse
 
-from .. import credits, deps, discogs_lookup, extractor, genre_lookup, library, metadata, previewcache, sources, timeutil, titleclean, wiki_lookup
-from ..links import Refused, resolve_link, short_error
+from .. import credits, deps, discogs_lookup, genre_lookup, library, metadata, previewcache, sources, timeutil, titleclean, wiki_lookup
+from ..links import Refused, resolve_link, short_error, source_info
 from ..schemas import MetadataRequest, PreviewRequest, WikipediaLookupRequest
 
 router = APIRouter()
@@ -23,14 +23,6 @@ MAX_METADATA_SOURCES = 5
 def clean_preview_title(meta: dict[str, Any]) -> dict[str, str]:
     raw = str(meta.get("title") or "")
     return {"title": titleclean.clean(raw), "title_raw": raw}
-
-
-def source_info(url: str) -> dict[str, Any]:
-    """album, year and tags yt-dlp reports for one YouTube/SoundCloud link; raises when the link is unusable."""
-    link = resolve_link(url)
-    if link.probe is not None:
-        return link.probe
-    return extractor.preview(link.vid)
 
 
 async def _genre_stage(meta: dict[str, Any]) -> tuple[list[str], dict[str, Any]]:

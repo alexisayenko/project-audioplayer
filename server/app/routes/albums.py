@@ -8,10 +8,8 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import FileResponse
 from fastapi.concurrency import run_in_threadpool
 
-from .. import album_covers, album_youtube, albums, coverimg, deps, library, users
+from .. import album_covers, album_youtube, albums, coverimg, coverupload, deps, library, users
 from ..problems import Problem
-from . import covers as covers_routes
-from .covers import _charge, _fetches, _suggestions
 from ..schemas import AlbumCoverRequest, AlbumLinkRequest, AlbumPatchRequest, AlbumPreviewRequest, AlbumSearchRequest
 
 router = APIRouter()
@@ -183,7 +181,7 @@ def get_album_cover(album_id: str, user: Annotated[dict[str, Any], Depends(deps.
 @router.get("/albums/{album_id}/cover/candidates", responses=deps.responses(404, 429))
 def cover_candidates(album_id: str, user: User):
     album = _found(_snapshot(user["uid"]), album_id)
-    _charge(_suggestions, user)
+    coverupload.charge(coverupload.suggestions, user)
     return {"candidates": album_covers.candidates(album)}
 
 
@@ -200,19 +198,19 @@ async def put_cover(album_id: str, request: Request, user: User):
     source = "upload"
     if kind == "application/json":
         try:
-            body = AlbumCoverRequest.model_validate_json(await covers_routes._body(request, covers_routes.JSON_MAX_BYTES))
+            body = AlbumCoverRequest.model_validate_json(await coverupload.read_body(request, coverupload.JSON_MAX_BYTES))
         except ValueError:
             raise Problem(422, "cover_bad_body", "Send {\"source\": \"url\", \"url\": \"https://...\"}.") from None
         if body.source not in album_covers.SOURCES:
             raise HTTPException(status_code=422, detail={"code": "bad_field", "key": "source"})
-        _charge(_fetches, user)
+        coverupload.charge(coverupload.fetches, user)
         source, url = body.source, body.url
         jpeg = await run_in_threadpool(album_covers.fetch_jpeg, url)
     else:
         if kind == "multipart/form-data":
-            data = covers_routes.multipart_file(content_type, await covers_routes._body(request, coverimg.MAX_BYTES + covers_routes.MULTIPART_OVERHEAD))
+            data = coverupload.multipart_file(content_type, await coverupload.read_body(request, coverimg.MAX_BYTES + coverupload.MULTIPART_OVERHEAD))
         else:
-            data = await covers_routes._body(request)
+            data = await coverupload.read_body(request)
         jpeg = await run_in_threadpool(coverimg.normalize, data)
     album = await run_in_threadpool(album_covers.store, uid, album_id, jpeg, source, url)
     if album is None:
