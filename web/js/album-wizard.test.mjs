@@ -221,6 +221,32 @@ test('one confident Discogs master skips step 3 and lands on the review with the
   D().close();
 });
 
+test('"Use the Discogs title" shows only where the Discogs and video titles differ', async () => {
+  server();
+  await fetchStep();
+  await go();
+  const use = (row) => row.querySelector('.av-use-disc');
+  assert.equal(use(rows()[0]).hidden, true);
+  assert.equal(use(rows()[1]), null);
+  assert.equal(use(rows()[2]).hidden, false);
+  assert.equal(use(rows()[2]).querySelector('input').checked, false);
+  assert.equal(use(rows()[3]).hidden, true);
+  D().close();
+});
+
+test('editing the video title to match the Discogs one hides "Use the Discogs title"', async () => {
+  server();
+  await fetchStep();
+  await go();
+  const row = rows()[2];
+  const title = row.querySelector('input.av-title') || row.querySelector('.av-title');
+  type(title, 'gloople (remix)');
+  assert.equal(row.querySelector('.av-use-disc').hidden, true);
+  type(title, 'Gloople');
+  assert.equal(row.querySelector('.av-use-disc').hidden, false);
+  D().close();
+});
+
 test('Back from the review steps over the skipped Discogs step and keeps the typed values', async () => {
   const calls = server();
   await fetchStep();

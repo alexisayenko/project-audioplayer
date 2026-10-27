@@ -187,6 +187,31 @@ test('the Discogs title replaces the video title only on request', () => {
   assert.equal(t.version, null);
 });
 
+test('the Discogs title is offered only where it differs from the video title after normalising', () => {
+  assert.equal(M.titlesDiffer('LSD', 'LSD'), false);
+  assert.equal(M.titlesDiffer('  Rock & Roll ', 'rock AND roll'), false);
+  assert.equal(M.titlesDiffer('Café   del Mar!', 'Cafe del mar'), false);
+  assert.equal(M.titlesDiffer("Don't Stop", 'Dont Stop'), false);
+  assert.equal(M.titlesDiffer('Gloople', 'Gloople (Remix)'), true);
+  assert.equal(M.titlesDiffer('Gloople (Metal Mix)', 'Gloople'), true);
+  assert.equal(M.titlesDiffer('Snakey', 'Snake Shaker'), true);
+  assert.equal(M.titlesDiffer('', 'Gloople'), false);
+  const d = make();
+  d.discogs.resolved = DISC;
+  M.buildReview(d);
+  const offers = Object.fromEntries(M.reviewRows(d).map((r) => [r.id, M.offersDiscTitle(r)]));
+  assert.deepEqual([offers.d1, offers.d2, offers.d3, offers.d4], [false, false, true, false]);
+});
+
+test('a ticked Discogs title on a row where the titles are equal leaves the create payload as it was', () => {
+  const d = make();
+  d.discogs.resolved = DISC;
+  M.buildReview(d);
+  const before = M.createPayload(d).tracks.map((t) => [t.title, t.version]);
+  d.review.state.get(d.st.rows[0].key).useDisc = true;
+  assert.deepEqual(M.createPayload(d).tracks.map((t) => [t.title, t.version]), before);
+});
+
 test('issues block a bad start or an empty selection', () => {
   const d = make();
   M.buildReview(d);

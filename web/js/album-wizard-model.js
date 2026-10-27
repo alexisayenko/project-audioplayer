@@ -117,6 +117,12 @@ export function discTracks(draft) {
   return Array.isArray(t) ? t.filter((x) => Number.isInteger(x.no) && x.title) : [];
 }
 
+const titleKey = (s) => plain(String(s ?? '').replaceAll(/['’ʼ`]/g, '').replaceAll('&', ' and '));
+
+export const titlesDiffer = (youtube, disc) => !!String(youtube ?? '').trim() && titleKey(youtube) !== titleKey(disc);
+
+export const offersDiscTitle = (row) => !!(row.disc && row.src && titlesDiffer(row.src.title, row.disc.title));
+
 const fullKey = (s) => plain(s);
 const baseKey = (s) => plain(String(s ?? '').replaceAll(/[([][^)\]]*[)\]]/g, ' '));
 
@@ -275,7 +281,7 @@ export function reviewView(draft) {
     r.artists = trackArtists(draft, row.src);
     if (row.disc) {
       r.no = row.disc.no;
-      if (row.st.useDisc || !r.title.trim()) { r.title = row.disc.title; r.version = ''; }
+      if ((row.st.useDisc && offersDiscTitle(row)) || !r.title.trim()) { r.title = row.disc.title; r.version = ''; }
     } else if (hasDisc) {
       extra += 1;
       r.no = extra;

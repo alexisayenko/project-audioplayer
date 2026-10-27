@@ -230,5 +230,6 @@ input[type=text].album-year { height: var(--hit); box-sizing: content-box; flex:
 .wiz-match select { flex: 1 1 12rem; min-width: 0; max-width: 100%; }
 .wiz-extras-head { margin-top: var(--space-2); }
 .wiz-row .av-use { display: inline-flex; align-items: center; gap: var(--space-1); }
+.wiz-row .av-use[hidden] { display: none; }
 .wiz-run { gap: var(--space-4); }
 .wiz-progress, .wiz-dl { min-width: 0; }

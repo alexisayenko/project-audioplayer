@@ -3,7 +3,7 @@ import { icon } from './icons.js';
 import { nameOf, trackClock } from './album-draft-model.js';
 import { formatClock, parseClock } from './album-video-model.js';
 import {
-  reviewRows, reassign, reviewView, rowIssueFor, estLength, lengthGap, trackArtists, LENGTH_WARN_S,
+  reviewRows, reassign, reviewView, rowIssueFor, estLength, lengthGap, trackArtists, offersDiscTitle, LENGTH_WARN_S,
 } from './album-wizard-model.js';
 
 const clock = (s) => (s ? trackClock(s) : '');
@@ -78,7 +78,7 @@ export function mountRows(ctx, onChange) {
       textField(src, 'title', 'Title', { class: 'av-title' }),
       textField(src, 'version', 'Version', { class: 'av-version' }),
     ] : [];
-    const useDisc = disc && src ? el('label', { class: 't-caption av-use' }, el('input', { type: 'checkbox', checked: !!st.useDisc }), 'Use the Discogs title') : null;
+    const useDisc = disc && src ? el('label', { class: 't-caption av-use av-use-disc', hidden: !offersDiscTitle(row) }, el('input', { type: 'checkbox', checked: !!st.useDisc }), 'Use the Discogs title') : null;
     useDisc?.querySelector('input').addEventListener('change', (e) => { st.useDisc = e.target.checked; ctx.touch(); onChange(); });
     const line2 = el('div', { class: 'av-line2', hidden: true }, ...fields);
     const issue = el('p', { class: 'av-issue t-caption', role: 'alert', hidden: true });
@@ -118,7 +118,7 @@ export function mountRows(ctx, onChange) {
       edit?.setAttribute('aria-expanded', 'false');
       edit?.focus();
     });
-    ui.set(row.id, { issue, row, lineName });
+    ui.set(row.id, { issue, row, lineName, useDisc });
     return li;
   }
 
@@ -141,7 +141,8 @@ export function mountRows(ctx, onChange) {
 
   function paintRows() {
     const view = reviewView(draft);
-    for (const { issue, row, lineName } of ui.values()) {
+    for (const { issue, row, lineName, useDisc } of ui.values()) {
+      if (useDisc) useDisc.hidden = !offersDiscTitle(row);
       const bad = row.src && row.st?.include ? rowIssueFor(draft, view, row.src) : '';
       issue.textContent = bad;
       issue.hidden = !bad;
