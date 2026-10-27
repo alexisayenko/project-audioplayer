@@ -151,10 +151,9 @@ def _link_fields(vid: str, meta: dict[str, Any], source_url: str | None) -> dict
 def _credit_meta(meta: dict[str, Any], found: dict[str, Any]) -> dict[str, Any]:
     """The request's credit keys, with the artist and year the source reported filling what the request left empty."""
     out = dict(meta)
-    has_artists = any(out.get(k) for k in ("mainArtists", "artists"))
-    if not has_artists and not str(out.get("artist") or "").strip() and found.get("artist"):
+    if not out.get("mainArtists") and not str(out.get("artist") or "").strip() and found.get("artist"):
         out["artist"] = found["artist"]
-    if all(out.get(k) is None for k in ("releaseYear", "released", "year")) and found.get("year") is not None:
+    if all(out.get(k) is None for k in ("releaseYear", "year")) and found.get("year") is not None:
         out["releaseYear"] = found["year"]
     return out
 

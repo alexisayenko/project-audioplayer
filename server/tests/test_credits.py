@@ -248,18 +248,22 @@ class TestApplyChanges:
         song = applied({"featuredArtists": []})
         assert (song["mainArtists"], song["featuredArtists"]) == (["A", "B"], [])
 
-    def test_the_adr0024_names_are_accepted_for_one_release(self):
-        song = applied({"artists": ["X"], "featured": [], "released": 2001, "version": {"kind": "live", "name": "L", "by": ["Q"], "year": 2002}})
-        assert (song["mainArtists"], song["featuredArtists"], song["releaseYear"]) == (["X"], [], 2001)
-        assert song["version"] == {"type": "live", "name": "L", "artists": ["Q"], "releaseYear": 2002}
-
-    def test_a_v2_name_wins_over_the_adr0024_one(self):
-        song = applied({"artists": ["Old"], "mainArtists": ["New"], "released": 1, "releaseYear": 2001,
-                        "version": {"kind": "live", "type": "edit", "by": ["O"], "artists": ["N"]}})
-        assert song["mainArtists"] == ["New"]
-        assert song["releaseYear"] == 2001
-        assert song["version"]["type"] == "edit"
-        assert song["version"]["artists"] == ["N"]
+    @pytest.mark.parametrize("changes,message", [
+        ({"artists": ["X"]}, "artists is retired, use mainArtists"),
+        ({"featured": []}, "featured is retired, use featuredArtists"),
+        ({"released": 2001}, "released is retired, use releaseYear"),
+        ({"mainArtists": ["New"], "artists": ["Old"]}, "artists is retired, use mainArtists"),
+        ({"version": {"kind": "live"}}, "version.kind is retired, use version.type"),
+        ({"version": {"type": "live", "by": ["Q"]}}, "version.by is retired, use version.artists"),
+        ({"version": {"type": "live", "year": 2002}}, "version.year is retired, use version.releaseYear"),
+        ({"version": {"type": "cover", "of": ["X"]}}, "version.of is retired, use version.originalArtists"),
+    ])
+    def test_the_adr0024_request_names_are_retired(self, changes, message):
+        song = stored()
+        before = copy.deepcopy(song)
+        with pytest.raises(ValueError, match=message):
+            credits.apply_changes(song, changes)
+        assert song == before
 
     def test_structure_shadows_every_legacy_key_of_its_group(self):
         song = applied({"mainArtists": ["X"], "artist": "Totally Different", "version": None, "remixer": "Other Remix", "remix_year": 2030,
@@ -391,7 +395,6 @@ class TestValidation:
         ({"releaseYear": 1899}, "releaseYear must be from 1900 to 2027"),
         ({"releaseYear": 2028}, "releaseYear must be from 1900 to 2027"),
         ({"releaseYear": "x"}, "releaseYear must be from 1900 to 2027"),
-        ({"released": 1899}, "releaseYear must be from 1900 to 2027"),
         ({"year": 2028}, "year must be from 1900 to 2027"),
         ({"remix_year": 1899}, "remix_year must be from 1900 to 2027"),
     ])
@@ -438,8 +441,8 @@ class TestNewFields:
         assert fields["releaseYear"] == 2000
         assert fields["albums"] == ["Al"]
 
-    def test_structure_wins_over_legacy_and_the_adr0024_names_work(self):
-        fields = credits.new_fields({"artist": "Legacy", "artists": ["New"], "year": 1990, "released": 2001})
+    def test_structure_wins_over_legacy(self):
+        fields = credits.new_fields({"artist": "Legacy", "mainArtists": ["New"], "year": 1990, "releaseYear": 2001})
         assert (fields["mainArtists"], fields["releaseYear"]) == (["New"], 2001)
 
     def test_nothing_sent(self):

@@ -81,11 +81,7 @@ class VersionIn(BaseModel):
     releaseYear: int | None = None
     originalArtists: str | list[str] | None = None
     artists: list[str] | None = None
-    kind: str | None = None
     name: str | None = None
-    by: list[str] | None = None
-    year: int | None = None
-    of: str | list[str] | None = None
 
 
 class SourceRaw(BaseModel):
@@ -101,7 +97,7 @@ class SongMeta(BaseModel):
     withArtists: list[str] | None = None
     releaseYear: int | None = None
     albums: list[str] | None = None
-    artists: list[str] | None = None
+    artists: list[str] | None = None  # retired ADR-0024 names stay declared so credits.canon_request can answer 422 instead of the key being dropped
     featured: list[str] | None = None
     released: int | None = None
     version: VersionIn | None = None

@@ -85,13 +85,13 @@ def seed_sample(tmp_path):
 
 
 EXAMPLES = [
-    ("A", {"artists": ["Martin Garrix", "Tiesto"], "title": "The Only Way Is Up"}),
-    ("B", {"artists": ["Haddaway"], "released": 1993, "title": "What Is Love"}),
-    ("C", {"artists": ["Dua Lipa", "Elton John"], "title": "Cold Heart", "version": {"kind": "live", "name": "Live, Royal Albert Hall"}}),
-    ("D", {"artists": ["Nadia Ali", "Starkillers", "Alex Kenji"], "title": "Pressure", "version": {"kind": "remix", "name": "Alesso Remix", "by": ["Alesso"]}}),
-    ("E", {"artists": ["Artist B"], "title": "Song", "version": {"kind": "cover", "of": "Artist A"}}),
-    ("F", {"artists": ["Kato"], "featured": ["Jon"], "released": 2009, "title": "Turn The Lights Off"}),
-    ("G", {"artists": ["Nadia Ali, Starkillers & Alex Kenji"], "released": 2009, "title": "Pressure", "version": {"kind": "remix", "name": "Alesso Remix", "year": 2012}}),
+    ("A", {"mainArtists": ["Martin Garrix", "Tiesto"], "title": "The Only Way Is Up"}),
+    ("B", {"mainArtists": ["Haddaway"], "releaseYear": 1993, "title": "What Is Love"}),
+    ("C", {"mainArtists": ["Dua Lipa", "Elton John"], "title": "Cold Heart", "version": {"type": "live", "name": "Live, Royal Albert Hall"}}),
+    ("D", {"mainArtists": ["Nadia Ali", "Starkillers", "Alex Kenji"], "title": "Pressure", "version": {"type": "remix", "name": "Alesso Remix", "artists": ["Alesso"]}}),
+    ("E", {"mainArtists": ["Artist B"], "title": "Song", "version": {"type": "cover", "originalArtists": "Artist A"}}),
+    ("F", {"mainArtists": ["Kato"], "featuredArtists": ["Jon"], "releaseYear": 2009, "title": "Turn The Lights Off"}),
+    ("G", {"mainArtists": ["Nadia Ali, Starkillers & Alex Kenji"], "releaseYear": 2009, "title": "Pressure", "version": {"type": "remix", "name": "Alesso Remix", "releaseYear": 2012}}),
     ("H", {"mainArtists": ["Teemid"], "releaseYear": 2007, "albums": ["St. Elsewhere", "Deluxe"], "title": "Crazy", "version": {"type": "cover", "originalArtists": ["Gnarls Barkley"]}}),
 ]
 IDS = ["aaaaaaaaae1", "aaaaaaaaae2", "aaaaaaaaae3", "aaaaaaaaae4", "aaaaaaaaae5", "aaaaaaaaae6", "aaaaaaaaae7", "aaaaaaaaae8"]
@@ -204,6 +204,19 @@ def test_a_cleared_remixer_removes_the_version_and_a_changed_one_renames_it(clie
     assert "version" not in client.patch(f"/songs/{vid}", json=body, headers=H).json()
 
 
+@pytest.mark.parametrize("body,message", [
+    ({"artists": ["X"]}, "artists is retired, use mainArtists"),
+    ({"released": 2001}, "released is retired, use releaseYear"),
+    ({"version": {"kind": "live"}}, "kind"),
+])
+def test_the_retired_adr0024_request_names_get_a_422_on_add_and_edit(client, body, message):
+    make_examples(client)
+    assert post(client, {"title": "T", **body}, vid="aaaaaaaaf1").status_code == 422
+    edit = client.patch(f"/songs/{IDS[0]}", json=body, headers=H)
+    assert edit.status_code == 422
+    assert message in json.dumps(edit.json())
+
+
 def test_preview_and_metadata_responses_still_decode(client, monkeypatch, ydl):  # noqa: F811
     monkeypatch.setattr(extractor, "preview", REAL_PREVIEW)
     monkeypatch.setattr(genre_lookup, "lookup", lambda a, t, f=None: genre_lookup._empty())
@@ -221,7 +234,7 @@ def test_preview_and_metadata_responses_still_decode(client, monkeypatch, ydl): 
 
 
 def test_song_status_still_decodes(client):
-    post(client, {"artists": ["A"]}, audio=True)
+    post(client, {"mainArtists": ["A"]}, audio=True)
     status = client.get(f"/songs/{VID}/status", headers=H).json()
     check(status, "SongStatus")
     assert library.find_song(library.load(ODIR(client.app.state.__dict__.get("tmp", Path("."))) / "library.json"), VID) if False else True

@@ -1,7 +1,7 @@
 """Structured credits and versions of a song, data model v2 (DATA-144..155): the stored shape, the legacy compatibility projection and the one place that turns requests into structure.
 
 Stored: `title`, `mainArtists`, `featuredArtists`, optional `withArtists` (absent when empty, DATA-162), `releaseYear`, `albums`, optional `version {type, name, artists, releaseYear, originalArtists?}`, `rawTitle`.
-Requests may still use the ADR-0024 names (`artists`, `featured`, `released`, `version.kind/by/year/of`) and the flat legacy ones (`artist`, `remixer`, `remix_year`, `year`, `album`) for one release."""
+Requests use these v2 names or the flat legacy ones (`artist`, `remixer`, `remix_year`, `year`, `album`). The flat names are legacy, kept for the shipped iOS and macOS apps (builds 20261034 and 20261035 send `artist`, `album`, `remixer`, `year`): remove them after the first build that sends the v2 names is the minimum (API-149). The ADR-0024 request names (`artists`, `featured`, `released`, `version.kind/by/year/of`) are retired: no client sends them and a request that does gets a 422 naming the new key. Stored songs of that older shape are still converted in memory on load (`credits_v1`)."""
 
 from __future__ import annotations
 
@@ -31,6 +31,7 @@ OLD_NAME_KEYS = credits_v1.V1_KEYS
 STRUCTURE_ORDER = ("mainArtists", "featuredArtists", "withArtists", "releaseYear", "albums", "version", "rawTitle")
 _VERSION_KEYS = frozenset({"type", "name", "artists", "releaseYear", "originalArtists"})
 _OLD_VERSION_KEYS = {"kind": "type", "by": "artists", "year": "releaseYear", "of": "originalArtists"}
+_OLD_NAMES = {"artists": "mainArtists", "featured": "featuredArtists", "released": "releaseYear"}
 
 
 def _names_error(label: str) -> ValueError:
@@ -83,11 +84,17 @@ def _year_checked(value: Any, label: str, stored: Any) -> int | None:
     raise ValueError(f"{label} must be {timeutil.year_range_text()}")
 
 
-def canon_version(value: dict[str, Any]) -> dict[str, Any]:
-    """A request `version` object with the ADR-0024 keys renamed to the v2 ones (a v2 key wins when both are sent)."""
-    unknown = set(value) - _VERSION_KEYS - set(_OLD_VERSION_KEYS)
+def _check_version_keys(value: dict[str, Any]) -> None:
+    unknown = set(value) - _VERSION_KEYS
+    retired = sorted(k for k in unknown if k in _OLD_VERSION_KEYS)
+    if retired:
+        raise ValueError("; ".join(f"version.{k} is retired, use version.{_OLD_VERSION_KEYS[k]}" for k in retired))
     if unknown:
         raise ValueError(f"version has unknown keys: {', '.join(sorted(unknown))}")
+
+
+def _renamed_version(value: dict[str, Any]) -> dict[str, Any]:
+    """A stored `version` with ADR-0024 keys renamed to the v2 ones (a v2 key wins when both are present)."""
     out = {k: v for k, v in value.items() if k in _VERSION_KEYS}
     for old, new in _OLD_VERSION_KEYS.items():
         if old in value and new not in out:
@@ -100,7 +107,7 @@ def _clean_version(value: Any, stored: dict[str, Any] | None) -> dict[str, Any] 
         return None
     if not isinstance(value, dict):
         raise ValueError("version must be an object or null")
-    value = canon_version(value)
+    _check_version_keys(value)
     vtype = value.get("type")
     if vtype not in TYPES:
         raise ValueError(f"version.type must be one of {', '.join(TYPES)}")
@@ -254,7 +261,7 @@ def ensure(song: dict[str, Any]) -> bool:
 
 def _version_in_shape(version: dict[str, Any]) -> dict[str, Any]:
     if any(k in version for k in _OLD_VERSION_KEYS):
-        version = credits_v1.version_v2(version) if "kind" in version else canon_version(version)
+        version = credits_v1.version_v2(version) if "kind" in version else _renamed_version(version)
     out = dict(version)
     if not isinstance(out.get("artists"), list):
         out["artists"] = credits_v1.names_of(out.get("artists"))
@@ -300,22 +307,12 @@ def _legacy_text(changes: dict[str, Any], key: str) -> str | None:
 
 
 def canon_request(changes: dict[str, Any]) -> dict[str, Any]:
-    """The credit keys of a request under their v2 names; the v2 name wins over the ADR-0024 one, flat legacy keys pass through."""
-    out: dict[str, Any] = {}
-    for new, old in (("mainArtists", "artists"), ("featuredArtists", "featured"), ("releaseYear", "released")):
-        if new in changes:
-            out[new] = changes[new]
-        elif old in changes:
-            out[new] = changes[old]
-    if "version" in changes:
-        out["version"] = changes["version"]
-    for key in ("withArtists", "albums"):
-        if key in changes:
-            out[key] = changes[key]
-    for key in (*LEGACY_KEYS, "album"):
-        if key in changes:
-            out[key] = changes[key]
-    return out
+    """The credit keys of a request: v2 names and the flat legacy keys pass through; a retired ADR-0024 name is a ValueError (HTTP 422) naming its replacement."""
+    retired = [f"{old} is retired, use {new}" for old, new in _OLD_NAMES.items() if old in changes]
+    if retired:
+        raise ValueError("; ".join(retired))
+    keys = ("mainArtists", "featuredArtists", "releaseYear", "version", "withArtists", "albums", *LEGACY_KEYS, "album")
+    return {key: changes[key] for key in keys if key in changes}
 
 
 def _artist_changes(changes: dict[str, Any], proj: dict[str, Any], out: dict[str, Any]) -> None:
@@ -453,12 +450,12 @@ def absorb(song: dict[str, Any]) -> bool:
         credits_v1.to_v2(song)
         return True
     log.warning("song %s carries old keys %s; converting", song.get("id"), present)
-    changes = {k: song.pop(k) for k in present}
+    found = {k: song.pop(k) for k in present}
     try:
-        apply_changes(song, changes)
+        apply_changes(song, {_OLD_NAMES.get(k, k): v for k, v in found.items()})
     except ValueError as exc:
         raw = song["raw"] if isinstance(song.get("raw"), dict) else {}
-        raw["rejected"] = {**(raw["rejected"] if isinstance(raw.get("rejected"), dict) else {}), **changes}
+        raw["rejected"] = {**(raw["rejected"] if isinstance(raw.get("rejected"), dict) else {}), **found}
         song["raw"] = raw
         log.warning("song %s: old value kept in raw.rejected: %s", song.get("id"), exc)
     return True
