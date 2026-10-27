@@ -77,6 +77,17 @@ def test_preview_from_the_description_then_create(client, flow, monkeypatch):
     assert {songs[i]["audio_state"] for i in data["songIds"]} == {"server"}
 
 
+def test_numbered_description_lines_keep_the_number_out_of_the_artist(client, flow, monkeypatch):
+    text = "01 Astral Projection feat. DJ Jorg - Mahadeva 0:00\n02 Aban Don - State of Mind (Metal Mix) 5:00\n03 Astral Projection - Arrival 10:30\n"
+    monkeypatch.setattr(extractor, "video_details", lambda video_id: {**DETAILS, "description": text})
+    preview = client.post("/albums/from-video/preview", json={"url": URL}, headers=H).json()
+    assert [(t["artists"], t["title"], t["version"], t["trackNo"]) for t in preview["tracks"]] == [
+        (["Astral Projection"], "Mahadeva", None, 1),
+        (["Aban Don"], "State of Mind", "Metal Mix", 2),
+        (["Astral Projection"], "Arrival", None, 3),
+    ]
+
+
 def test_unauthenticated_calls_are_401(client, flow):
     assert client.post("/albums/from-video/preview-text", json={"url": URL, "text": TEXT}).status_code == 401
     assert client.post("/albums/from-video", json={"url": URL}).status_code == 401

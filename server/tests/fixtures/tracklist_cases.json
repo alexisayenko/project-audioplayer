@@ -221,5 +221,96 @@
       {"title": "One"},
       {"title": "Two"}
     ]
+  },
+  {
+    "name": "bare number then artist then title then a trailing time (Trust In Trance 2)",
+    "text": "01 Astral Projection feat. DJ Jorg - Mahadeva 0:00\n02 Astral Projection - Power Gen 9:25\n03 Aban Don - State of Mind (Metal Mix) 16:53\n04 Aban Don - Voodoo Experience 24:05\n05 Astral Projection - Arrival 30:11\n06 Astral Projection - In-Novation 37:58\n07 Astral Projection - Hypnotica 46:21\n08 Astral Projection - Butterfly Trip (Energy Sweep Mix) 54:44\n09 Astral Projection - Celestial Groove 1:03:26",
+    "duration": 4300,
+    "tracks": [
+      {"start": 0, "artists": ["Astral Projection"], "featured": ["DJ Jorg"], "title": "Mahadeva", "track_no": 1, "warnings": []},
+      {"start": 565, "artists": ["Astral Projection"], "title": "Power Gen", "track_no": 2},
+      {"start": 1013, "artists": ["Aban Don"], "title": "State of Mind", "version": "Metal Mix", "track_no": 3},
+      {"start": 1445, "artists": ["Aban Don"], "title": "Voodoo Experience", "track_no": 4},
+      {"start": 1811, "artists": ["Astral Projection"], "title": "Arrival", "track_no": 5},
+      {"start": 2278, "artists": ["Astral Projection"], "title": "In-Novation", "track_no": 6},
+      {"start": 2781, "artists": ["Astral Projection"], "title": "Hypnotica", "track_no": 7},
+      {"start": 3284, "artists": ["Astral Projection"], "title": "Butterfly Trip", "version": "Energy Sweep Mix", "track_no": 8},
+      {"start": 3806, "artists": ["Astral Projection"], "title": "Celestial Groove", "track_no": 9, "warnings": []}
+    ]
+  },
+  {
+    "name": "bare number after a leading time",
+    "text": "0:00 01 A - One\n3:00 02 B - Two",
+    "duration": 600,
+    "tracks": [
+      {"artists": ["A"], "title": "One", "track_no": 1},
+      {"artists": ["B"], "title": "Two", "track_no": 2}
+    ]
+  },
+  {
+    "name": "bracketed number, spaced dash and 1/12 forms",
+    "text": "[01] A - One 0:00\n[02] B - Two 3:00",
+    "duration": 600,
+    "tracks": [
+      {"artists": ["A"], "title": "One", "track_no": 1},
+      {"artists": ["B"], "title": "Two", "track_no": 2}
+    ]
+  },
+  {
+    "name": "number dash artist dash title with a trailing time",
+    "text": "01 - A - One 0:00\n02 - B - Two 3:00",
+    "duration": 600,
+    "tracks": [
+      {"artists": ["A"], "title": "One", "track_no": 1},
+      {"artists": ["B"], "title": "Two", "track_no": 2}
+    ]
+  },
+  {
+    "name": "n of total numbering",
+    "text": "1/2 A - One 0:00\n2/2 B - Two 3:00",
+    "duration": 600,
+    "tracks": [
+      {"artists": ["A"], "title": "One", "track_no": 1},
+      {"artists": ["B"], "title": "Two", "track_no": 2}
+    ]
+  },
+  {
+    "name": "dot and hash numbers still work with a trailing time",
+    "text": "#01 A - One 0:00\n#02 B - Two 3:00",
+    "duration": 600,
+    "tracks": [
+      {"artists": ["A"], "title": "One", "track_no": 1},
+      {"artists": ["B"], "title": "Two", "track_no": 2}
+    ]
+  },
+  {
+    "name": "artists that start with digits keep them",
+    "text": "2Pac - Changes 0:00\n10cc - Rubber Bullets 3:00\n50 Cent - Candy Shop 6:00\n808 State - Pacific 9:00",
+    "duration": 700,
+    "tracks": [
+      {"artists": ["2Pac"], "title": "Changes", "track_no": 1},
+      {"artists": ["10cc"], "title": "Rubber Bullets", "track_no": 2},
+      {"artists": ["50 Cent"], "title": "Candy Shop", "track_no": 3},
+      {"artists": ["808 State"], "title": "Pacific", "track_no": 4}
+    ]
+  },
+  {
+    "name": "digit-led artists that happen to count up are the only risk",
+    "text": "50 Cent - Candy Shop 0:00\n50 Cent - In Da Club 3:00",
+    "duration": 600,
+    "tracks": [
+      {"artists": ["50 Cent"], "title": "Candy Shop"},
+      {"artists": ["50 Cent"], "title": "In Da Club"}
+    ]
+  },
+  {
+    "name": "a bare number on only some lines is not numbering",
+    "text": "01 A - One 0:00\nB - Two 3:00\n03 C - Three 6:00",
+    "duration": 700,
+    "tracks": [
+      {"artists": ["01 A"], "title": "One"},
+      {"artists": ["B"], "title": "Two"},
+      {"artists": ["03 C"], "title": "Three"}
+    ]
   }
 ]

@@ -86,6 +86,26 @@ def test_chapters_become_tracks():
     assert got.tracks[2].title == "Intro"
 
 
+def test_chapters_with_a_bare_number_keep_it_out_of_the_artist():
+    chapters = [
+        {"start_time": 0, "end_time": 180, "title": "01 Astral Projection - Mahadeva"},
+        {"start_time": 180, "end_time": 400, "title": "02 Aban Don - State of Mind (Metal Mix)"},
+    ]
+    got = tracklist.from_chapters(chapters, 600)
+    assert [t.artists for t in got.tracks] == [["Astral Projection"], ["Aban Don"]]
+    assert [t.track_no for t in got.tracks] == [1, 2]
+    assert got.tracks[1].version == "Metal Mix"
+
+
+def test_chapters_of_digit_led_artists_are_left_alone():
+    chapters = [
+        {"start_time": 0, "end_time": 180, "title": "50 Cent - Candy Shop"},
+        {"start_time": 180, "end_time": 400, "title": "808 State - Pacific"},
+    ]
+    got = tracklist.from_chapters(chapters, 600)
+    assert [t.artists for t in got.tracks] == [["50 Cent"], ["808 State"]]
+
+
 def test_chapters_without_duration_end_at_the_last_chapter():
     chapters = [{"start_time": 0, "end_time": 100, "title": "A - One"}, {"start_time": 100, "end_time": 250, "title": "B - Two"}]
     assert [t.end for t in tracklist.from_chapters(chapters, None).tracks] == [100, 250]

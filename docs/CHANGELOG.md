@@ -8,6 +8,7 @@ What shipped, newest first. One line each; the web UI and server are live at htt
 
 ## 2026-10-27 (Web: album popups and infobox; to deploy)
 
+- Server (ADD-199; to deploy): Add album from a video no longer puts the track number into the artist when the list is written `01 Artist - Title 0:00` (a number without a dot, before or after the time); the number becomes the track number, and digit-led names such as `50 Cent` or `808 State` are left alone.
 - Server and web: the album Edit dialog has a "Use for songs" button that copies the album's own cover to every linked song in one request (`POST /albums/{id}/cover/to-songs`); songs whose cover the user chose are kept until a second click confirms replacing them, and it reports "Set art on N songs" (LIB-262, API-305, task-0120; to deploy; iOS not built).
 - Server and web: "Suggest links" button in the Links panel of Add album (both flows) and Edit album finds a Discogs master (else release) and an English Wikipedia album article for the artist and title and fills only the empty link fields (LIB-260, API-304, task-0120; to deploy).
 - Server and web: Add album from a YouTube playlist now uses the video popup (shared form, Discogs auto-match and cover, one-line track labels with pencil, suggested genres, links from the description); the Discogs picker and track mapping are gone from the web (LIB-259, API-302, API-303, task-0120; to deploy).

@@ -26,6 +26,8 @@ _NUM_HASH = re.compile(r"#\s*(\d{1,3})\s*[.):\-–—]?\s*")
 _NUM_TRACK = re.compile(r"track\s*(?:#\s*)?(\d{1,3})\s*(?:[:.)\-–—]\s*)?", re.I)
 _NUM_DOT = re.compile(r"(\d{1,3})\s*[.)](?!\d)\s*")
 _NUM_DASH = re.compile(r"(\d{1,3})\s+[-–—]\s+")
+_LEAD_DASH = re.compile(r"[\[(]?(\d{1,3})[\])]?\s+[-–—]\s+(?=\S)")
+_LEAD_BARE = re.compile(r"(?:[\[(](\d{1,3})[\])]|(\d{1,3})(?:\s*/\s*\d{1,3})?)\s+(?=[^\W\d_])")
 _SEP = re.compile(r"\s[-–—|]\s")
 _URL = re.compile(r"(?:https?://|www\.)\S+", re.I)
 _TOTAL = re.compile(r"(?:total|duration|length|runtime|full\s+length)\b", re.I)
@@ -62,6 +64,26 @@ class _Entry:
     raw: str
     text: str
     number: int | None
+    lead: tuple[int, str] | None = None
+
+
+def _take_lead(text: str) -> tuple[int, str] | None:
+    m = _LEAD_DASH.match(text) or _LEAD_BARE.match(text)
+    if not m:
+        return None
+    digits = next(g for g in m.groups() if g)
+    return int(digits), text[m.end():].strip(_EDGE)
+
+
+def _resolve_leads(entries: list[_Entry]) -> None:
+    """A bare leading number (`01 Artist - Title`) is a track number only when every line has one and they count up by one from 1; otherwise the digits stay in the text (`50 Cent`, `808 State`)."""
+    if len(entries) < 2 or any(e.number is not None or not e.lead for e in entries):
+        return
+    first = entries[0].lead[0]  # type: ignore[index]
+    if first != 1 or any(e.lead[0] != first + i for i, e in enumerate(entries)):  # type: ignore[index]
+        return
+    for e in entries:
+        e.number, e.text = e.lead  # type: ignore[misc]
 
 
 def _seconds(m: re.Match[str]) -> float:
@@ -161,7 +183,7 @@ def _entry(line: str) -> _Entry | tuple[str, float | None] | None:
             return None
         start, rest = tail
     text = " ".join(_URL.sub(" ", rest).split()).strip(_EDGE)
-    return _Entry(start, line.strip(), text, number)
+    return _Entry(start, line.strip(), text, number, _take_lead(text) if number is None else None)
 
 
 def _names(pill: str) -> list[str]:
@@ -245,6 +267,7 @@ def _is_valid(track: Track, last_valid: Track | None, limit: float | None) -> bo
 
 def _build(entries: list[_Entry], duration: float | None, fallback_end: float | None = None) -> TracklistResult:
     result = TracklistResult()
+    _resolve_leads(entries)
     if len(entries) < 2:
         result.warnings.append(W_NOT_LIST)
         return result
@@ -299,7 +322,7 @@ def from_chapters(chapters: list[dict[str, Any]], duration: float | None) -> Tra
         raw = str(ch.get("title") or "").strip()
         number, body = _take_number(_prep(raw), dash_ok=True)
         text = " ".join(_URL.sub(" ", body).split()).strip(_EDGE)
-        entries.append(_Entry(float(start), raw, text, number))
+        entries.append(_Entry(float(start), raw, text, number, _take_lead(text) if number is None else None))
         end = ch.get("end_time")
         if isinstance(end, (int, float)) and not isinstance(end, bool):
             fallback = float(end)
