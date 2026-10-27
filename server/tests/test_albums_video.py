@@ -366,3 +366,99 @@ def test_a_failing_discogs_link_keeps_the_guess_and_the_links(client, video, mon
     data = pv(client).json()
     assert data["links"]["discogs"] == "https://www.discogs.com/release/35142581"
     assert (data["album"]["title"], data["album"]["albumArtist"], data["album"]["year"]) == ("For All Mankind", "Astral Projection", 2025)
+
+
+CRYSTAL_DESC = "Stay Retro\nTracklistings\n" + "".join(f"{i + 1}. Song {i + 1} {i * 3:02d}:00\n" for i in range(10)) + "Support: https://soundcloud.com/robertparkerofficial\n"
+MASTER = {"id": 1022405, "type": "master", "title": "Robert Parker - Crystal City", "year": "2016"}
+MAIN = {"title": "Crystal City", "artists": [{"name": "Robert Parker"}], "year": 2016, "genres": ["Electronic"], "styles": ["Synthwave"],
+        "formats": [{"name": "Vinyl", "descriptions": ["LP", "Album"]}], "images": [{"type": "secondary", "uri": "https://i.discogs.com/b.jpg"}, {"type": "primary", "uri": "https://i.discogs.com/a.jpg"}],
+        "tracklist": [{"title": f"Song {i}", "type_": "track"} for i in range(1, 11)]}
+
+
+def _crystal(video, monkeypatch, search, token="t"):
+    from app import discogs_lookup
+    monkeypatch.setenv("DISCOGS_TOKEN", token)
+    calls = []
+
+    def get(path, params=None):
+        calls.append((path, params))
+        if path == "database/search":
+            return search(params)
+        if path == "masters/1022405":
+            return {"main_release": 555}
+        if path == "releases/555":
+            return MAIN
+        return {}
+
+    monkeypatch.setattr(discogs_lookup, "_get", get)
+    video["details"].update(title="Robert Parker - Crystal City [FULL ALBUM] 2016", uploader="NRW Records", duration=2472.0, description=CRYSTAL_DESC, chapters=[])
+    return calls
+
+
+def test_no_description_link_auto_matches_the_one_discogs_master(client, video, monkeypatch):
+    calls = _crystal(video, monkeypatch, lambda p: {"results": [MASTER, {"id": 9, "type": "master", "title": "Robert Parker - Other", "year": "2016"}]} if p["type"] == "master" else {"results": []})
+    data = pv(client).json()
+    assert data["links"]["discogs"] == "https://www.discogs.com/master/1022405"
+    assert data["discogsMatch"] == "https://www.discogs.com/master/1022405"
+    assert (data["album"]["title"], data["album"]["albumArtist"], data["album"]["year"], data["album"]["type"]) == ("Crystal City", "Robert Parker", 2016, "album")
+    assert data["album"]["coverUrl"] == "https://i.discogs.com/a.jpg"
+    assert data["genres"] and data["discogsCandidates"] == []
+    assert calls[0][1]["type"] == "master"
+
+
+def test_ambiguous_masters_return_candidates_instead(client, video, monkeypatch):
+    def search(p):
+        if p["type"] == "master":
+            return {"results": [MASTER, {**MASTER, "id": 77}]}
+        return {"results": [{"id": 555, "type": "release", "title": "Robert Parker - Crystal City", "year": "2016"}]}
+
+    _crystal(video, monkeypatch, search)
+    data = pv(client).json()
+    assert data["discogsMatch"] is None and data["links"]["discogs"] is None
+    assert data["album"]["coverUrl"] == DETAILS["thumbnail"]
+    assert [c["id"] for c in data["discogsCandidates"]] == [555] and data["discogsCandidates"][0]["cover"] == "https://i.discogs.com/a.jpg"
+
+
+def test_a_master_with_another_year_or_track_count_is_not_applied(client, video, monkeypatch):
+    _crystal(video, monkeypatch, lambda p: {"results": [{**MASTER, "year": "1999"}]} if p["type"] == "master" else {"results": []})
+    assert pv(client).json()["discogsMatch"] is None
+
+
+def test_discogs_failure_or_missing_token_stays_silent(client, video, monkeypatch):
+    from app import discogs_lookup
+
+    def boom(path, params=None):
+        raise OSError("down")
+
+    _crystal(video, monkeypatch, lambda p: {"results": []})
+    monkeypatch.setattr(discogs_lookup, "_get", boom)
+    data = pv(client).json()
+    assert data["discogsMatch"] is None and data["album"]["title"] == "Crystal City"
+    monkeypatch.delenv("DISCOGS_TOKEN")
+    assert pv(client).json()["discogsMatch"] is None
+
+
+def test_a_master_description_link_is_applied_with_its_cover(client, video, monkeypatch):
+    _crystal(video, monkeypatch, lambda p: {"results": []})
+    video["details"]["description"] += "https://www.discogs.com/master/1022405-Robert-Parker-Crystal-City\n"
+    data = pv(client).json()
+    assert data["album"]["coverUrl"] == "https://i.discogs.com/a.jpg" and data["discogsMatch"] is None
+    assert data["links"]["discogs"] == "https://www.discogs.com/release/555"
+
+
+def test_create_falls_back_to_the_thumbnail_when_the_discogs_cover_fails(client, video, monkeypatch):
+    from app import album_covers
+    tried = []
+
+    def fetch(url):
+        tried.append(url)
+        if "discogs" in url:
+            raise OSError("gone")
+        return b"jpg"
+
+    monkeypatch.setattr(album_covers, "fetch_jpeg", fetch)
+    monkeypatch.setattr(album_covers, "store", lambda *a, **k: None)
+    b = body()
+    b["album"]["coverUrl"] = "https://i.discogs.com/a.jpg"
+    assert client.post("/albums/from-video", json=b, headers=H).status_code == 202
+    assert tried == ["https://i.discogs.com/a.jpg", DETAILS["thumbnail"]]

@@ -157,6 +157,14 @@ def description_links(description: Any) -> dict[str, str | None]:
     return found
 
 
+def _best_image(detail: dict[str, Any]) -> str | None:
+    """The primary image of a Discogs release (else the first), else its thumb; https only."""
+    images = [i for i in detail.get("images") or [] if isinstance(i, dict)]
+    images.sort(key=lambda i: i.get("type") != "primary")
+    urls = (str(i.get("uri") or i.get("resource_url") or "") for i in images)
+    return next((u for u in urls if u.startswith("https://")), None) or (str(detail.get("thumb")) if str(detail.get("thumb") or "").startswith("https://") else None)
+
+
 def release_info(link: str) -> dict[str, Any] | None:
     """One Discogs release or master link fetched: {url, title, artist, year, genres (vocabulary, at most 4), type, cover, trackCount}; None on any failure."""
     try:
@@ -171,8 +179,7 @@ def release_info(link: str) -> dict[str, Any] | None:
         if not title:
             return None
         images = [i for i in detail.get("images") or [] if isinstance(i, dict)]
-        cover = next((c for c in (str(i.get("uri") or i.get("resource_url") or "") for i in images) if c.startswith("https://")), None) or (
-            str(detail.get("thumb")) if str(detail.get("thumb") or "").startswith("https://") else None)
+        cover = _best_image(detail)
         return {
             "url": f"https://www.discogs.com/release/{ident}", "title": title, "artist": discogs_lookup._DISAMBIG.sub("", albums._artists(detail)).rstrip()[: albums.MAX_TEXT],
             "year": timeutil.valid_year(detail.get("year")) if detail.get("year") else None,
@@ -543,12 +550,47 @@ def find_releases(artist: Any, title: Any, year: Any = None) -> dict[str, Any]:
         return {"candidates": [], "searchError": exc.detail if exc.detail in ("discogs_unavailable", "discogs_failed") else "discogs_failed"}
     wanted = timeutil.valid_year(year) if isinstance(year, int) and not isinstance(year, bool) else None
     found.sort(key=lambda c: (c["year"] != wanted if wanted else False, -c["score"], c["discogsId"]))
-    out = [{
+    return {"candidates": public_candidates(found), "searchError": None}
+
+
+def public_candidates(found: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    return [{
         "id": c["discogsId"], "url": c["url"], "title": c["title"], "artist": c["artist"], "year": c["year"], "country": c["country"],
-        "label": (c["labels"] or [None])[0], "trackCount": c["trackCount"], "cover": c["thumb"], "genres": c["genres"][:MAX_SUGGESTED_GENRES],
+        "label": (c["labels"] or [None])[0], "trackCount": c["trackCount"], "cover": c.get("image") or c["thumb"], "genres": c["genres"][:MAX_SUGGESTED_GENRES],
         "type": format_type(c["formats"]),
     } for c in found]
-    return {"candidates": out, "searchError": None}
+
+
+def _year_of(value: Any) -> int | None:
+    return timeutil.valid_year(int(value)) if str(value or "").isdigit() else None
+
+
+def auto_match(hint: dict[str, Any], track_count: int) -> dict[str, Any] | None:
+    """The one Discogs master whose artist and title equal the guess (normalised; year within one when both known; track count within two when known), read as `release_info` with the master link kept; None when absent, ambiguous or on any failure."""
+    artist, album = str(hint.get("artist") or "").strip(), str(hint.get("album") or "").strip()
+    if not artist or not album or not os.environ.get("DISCOGS_TOKEN", "").strip():
+        return None
+    try:
+        results = _search_results({"type": "master", "artist": artist, "release_title": album, "per_page": "20"})
+        year = hint.get("year")
+        same = []
+        for item in results:
+            if not isinstance(item, dict) or item.get("type") != "master" or not isinstance(item.get("id"), int):
+                continue
+            who, _, name = str(item.get("title") or "").partition(" - ")
+            found = _year_of(item.get("year"))
+            if discogs_lookup._name(who) == discogs_lookup._name(artist) and discogs_lookup._name(name) == discogs_lookup._name(album) and (not year or not found or abs(found - year) <= 1):
+                same.append(item["id"])
+        if len(set(same)) != 1:
+            return None
+        link = f"https://www.discogs.com/master/{same[0]}"
+        info = release_info(link)
+        if not info or not matches_guess(hint, info) or (track_count and info["trackCount"] and abs(info["trackCount"] - track_count) > 2):
+            return None
+        return {**info, "url": link}
+    except Exception as exc:
+        log.warning("discogs auto match failed: %s", type(exc).__name__)
+        return None
 
 
 def _playlist_tracks(raw: Any) -> list[dict[str, Any]] | None:
@@ -590,12 +632,14 @@ def _score(album: str, artist: str, count: int | None, total: float | None, titl
 def _candidate(item: dict[str, Any], artist: str, album: str, count: int | None, total: float | None, plist: list[dict[str, Any]] | None = None) -> dict[str, Any]:
     ident = int(item["id"])
     genres: list[str] = []
+    image = None
     head, _, tail = str(item.get("title") or "").partition(" - ")
     title, who, year, tracks = tail or head, (head if tail else ""), item.get("year"), None
     try:
         detail = discogs_lookup._get(f"releases/{ident}")
         tracks = albums._flat_tracks(detail)
         title = str(detail.get("title") or title)
+        image = _best_image(detail)
         who = albums._artists(detail) or who
         year = detail.get("year") or year
         genres = albums._genres({"genres": [*(detail.get("styles") or []), *(detail.get("genres") or [])]})
@@ -609,7 +653,7 @@ def _candidate(item: dict[str, Any], artist: str, album: str, count: int | None,
         "formats": _texts(item.get("format")), "labels": _texts(item.get("label"), MAX_LABELS),
         "country": _text(item.get("country")), "catno": _text(item.get("catno")),
         "thumb": _text(item.get("thumb")) if str(item.get("thumb") or "").startswith("https://") else None,
-        "tracks": tracks or [], "genres": genres,
+        "tracks": tracks or [], "genres": genres, "image": image,
     }
     if plist is not None:
         out["matches"] = match_tracks(plist, tracks or [])

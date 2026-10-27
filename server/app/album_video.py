@@ -167,22 +167,32 @@ def preview(uid: str, owner: bool, url: Any, songs: list[dict[str, Any]], text: 
     hint = album_youtube.guess(details["title"], details["uploader"], details["description"])
     links = album_youtube.description_links(details["description"])
     info = album_youtube.release_info(links["discogs"]) if links["discogs"] else None
+    auto = False
     if info and album_youtube.matches_guess(hint, info):
         links["discogs"] = info["url"]
-        hint = {"artist": info["artist"] or hint["artist"], "album": info["title"], "year": info["year"] or hint["year"], "type": info["type"] or hint["type"]}
+    elif links["discogs"] is None and (info := album_youtube.auto_match(hint, len(tracks))):
+        links["discogs"] = info["url"]
+        auto = True
     else:
         info = None
+    if info:
+        hint = {"artist": info["artist"] or hint["artist"], "album": info["title"], "year": info["year"] or hint["year"], "type": info["type"] or hint["type"]}
     artist = _album_artist(tracks, hint, details["uploader"])
     _default_artists(tracks, artist)
     listing = [{"position": t["index"] + 1, "title": t["title"], "durationS": round(t["end"] - t["start"]) if t["end"] is not None else None} for t in tracks]
-    genres = info["genres"] if info and info["genres"] else album_youtube.suggest(hint, listing)[1]
+    candidates: list[dict[str, Any]] = []
+    if info and info["genres"]:
+        genres = info["genres"]
+    else:
+        options, genres, _ = album_youtube.suggest(hint, listing)
+        candidates = [] if info else album_youtube.public_candidates(options)
     album = _album_out(details, hint, artist)
     if info and info["cover"]:
         album["coverUrl"] = info["cover"]
     return {
         "videoId": vid, "url": urlclean.watch_url(vid), "title": details["title"], "uploader": details["uploader"], "thumbnail": details["thumbnail"],
         "duration": duration, "source": source, "rawText": raw, "tracks": tracks, "album": album,
-        "guess": hint, "genres": genres, "links": links,
+        "guess": hint, "genres": genres, "links": links, "discogsMatch": links["discogs"] if auto else None, "discogsCandidates": candidates,
         "warnings": list(found.warnings),
     }
 
@@ -385,18 +395,18 @@ def create(uid: str, owner: bool, body: Any) -> dict[str, Any]:
                 deps.save_songs(uid, [*library.load(deps.library_path(uid)), *fresh_songs])
             record = _album_record(uid, vid, album, tracks, ids, key)
         job = _submit(uid, owner, job_id, vid, album, fades, thumbnail, fresh)
-    _cover(uid, record, album["coverUrl"])
+    _cover(uid, record, album["coverUrl"], thumbnail)
     return {"jobId": job["job_id"], "albumId": record["id"], "songIds": ids}
 
 
-def _cover(uid: str, record: dict[str, Any], cover_url: str | None) -> None:
+def _cover(uid: str, record: dict[str, Any], cover_url: str | None, fallback: str | None = None) -> None:
     try:
-        if cover_url:
+        for url in dict.fromkeys(u for u in (cover_url, fallback) if u and cover_url):
             try:
-                album_covers.store(uid, record["id"], album_covers.fetch_jpeg(cover_url), "url", cover_url)
+                album_covers.store(uid, record["id"], album_covers.fetch_jpeg(url), "url", url)
                 return
             except Exception:
-                pass
+                continue
         album_covers.auto(uid, record)
     except Exception:
         return
