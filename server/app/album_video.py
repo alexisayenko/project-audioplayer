@@ -6,26 +6,20 @@ import base64
 import hashlib
 import json
 import math
-import re
 from typing import Any
 
 from fastapi import HTTPException
 
-from . import album_covers, album_youtube, albums, credits, credits_split, deps, extractor, library, limits, playlist_import, previewcache, sources, timeutil, tracklist, urlclean, users, video_split
+from . import album_preview, album_youtube, albums, credits, deps, extractor, library, limits, playlist_import, previewcache, sources, tracklist, urlclean, users, video_split
 from .problems import Problem
-from .version_norm import normalize_version
 
 MAX_SECONDS = video_split.MAX_SECONDS
 MAX_TRACKS = video_split.MAX_TRACKS
 MIN_TRACKS = 2
 MAX_TEXT_CHARS = 50000
 MAX_RAW_CHARS = 20000
-TYPES = ("album", "EP", "single", "compilation", "live", "soundtrack", "mix")
 FADED_TYPES = ("mix", "compilation")
-VARIOUS = "Various Artists"
-VARIOUS_HEADS = ("various", "various artists", "va")
 TOLERANCE_S = 1.0
-_TOPIC = re.compile(r"(?<!\s)\s+-\s+topic$", re.I)
 
 
 def _bad(code: str, status: int = 422) -> HTTPException:
@@ -68,11 +62,7 @@ def _check_size(duration: float | None, count: int) -> None:
 # --- preview -------------------------------------------------------------------------------------
 
 def _version(text: Any) -> dict[str, Any] | None:
-    value = str(text or "").strip()
-    if not value:
-        return None
-    found = {"type": credits_split.kind_of(value), "name": normalize_version(value), "artists": credits_split.version_artists(value)}
-    return {k: v for k, v in found.items() if v}
+    return album_preview.version_of(text)
 
 
 def _owned_index(songs: list[dict[str, Any]]) -> dict[Any, dict[str, Any]]:
@@ -100,38 +90,6 @@ def _tracks_out(found: Any, duration: float | None, songs: list[dict[str, Any]])
             "trackNo": t.track_no, "warnings": list(t.warnings), "match": _match(index, t.title, list(t.artists), t.version),
         })
     return out
-
-
-def _album_artist(tracks: list[dict[str, Any]], hint: dict[str, Any], uploader: str) -> str:
-    named = [tuple(t["artists"]) for t in tracks if t["artists"]]
-    if not named:
-        return hint["artist"] or _TOPIC.sub("", uploader).strip() or VARIOUS
-    folded = {tuple(playlist_import._fold(a) for a in names) for names in named}
-    if len(folded) == 1 and len(named) == len(tracks):
-        return " & ".join(named[0])
-    return VARIOUS
-
-
-def _album_title(details: dict[str, Any], hint: dict[str, Any], artist: str) -> str:
-    head, album = hint["artist"], hint["album"]
-    if album and head and (playlist_import._fold(head) == playlist_import._fold(artist) or playlist_import._fold(head) in VARIOUS_HEADS):
-        return album
-    return (f"{head} - {album}" if head and album else album) or details["title"].strip()
-
-
-def _default_artists(tracks: list[dict[str, Any]], artist: str) -> None:
-    """Tracks without an artist take the album artist (not "Various Artists"); `artist` is the joined text."""
-    for t in tracks:
-        if not t["artists"] and artist != VARIOUS:
-            t["artists"] = [artist]
-        t["artist"] = " & ".join(t["artists"])
-
-
-def _album_out(details: dict[str, Any], hint: dict[str, Any], artist: str) -> dict[str, Any]:
-    return {
-        "title": _album_title(details, hint, artist)[: albums.MAX_TEXT], "albumArtist": artist, "type": hint["type"],
-        "year": hint["year"], "coverUrl": details["thumbnail"],
-    }
 
 
 def _parsed(details: dict[str, Any], text: str | None) -> tuple[Any, str, str]:
@@ -165,34 +123,16 @@ def preview(uid: str, owner: bool, url: Any, songs: list[dict[str, Any]], text: 
     _check_size(duration, len(found.tracks))
     tracks = _tracks_out(found, duration, songs)
     hint = album_youtube.guess(details["title"], details["uploader"], details["description"])
-    links = album_youtube.description_links(details["description"])
-    info = album_youtube.release_info(links["discogs"]) if links["discogs"] else None
-    auto = False
-    if info and album_youtube.matches_guess(hint, info):
-        links["discogs"] = info["url"]
-    elif links["discogs"] is None and (info := album_youtube.auto_match(hint, len(tracks))):
-        links["discogs"] = info["url"]
-        auto = True
-    else:
-        info = None
-    if info:
-        hint = {"artist": info["artist"] or hint["artist"], "album": info["title"], "year": info["year"] or hint["year"], "type": info["type"] or hint["type"]}
-    artist = _album_artist(tracks, hint, details["uploader"])
-    _default_artists(tracks, artist)
     listing = [{"position": t["index"] + 1, "title": t["title"], "durationS": round(t["end"] - t["start"]) if t["end"] is not None else None} for t in tracks]
-    candidates: list[dict[str, Any]] = []
-    if info and info["genres"]:
-        genres = info["genres"]
-    else:
-        options, genres, _ = album_youtube.suggest(hint, listing)
-        candidates = [] if info else album_youtube.public_candidates(options)
-    album = _album_out(details, hint, artist)
-    if info and info["cover"]:
-        album["coverUrl"] = info["cover"]
+    found_info = album_preview.describe(hint, details["description"], listing)
+    hint, links, genres = found_info["hint"], found_info["links"], found_info["genres"]
+    artist = album_preview.album_artist(tracks, hint, details["uploader"])
+    album_preview.default_artists(tracks, artist)
+    album = album_preview.album_out(details["title"], hint, artist, found_info["cover"] or details["thumbnail"])
     return {
         "videoId": vid, "url": urlclean.watch_url(vid), "title": details["title"], "uploader": details["uploader"], "thumbnail": details["thumbnail"],
         "duration": duration, "source": source, "rawText": raw, "tracks": tracks, "album": album,
-        "guess": hint, "genres": genres, "links": links, "discogsMatch": links["discogs"] if auto else None, "discogsCandidates": candidates,
+        "guess": hint, "genres": genres, "links": links, "discogsMatch": found_info["discogsMatch"], "discogsCandidates": found_info["candidates"],
         "warnings": list(found.warnings),
     }
 
@@ -260,26 +200,6 @@ def _included(raw: Any, duration: float | None) -> list[dict[str, Any]]:
     return tracks
 
 
-def _clean_album(raw: Any) -> dict[str, Any]:
-    data = raw if isinstance(raw, dict) else {}
-    title = str(data.get("title") or "").strip()[: albums.MAX_TEXT]
-    artist = str(data.get("albumArtist") or "").strip()[: albums.MAX_TEXT]
-    kind = "mix" if data.get("type") == "DJ mix" else data.get("type")
-    if not title or not artist or kind not in TYPES:
-        raise _bad("bad_album")
-    year = data.get("year")
-    if year is not None and (isinstance(year, bool) or not isinstance(year, int) or timeutil.valid_year(year) is None):
-        raise _bad("bad_album")
-    genres = data.get("genres")
-    if genres is not None and (not isinstance(genres, list) or not all(isinstance(g, str) for g in genres)):
-        raise _bad("bad_album")
-    cover = data.get("coverUrl")
-    return {
-        "title": title, "artist": artist, "type": kind, "year": year, "genres": albums._genres({"genres": genres or []}),
-        "coverUrl": cover if isinstance(cover, str) and cover.startswith("https://") and len(cover) <= 500 else None,
-    }
-
-
 def _request_key(vid: str, album: dict[str, Any], tracks: list[dict[str, Any]], fades: bool) -> str:
     blob = json.dumps([vid, album["title"], album["artist"], album["type"], album["year"], fades, tracks], sort_keys=True, default=str)
     return hashlib.sha1(blob.encode(), usedforsecurity=False).hexdigest()[:16]
@@ -322,8 +242,8 @@ def _album_record(uid: str, vid: str, album: dict[str, Any], tracks: list[dict[s
         raise HTTPException(status_code=409, detail="album_limit")
     link = albums.clean_link("youtube", f"https://youtu.be/{vid}")
     payload = {
-        "title": album["title"], "artist": album["artist"], "year": album["year"], "genres": album["genres"], "rymUrl": None,
-        "links": {"discogs": None, "rateyourmusic": None, "youtube": link, "wikipedia": None},
+        "title": album["title"], "artist": album["artist"], "year": album["year"], "genres": album["genres"], "rymUrl": album["links"]["rateyourmusic"],
+        "links": {**album["links"], "youtube": link},
         "source": {"type": "video", "id": vid, "url": urlclean.watch_url(vid)},
         "tracks": [{"no": i, "title": t["title"], "durationS": max(1, round(t["end"] - t["start"]))} for i, t in enumerate(tracks, 1)],
     }
@@ -363,7 +283,7 @@ def create(uid: str, owner: bool, body: Any) -> dict[str, Any]:
     details = _details(vid)
     duration = _number(details["duration"])
     _check_size(duration, 0)
-    album = _clean_album(data.get("album"))
+    album = album_preview.clean_album(data.get("album"))
     tracks = _included(data.get("tracks"), duration)
     fades = data["fades"] if isinstance(data.get("fades"), bool) else album["type"] in FADED_TYPES
     key = _request_key(vid, album, tracks, fades)
@@ -395,21 +315,8 @@ def create(uid: str, owner: bool, body: Any) -> dict[str, Any]:
                 deps.save_songs(uid, [*library.load(deps.library_path(uid)), *fresh_songs])
             record = _album_record(uid, vid, album, tracks, ids, key)
         job = _submit(uid, owner, job_id, vid, album, fades, thumbnail, fresh)
-    _cover(uid, record, album["coverUrl"], thumbnail)
+    album_preview.store_cover(uid, record, album["coverUrl"], thumbnail)
     return {"jobId": job["job_id"], "albumId": record["id"], "songIds": ids}
-
-
-def _cover(uid: str, record: dict[str, Any], cover_url: str | None, fallback: str | None = None) -> None:
-    try:
-        for url in dict.fromkeys(u for u in (cover_url, fallback) if u and cover_url):
-            try:
-                album_covers.store(uid, record["id"], album_covers.fetch_jpeg(url), "url", url)
-                return
-            except Exception:
-                continue
-        album_covers.auto(uid, record)
-    except Exception:
-        return
 
 
 def job_status(uid: str, job_id: str) -> dict[str, Any]:

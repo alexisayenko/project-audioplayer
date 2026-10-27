@@ -1,0 +1,125 @@
+{
+  "playlistUrl": "https://www.youtube.com/playlist?list=OLAK5uy_abcdefghijklmnop",
+  "album": {
+    "title": "Twisted",
+    "albumArtist": "Hallucinogen",
+    "type": "album",
+    "year": 1995,
+    "genres": [
+      "psytrance"
+    ],
+    "coverUrl": "https://i.ytimg.com/vi/hhhhhhhhh01/hqdefault.jpg"
+  },
+  "selected": [
+    {
+      "position": 1,
+      "videoId": "hhhhhhhhh01",
+      "title": "LSD",
+      "durationS": 450,
+      "artists": [
+        "Hallucinogen"
+      ],
+      "version": null
+    },
+    {
+      "position": 2,
+      "videoId": "hhhhhhhhh02",
+      "title": "Orphic Thrench",
+      "durationS": 500,
+      "artists": [
+        "Hallucinogen"
+      ],
+      "version": null
+    },
+    {
+      "position": 3,
+      "videoId": "hhhhhhhhh03",
+      "title": "Alpha Centauri",
+      "durationS": 420,
+      "artists": [
+        "Hallucinogen"
+      ],
+      "version": null
+    },
+    {
+      "position": 4,
+      "videoId": "hhhhhhhhh04",
+      "title": "Dark Magus",
+      "durationS": 430,
+      "artists": [
+        "Hallucinogen"
+      ],
+      "version": null
+    },
+    {
+      "position": 5,
+      "videoId": "hhhhhhhhh05",
+      "title": "Shamanix",
+      "durationS": 440,
+      "artists": [
+        "Hallucinogen"
+      ],
+      "version": null
+    },
+    {
+      "position": 6,
+      "videoId": "hhhhhhhhh06",
+      "title": "Snarling Black Mabel",
+      "durationS": 460,
+      "artists": [
+        "Hallucinogen"
+      ],
+      "version": null
+    },
+    {
+      "position": 7,
+      "videoId": "hhhhhhhhh07",
+      "title": "Fluoro Neuro Sponge",
+      "durationS": 470,
+      "artists": [
+        "Hallucinogen"
+      ],
+      "version": null
+    },
+    {
+      "position": 8,
+      "videoId": "hhhhhhhhh08",
+      "title": "Solstice",
+      "durationS": 480,
+      "artists": [
+        "Hallucinogen"
+      ],
+      "version": null
+    },
+    {
+      "position": 9,
+      "videoId": "hhhhhhhhh09",
+      "title": "Angelic Particles RMX",
+      "durationS": 490,
+      "artists": [
+        "Hallucinogen"
+      ],
+      "version": null
+    },
+    {
+      "position": 10,
+      "videoId": "hhhhhhhhh10",
+      "title": "Orphic Thrench",
+      "durationS": 501,
+      "artists": [
+        "Hallucinogen"
+      ],
+      "version": "Remastered"
+    },
+    {
+      "position": 11,
+      "videoId": "hhhhhhhhh11",
+      "title": "Snarling Black Mabel",
+      "durationS": 461,
+      "artists": [
+        "Hallucinogen"
+      ],
+      "version": "Remastered"
+    }
+  ]
+}

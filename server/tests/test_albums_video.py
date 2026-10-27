@@ -1,6 +1,6 @@
 import pytest
 
-from app import album_video, deps, extractor, limits, playlist_import, previewcache, video_split
+from app import album_covers, album_video, deps, extractor, limits, playlist_import, previewcache, video_split
 from tests.test_albums import stored  # noqa: F401
 from tests.test_library import H, OWNER_UID, client  # noqa: F401
 from tests.test_users import ALICE, BOB, key, multi, who  # noqa: F401
@@ -271,9 +271,9 @@ def test_other_users_do_not_see_the_job_or_the_album(multi, video):
 
 def test_cover_comes_from_the_given_url_else_the_video_thumbnail(client, video, monkeypatch):
     seen = []
-    monkeypatch.setattr(album_video.album_covers, "fetch_jpeg", lambda url: seen.append(url) or b"jpeg")
+    monkeypatch.setattr(album_covers, "fetch_jpeg", lambda url: seen.append(url) or b"jpeg")
     stored_calls = []
-    monkeypatch.setattr(album_video.album_covers, "store", lambda uid, aid, jpeg, src, url: stored_calls.append((src, url)))
+    monkeypatch.setattr(album_covers, "store", lambda uid, aid, jpeg, src, url: stored_calls.append((src, url)))
     client.post("/albums/from-video", json=body(album={**body()["album"], "coverUrl": "https://i.ytimg.com/vi/x/hq.jpg"}), headers=H)
     assert stored_calls == [("url", "https://i.ytimg.com/vi/x/hq.jpg")]
     client.post("/albums/from-video", json={**body(), "url": "https://youtu.be/aaaaaaaaaaa"}, headers=H)

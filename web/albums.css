@@ -170,3 +170,8 @@
 .discogs-choose { display: flex; align-items: center; gap: var(--space-3); width: 100%; min-height: var(--hit); text-align: left; background: none; border: 0; padding: var(--space-1); color: inherit; cursor: pointer; }
 .discogs-choose .info { display: grid; min-width: 0; }
 .discogs-thumb { flex: none; width: var(--hit); height: var(--hit); object-fit: cover; background: var(--line); }
+.lk-suggest { display: inline-grid; place-items: center; width: var(--control-sm); height: var(--control-sm); padding: 0; border: 0; background: none; color: var(--ink-muted); cursor: pointer; }
+.lk-suggest:hover, .lk-suggest:focus-visible { color: var(--ink); }
+.lk-suggest:disabled { opacity: .5; cursor: default; }
+.lk-suggest-status { margin: 0; }
+.lk-suggest-status:empty { display: none; }

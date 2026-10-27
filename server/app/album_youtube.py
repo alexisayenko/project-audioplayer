@@ -249,16 +249,48 @@ def preview(uid: str, owner: bool, url: str, songs: list[dict[str, Any]]) -> dic
     have = _song_ids(songs)
     tracks = [{"position": i, "videoId": e["id"], "title": e["title"], "durationS": _seconds(e["duration"]), "url": e["url"], "songId": have.get(e["id"])} for i, e in usable]
     meta = found["playlist"]
+    uploader = str(meta["uploader"] or "")
+    for track, (_, entry) in zip(tracks, usable):
+        track["artists"] = _own_artists(entry, uploader)
+        track["version"] = _version_text(entry)
     hint = guess(meta["title"], meta["uploader"], meta.get("description"))
-    candidates, genres, error = suggest(hint, tracks)
+    from . import album_preview
+
+    listing = [{"position": t["position"], "title": t["title"], "durationS": t["durationS"]} for t in tracks]
+    shared = album_preview.describe(hint, meta.get("description"), listing)
+    hint = shared["hint"]
+    artist = album_preview.album_artist([t for t in tracks if t["artists"]] or tracks, hint, uploader)
+    album_preview.default_artists(tracks, artist)
+    thumbnail = next((e["thumbnail"] for _, e in usable if e.get("thumbnail")), None)
     return {
         "playlist": {"title": meta["title"] or "", "uploader": meta["uploader"] or None, "count": len(tracks), "url": meta["url"]},
         "guess": hint,
         "tracks": tracks,
-        "candidates": candidates,
-        "genres": genres,
-        "searchError": error,
+        "candidates": shared["options"],
+        "genres": shared["genres"],
+        "searchError": shared["searchError"],
+        "album": album_preview.album_out(str(meta["title"] or ""), hint, artist, shared["cover"] or thumbnail),
+        "links": shared["links"],
+        "discogsMatch": shared["discogsMatch"],
+        "discogsCandidates": shared["candidates"],
+        "thumbnail": thumbnail,
     }
+
+
+def _own_artists(entry: dict[str, Any], uploader: str) -> list[str]:
+    """The artists parsed from the video title; the uploader channel alone does not count (the album artist replaces it)."""
+    names = [str(a) for a in entry["mainArtists"] if str(a).strip()]
+    channel = credit_title.fold(uploader)
+    topic_free = credit_title.fold(_TOPIC.sub("", uploader))
+    if names and channel and [credit_title.fold(a) for a in names] in ([channel], [topic_free]):
+        return []
+    return names
+
+
+def _version_text(entry: dict[str, Any]) -> str | None:
+    raw = entry.get("raw") if isinstance(entry.get("raw"), dict) else {}
+    version = entry.get("version") if isinstance(entry.get("version"), dict) else {}
+    return str(raw.get("remixer") or version.get("name") or "").strip() or None
 
 
 # --- commit --------------------------------------------------------------------------------------
@@ -279,7 +311,17 @@ def _selected(raw: Any) -> list[dict[str, Any]]:
             raise _bad("bad_selection")
         seen_pos.add(pos)
         seen_vid.add(vid)
-        out.append({"position": pos, "videoId": vid, "title": title, "durationS": _seconds(item.get("durationS"))})
+        row = {"position": pos, "videoId": vid, "title": title, "durationS": _seconds(item.get("durationS"))}
+        if isinstance(item.get("artists"), list):
+            names = [str(a).strip()[: albums.MAX_TEXT] for a in item["artists"] if isinstance(a, str) and a.strip()]
+            if len(names) != len(item["artists"]) or len(names) > 10:
+                raise _bad("bad_selection")
+            row["artists"] = names
+        if "version" in item:
+            if item["version"] is not None and not isinstance(item["version"], str):
+                raise _bad("bad_selection")
+            row["version"] = (item["version"] or "").strip()[: albums.MAX_TEXT] or None
+        out.append(row)
     return sorted(out, key=lambda s: s["position"])
 
 
@@ -326,6 +368,20 @@ def _fallback_payload(raw: Any, selected: list[dict[str, Any]], list_id: str) ->
     }
 
 
+def _album_payload(raw: Any, selected: list[dict[str, Any]], list_id: str, playlist_link: str) -> tuple[dict[str, Any], dict[int, int], str | None]:
+    """The album create payload of the `album` form (API-303): the selected videos in order, every one linked; and the chosen cover address."""
+    from . import album_preview
+
+    a = album_preview.clean_album(raw)
+    links = {**a["links"], "youtube": playlist_link}
+    payload = {
+        "title": a["title"], "artist": a["artist"], "year": a["year"], "genres": a["genres"], "type": a["type"], "rymUrl": links["rateyourmusic"], "links": links,
+        "source": {"type": "youtube", "id": list_id, "url": urlclean.playlist_url(list_id)},
+        "tracks": [{"no": i, "title": s["title"], "durationS": s["durationS"]} for i, s in enumerate(selected, 1)],
+    }
+    return payload, {s["position"]: i for i, s in enumerate(selected, 1)}, a["coverUrl"]
+
+
 def _commit_payload(body: dict[str, Any], selected: list[dict[str, Any]], list_id: str) -> tuple[dict[str, Any], dict[int, int]]:
     if body.get("candidate") is None:
         payload = _fallback_payload(body.get("fallback"), selected, list_id)
@@ -343,8 +399,13 @@ def commit(uid: str, owner: bool, body: dict[str, Any], songs: list[dict[str, An
     list_id = _playlist_ref(body.get("playlistUrl"))
     playlist_link = albums._stored_link("youtube", body.get("playlistUrl")) or urlclean.playlist_url(list_id)
     selected = _selected(body.get("selected"))
+    new_form = isinstance(body.get("album"), dict)
+    cover_url = None
     try:
-        payload, mapping = _commit_payload(body, selected, list_id)
+        if new_form:
+            payload, mapping, cover_url = _album_payload(body["album"], selected, list_id, playlist_link)
+        else:
+            payload, mapping = _commit_payload(body, selected, list_id)
     except albums.AlbumError as exc:
         raise HTTPException(status_code=exc.status, detail={"code": exc.code, "key": exc.key} if exc.key else exc.code) from exc
     payload["links"] = {**payload["links"], "youtube": playlist_link}
@@ -358,7 +419,8 @@ def commit(uid: str, owner: bool, body: dict[str, Any], songs: list[dict[str, An
         raise HTTPException(status_code=409, detail="library_full_songs")
     views, channel = _views(uid, owner, list_id, songs, fresh)
     for s in fresh:
-        _create(uid, _with_album_artist(views.get(s["videoId"]) or _minimal(s), payload["artist"], channel), payload)
+        entry = views.get(s["videoId"]) or _minimal(s)
+        _create(uid, _with_album_artist(_with_track(entry, s) if new_form else entry, payload["artist"], channel), payload)
     ids = {s["position"]: have.get(s["videoId"], s["videoId"]) for s in selected}
     with deps.tx(uid, "albums commit"):
         items = albums.load(deps.albums_path(uid))
@@ -372,8 +434,16 @@ def commit(uid: str, owner: bool, body: dict[str, Any], songs: list[dict[str, An
         for pos, no in mapping.items():
             by_no[no]["songId"] = ids[pos]
         albums.save(deps.albums_path(uid), [album, *items])
-        fill_songs(uid, album, [have[s["videoId"]] for s in selected if s["videoId"] in have])
-    album = album_covers.present_one(uid, album_covers.auto(uid, album))
+        own = {have[s["videoId"]]: " & ".join(s["artists"]) for s in selected if new_form and s["videoId"] in have and s.get("artists")}
+        fill_songs(uid, album, [have[s["videoId"]] for s in selected if s["videoId"] in have], own)
+    if new_form:
+        from . import album_preview
+
+        album_preview.store_cover(uid, album, cover_url, extractor.cover_url(selected[0]["videoId"]))
+        album = next((a for a in albums.load(deps.albums_path(uid)) if a["id"] == album["id"]), album)
+        album = album_covers.present_one(uid, album)
+    else:
+        album = album_covers.present_one(uid, album_covers.auto(uid, album))
     return {
         "album": album,
         "songs": [{"position": s["position"], "songId": ids[s["position"]]} for s in selected],
@@ -396,6 +466,18 @@ def _views(uid: str, owner: bool, list_id: str, songs: list[dict[str, Any]], fre
 def _minimal(selected: dict[str, Any]) -> dict[str, Any]:
     return {"id": selected["videoId"], "title": selected["title"], "mainArtists": [], "featuredArtists": [], "withArtists": [], "version": None,
             "duration": selected["durationS"], "thumbnail": None}
+
+
+def _with_track(entry: dict[str, Any], selected: dict[str, Any]) -> dict[str, Any]:
+    """The listing entry with the title, artists and version the user edited (API-303)."""
+    from . import album_preview
+
+    out = {**entry, "title": selected["title"]}
+    if selected.get("artists"):
+        out["mainArtists"] = selected["artists"]
+    if "version" in selected:
+        out["version"] = album_preview.version_of(selected["version"])
+    return out
 
 
 def _with_album_artist(entry: dict[str, Any], album_artist: str, channel: str = "") -> dict[str, Any]:

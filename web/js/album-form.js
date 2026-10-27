@@ -1,4 +1,6 @@
 import { el, field } from './dom.js';
+import { api } from './api.js';
+import { icon } from './icons.js';
 import { tokenGroup } from './token-field.js';
 import { splitTokens } from './tokens.js';
 import { linksPanel } from './links-panel.js';
@@ -37,7 +39,45 @@ export function albumLinksPanel(initial = {}, id = 'album-links') {
   return { panel, inputs, get, have, paint, node: el('div', { class: 'album-links-panel' }, panel.bar, panel.clip) };
 }
 
-export function albumFields({ title = '', artist = '', year = '', type = 'album', genres, links = {}, linksId }) {
+const SUGGEST_NAMES = { discogs: 'Discogs', wikipedia: 'Wikipedia' };
+
+export function suggestLinks({ lk, titleF, artistsF, yearIn, lookup = api.albumSuggestLinks }) {
+  const btn = el('button', { class: 'icon sq-btn lk-suggest', type: 'button', title: 'Suggest links', 'aria-label': 'Suggest links' }, icon('sparkles', 'inline'));
+  const status = el('p', { class: 't-caption muted lk-suggest-status', role: 'status', 'aria-live': 'polite' });
+  btn.addEventListener('click', async () => {
+    const artist = artistText(artistsF.value);
+    const title = titleF.value.trim();
+    if (!title && !artist) { status.textContent = 'Type an album artist or title first.'; return; }
+    btn.disabled = true;
+    btn.setAttribute('aria-busy', 'true');
+    status.textContent = 'Looking for links...';
+    let res = null;
+    try {
+      res = await lookup({ artist, title, year: Number(yearIn.value.trim()) || null });
+    } catch {
+      res = null;
+    }
+    btn.disabled = false;
+    btn.removeAttribute('aria-busy');
+    const filled = [];
+    let found = 0;
+    for (const key of Object.keys(SUGGEST_NAMES)) {
+      const url = typeof res?.[key] === 'string' && httpUrl(res[key]) ? res[key] : '';
+      if (!url) continue;
+      found += 1;
+      if (lk.inputs[key].value.trim()) continue;
+      lk.inputs[key].value = url;
+      lk.inputs[key].dispatchEvent(new Event('input', { bubbles: true }));
+      filled.push(SUGGEST_NAMES[key]);
+    }
+    if (found) status.textContent = filled.length ? `Found ${filled.join(' and ')}.` : 'Found links, but those fields are already filled.';
+    else if (res?.searchError === 'discogs_unavailable') status.textContent = 'Nothing found (Discogs is not configured).';
+    else status.textContent = 'Nothing found.';
+  });
+  return { btn, status };
+}
+
+export function albumFields({ title = '', artist = '', year = '', type = 'album', genres, links = {}, linksId, lookup }) {
   const tg = tokenGroup();
   const titleF = tg.field('title', title);
   const artistsF = tg.field('artists', artist);
@@ -47,6 +87,9 @@ export function albumFields({ title = '', artist = '', year = '', type = 'album'
   const typeSel = el('select', { 'aria-label': 'Album type' }, ...TYPES.map(([k, label]) => el('option', { value: k, selected: k === normalType(type) }, label)));
   typeSel.value = normalType(type);
   const lk = albumLinksPanel(links, linksId);
+  const sg = suggestLinks({ lk, titleF, artistsF, yearIn, ...(lookup ? { lookup } : {}) });
+  lk.panel.bar.append(sg.btn);
+  lk.node.append(sg.status);
   const node = el('div', { class: 'album-fields' },
     field('Album title', titleF),
     field('Album artists', artistsF),
@@ -54,7 +97,7 @@ export function albumFields({ title = '', artist = '', year = '', type = 'album'
     genres.node,
     lk.node);
   return {
-    node, titleF, artistsF, yearIn, typeSel, links: lk,
+    node, titleF, artistsF, yearIn, typeSel, links: lk, suggest: sg,
     title: () => titleF.value.trim(),
     artist: () => artistText(artistsF.value),
     type: () => typeSel.value,

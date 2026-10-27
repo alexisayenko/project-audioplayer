@@ -18,7 +18,12 @@
       "title": "LSD",
       "durationS": 450,
       "url": "https://www.youtube.com/watch?v=hhhhhhhhh01",
-      "songId": null
+      "songId": null,
+      "artists": [
+        "Hallucinogen"
+      ],
+      "version": null,
+      "artist": "Hallucinogen"
     },
     {
       "position": 2,
@@ -26,7 +31,12 @@
       "title": "Orphic Thrench",
       "durationS": 500,
       "url": "https://www.youtube.com/watch?v=hhhhhhhhh02",
-      "songId": null
+      "songId": null,
+      "artists": [
+        "Hallucinogen"
+      ],
+      "version": null,
+      "artist": "Hallucinogen"
     },
     {
       "position": 3,
@@ -34,7 +44,12 @@
       "title": "Alpha Centauri",
       "durationS": 420,
       "url": "https://www.youtube.com/watch?v=hhhhhhhhh03",
-      "songId": null
+      "songId": null,
+      "artists": [
+        "Hallucinogen"
+      ],
+      "version": null,
+      "artist": "Hallucinogen"
     },
     {
       "position": 4,
@@ -42,7 +57,12 @@
       "title": "Dark Magus",
       "durationS": 430,
       "url": "https://www.youtube.com/watch?v=hhhhhhhhh04",
-      "songId": null
+      "songId": null,
+      "artists": [
+        "Hallucinogen"
+      ],
+      "version": null,
+      "artist": "Hallucinogen"
     },
     {
       "position": 5,
@@ -50,7 +70,12 @@
       "title": "Shamanix",
       "durationS": 440,
       "url": "https://www.youtube.com/watch?v=hhhhhhhhh05",
-      "songId": null
+      "songId": null,
+      "artists": [
+        "Hallucinogen"
+      ],
+      "version": null,
+      "artist": "Hallucinogen"
     },
     {
       "position": 6,
@@ -58,7 +83,12 @@
       "title": "Snarling Black Mabel",
       "durationS": 460,
       "url": "https://www.youtube.com/watch?v=hhhhhhhhh06",
-      "songId": null
+      "songId": null,
+      "artists": [
+        "Hallucinogen"
+      ],
+      "version": null,
+      "artist": "Hallucinogen"
     },
     {
       "position": 7,
@@ -66,7 +96,12 @@
       "title": "Fluoro Neuro Sponge",
       "durationS": 470,
       "url": "https://www.youtube.com/watch?v=hhhhhhhhh07",
-      "songId": null
+      "songId": null,
+      "artists": [
+        "Hallucinogen"
+      ],
+      "version": null,
+      "artist": "Hallucinogen"
     },
     {
       "position": 8,
@@ -74,7 +109,12 @@
       "title": "Solstice",
       "durationS": 480,
       "url": "https://www.youtube.com/watch?v=hhhhhhhhh08",
-      "songId": null
+      "songId": null,
+      "artists": [
+        "Hallucinogen"
+      ],
+      "version": null,
+      "artist": "Hallucinogen"
     },
     {
       "position": 9,
@@ -82,7 +122,12 @@
       "title": "Angelic Particles RMX",
       "durationS": 490,
       "url": "https://www.youtube.com/watch?v=hhhhhhhhh09",
-      "songId": null
+      "songId": null,
+      "artists": [
+        "Hallucinogen"
+      ],
+      "version": null,
+      "artist": "Hallucinogen"
     },
     {
       "position": 10,
@@ -90,7 +135,12 @@
       "title": "Orphic Thrench",
       "durationS": 501,
       "url": "https://www.youtube.com/watch?v=hhhhhhhhh10",
-      "songId": null
+      "songId": null,
+      "artists": [
+        "Hallucinogen"
+      ],
+      "version": "Remastered",
+      "artist": "Hallucinogen"
     },
     {
       "position": 11,
@@ -98,7 +148,12 @@
       "title": "Snarling Black Mabel",
       "durationS": 461,
       "url": "https://www.youtube.com/watch?v=hhhhhhhhh11",
-      "songId": null
+      "songId": null,
+      "artists": [
+        "Hallucinogen"
+      ],
+      "version": "Remastered",
+      "artist": "Hallucinogen"
     }
   ],
   "candidates": [
@@ -191,5 +246,37 @@
   "genres": [
     "psytrance"
   ],
-  "searchError": null
+  "searchError": null,
+  "album": {
+    "title": "Twisted",
+    "albumArtist": "Hallucinogen",
+    "type": "album",
+    "year": 1995,
+    "coverUrl": "https://i.ytimg.com/vi/hhhhhhhhh01/hqdefault.jpg"
+  },
+  "links": {
+    "discogs": null,
+    "wikipedia": null,
+    "rateyourmusic": null
+  },
+  "discogsMatch": null,
+  "discogsCandidates": [
+    {
+      "id": 77001,
+      "url": "https://www.discogs.com/release/77001",
+      "title": "Twisted",
+      "artist": "Hallucinogen",
+      "year": 1995,
+      "country": "UK",
+      "label": "Dragonfly Records",
+      "trackCount": 9,
+      "cover": "https://i.discogs.com/t.jpg",
+      "genres": [
+        "Psy-Trance",
+        "Electronic"
+      ],
+      "type": "album"
+    }
+  ],
+  "thumbnail": "https://i.ytimg.com/vi/hhhhhhhhh01/hqdefault.jpg"
 }

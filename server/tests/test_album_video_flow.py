@@ -22,7 +22,7 @@ def flow(client, monkeypatch):  # noqa: F811
     tools = Tools(monkeypatch)
     monkeypatch.setattr(extractor, "video_details", lambda video_id: DETAILS)
     monkeypatch.setattr(deps.SCHED, "inline", True)
-    monkeypatch.setattr("app.album_video.album_covers.auto", lambda uid, record: None)
+    monkeypatch.setattr("app.album_covers.auto", lambda uid, record: None)
     playlist_import.reset_limits()
     limits.RATE.reset()
     previewcache.clear()

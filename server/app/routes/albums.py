@@ -8,7 +8,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import FileResponse
 from fastapi.concurrency import run_in_threadpool
 
-from .. import album_covers, album_youtube, albums, coverimg, coverupload, deps, library, users
+from .. import album_covers, album_links, album_youtube, albums, coverimg, coverupload, deps, library, users
 from ..problems import Problem
 from ..schemas import AlbumCoverRequest, AlbumLinkRequest, AlbumPatchRequest, AlbumPreviewRequest, AlbumSearchRequest
 
@@ -82,6 +82,11 @@ async def youtube_commit(body: dict[str, Any], user: User):
 @router.post("/albums/discogs/search")
 async def discogs_find(body: dict[str, Any], user: User):
     return await run_in_threadpool(album_youtube.find_releases, body.get("artist"), body.get("title"), body.get("year"))
+
+
+@router.post("/albums/suggest-links")
+async def suggest_links(body: dict[str, Any], user: User):
+    return await run_in_threadpool(album_links.suggest, body.get("artist"), body.get("title"), body.get("year"))
 
 
 @router.post("/albums/discogs-search", responses=deps.responses(502, 503))

@@ -17,7 +17,6 @@ const { openAddAlbum } = await import('./albums.js');
 
 const fixture = (name) => JSON.parse(readFileSync(new URL(`./fixtures/${name}`, import.meta.url), 'utf8'));
 const PREVIEW = fixture('yt-preview.json');
-const SEARCH = fixture('yt-search.json');
 const PLAYLIST = PREVIEW.playlist.url;
 const UPDATE = !!process.env.UPDATE_WEB_FIXTURES;
 const ok = (body, status = 200) => ({ status, body });
@@ -30,7 +29,6 @@ const create = () => qa('button').find((b) => /^Create album/.test(b.textContent
 function server(preview) {
   return stubFetch((u) => {
     if (u === '/albums/youtube/preview') return ok(preview);
-    if (u === '/albums/discogs-search') return ok(SEARCH);
     if (u === '/albums/youtube/commit') return ok({ album: { id: 'alb_1', title: 'Twisted' }, songs: [], linked: 0, unlinked: 0 }, 201);
     if (u === '/me') return ok({ owner: true });
     if (u === '/albums') return ok([]);
@@ -56,29 +54,20 @@ function checkFixture(name, data) {
   assert.deepEqual(data, fixture(name), `${name} differs from the recorded request; rerun with UPDATE_WEB_FIXTURES=1 and the server contract test`);
 }
 
-test('the real preview response renders the candidate row, the checked tracks and the Discogs match labels', async () => {
+test('the real preview response renders the form fields and one label per track', async () => {
   server(PREVIEW);
   await popup();
-  const cand = PREVIEW.candidates[0];
-  assert.match(q('.album-cand-title').textContent, /Hallucinogen - Twisted/);
-  assert.match(q('.album-best').textContent, /Best match/);
-  assert.match(q('.album-cand-sub').textContent, /1995/);
-  assert.match(q('.album-cand-sub').textContent, new RegExp(`${cand.trackCount} tracks`));
-  assert.match(q('.album-cand-meta').textContent, /CD, Album/);
-  assert.match(q('.album-cand-meta').textContent, /Dragonfly Records \(DRAGON 1\)/);
-  assert.match(q('.album-cand-meta').textContent, /UK/);
-  assert.equal(q('.album-guess').textContent, 'Looks like: Hallucinogen - Twisted · 1995');
-  const rows = qa('li.album-yt-track');
+  const field = (name) => qa('.token-field').find((x) => x.getAttribute('aria-label') === name).value;
+  assert.equal(field('Album title'), 'Twisted');
+  assert.equal(field('Album artists'), 'Hallucinogen');
+  assert.equal(qa('.album-fields input').find((i) => i.getAttribute('aria-label') === 'Year').value, '1995');
+  const rows = qa('li.av-row');
   assert.equal(rows.length, 11);
-  assert.deepEqual(rows.map((r) => r.querySelector('input').checked), [...Array(9).fill(true), false, false]);
-  assert.equal(q('.album-yt-count').textContent, '9 of 11 selected');
-  const labels = rows.map((r) => r.querySelector('.album-match').textContent);
-  PREVIEW.tracks.forEach((t, i) => {
-    const no = cand.matches[String(t.position)];
-    assert.equal(labels[i], no == null ? 'no match' : `→ ${no}. ${cand.tracks.find((x) => x.no === no).title}`);
-  });
-  assert.equal(labels[0], '→ 1. LSD');
-  assert.equal(labels[10], 'no match');
+  const labels = rows.map((r) => r.querySelector('.av-label').textContent.replace(/\s+/g, ' ').trim());
+  assert.equal(labels[0], 'Hallucinogen - LSD (7:30)');
+  assert.deepEqual(rows.map((r) => r.querySelector('input').checked), Array(11).fill(true));
+  assert.equal(rows[0].querySelector('a.av-yt').href, PREVIEW.tracks[0].url);
+  D().close();
 });
 
 test('Create sends a body of the shape the server takes (recorded and replayed by the server contract test)', async () => {
@@ -87,51 +76,21 @@ test('Create sends a body of the shape the server takes (recorded and replayed b
   fire(create(), 'click');
   await settle();
   const sent = sentBody(calls);
-  assert.deepEqual(Object.keys(sent).sort(), ['candidate', 'fallback', 'mapping', 'playlistUrl', 'selected']);
+  assert.deepEqual(Object.keys(sent).sort(), ['album', 'playlistUrl', 'selected']);
   assert.equal(sent.playlistUrl, PLAYLIST);
-  assert.deepEqual(sent.selected.map((s) => s.position), [1, 2, 3, 4, 5, 6, 7, 8, 9]);
+  assert.deepEqual(sent.album, { title: 'Twisted', albumArtist: 'Hallucinogen', type: 'album', year: 1995, genres: PREVIEW.genres, coverUrl: PREVIEW.album.coverUrl });
+  assert.deepEqual(sent.selected.map((s) => s.position), PREVIEW.tracks.map((t) => t.position));
   for (const s of sent.selected) {
     const t = PREVIEW.tracks.find((x) => x.position === s.position);
-    assert.deepEqual(s, { position: t.position, videoId: t.videoId, title: t.title, durationS: t.durationS });
+    assert.deepEqual(s, { position: t.position, videoId: t.videoId, title: t.title, durationS: t.durationS, artists: t.artists, version: t.version });
   }
-  assert.deepEqual(sent.mapping, Object.fromEntries([1, 2, 3, 4, 5, 6, 7, 8, 9].map((n) => [String(n), n])));
-  assert.equal(sent.candidate.discogsId, 77001);
-  assert.equal('source' in sent.candidate || typeof sent.candidate.discogsId === 'number', true);
-  assert.equal(sent.candidate.tracks.length, 9);
-  assert.equal(sent.candidate.links.discogs, 'https://www.discogs.com/release/77001');
-  assert.equal(sent.candidate.links.youtube, PLAYLIST);
-  assert.deepEqual(sent.fallback, { title: 'Twisted', artist: 'Hallucinogen', year: 1995 });
-  checkFixture('yt-commit-request.json', sent);
+  checkFixture('yt-commit-album-request.json', sent);
 });
 
-test('without candidates the body carries no candidate and the fallback title', async () => {
-  const calls = server({ ...PREVIEW, candidates: [], searchError: 'discogs_unavailable' });
-  await popup();
-  assert.match(q('.album-picker').textContent, /Discogs is not available/);
-  fire(create(), 'click');
-  await settle();
-  const sent = sentBody(calls);
-  assert.equal(sent.candidate, null);
-  assert.deepEqual(sent.mapping, {});
-  assert.equal(sent.selected.length, 11);
-  checkFixture('yt-commit-fallback-request.json', sent);
-});
-
-test('Search again feeds the real search response into the list', async () => {
+test('Back sends nothing beyond the preview', async () => {
   const calls = server(PREVIEW);
   await popup();
-  fire(q('.album-search'), 'submit');
+  fire(qa('button').find((b) => b.textContent === 'Back'), 'click');
   await settle();
-  const req = JSON.parse(calls.find((c) => c.url === '/albums/discogs-search').opts.body);
-  assert.deepEqual(Object.keys(req).sort(), ['album', 'artist', 'durationsS', 'playlistTracks', 'trackCount']);
-  assert.deepEqual(req.playlistTracks[0], { position: 1, title: 'LSD', durationS: 450 });
-  assert.equal(qa('li.album-yt-track').filter((r) => r.querySelector('input').checked).length, Object.values(SEARCH.candidates[0].matches).filter((n) => n != null).length);
-});
-
-test('Cancel sends nothing beyond the preview', async () => {
-  const calls = server(PREVIEW);
-  await popup();
-  fire(qa('button').find((b) => b.textContent === 'Cancel'), 'click');
-  await settle();
-  assert.deepEqual(calls.map((c) => c.url).filter((u) => u !== '/me'), ['/albums/youtube/preview']);
+  assert.deepEqual(calls.map((c) => c.url).filter((u) => u !== '/me' && u !== '/genres/vocabulary'), ['/albums/youtube/preview']);
 });

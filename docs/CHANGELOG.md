@@ -4,6 +4,8 @@ What shipped, newest first. One line each; the web UI and server are live at htt
 
 ## 2026-10-27 (Web: album popups and infobox; to deploy)
 
+- Server and web: "Suggest links" button in the Links panel of Add album (both flows) and Edit album finds a Discogs master (else release) and an English Wikipedia album article for the artist and title and fills only the empty link fields (LIB-260, API-304, task-0120; to deploy).
+- Server and web: Add album from a YouTube playlist now uses the video popup (shared form, Discogs auto-match and cover, one-line track labels with pencil, suggested genres, links from the description); the Discogs picker and track mapping are gone from the web (LIB-259, API-302, API-303, task-0120; to deploy).
 - Web: the v1 Genres screen is removed and "Genres map v2" is now simply the Genres map at `#/genres` (`#/genres2` redirects); one sidebar item, one title; v1 outline, radial view, legend and toolbar code and CSS deleted, the v1 vocabulary stays as the tag vocabulary (GEN-101, WEB-084, task-0096; git tag `genres-map-v1`).
 
 - Server and web: genres v2 folds the whole v1 vocabulary (one genre per concept; 527 genres added under their v1 parents or the grey Legacy holding area, flagged `legacy: true`), Genres map v2 opens in drill-down (GEN-102, GEN-114, DATA-197, API-226, ADR-0045, task-0096; to deploy).

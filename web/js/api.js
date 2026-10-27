@@ -312,6 +312,7 @@ export const api = {
   albumVideoPreviewText: (body) => request('POST', '/albums/from-video/preview-text', body),
   albumFromVideo: (body) => request('POST', '/albums/from-video', body),
   job: (id) => request('GET', `/jobs/${q(id)}`),
+  albumSuggestLinks: (body) => request('POST', '/albums/suggest-links', body),
   albumDiscogsFind: (body) => request('POST', '/albums/discogs/search', body),
   albumDiscogsSearch: (body) => request('POST', '/albums/discogs-search', body),
   albumCoverCandidates: (id, signal) => request('GET', `/albums/${q(id)}/cover/candidates`, undefined, signal),

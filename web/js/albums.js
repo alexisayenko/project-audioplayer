@@ -672,11 +672,10 @@ export function openAddAlbum(opener = null) {
   });
 
   const youtube = createYoutubeFlow({
-    body, say, close: () => dlg.close(), isLive: () => live, openAlbumCard,
+    body, say, genreEditor, close: () => dlg.close(), isLive: () => live, openAlbumCard,
     setBusy: (on) => { fetchBtn.disabled = on; },
     hideForm: () => { form.hidden = true; },
     showForm: () => { form.hidden = false; url.focus(); },
-    clearUrl: () => { url.value = ''; },
   });
 
   function paintPreview(preview) {
@@ -737,7 +736,6 @@ export function openAddAlbum(opener = null) {
     if (pl?.kind === 'private') { say(PRIVATE_MESSAGE); return; }
     if (pl) { await youtube.start(pl.url); return; }
     if (videoLink(address)) { await video.start(address); return; }
-    if (youtube.active()) { await youtube.addPasted(address); return; }
     await loadPreview(address);
   });
 

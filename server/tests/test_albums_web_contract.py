@@ -45,3 +45,13 @@ def test_fallback_commit_body_the_web_builds_is_accepted_by_the_server(client, y
     r = post_commit(client, sent)
     assert r.status_code == 201, r.text
     assert r.json()["album"]["title"] == sent["fallback"]["title"]
+
+
+def test_album_form_commit_body_the_web_builds_is_accepted_by_the_server(client, hallu):
+    sent = json.loads((WEB_FIX / "yt-commit-album-request.json").read_text(encoding="utf-8"))
+    r = post_commit(client, sent)
+    assert r.status_code == 201, r.text
+    out = r.json()
+    assert out["album"]["title"] == sent["album"]["title"]
+    assert [s["position"] for s in out["songs"]] == [s["position"] for s in sent["selected"]]
+    assert (out["linked"], out["unlinked"]) == (len(sent["selected"]), 0)

@@ -1,10 +1,10 @@
 import { plural } from './dom.js';
+import { ALBUM_TYPES, normalType, lengthText, trackClock, joinArtists, splitArtists, extraLinks, renumber, albumOf, albumPayload, nameOf, baseRow } from './album-draft-model.js';
+
+export { ALBUM_TYPES, normalType, lengthText, trackClock, joinArtists, splitArtists, renumber };
 
 export const MAX_TRACKS = 100;
 export const MAX_SECONDS = 4 * 3600;
-export const ALBUM_TYPES = [['album', 'Album'], ['EP', 'EP'], ['single', 'Single'], ['mix', 'Mix'], ['compilation', 'Compilation']];
-export const normalType = (t) => ALBUM_TYPES.find(([k]) => k.toLowerCase() === String(t ?? '').toLowerCase())?.[0] || 'album';
-
 const HOSTS = new Set(['youtube.com', 'www.youtube.com', 'm.youtube.com', 'music.youtube.com']);
 const VIDEO_ID = /^[A-Za-z0-9_-]{11}$/;
 
@@ -45,48 +45,20 @@ export function parseClock(text) {
   return nums.reduce((acc, n) => acc * 60 + n, 0);
 }
 
-export function lengthText(sec) {
-  const m = Math.round(Math.max(0, sec) / 60);
-  if (m < 1) return `${Math.round(Math.max(0, sec))} s`;
-  const h = Math.floor(m / 60);
-  return h ? `${h} h ${two(m % 60)} min` : `${m} min`;
-}
-
-export function trackClock(sec) {
-  const s = Math.max(0, Math.round(Number(sec) || 0));
-  const h = Math.floor(s / 3600);
-  const m = Math.floor((s % 3600) / 60);
-  return h ? `${h}:${two(m)}:${two(s % 60)}` : `${m}:${two(s % 60)}`;
-}
-
-export const joinArtists = (list) => (Array.isArray(list) ? list.filter(Boolean).join(' & ') : '');
-export const splitArtists = (text) => String(text ?? '').split('&').map((a) => a.trim()).filter(Boolean);
-
-let seq = 0;
-
 export function rowOf(t, i) {
-  seq += 1;
-  return {
-    key: seq,
+  return baseRow(t, i, {
     include: !t.match,
     start: Number(t.start) || 0,
-    artists: joinArtists(t.artists ?? (t.artist ? [t.artist] : [])),
-    title: String(t.title ?? ''),
-    version: String(t.version ?? ''),
     warnings: Array.isArray(t.warnings) ? t.warnings.filter(Boolean).map(String).filter((w) => w !== 'Artist is the channel') : [],
     match: t.match && typeof t.match === 'object' ? t.match : null,
     useExisting: false,
     startText: formatClock(t.start),
     badStart: false,
-    no: i + 1,
-  };
+  });
 }
 
 export function stateOf(preview, address = '') {
-  const g = preview.guess || {};
-  const a = preview.album || { title: g.album ?? preview.title, albumArtist: g.artist ?? preview.artist, year: g.year ?? preview.year, type: g.type ?? preview.type };
   const tracks = (Array.isArray(preview.tracks) ? preview.tracks : []).map(rowOf);
-  const type = normalType(a.type);
   return {
     videoId: preview.videoId || '',
     url: preview.url || address,
@@ -99,15 +71,7 @@ export function stateOf(preview, address = '') {
     warnings: Array.isArray(preview.warnings) ? preview.warnings.filter(Boolean).map(String) : [],
     rows: tracks,
     endTime: Number(preview.duration) || 0,
-    album: {
-      title: String(a.title ?? ''),
-      albumArtist: String(a.albumArtist ?? ''),
-      type,
-      year: Number.isInteger(a.year) ? String(a.year) : '',
-      genres: (Array.isArray(a.genres) ? a.genres : Array.isArray(preview.genres) ? preview.genres : []).filter((x) => typeof x === 'string' && x.trim()),
-      links: { ...extraLinks(preview.links), youtube: preview.url || address },
-      coverUrl: a.coverUrl || preview.thumbnail || null,
-    },
+    album: albumOf(preview, address, preview.url || address),
   };
 }
 
@@ -115,12 +79,7 @@ export const endOf = (st, i) => (i + 1 < st.rows.length ? st.rows[i + 1].start :
 
 export function trackLabel(st, i) {
   const r = st.rows[i];
-  const name = [r.artists.trim(), r.title.trim()].filter(Boolean).join(' - ');
-  return { name: name || 'Untitled track', version: r.version.trim(), length: trackClock(endOf(st, i) - r.start) };
-}
-
-export function renumber(st) {
-  st.rows.forEach((r, i) => { r.no = i + 1; });
+  return { ...nameOf(r), length: trackClock(endOf(st, i) - r.start) };
 }
 
 export function rowIssue(st, i) {
@@ -178,26 +137,10 @@ export function addRow(st) {
   return r;
 }
 
-function extraLinks(links) {
-  const out = {};
-  for (const [k, v] of Object.entries(links || {})) if (k !== 'youtube' && String(v ?? '').trim()) out[k] = String(v).trim();
-  return Object.keys(out).length ? out : null;
-}
-
 export function payload(st) {
-  const a = st.album;
-  const year = a.year.trim();
   return {
     url: st.url,
-    album: {
-      title: a.title.trim(),
-      albumArtist: a.albumArtist.trim(),
-      type: a.type,
-      year: year ? Number(year) : null,
-      genres: a.genres,
-      coverUrl: a.coverUrl || null,
-      ...(extraLinks(a.links) ? { links: extraLinks(a.links) } : {}),
-    },
+    album: albumPayload(st),
     tracks: st.rows.map((r, i) => ({
       include: r.include,
       start: r.start,

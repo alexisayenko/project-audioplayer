@@ -31,38 +31,30 @@ async function until(cond, ms = 6000) {
 }
 const settle = async (n = 6) => { for (let i = 0; i < n; i++) await flush(); };
 
-const TRACKS = [
-  { position: 1, videoId: 'aaaaaaaaaaa', title: 'Intro (official video)', durationS: 60, songId: null },
-  { position: 2, videoId: 'bbbbbbbbbbb', title: 'Noise', durationS: 200, songId: null },
-  { position: 3, videoId: 'ccccccccccc', title: 'Noise (remix)', durationS: 210, songId: 'in1' },
-];
 const DTRACKS = [{ no: 1, title: 'Intro', durationS: 65 }, { no: 2, title: 'Noise', durationS: 200 }];
-const CAND1 = {
-  url: DISCOGS, discogsId: 545650, title: 'Tumult', artist: 'Derango', year: 2004, trackCount: 2, score: 0.9, best: true,
-  thumb: 'https://img.discogs.com/a.jpg', formats: ['Vinyl', 'LP', 'Limited Edition'], labels: ['Sonic Records'], catno: 'SON 12', country: 'Germany',
-  genres: ['Techno'], tracks: DTRACKS,
-  matches: { 1: 1, 2: 2, 3: null },
-};
-const CAND2 = {
-  url: 'https://www.discogs.com/release/2', discogsId: 2, title: 'Tumult (Reissue)', artist: 'Derango', year: 2010, trackCount: 3, score: 0.6,
-  tracks: [...DTRACKS, { no: 3, title: 'Noise Remix', durationS: 210 }],
-  matches: { 1: 1, 2: 2, 3: 3 },
-};
+const CAND1 = { url: DISCOGS, discogsId: 545650, title: 'Tumult', artist: 'Derango', year: 2004, trackCount: 2, tracks: DTRACKS, genres: ['Techno'], matches: { 1: 1, 2: 2, 3: null } };
+
+const TRACKS = [
+  { position: 1, videoId: 'aaaaaaaaaaa', title: 'Intro', artists: ['Derango'], artist: 'Derango', version: null, durationS: 60, url: 'https://www.youtube.com/watch?v=aaaaaaaaaaa', songId: null },
+  { position: 2, videoId: 'bbbbbbbbbbb', title: 'Noise', artists: ['Derango'], artist: 'Derango', version: 'Foo Remix', durationS: 200, url: 'https://www.youtube.com/watch?v=bbbbbbbbbbb', songId: null },
+  { position: 3, videoId: 'ccccccccccc', title: 'Noise (dub)', artists: ['Derango'], artist: 'Derango', version: null, durationS: 210, url: 'https://www.youtube.com/watch?v=ccccccccccc', songId: 'in1' },
+];
 
 function preview(extra = {}) {
   return {
-    playlist: { title: 'Derango - Tumult (full album)', uploader: 'x', count: 3 },
-    guess: { artist: 'Derango', album: 'Tumult', year: 2004 },
-    tracks: TRACKS, candidates: [CAND1, CAND2], ...extra,
+    playlist: { title: 'Derango - Tumult (full album)', uploader: 'x', count: 3, url: PLAYLIST },
+    guess: { artist: 'Derango', album: 'Tumult', year: 2004, type: 'album' },
+    album: { title: 'Tumult', albumArtist: 'Derango', type: 'album', year: 2004, coverUrl: 'https://i/t.jpg' },
+    genres: ['Techno'], links: { discogs: null, wikipedia: 'https://en.wikipedia.org/wiki/Tumult', rateyourmusic: null }, discogsMatch: null, discogsCandidates: [], thumbnail: 'https://i/t.jpg',
+    tracks: TRACKS, candidates: [], searchError: null, ...extra,
   };
 }
 
-function server({ pv = () => ok(preview()), audio = () => ok({ status: 'done' }), search = () => ok({ candidates: [CAND2] }), commit = null, me = { owner: false } } = {}) {
+function server({ pv = () => ok(preview()), audio = () => ok({ status: 'done' }), commit = null, me = { owner: false } } = {}) {
   const have = new Set();
   const calls = stubFetch((u, o) => {
     if (u === '/albums/youtube/preview') return pv();
     if (u === '/albums/youtube/commit') return commit ? commit(o) : ok({ album: { id: 'alb_9', title: 'Tumult' }, songs: [{ position: 1, songId: 'n1' }, { position: 2, songId: 'n2' }], linked: 2, unlinked: 1 }, 201);
-    if (u === '/albums/discogs-search') return search(o);
     if (u === '/albums/preview') return ok({ title: 'Pasted', artist: 'Derango', year: 2001, source: { type: 'discogs', id: '7', url: 'https://www.discogs.com/release/7' }, genres: [], tracks: [{ no: 1, title: 'Intro', durationS: 10 }, { no: 2, title: 'Noise', durationS: 20 }] });
     if (u === '/me') return ok(me);
     if (u === '/albums') return ok([]);
@@ -85,8 +77,12 @@ async function popup(address = PLAYLIST) {
   await settle();
 }
 const body = (d, url) => JSON.parse(d.calls.find((c) => c.url === url).opts.body);
-const rows = () => qa('li.album-yt-track');
-const counter = () => q('.album-yt-count').textContent;
+const rows = () => qa('li.av-row');
+const label = (row) => row.querySelector('.av-label').textContent.replace(/\s+/g, ' ').trim();
+const typeInto = (node, value) => { node.value = value; fire(node, 'input'); };
+const tokenField = (name) => qa('.token-field').find((x) => x.getAttribute('aria-label') === name);
+const tokens = (name, value) => typeInto(tokenField(name), value);
+const yearInput = () => qa('.album-fields input').find((i) => i.getAttribute('aria-label') === 'Year');
 const create = () => qa('button').find((b) => /^Create album/.test(b.textContent));
 
 test('matching helpers', () => {
@@ -125,174 +121,100 @@ test('URL detection: Discogs keeps the preview flow, a playlist uses the YouTube
   }
 });
 
-test('the preview creates nothing: no album, no commit, no audio fetch; Cancel closes without any request', async () => {
+test('the preview creates nothing and shows the shared form and one-line track labels', async () => {
   const d = server();
   await popup();
   assert.equal(body(d, '/albums/youtube/preview').url, PLAYLIST);
-  assert.match(q('.album-yt-head').textContent, /Derango - Tumult \(full album\)/);
-  assert.match(q('.album-guess').textContent, /Derango - Tumult · 2004/);
-  const before = d.calls.length;
-  fire(qa('button').find((b) => b.textContent === 'Cancel' && !b.closest('.dlg-head')), 'click');
-  await settle();
-  assert.equal(D().open, false);
-  assert.equal(d.calls.length, before);
-  assert.equal(d.calls.some((c) => c.url === '/albums/youtube/commit' || (c.url === '/albums' && c.opts.method === 'POST') || /\/audio$/.test(c.url)), false);
-});
-
-test('the best candidate is preselected and collapsed; Change expands radios; Open on Discogs opens in a new tab', async () => {
-  server();
-  await popup();
-  assert.equal(qa('input[type=radio]').length, 1);
-  const row = q('.album-cand-radio');
-  assert.equal(row.querySelector('.album-cand-title').textContent, 'Derango - Tumult');
-  assert.equal(row.querySelector('.album-cand-sub').textContent, '2004 · 2 tracks');
-  assert.equal(row.querySelector('.album-cand-meta').textContent, 'Vinyl, LP, Limited Edition · Sonic Records (SON 12) · Germany');
-  assert.equal(row.querySelector('.album-best').textContent, 'Best match');
-  assert.equal(row.querySelector('img.cover').getAttribute('loading'), 'lazy');
-  assert.equal(row.querySelector('input').checked, true);
-  const open = q('.album-open-discogs');
-  assert.equal(open.getAttribute('href'), DISCOGS);
-  assert.equal(open.getAttribute('target'), '_blank');
-  assert.match(open.getAttribute('rel'), /noopener/);
-  const change = q('.album-change');
-  assert.equal(change.getAttribute('aria-expanded'), 'false');
-  fire(change, 'click');
-  assert.equal(qa('input[type=radio]').length, 2);
-  assert.equal(q('.album-change').getAttribute('aria-expanded'), 'true');
-  assert.deepEqual(qa('input[type=radio]').map((r) => r.checked), [true, false]);
-  D().close();
-});
-
-test('mapping and defaults: matched tracks checked, unmatched unchecked, In library tag, counter; the candidate switch recomputes unless toggled', async () => {
-  server();
-  await popup();
-  assert.equal(rows().length, 3);
-  assert.deepEqual(rows().map((r) => r.querySelector('input').checked), [true, true, false]);
-  assert.match(rows()[0].querySelector('.album-match').textContent, /→ 1\. Intro/);
-  assert.equal(rows()[2].querySelector('.album-match').textContent, 'no match');
+  assert.match(q('.av-head').textContent, /Derango - Tumult \(full album\)/);
+  assert.equal(tokenField('Album title').value, 'Tumult');
+  assert.equal(tokenField('Album artists').value, 'Derango');
+  assert.equal(yearInput().value, '2004');
+  assert.equal(q('.album-fields select').value, 'album');
+  assert.ok(qa('button').find((b) => b.textContent === 'Find on Discogs'));
+  assert.equal(q('img.av-cover').getAttribute('src'), 'https://i/t.jpg');
+  assert.equal(q('.av-matched'), null);
+  assert.deepEqual(rows().map(label), ['Derango - Intro (1:00)', 'Derango - Noise [Foo Remix] (3:20)', 'Derango - Noise (dub) (3:30)']);
+  assert.equal(rows()[0].querySelector('.av-start'), null);
+  assert.equal(rows()[0].querySelector('a.av-yt').href, TRACKS[0].url);
+  assert.ok(rows()[0].querySelector('button.av-remove'));
   assert.ok(rows()[2].querySelector('.album-in-library'));
-  assert.equal(rows()[0].querySelector('.album-in-library'), null);
-  assert.equal(counter(), '2 of 3 selected');
-
-  fire(rows()[0].querySelector('input'), 'change', { currentTarget: null });
-  D().querySelectorAll('li.album-yt-track input')[0].checked = false;
-  fire(D().querySelectorAll('li.album-yt-track input')[0], 'change');
-  assert.equal(counter(), '1 of 3 selected');
-
-  fire(q('.album-change'), 'click');
-  const second = qa('input[type=radio]')[1];
-  second.checked = true;
-  fire(second, 'change');
-  assert.deepEqual(rows().map((r) => r.querySelector('input').checked), [false, true, true], 'row 1 was toggled by hand and keeps its state; row 3 now has a match');
-  assert.match(rows()[2].querySelector('.album-match').textContent, /→ 3\. Noise Remix/);
-  assert.equal(counter(), '2 of 3 selected');
+  assert.match(q('.av-summary').textContent, /^3 tracks · 8 min$/);
+  const before = d.calls.length;
+  fire(qa('button').find((b) => b.textContent === 'Back'), 'click');
+  await settle();
+  assert.equal(q('form.well').hidden, false);
+  assert.equal(d.calls.length, before);
+  assert.equal(d.calls.some((c) => c.url === '/albums/youtube/commit' || /\/audio$/.test(c.url)), false);
   D().close();
 });
 
-test('toggling, Select all and Select none, and the Create label and state', async () => {
+test('a Discogs match is shown as Matched on Discogs', async () => {
+  server({ pv: () => ok(preview({ discogsMatch: 'https://www.discogs.com/master/1' })) });
+  await popup();
+  assert.match(q('.av-matched').textContent, /Matched on Discogs: discogs\.com\/master\/1/);
+  D().close();
+});
+
+test('the pencil opens Artist, Title and Version; edits change the label', async () => {
+  server();
+  await popup();
+  const row = rows()[0];
+  assert.equal(row.querySelector('.av-line2').hidden, true);
+  fire(row.querySelector('.av-edit'), 'click');
+  assert.equal(row.querySelector('.av-line2').hidden, false);
+  assert.equal(row.querySelectorAll('.av-line2 input').length, 3);
+  typeInto(row.querySelector('.av-title'), 'Opening');
+  typeInto(row.querySelector('.av-version'), 'Edit');
+  assert.equal(label(row), 'Derango - Opening [Edit] (1:00)');
+  typeInto(row.querySelector('.av-title'), '');
+  assert.match(row.querySelector('.av-issue').textContent, /Title is empty/);
+  assert.equal(create().disabled, true);
+  D().close();
+});
+
+test('Select all and none, removing a row, and the Create label count only tracks to download', async () => {
   server();
   await popup();
   assert.equal(create().textContent.trim(), 'Create album and download 2 tracks');
-  const all = q('.album-select-all');
-  assert.equal(all.textContent, 'Select all');
-  fire(all, 'click');
-  assert.equal(counter(), '3 of 3 selected');
-  assert.equal(q('.album-select-all').textContent, 'Select none');
-  assert.equal(create().textContent.trim(), 'Create album and download 2 tracks', 'the track already in the library is not downloaded again');
-  fire(q('.album-select-all'), 'click');
-  assert.equal(counter(), '0 of 3 selected');
-  assert.equal(create().disabled, false, 'a chosen candidate still allows creating the album');
-  assert.equal(create().textContent.trim(), 'Create album');
+  fire(q('.av-select-all'), 'click');
+  assert.equal(q('.av-select-all').textContent, 'Select all');
+  assert.equal(create().disabled, true);
+  assert.match(q('.av-problems').textContent, /at least one/);
+  fire(q('.av-select-all'), 'click');
+  fire(rows()[0].querySelector('button.av-remove'), 'click');
+  assert.equal(rows().length, 2);
+  assert.equal(create().textContent.trim(), 'Create album and download 1 track');
+  assert.equal(rows()[0].querySelector('.album-no').textContent, '1.');
   D().close();
 });
 
-test('Search again sends the edited names and the playlist tracks and replaces the list', async () => {
+test('Create sends the album form body, closes, then starts the downloads and toasts', async () => {
   const d = server();
   await popup();
-  qa('.album-search input')[0].value = 'Someone';
-  fire(qa('.album-search input')[0], 'input');
-  fire(q('.album-search'), 'submit');
-  await settle();
-  const s = body(d, '/albums/discogs-search');
-  assert.equal(s.artist, 'Someone');
-  assert.equal(s.album, 'Tumult');
-  assert.equal(s.trackCount, 3);
-  assert.deepEqual(s.playlistTracks.map((t) => t.position), [1, 2, 3]);
-  assert.equal(qa('input[type=radio]').length, 1);
-  assert.equal(q('.album-cand-title').textContent, 'Derango - Tumult (Reissue)');
-  assert.deepEqual(rows().map((r) => r.querySelector('input').checked), [true, true, true]);
-  D().close();
-});
-
-test('Create album and download sends the commit payload, closes, then starts the downloads and toasts', async () => {
-  const d = server();
-  await popup();
+  tokens('Album title', 'My Tumult');
+  typeInto(yearInput(), '2005');
+  const type = q('.album-fields select');
+  type.value = 'EP';
+  fire(type, 'change');
+  fire(rows()[0].querySelector('.av-edit'), 'click');
+  typeInto(rows()[0].querySelector('.av-artist'), 'Derango & Friend');
+  const second = rows()[1].querySelector('input[type=checkbox]');
+  second.checked = false;
+  fire(second, 'change');
   fire(create(), 'click');
   await settle(8);
   const c = body(d, '/albums/youtube/commit');
+  assert.deepEqual(Object.keys(c).sort(), ['album', 'playlistUrl', 'selected']);
   assert.equal(c.playlistUrl, PLAYLIST);
-  assert.deepEqual(c.selected, [{ position: 1, videoId: 'aaaaaaaaaaa', title: 'Intro (official video)', durationS: 60 }, { position: 2, videoId: 'bbbbbbbbbbb', title: 'Noise', durationS: 200 }]);
-  assert.deepEqual(c.mapping, { 1: 1, 2: 2 });
-  assert.equal(c.candidate.title, 'Tumult');
-  assert.equal(c.candidate.artist, 'Derango');
-  assert.equal(c.candidate.year, 2004);
-  assert.deepEqual(c.candidate.genres, ['Techno']);
-  assert.equal(c.candidate.discogsId, 545650);
-  assert.deepEqual(c.candidate.links, { discogs: DISCOGS, youtube: PLAYLIST });
-  assert.equal(c.candidate.tracks.length, 2);
-  assert.deepEqual(c.fallback, { title: 'Tumult', artist: 'Derango', year: 2004 });
+  assert.deepEqual(c.album, { title: 'My Tumult', albumArtist: 'Derango', type: 'EP', year: 2005, genres: ['Techno'], coverUrl: 'https://i/t.jpg', links: { wikipedia: 'https://en.wikipedia.org/wiki/Tumult' } });
+  assert.deepEqual(c.selected, [
+    { position: 1, videoId: 'aaaaaaaaaaa', title: 'Intro', durationS: 60, artists: ['Derango', 'Friend'], version: null },
+    { position: 3, videoId: 'ccccccccccc', title: 'Noise (dub)', durationS: 210, artists: ['Derango'], version: null },
+  ]);
   assert.equal(D().open, false);
   assert.equal(await until(() => d.calls.filter((x) => /\/audio$/.test(x.url)).length === 2), true);
   assert.deepEqual(d.calls.filter((x) => /\/audio$/.test(x.url)).map((x) => x.url), ['/songs/n1/audio', '/songs/n2/audio']);
   assert.equal(await until(() => /Downloaded 2 songs/.test(toastText())), true);
-});
-
-test('the commit toast reports linked, unmatched and the tracks being downloaded', async () => {
-  server({ audio: () => ({ status: 429, body: { error: 'hourly_limit', retry_after_minutes: 1 } }) });
-  await popup();
-  fire(create(), 'click');
-  await settle(10);
-  assert.match(toastText(), /Album created, 2 songs linked, 1 not matched; downloading 2 tracks|Paused: hourly limit/);
-  await until(() => yt.jobState()?.paused > 0);
-  autodl.cancel(['n1', 'n2']);
-});
-
-test('no candidates: say so, fallback fields prefilled from the guess, commit has no candidate', async () => {
-  const d = server({ pv: () => ok(preview({ candidates: [] })) });
-  await popup();
-  assert.match(q('.album-picker').textContent, /No matching releases found/);
-  assert.equal(qa('.album-fallback input').length, 3);
-  assert.deepEqual(qa('.album-fallback input').map((i) => i.value), ['Tumult', 'Derango', '2004']);
-  assert.deepEqual(rows().map((r) => r.querySelector('input').checked), [true, true, true]);
-  assert.equal(rows()[0].querySelector('.album-match'), null);
-  qa('.album-fallback input')[0].value = 'My title';
-  fire(qa('.album-fallback input')[0], 'input');
-  fire(create(), 'click');
-  await settle(8);
-  const c = body(d, '/albums/youtube/commit');
-  assert.equal(c.candidate, null);
-  assert.deepEqual(c.mapping, {});
-  assert.deepEqual(c.selected.map((x) => x.position), [1, 2, 3]);
-  assert.deepEqual(c.fallback, { title: 'My title', artist: 'Derango', year: 2004 });
-  autodl.cancel(['n1', 'n2']);
-});
-
-test('a search error is shown and the album can still be created from the playlist alone', async () => {
-  server({ pv: () => ok(preview({ candidates: [], searchError: 'discogs_unavailable' })) });
-  await popup();
-  assert.match(q('.album-picker').textContent, /Discogs is not available right now/);
-  assert.ok(q('.album-fallback'));
-  assert.equal(create().disabled, false);
-  D().close();
-});
-
-test('Create is disabled with nothing selected and no candidate', async () => {
-  server({ pv: () => ok(preview({ candidates: [] })) });
-  await popup();
-  fire(q('.album-select-all'), 'click');
-  assert.equal(counter(), '0 of 3 selected');
-  assert.equal(create().disabled, true);
-  D().close();
 });
 
 test('the quota hint shows for a normal user and is hidden for the owner', async () => {
@@ -303,22 +225,18 @@ test('the quota hint shows for a normal user and is hidden for the owner', async
   server({ me: { owner: true } });
   await popup();
   await settle();
-  assert.equal(q('.album-quota'), null);
+  assert.equal(q('.album-quota').hidden, true);
   D().close();
 });
 
-test('pasting a Discogs link after the preview adds that release and matches the tracks', async () => {
-  const d = server({ pv: () => ok(preview({ candidates: [] })) });
+test('the commit toast reports linked, unmatched and the tracks being downloaded', async () => {
+  server({ audio: () => ({ status: 429, body: { error: 'hourly_limit', retry_after_minutes: 1 } }) });
   await popup();
-  fire(qa('button').find((b) => b.textContent === 'Paste a Discogs link'), 'click');
-  q('.well input').value = DISCOGS;
-  fire(q('.well'), 'submit');
-  await settle();
-  assert.ok(d.calls.some((c) => c.url === '/albums/preview'));
-  assert.equal(q('.album-cand-title').textContent, 'Derango - Pasted');
-  assert.deepEqual(rows().map((r) => r.querySelector('input').checked), [true, true, false]);
-  assert.equal(q('.album-fallback'), null);
-  D().close();
+  fire(create(), 'click');
+  await settle(10);
+  assert.match(toastText(), /Album created, 2 songs added; downloading 2 tracks|Paused: hourly limit/);
+  await until(() => yt.jobState()?.paused > 0);
+  autodl.cancel(['n1', 'n2']);
 });
 
 test('start errors: 400, 404, 409 library_full_songs and 502', async () => {
@@ -327,7 +245,7 @@ test('start errors: 400, 404, 409 library_full_songs and 502', async () => {
     server({ pv: () => ({ status, body: { error, detail: error } }) });
     await popup();
     assert.match(q('.msg.error').textContent, re);
-    assert.equal(q('.album-yt'), null);
+    assert.equal(q('.av-head'), null);
     D().close();
   }
   assert.match(youtubeErrorText({ status: 418, message: 'x' }), /x/);
@@ -340,7 +258,7 @@ test('a commit error stays in the popup and keeps the choices', async () => {
   await settle(8);
   assert.match(q('.msg.error').textContent, /could not be read/);
   assert.equal(D().open, true);
-  assert.equal(counter(), '2 of 3 selected');
+  assert.match(q('.av-summary').textContent, /^3 tracks/);
   D().close();
 });
 
