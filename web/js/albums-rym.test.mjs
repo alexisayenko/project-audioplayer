@@ -7,7 +7,7 @@ globalThis.location = { hash: '', href: 'http://localhost/', host: 'localhost' }
 const { initPlayer } = await import('./player.js');
 initPlayer();
 const { store } = await import('./store.js');
-const { mountAlbums, openAddAlbum, albumLinks, linkErrorText, LINK_KEYS } = await import('./albums.js');
+const { mountAlbums, albumLinks, linkErrorText, LINK_KEYS } = await import('./albums.js');
 
 const ROW = { id: 'alb_1', title: 'Tumult', artist: 'Derango', year: 2004, trackCount: 1, created_at: '2026-10-26T10:00:00Z' };
 const NO_LINKS = { discogs: null, rateyourmusic: null, youtube: null, wikipedia: null };
@@ -111,30 +111,6 @@ test('422 bad_link shows the error under that field and keeps the typed text', a
   assert.equal(edit.open, true);
   edit.close();
   v.dlg.close();
-});
-
-test('Add Album preview keeps one optional Rate Your Music field, sent as links.rateyourmusic only when filled', async () => {
-  const PREVIEW = { title: 'Tumult', artist: 'Derango', year: 2004, source: 'discogs:545650', tracks: [{ no: 1, title: 'Intro', durationS: 65 }] };
-  const posts = [];
-  stubFetch((u, o) => {
-    if (u === '/albums/preview') return ok(PREVIEW);
-    if (u === '/albums' && o.method === 'POST') { posts.push(JSON.parse(o.body)); return ok({ ...ALBUM }, 201); }
-    return ok([]);
-  });
-  for (const rym of ['', RYM]) {
-    openAddAlbum();
-    const dlg = document.getElementById('add-dialog');
-    dlg.querySelector('.well input').value = DISCOGS;
-    await submit(dlg.querySelector('.well'));
-    const fields = dlg.querySelectorAll('.album-preview .album-rym input');
-    assert.equal(fields.length, 1);
-    assert.equal(fields[0].getAttribute('aria-label'), 'Rate Your Music link');
-    fields[0].value = rym;
-    fire([...dlg.querySelectorAll('button')].find((b) => b.textContent.includes('Create')), 'click');
-    for (let i = 0; i < 6; i++) await flush();
-  }
-  assert.equal('links' in posts[0], false);
-  assert.deepEqual(posts[1].links, { rateyourmusic: RYM });
 });
 
 test('regression: the link inputs sit in the shared Links panel in the Edit dialog, which is not a sheet', async () => {

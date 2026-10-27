@@ -1,6 +1,6 @@
 import { playlistLink, MIX_MESSAGE, PRIVATE_MESSAGE } from './playlist-link.js';
-import { stateOf, videoLink, issues as videoIssues, payload as videoPayload, formatClock, endOf } from './album-video-model.js';
-import { playlistState, issues as playlistIssues, payload as playlistPayload } from './album-youtube-model.js';
+import { stateOf, videoLink, issues as videoIssues, payload as videoPayload, formatClock, endOf, summary as videoSummary, rowIssue as videoRowIssue } from './album-video-model.js';
+import { playlistState, issues as playlistIssues, payload as playlistPayload, summary as playlistSummary, rowIssue as playlistRowIssue } from './album-youtube-model.js';
 import { parseTrackList, startsOf } from './album-tracklist.js';
 import { normalType } from './album-draft-model.js';
 import { fold } from './album-candidates.js';
@@ -47,7 +47,7 @@ export function newDraft() {
     preview: null, st: null, base: null, fields: { artist: '', album: '', year: '' }, edited: false,
     discogs: { key: '', state: 'idle', all: false, candidates: [], error: '', pick: null, resolved: null, auto: false },
     review: null, art: { chosen: null },
-    album: { type: 'album', genres: [], links: {} },
+    album: { type: 'album', genres: [], links: {} }, touched: { genres: false, type: false },
     genreHints: { key: '', state: 'idle', items: [], page: null, error: '' },
     rym: { url: '', text: '' },
   };
@@ -55,7 +55,7 @@ export function newDraft() {
 
 export function applyPreview(draft, kind, url, preview) {
   const st = kind === 'video' ? stateOf(preview, url) : playlistState(preview, url);
-  const keep = { address: draft.address, pasteText: draft.pasteText };
+  const keep = { address: draft.address, pasteText: draft.pasteText, pastedUsed: draft.pastedUsed || '', needPaste: draft.needPaste };
   Object.assign(draft, newDraft(), keep, { kind, url, preview, st, step: 'details' });
   draft.base = { artist: st.album.albumArtist, album: st.album.title, year: st.album.year };
   draft.fields = { ...draft.base };
@@ -200,10 +200,19 @@ export function trackArtists(draft, r) {
   return isVarious(album) ? '' : album;
 }
 
+export function linksNow(draft) {
+  const links = { ...draft.album.links };
+  const pick = draft.discogs.pick;
+  if (pick && pick !== 'none' && pick.url) links.discogs = pick.url;
+  if (draft.rym.url) links.rateyourmusic = draft.rym.url;
+  if (!links.wikipedia && draft.genreHints.page) links.wikipedia = draft.genreHints.page;
+  return links;
+}
+
 export function albumNow(draft) {
   return {
     title: draft.fields.album.trim(), albumArtist: draft.fields.artist.trim(), year: draft.fields.year.trim(), type: draft.album.type,
-    genres: draft.album.genres, links: draft.album.links, coverUrl: draft.art.chosen || null,
+    genres: draft.album.genres, links: linksNow(draft), coverUrl: draft.art.chosen || null,
   };
 }
 
@@ -239,8 +248,18 @@ export function reviewView(draft) {
 
 export function createIssues(draft) {
   const view = reviewView(draft);
-  const out = draft.kind === 'video' ? videoIssues(view) : playlistIssues(view);
-  return out;
+  return draft.kind === 'video' ? videoIssues(view) : playlistIssues(view);
+}
+
+export function summaryText(draft) {
+  const view = reviewView(draft);
+  return draft.kind === 'video' ? videoSummary(view) : playlistSummary(view);
+}
+
+export function rowIssueFor(draft, view, src) {
+  const i = draft.st.rows.indexOf(src);
+  if (i < 0) return '';
+  return draft.kind === 'video' ? videoRowIssue(view, i) : playlistRowIssue(view, i);
 }
 
 export function createPayload(draft) {
@@ -295,6 +314,8 @@ export function createLabel(draft) {
   const fresh = reviewView(draft).rows.filter((r) => r.include && !r.songId).length;
   return fresh ? `Import and download ${fresh} ${fresh === 1 ? 'track' : 'tracks'}` : 'Import the album';
 }
+
+export const unreachable = (ex) => ex?.status === 0;
 
 export function offline() {
   return typeof navigator !== 'undefined' && navigator.onLine === false;

@@ -23,8 +23,9 @@ export function genreEditor(initial) {
     },
     removeTag(t) { tags = tags.filter((x) => x !== t); notify(); },
     subscribe(f) { subs.add(f); return () => subs.delete(f); },
+    replace(names) { tags = genreTags(names); notify(); },
   };
   const field = chipField('genre', editor, { cap: GENRE_MAX });
   notify();
-  return { node: field.node, get: () => tags.map((t) => t.slice(6)), commit: field.commit, add: (names) => editor.addTags((names || []).map((n) => `genre:${n}`)), subscribe: editor.subscribe };
+  return { node: field.node, get: () => tags.map((t) => t.slice(6)), commit: field.commit, add: (names) => editor.addTags((names || []).map((n) => `genre:${n}`)), set: editor.replace, subscribe: editor.subscribe };
 }

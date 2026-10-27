@@ -24,12 +24,13 @@ const D = () => document.getElementById('add-dialog');
 const q = (s) => D().querySelector(s);
 const qa = (s) => [...D().querySelectorAll(s)];
 const settle = async (n = 8) => { for (let i = 0; i < n; i++) await flush(); };
-const create = () => qa('button').find((b) => /^Create album/.test(b.textContent));
 
 function server(preview) {
   return stubFetch((u) => {
     if (u === '/albums/youtube/preview') return ok(preview);
     if (u === '/albums/youtube/commit') return ok({ album: { id: 'alb_1', title: 'Twisted' }, songs: [], linked: 0, unlinked: 0 }, 201);
+    if (u === '/albums/discogs/search') return ok({ candidates: [], searchError: null });
+    if (u === '/albums/genres/suggest') return ok({ suggestions: [], wikipediaPage: null, searchError: null });
     if (u === '/me') return ok({ owner: true });
     if (u === '/albums') return ok([]);
     if (u === '/library') return ok({ songs: [] });
@@ -37,11 +38,15 @@ function server(preview) {
   });
 }
 
+const type = (node, value) => { node.value = value; fire(node, 'input'); };
+const next = async () => { fire(q('.wiz-next'), 'click'); await settle(); };
+
 async function popup() {
   openAddAlbum();
-  q('.well input').value = PLAYLIST;
-  fire(q('.well'), 'submit');
-  await settle();
+  type(q('#wiz-url'), PLAYLIST);
+  await next();
+  await next();
+  await next();
 }
 
 function sentBody(calls) {
@@ -54,14 +59,15 @@ function checkFixture(name, data) {
   assert.deepEqual(data, fixture(name), `${name} differs from the recorded request; rerun with UPDATE_WEB_FIXTURES=1 and the server contract test`);
 }
 
-test('the real preview response renders the form fields and one label per track', async () => {
+test('the real preview response fills step 2 and gives one labelled row per track in the review', async () => {
   server(PREVIEW);
-  await popup();
-  const field = (name) => qa('.token-field').find((x) => x.getAttribute('aria-label') === name).value;
-  assert.equal(field('Album title'), 'Twisted');
-  assert.equal(field('Album artists'), 'Hallucinogen');
-  assert.equal(qa('.album-fields input').find((i) => i.getAttribute('aria-label') === 'Year').value, '1995');
-  const rows = qa('li.av-row');
+  openAddAlbum();
+  type(q('#wiz-url'), PLAYLIST);
+  await next();
+  assert.deepEqual(qa('.wiz-details input').map((i) => i.value), ['Hallucinogen', 'Twisted', '1995']);
+  await next();
+  await next();
+  const rows = qa('li.wiz-row');
   assert.equal(rows.length, 11);
   const labels = rows.map((r) => r.querySelector('.av-label').textContent.replace(/\s+/g, ' ').trim());
   assert.equal(labels[0], 'Hallucinogen - LSD (7:30)');
@@ -70,27 +76,31 @@ test('the real preview response renders the form fields and one label per track'
   D().close();
 });
 
-test('Create sends a body of the shape the server takes (recorded and replayed by the server contract test)', async () => {
+test('Import sends a body of the shape the server takes (recorded and replayed by the server contract test)', async () => {
   const calls = server(PREVIEW);
   await popup();
-  fire(create(), 'click');
-  await settle();
+  await next();
   const sent = sentBody(calls);
-  assert.deepEqual(Object.keys(sent).sort(), ['album', 'playlistUrl', 'selected']);
+  assert.deepEqual(Object.keys(sent).sort(), ['album', 'coverToSongs', 'playlistUrl', 'selected']);
   assert.equal(sent.playlistUrl, PLAYLIST);
+  assert.equal(sent.coverToSongs, true);
   assert.deepEqual(sent.album, { title: 'Twisted', albumArtist: 'Hallucinogen', type: 'album', year: 1995, genres: PREVIEW.genres, coverUrl: PREVIEW.album.coverUrl });
   assert.deepEqual(sent.selected.map((s) => s.position), PREVIEW.tracks.map((t) => t.position));
   for (const s of sent.selected) {
     const t = PREVIEW.tracks.find((x) => x.position === s.position);
-    assert.deepEqual(s, { position: t.position, videoId: t.videoId, title: t.title, durationS: t.durationS, artists: t.artists, version: t.version });
+    assert.deepEqual(s, { position: t.position, videoId: t.videoId, title: t.title, durationS: t.durationS, artists: t.artists, version: t.version, trackNo: t.position });
   }
   checkFixture('yt-commit-album-request.json', sent);
+  D().close();
 });
 
-test('Back sends nothing beyond the preview', async () => {
+test('Back sends nothing beyond the preview and the Discogs search', async () => {
   const calls = server(PREVIEW);
-  await popup();
-  fire(qa('button').find((b) => b.textContent === 'Back'), 'click');
+  openAddAlbum();
+  type(q('#wiz-url'), PLAYLIST);
+  await next();
+  fire(q('.wiz-back'), 'click');
   await settle();
   assert.deepEqual(calls.map((c) => c.url).filter((u) => u !== '/me' && u !== '/genres/vocabulary'), ['/albums/youtube/preview']);
+  D().close();
 });

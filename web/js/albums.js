@@ -11,16 +11,13 @@ import { icon } from './icons.js';
 import { genreChip } from './genre-chip.js';
 import { loadGenreTree, cachedTree } from './genre-tree.js';
 import { songMatches } from './song-match.js';
-import { playlistLink, MIX_MESSAGE, PRIVATE_MESSAGE } from './playlist-link.js';
 import { mountDownloadStatus, startDownloads } from './albums-youtube.js';
 import { albumFields } from './album-form.js';
 import { normalType } from './album-video-model.js';
 import { backdropClose } from './dialog-backdrop.js';
-import { createYoutubeFlow } from './album-youtube-flow.js';
-import { ALBUMS_CHANGED, fold, lengthText, fetchErrorText, errorCode } from './album-candidates.js';
+import { openAddAlbum } from './album-wizard.js';
+import { ALBUMS_CHANGED, fold, lengthText } from './album-candidates.js';
 import { albumCoverImg, albumCoverSection } from './albums-cover.js';
-import { createVideoFlow } from './album-video.js';
-import { videoLink } from './album-video-model.js';
 import { dialogHead } from './edit-dialog.js';
 import { artistLine, titleLine, displayLine, albumsOf, albumOf, releasedYear } from './credits.js';
 import { openPlDialog, closePlDialog } from './playlist-dialogs.js';
@@ -35,8 +32,8 @@ import { scrollTarget } from './reveal.js';
 import { ROW_FLASH_MS } from './constants.js';
 import { countOf, totalTime, albumLength, bpmRange, FACETS, facetValues, matchesFacets, matchesQuery, ALBUM_SORTS, albumPrefs, sortedAlbums, saveAlbumPrefs } from './albums-model.js';
 
-export { totalTime, bpmRange, facetValues, matchesFacets };
-export { ALBUMS_CHANGED, QUOTA_PER_HOUR, fetchErrorText, errorCode, youtubeErrorText, candidateLines, candidateBody, candidateRow, matchMap, autoMatch, candidatePayload } from './album-candidates.js';
+export { totalTime, bpmRange, facetValues, matchesFacets, openAddAlbum };
+export { ALBUMS_CHANGED, QUOTA_PER_HOUR, errorCode, youtubeErrorText } from './album-candidates.js';
 
 export const albumIdOf = (hash) => {
   const m = /^#\/library\/albums\/([^/?#]+)$/.exec(hash || '');
@@ -617,117 +614,6 @@ function albumRow(a) {
 
 function paintCurrent(list) {
   for (const li of list.querySelectorAll('li.album-row')) rowPaints.get(li)?.();
-}
-
-export function openAddAlbum(opener = null) {
-  const dlg = document.getElementById('add-dialog');
-  const url = el('input', { type: 'text', placeholder: 'Discogs release, YouTube playlist or video address', 'aria-label': 'Discogs release, YouTube playlist or video address', autocomplete: 'off', inputMode: 'url' });
-  const fetchBtn = el('button', { class: 'btn fill small', type: 'submit' }, 'Fetch');
-  const form = el('form', { class: 'well' }, url, fetchBtn);
-  const message = el('div', { role: 'alert' });
-  const body = el('div', { class: 'add-body' });
-  const say = (text, link) => {
-    const tail = link ? [' ', link] : [];
-    message.replaceChildren(text ? el('p', { class: 'msg error' }, text, ...tail) : '');
-  };
-  let live = true;
-  const video = createVideoFlow({
-    body, say, genreEditor, isLive: () => live,
-    setBusy: (on) => { fetchBtn.disabled = on; },
-    hideForm: () => { form.hidden = true; },
-    onBack: () => { body.replaceChildren(); form.hidden = false; url.focus(); },
-    onCreated: (albumId) => {
-      dlg.close();
-      window.dispatchEvent(new Event(ALBUMS_CHANGED));
-      void store.refresh().catch(() => {});
-      if (albumId) location.hash = `#/library/albums/${encodeURIComponent(albumId)}`;
-    },
-  });
-
-  const youtube = createYoutubeFlow({
-    body, say, genreEditor, close: () => dlg.close(), isLive: () => live, openAlbumCard,
-    setBusy: (on) => { fetchBtn.disabled = on; },
-    hideForm: () => { form.hidden = true; },
-    showForm: () => { form.hidden = false; url.focus(); },
-  });
-
-  function paintPreview(preview) {
-    const editor = genreEditor(preview.genres);
-    const time = totalTime(preview.tracks);
-    const rymInput = el('input', { type: 'text', placeholder: 'Rate Your Music link (optional)', 'aria-label': 'Rate Your Music link', autocomplete: 'off', inputMode: 'url' });
-    const create = el('button', { class: 'btn primary glow', type: 'button' }, icon('plus', 'nav'), 'Create');
-    const back = el('button', { class: 'btn outline', type: 'button', onclick: () => { say(''); body.replaceChildren(); form.hidden = false; url.focus(); } }, 'Back');
-    create.addEventListener('click', async () => {
-      editor.commit();
-      say('');
-      create.disabled = true;
-      try {
-        const rymUrl = rymInput.value.trim();
-        const made = await api.createAlbum({ ...preview, genres: editor.get(), ...(rymUrl ? { links: { rateyourmusic: rymUrl } } : {}) });
-        dlg.close();
-        toast(`Added "${made.title}"`);
-        window.dispatchEvent(new Event(ALBUMS_CHANGED));
-      } catch (ex) {
-        create.disabled = false;
-        if (ex.status === 409 && errorCode(ex) === 'already_exists') {
-          const existing = ex.data?.id ?? ex.data?.detail?.id;
-          say('This album already exists.', existing ? el('button', { class: 'link-btn t-caption', type: 'button', onclick: () => { void api.album(existing).then((full) => { dlg.close(); openAlbumCard(full); }, (error_) => say(error_.message)); } }, 'Open it') : null);
-        } else say(ex.message || 'The album could not be created.');
-      }
-    });
-    form.hidden = true;
-    body.replaceChildren(el('div', { class: 'add-card album-preview' },
-      el('div', { class: 'preview-meta' },
-        el('div', { class: 't-headline album-headline' }, [`${preview.artist} - ${preview.title}`, preview.year].filter(Boolean).join(' · ')),
-        time ? el('div', { class: 't-time muted album-time' }, time) : null),
-      editor.node,
-      el('div', { class: 'field album-rym' }, el('label', { class: 't-caption muted' }, 'Rate Your Music link (optional)'), rymInput),
-      trackList(preview.tracks || []),
-      el('div', { class: 'add-foot' }, back, create)));
-  }
-
-  async function loadPreview(address) {
-    say('');
-    body.replaceChildren();
-    fetchBtn.disabled = true;
-    try {
-      const preview = await api.albumPreview(address);
-      if (live) paintPreview(preview);
-    } catch (ex) {
-      if (live) say(fetchErrorText(ex));
-    } finally {
-      fetchBtn.disabled = false;
-    }
-  }
-
-  form.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const address = url.value.trim();
-    if (!address) { say('Paste a Discogs release, YouTube playlist or video address.'); url.focus(); return; }
-    const pl = playlistLink(address);
-    if (pl?.kind === 'mix') { say(MIX_MESSAGE); return; }
-    if (pl?.kind === 'private') { say(PRIVATE_MESSAGE); return; }
-    if (pl) { await youtube.start(pl.url); return; }
-    if (videoLink(address)) { await video.start(address); return; }
-    await loadPreview(address);
-  });
-
-  dlg.onclose = () => {
-    live = false;
-    video.dispose();
-    dlg.replaceChildren();
-    dlg.onclose = null;
-    dlg.onclick = null;
-    dlg.onmousedown = null;
-    if (opener?.isConnected) opener.focus();
-  };
-  dlg.replaceChildren(
-    dialogHead('Add album', 'Save the tracks of a Discogs release, or pick the release a YouTube playlist matches. Nothing is saved until you press Create.', () => dlg.close()),
-    form, message, body);
-  backdropClose(dlg, { dirty: () => !!body.firstChild || !!url.value.trim() });
-  dlg.showModal();
-  url.focus();
-  return dlg;
 }
 
 export function mountAlbums(pane, id = albumIdOf(location.hash)) {

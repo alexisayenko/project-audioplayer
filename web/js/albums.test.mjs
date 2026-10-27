@@ -9,7 +9,7 @@ initPlayer();
 const { player } = await import('./player.js');
 const { resetVocabulary, buildIndex } = await import('./genre-vocab.js');
 resetVocabulary(buildIndex({ genres: ['Techno', 'Ambient', 'Dub', 'House'].map((name) => ({ name, family: 'Electronic', level: 'genre' })), aliases: {} }));
-const { mountAlbums, openAddAlbum, albumIdOf, totalTime, bpmRange, GENRE_MAX, albumLinks, facetValues, matchesFacets, fetchErrorText } = await import('./albums.js');
+const { mountAlbums, albumIdOf, totalTime, bpmRange, GENRE_MAX, albumLinks, facetValues, matchesFacets } = await import('./albums.js');
 
 const PREVIEW = { title: 'Tumult', artist: 'Derango', year: 2004, source: 'discogs:545650', tracks: [{ no: 1, title: 'Intro', durationS: 65 }, { no: 2, title: 'Noise', durationS: null }] };
 const ALBUM = { id: 'alb_1', title: 'Tumult', artist: 'Derango', year: 2004, source: 'discogs:545650', tracks: [{ no: 1, title: 'Intro', durationS: 65, songId: null }, { no: 2, title: 'Noise', durationS: 200, songId: null }] };
@@ -25,16 +25,8 @@ function setup(handler, id = '') {
 const ok = (body, status = 200) => ({ status, body });
 const D = () => document.getElementById('add-dialog');
 const dq = (s) => D().querySelector(s);
-const dqa = (s) => D().querySelectorAll(s);
-async function submitUrl(v, value) {
-  if (!D().open) openAddAlbum();
-  dq('.well input').value = value;
-  fire(dq('.well'), 'submit');
-  await flush();
-  await flush();
-}
-
 test('headline and route helpers', () => {
+  assert.equal(GENRE_MAX, 20);
   assert.equal(totalTime(PREVIEW.tracks), '1:05');
   assert.equal(totalTime([{ durationS: null }]), '');
   assert.equal(bpmRange(PREVIEW.tracks), '');
@@ -68,72 +60,15 @@ test('list renders song-style rows: name and count over artist and year, total t
   assert.equal(card.querySelector('.album-tracks'), null);
 });
 
-test('Add Album popup: Fetch shows the preview in the same popup, Create posts it, closes it and the row joins the list', async () => {
-  let created = false;
-  const v = setup((u, o) => {
-    if (u === '/albums/preview') return ok(PREVIEW);
-    if (u === '/albums' && o.method === 'POST') { created = true; return ok(ALBUM, 201); }
-    if (u === '/albums') return ok(created ? [ROW] : []);
-    if (u === '/albums/alb_1') return ok(ALBUM);
-    return ok({});
-  });
+test('the Add album button opens the wizard on step 1 and closing it leaves the list alone', async () => {
+  const v = setup((u) => (u === '/albums' ? ok([]) : ok({})));
   await v.unmount.ready;
-  await submitUrl(v, 'https://www.discogs.com/release/545650-Derango-Tumult');
-  const pv = v.calls.find((c) => c.url === '/albums/preview');
-  assert.deepEqual(JSON.parse(pv.opts.body), { url: 'https://www.discogs.com/release/545650-Derango-Tumult' });
-  assert.match(dq('.album-preview').textContent, /Derango - Tumult · 2004/);
-  assert.match(dq('.album-preview').textContent, /1:05/);
-  const create = [...dqa('button')].find((b) => b.textContent === 'Create');
-  assert.ok([...dqa('button')].some((b) => b.textContent === 'Back'));
-  fire(create, 'click');
-  await flush(); await flush(); await flush();
-  assert.deepEqual(JSON.parse(v.calls.find((c) => c.url === '/albums' && c.opts.method === 'POST').opts.body), { ...PREVIEW, genres: [] });
-  assert.equal(dq('.album-preview'), null);
-  assert.equal(D().open, false);
-  assert.equal(v.pane.querySelectorAll('.album-row').length, 1);
-});
-
-test('Back returns from the preview to the URL step', async () => {
-  const v = setup((u) => (u === '/albums/preview' ? ok(PREVIEW) : ok([])));
-  await v.unmount.ready;
-  await submitUrl(v, 'https://www.discogs.com/release/1');
-  fire([...dqa('button')].find((b) => b.textContent === 'Back'), 'click');
-  assert.equal(dq('.album-preview'), null);
-});
-
-for (const [status, code, re] of [[400, 'bad_url', /not a Discogs release link/], [404, 'not_found', /no release/], [503, 'discogs_unavailable', /not available/]]) {
-  test(`preview error ${status} shows inline`, async () => {
-    const v = setup((u) => (u === '/albums/preview' ? { status, body: { error: code, detail: code } } : ok([])));
-    await v.unmount.ready;
-    await submitUrl(v, 'https://www.discogs.com/release/1');
-    assert.match(dq('.msg.error').textContent, re);
-    assert.equal(dq('.msg.error').hidden, false);
-    assert.equal(dq('.album-preview'), null);
-  });
-}
-
-test('empty address asks for one without a request', async () => {
-  const v = setup(() => ok([]));
-  await v.unmount.ready;
-  await submitUrl(v, '  ');
-  assert.match(dq('.msg.error').textContent, /Paste a Discogs/);
-  assert.equal(v.calls.some((c) => c.url === '/albums/preview'), false);
-});
-
-test('409 on create says it exists and links to it', async () => {
-  const v = setup((u, o) => {
-    if (u === '/albums/preview') return ok(PREVIEW);
-    if (u === '/albums' && o.method === 'POST') return { status: 409, body: { error: 'already_exists', id: 'alb_9' } };
-    return ok([]);
-  });
-  await v.unmount.ready;
-  await submitUrl(v, 'https://www.discogs.com/release/1');
-  fire([...dqa('button')].find((b) => b.textContent === 'Create'), 'click');
-  await flush(); await flush();
-  const e = dq('.msg.error');
-  assert.match(e.textContent, /already exists/);
-  assert.equal(e.querySelector('a'), null);
-  assert.match(e.querySelector('button').textContent, /Open it/);
+  const add = [...v.pane.querySelectorAll('button')].find((b) => b.textContent.includes('Add album'));
+  fire(add, 'click');
+  assert.equal(D().open, true);
+  assert.match(dq('.wiz-stepline').textContent, /Step 1 of 5/);
+  D().close();
+  assert.equal(D().children.length, 0);
 });
 
 test('list load failure shows Retry', async () => {
@@ -163,10 +98,6 @@ test('album page 404', async () => {
   const v = setup(() => ({ status: 404, body: { detail: 'nope' } }), 'alb_x');
   await v.unmount.ready;
   assert.match(v.text(), /does not exist/);
-});
-
-test('fetchErrorText falls back to the message', () => {
-  assert.equal(fetchErrorText({ status: 500, message: 'boom' }), 'boom');
 });
 
 test('card header: album and track count, artist and year, total time, bpm of linked songs only, genre chips', async () => {
@@ -324,39 +255,6 @@ test('info box action row: Play album, Play next, queue toggle, playlist, edit; 
   fire(acts[0], 'click');
   assert.match(document.getElementById('toast').textContent, /Playing 1 song/);
   dlg.close();
-});
-
-test('preview genres use the song-form genre field: vocabulary suggestions, remove, cap, free text refused, Create sends them', async () => {
-  const withGenres = { ...PREVIEW, genres: ['Techno', 'Dub'] };
-  const v = setup((u, o) => {
-    if (u === '/albums/preview') return ok(withGenres);
-    if (u === '/albums' && o.method === 'POST') return ok({ ...ALBUM }, 201);
-    return ok([]);
-  });
-  await v.unmount.ready;
-  await submitUrl(v, 'https://www.discogs.com/release/1');
-  const chips = () => [...dqa('.album-preview .chips .chip.tint')].map((c) => c.textContent);
-  assert.deepEqual(chips(), ['Techno', 'Dub']);
-  fire([...dqa('.album-preview .x')].find((b) => b.getAttribute('aria-label') === 'Remove Dub'), 'click');
-  assert.deepEqual(chips(), ['Techno']);
-  const input = dq('.album-preview .chip-field input');
-  assert.equal(input.getAttribute('role'), 'combobox');
-  input.value = 'amb';
-  fire(input, 'input');
-  const opts = [...dqa('.album-preview [role=option]')];
-  assert.deepEqual(opts.map((o) => o.dataset.genre), ['Ambient']);
-  fire(opts[0], 'click');
-  assert.deepEqual(chips(), ['Techno', 'Ambient']);
-  input.value = 'Nonsense';
-  fire(input, 'keydown', { key: 'Enter' });
-  assert.deepEqual(chips(), ['Techno', 'Ambient']);
-  assert.match(dq('.album-preview .genre-hint').textContent, /not in the genre list/);
-  input.value = '';
-  fire([...dqa('button')].find((b) => b.textContent === 'Create'), 'click');
-  await flush(); await flush();
-  const post = v.calls.find((c) => c.url === '/albums' && c.opts.method === 'POST');
-  assert.deepEqual(JSON.parse(post.opts.body).genres, ['Techno', 'Ambient']);
-  assert.equal(GENRE_MAX, 20);
 });
 
 test('rows show genres as plain muted text like Songs, no chips', async () => {

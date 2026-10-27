@@ -178,3 +178,53 @@
 .lk-suggest:disabled { opacity: .5; cursor: default; }
 .lk-suggest-status { margin: 0; }
 .lk-suggest-status:empty { display: none; }
+/* Add album wizard (task-0120): five steps in the add dialog */
+.wiz-top { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); margin-bottom: var(--space-2); }
+.wiz-stepline { margin: 0; }
+.wiz-dots { display: flex; gap: var(--space-2); list-style: none; margin: 0; padding: 0; }
+.wiz-dots li { width: var(--space-2); height: var(--space-2); border-radius: var(--radius-pill); background: var(--line); }
+.wiz-dots li.done { background: var(--ink-muted); }
+.wiz-dots li.current { background: var(--fill); }
+.wiz-dots li.skipped { background: transparent; box-shadow: inset 0 0 0 var(--stroke-hairline) var(--ink-muted); }
+.wiz-heading { margin: 0 0 var(--space-3); }
+.wiz-heading:focus { outline: none; }
+.wiz-body { min-width: 0; }
+.wiz-step { display: grid; gap: var(--space-4); min-width: 0; }
+.wiz-step .field { margin-top: 0; }
+.wiz-busy { margin: var(--space-3) 0 0; }
+.wiz-msg:empty { display: none; }
+.wiz-msg .msg { margin-top: var(--space-3); }
+.wiz-foot { justify-content: space-between; gap: var(--space-3); margin-top: var(--space-4); }
+.wiz-foot .btn[hidden] { display: none; }
+.wiz-paste { display: grid; gap: var(--space-2); }
+.wiz-paste[hidden] { display: none; }
+.wiz-cands { display: grid; gap: var(--space-2); }
+.wiz-cand { display: flex; align-items: center; gap: var(--space-3); min-height: var(--hit); padding: var(--space-2) var(--space-3); border-radius: var(--radius-sm); box-shadow: inset 0 0 0 var(--stroke-hairline) var(--line); cursor: pointer; }
+.wiz-cand:has(input:checked) { box-shadow: inset 0 0 0 var(--stroke-hairline) var(--fill); background: var(--accent-tint); }
+.wiz-cand input { flex: none; width: auto; min-height: 0; }
+.wiz-cand .info { display: grid; min-width: 0; overflow-wrap: anywhere; }
+.wiz-sec { display: grid; gap: var(--space-2); min-width: 0; }
+.wiz-sec h3 { margin: 0; }
+.wiz-strip { display: flex; align-items: center; gap: var(--space-3); }
+.wiz-strip-text { display: grid; gap: var(--space-1); min-width: 0; overflow-wrap: anywhere; }
+.wiz-type select { width: auto; min-height: var(--hit); }
+.wiz-art { display: flex; flex-wrap: wrap; gap: var(--space-3); }
+.wiz-art-opt { display: grid; justify-items: center; gap: var(--space-1); cursor: pointer; }
+.wiz-art-opt input { width: auto; min-height: 0; }
+.wiz-art-img { width: 96px; height: 96px; object-fit: cover; border-radius: var(--radius-sm); }
+.wiz-art-img[hidden] { display: none; }
+.wiz-sugs { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.wiz-sug { flex-direction: row; background: transparent; border: var(--stroke-hairline) dashed var(--line); min-height: var(--control-sm); padding: 0 var(--space-3); cursor: pointer; }
+.wiz-sug.on { background: var(--accent-tint); color: var(--on-tint); border-style: solid; }
+.wiz-sug.unmapped { color: var(--ink-muted); cursor: default; text-decoration: line-through; }
+.wiz-src { color: var(--ink-muted); font: var(--font-caption); }
+.wiz-rym { display: flex; align-items: center; gap: var(--space-2); }
+.wiz-rym input { flex: 1 1 auto; min-width: 0; }
+.wiz-links { margin: 0; }
+.wiz-links[hidden] { display: none; }
+.wiz-match { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-1) var(--space-3); min-width: 0; }
+.wiz-match select { flex: 1 1 12rem; min-width: 0; max-width: 100%; min-height: var(--hit); }
+.wiz-extras-head { margin-top: var(--space-2); }
+.wiz-row .av-use { display: inline-flex; align-items: center; gap: var(--space-1); }
+.wiz-run { gap: var(--space-4); }
+.wiz-progress, .wiz-dl { min-width: 0; }
