@@ -190,7 +190,7 @@ flowchart TD
   Card -->|"Add to playlist"| PlPicker["Playlist picker"]
   Card -->|"Download to server"| Fetch["Audio fetch<br/>progress ring on the row"]
   Songs -->|"filter chip"| Filter["Filter sheet"]
-  AlbumList["Library: Albums"] -->|"Add album"| AddAlbum["Add album dialog"]
+  AlbumList["Library: Albums"] -->|"Add album"| AddAlbum["Add album wizard<br/>5 steps, section 4.3"]
   AlbumList -->|"tap an album row"| AlbumCard["Album card dialog"]
   AlbumCard -->|"Edit"| EditAlbum["Edit album dialog"]
   AlbumCard -->|"Link a song"| LinkPop["Link a song popup"]
@@ -205,7 +205,7 @@ In the web, a tap on an album row opens the album card dialog. The Album page
 
 The Add dialog also accepts a YouTube playlist link (a list of videos to tick
 and add) and a bare video id; an unsupported link shows its error under the
-field. Add album is covered in section 4.3.
+field. Add album is a separate five-step wizard, covered in section 4.3.
 
 Sources: `web/js/library.js`, `add.js`, `add-preview.js`, `playlist-import.js`,
 `song-card.js`, `edit-dialog.js`, `albums.js`, `drafts.js`, `genre-references.js`,
@@ -337,56 +337,73 @@ Sources: `ios/Sources/AddSheet.swift`, `AnonAddSheet.swift`, `AnonDownloader.swi
 
 ### 4.3 Add an album
 
-The Add album dialog (web, Library, Albums view) takes one address and routes
-on its kind. Nothing is saved until Create.
+The Add album dialog (web, Library, Albums view) is a five-step wizard: Link,
+Details, Discogs, Review, Import. It takes only a YouTube playlist address or a
+time-coded YouTube video address (a Discogs link is refused with a hint).
+Nothing is saved until the one button on the Review step. The step line
+"Step n of 5 · Name" is a status, Back keeps everything typed, and the Discogs
+step is skipped (shown as skipped) when one result is a confident match.
 
 ```mermaid
 flowchart TD
-  AStart(["Add album, Albums view"]) --> AField["Address field"]
-  AField --> AKind{"Address kind"}
-  AKind -->|"playlist: mix or private"| AMsg["Error message"]
-  AKind -->|"empty"| AEmpty["Paste a Discogs release,<br/>YouTube playlist or video address"]
+  AStart(["Add album, Albums view"]) --> S1["1 Link<br/>address field, Fetch"]
+  S1 --> AKind{"Address kind"}
+  AKind -->|"empty, Mix, private list,<br/>Discogs or other link"| AMsg["Error text in the alert region,<br/>Discogs link adds a hint"]
+  AMsg --> S1
+  AKind -->|"offline"| AOff["You are offline.<br/>Adding an album needs the server"]
+  AOff --> S1
   AKind -->|"YouTube playlist"| APl["Reading the playlist"]
-  APl --> APlT["Track table, Create album<br/>and download N tracks"]
-  APlT -->|"create"| APlDone["Dialog closes, toast,<br/>downloads start in the Albums view"]
-  AKind -->|"YouTube video"| AVid["Video flow, see below"]
-  AKind -->|"Discogs release or other"| ADisc["Release preview, genres,<br/>optional RYM link, tracks"]
-  ADisc -->|"Create"| ADone["Dialog closes, toast Added"]
-  ADisc -->|"409 already exists"| AExists["This album already exists<br/>with a link to open it"]
-  AField -->|"lookup fails"| AErr["Error text under the field"]
+  AKind -->|"YouTube video"| AVid["Reading the video"]
+  AVid -->|"no time codes, or 422"| APaste["Paste box on step 1:<br/>No track list was found"]
+  APaste -->|"Fetch"| ARead["Parse the pasted text<br/>(lengths only become time codes)"]
+  ARead -->|"no tracks"| ABad["No tracks found in this text"]
+  ABad --> APaste
+  AVid -->|"400, 404, 413, 429, 502"| AErr["Error text, stay on step 1"]
+  APl -->|"no playable video, 404, 409, 502"| AErr
+  AErr --> S1
+  APl --> S2
+  AVid -->|"track list found"| S2
+  ARead -->|"ok"| S2["2 Details<br/>Artist, Album name, Year suggested,<br/>track list not shown"]
+  S2 -->|"Back"| S1
+  S2 -->|"empty name or artist,<br/>year not four digits"| AFieldErr["Message, stay on step 2"]
+  AFieldErr --> S2
+  S2 -->|"Next: search Discogs"| ASure{"One result equals<br/>artist and album<br/>(year within 1)?"}
+  ASure -->|"no"| S3["3 Discogs<br/>one row per album,<br/>None of these, Show all releases"]
+  ASure -->|"yes, resolved, step skipped"| S4
+  S3 -->|"Back"| S2
+  S3 -->|"Discogs not set up,<br/>unreachable or no match"| ANoD["Said in the step,<br/>None of these preselected"]
+  ANoD --> S3
+  S3 -->|"pick fails to read"| ARes["Discogs could not be read<br/>for this album, stay on step 3"]
+  ARes --> S3
+  S3 -->|"pick or None of these"| S4["4 Review<br/>strip and Type, Album art,<br/>Genres, Tracks, one button"]
+  S4 -->|"Back (over a skipped step 3)"| S2
+  S4 -->|"Back"| S3
+  S1 -->|"other address after edits"| ARestart["Start over from this link?<br/>Replace my edits"]
+  ARestart -->|"Replace my edits"| AKind
+  S4 -->|"problem in a ticked track"| AProb["Button disabled,<br/>first problem said above it"]
+  AProb --> S4
+  S4 -->|"playlist: Import and download N tracks"| ACommit{"Server accepts?"}
+  S4 -->|"video: Download, cut and import"| ACommit
+  ACommit -->|"409 already exists,<br/>422, 429, 413, library or storage full"| ACErr["Message above the footer,<br/>draft kept, Open it on 409"]
+  ACErr --> S4
+  ACommit -->|"playlist ok"| S5P["5 Import: Album created, N songs added,<br/>downloading K tracks, live status"]
+  S5P --> APlDone["Open the album or Close,<br/>downloads go on in the Albums view"]
+  ACommit -->|"video ok, job id"| S5V["5 Import: progress bar<br/>Waiting, Downloading the video audio,<br/>Cutting N of M tracks"]
+  S5V -->|"done"| AVDone["Toast, dialog closes"]
+  AVDone -.-> APage["Album page<br/>#/library/albums/ID"]
+  S5V -->|"Close"| AVClose["Dialog closes,<br/>the split continues on the server"]
+  S5V -->|"job error"| AJob["Message with Try again<br/>and Open the album"]
+  S5V -->|"4 polls fail"| ALost["Lost contact with the server<br/>Try again, Open the album"]
+  AJob -->|"Try again"| S5V
+  ALost -->|"Try again"| S5V
 ```
 
-From a YouTube video: preview, edit the track list, create, split progress,
-album page.
-
-```mermaid
-flowchart TD
-  V0(["Video address"]) --> V1["Reading the video"]
-  V1 -->|"400, 404, 413, 429, 502"| VErr["Error text, back to the field"]
-  V1 --> V2{"Track list found<br/>in chapters or description?"}
-  V2 -->|"no, or 422"| VPaste["Paste page:<br/>No track list was found"]
-  VPaste -->|"Read the track list"| VRead["Parse the pasted text"]
-  VRead -->|"no tracks"| VBad["No tracks found in this text"]
-  VBad --> VPaste
-  VRead -->|"ok"| VTable
-  V2 -->|"yes"| VTable["Track table<br/>start times, titles, ticks, Use existing"]
-  VTable -->|"Paste a track list with lengths"| VLen["Use this list,<br/>Replace my edits, Scale to video length"]
-  VLen --> VTable
-  VTable -->|"Paste a track list instead"| VPaste
-  VTable -->|"Create album"| VCreate{"Server accepts?"}
-  VCreate -->|"409, 422, 429, 413,<br/>library or storage full"| VCErr["Message in the dialog,<br/>table stays editable"]
-  VCreate -->|"ok, job id"| VProg["Creating the album:<br/>Waiting, Downloading the video audio,<br/>Cutting N of M tracks"]
-  VProg -->|"done"| VDone["Toast, dialog closes"]
-  VDone -.-> VPage["Album page<br/>#/library/albums/ID"]
-  VProg -->|"job error"| VJob["Message with Try again<br/>and Open the album"]
-  VProg -->|"4 polls fail"| VLost["Lost contact with the server<br/>Try again, Open the album"]
-  VJob -->|"Try again"| VCreate
-  VLost -->|"Try again"| VProg
-```
-
-Sources: `web/js/albums.js` (`openAddAlbum`), `album-video.js`, `album-video-model.js`,
-`album-video-progress.js`, `album-tracklist-panel.js`, `album-youtube-flow.js`,
-`album-draft-view.js`.
+Sources: `web/js/albums.js` (`openAddAlbum` button), `album-wizard.js`,
+`album-wizard-link.js`, `album-wizard-details.js`, `album-wizard-pick.js`,
+`album-wizard-review.js`, `album-wizard-rows.js`, `album-wizard-extras.js`,
+`album-wizard-run.js`, `album-wizard-flow.js`, `album-wizard-model.js`,
+`album-video-model.js`, `album-video-progress.js`; rules: LIB-265 to LIB-273 in
+[`../specs/library.md`](../specs/library.md).
 
 ## 5. States
 

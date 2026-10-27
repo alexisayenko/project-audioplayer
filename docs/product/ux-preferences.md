@@ -51,6 +51,7 @@ Living rulebook of Alex's UI/UX expectations, so UI decisions can be taken from 
 - A click inside a dialog or popup must not close it; only the backdrop closes it (2026-10-27).
 - Close button must not take a whole row (2026-10-19).
 - Do not show the "to" part in range text where it adds nothing (2026-10-27).
+- A multi-step add flow keeps Back state, auto-skips a step with nothing to decide (and shows it as skipped), shows a "Step n of m" status, and has one primary button on the last step (2026-10-27, Add album wizard).
 
 ## Maps and Genres screens
 
