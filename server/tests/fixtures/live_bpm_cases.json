@@ -1,0 +1,37 @@
+{
+  "label": [
+    {"bpm": 120, "label": "120.0"},
+    {"bpm": 128.04, "label": "128.0"},
+    {"bpm": 174.96, "label": "175.0"},
+    {"bpm": 200, "label": "200.0"},
+    {"bpm": 200.4, "label": "200"},
+    {"bpm": 300.5, "label": "301"},
+    {"bpm": 1200, "label": "1200"},
+    {"bpm": 0, "label": ""},
+    {"bpm": -5, "label": ""},
+    {"bpm": null, "label": ""}
+  ],
+  "rms": [
+    {"samples": [0.5, -0.5, 0.5, -0.5], "rms": 0.5},
+    {"samples": [1, 0], "rms": 0.7071067811865476},
+    {"samples": [], "rms": 0}
+  ],
+  "level": [
+    {"rms": 0, "fraction": 0},
+    {"rms": 0.0005, "fraction": 0},
+    {"rms": 0.001, "fraction": 0},
+    {"rms": 0.002, "fraction": 0.11149259098665973},
+    {"rms": 0.01, "fraction": 0.37037037037037035},
+    {"rms": 0.1, "fraction": 0.7407407407407407},
+    {"rms": 0.5, "fraction": 0.9996185201244514},
+    {"rms": 1, "fraction": 1}
+  ],
+  "tempo": [
+    {"bpm": 60, "seconds": 12, "phase": 0.21, "tolerance": 0.01},
+    {"bpm": 90, "seconds": 12, "phase": 0.21, "tolerance": 0.01},
+    {"bpm": 120, "seconds": 12, "phase": 0.21, "tolerance": 0.01},
+    {"bpm": 139, "seconds": 12, "phase": 0.21, "tolerance": 0.01},
+    {"bpm": 174, "seconds": 12, "phase": 0.21, "tolerance": 0.01},
+    {"bpm": 200, "seconds": 12, "phase": 0.21, "tolerance": 0.01}
+  ]
+}
