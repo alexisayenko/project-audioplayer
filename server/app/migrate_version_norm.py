@@ -2,15 +2,11 @@
 
 from __future__ import annotations
 
-import json
 import logging
-import os
-import shutil
 from pathlib import Path
 from typing import Any
 
-from . import deps, library
-from .jsonio import write_json_atomic
+from . import deps, library, migration
 from .version_norm import normalize_version
 
 BACKUP_DIR = "backups-version-norm"
@@ -18,23 +14,17 @@ MARKER_VERSION = 1
 _log = logging.getLogger(__name__)
 
 def enabled() -> bool:
-    return os.environ.get("AUDIO_VERSION_NORM", "1").strip() != "0"
-
-def base_dir() -> Path:
-    return deps.SYNC.data_repo if deps.SYNC else deps.data_root()
+    return migration.enabled("AUDIO_VERSION_NORM")
 
 def backup_path(uid: str) -> Path:
     """`<repo root>/backups-version-norm/<uid>/library.json`: beside, not inside, the git-added `audioplayer/` tree."""
-    return base_dir() / BACKUP_DIR / uid / "library.json"
+    return migration.user_backup(BACKUP_DIR, uid)
 
 def marker_path(uid: str) -> Path:
-    return backup_path(uid).parent / "applied.json"
+    return migration.marker_beside(backup_path(uid))
 
 def _done(uid: str) -> bool:
-    try:
-        return json.loads(marker_path(uid).read_text(encoding="utf-8")).get("marker") == MARKER_VERSION
-    except (OSError, ValueError, AttributeError):
-        return False
+    return migration.marker_has(marker_path(uid), "marker", MARKER_VERSION)
 
 def apply_norm(songs: list[dict[str, Any]]) -> list[str]:
     """Normalise `version.name` on working songs in place; returns the ids changed (a rerun changes none)."""
@@ -55,12 +45,9 @@ def _apply(uid: str, lib: Path) -> int:
         doc = library.load_doc(lib)
         changed = apply_norm(doc["songs"])
         if changed:
-            backup = backup_path(uid)
-            if not backup.exists():
-                backup.parent.mkdir(parents=True, exist_ok=True)
-                shutil.copy2(lib, backup)
+            migration.backup_once(lib, backup_path(uid))
             library.save_doc(lib, doc)
-        write_json_atomic(marker_path(uid), {"marker": MARKER_VERSION, "songs": len(changed)})
+        migration.write_marker(marker_path(uid), {"marker": MARKER_VERSION, "songs": len(changed)})
     return len(changed)
 
 def run() -> int:
@@ -68,18 +55,4 @@ def run() -> int:
     if not enabled():
         _log.info("version name normalisation disabled (AUDIO_VERSION_NORM=0)")
         return 0
-    users_dir = deps.data_root() / "users"
-    if not users_dir.is_dir():
-        return 0
-    total = 0
-    for lib in sorted(users_dir.glob("*/library.json")):
-        uid = lib.parent.name
-        try:
-            if _done(uid):
-                continue
-            n = _apply(uid, lib)
-            total += n
-            _log.info("version names normalised for %s: %d songs", uid[:8], n)
-        except Exception:
-            _log.exception("version name normalisation failed for %s; the library is unchanged", uid[:8])
-    return total
+    return migration.run_for_libraries(_done, _apply, "version names normalised for %s: %d songs", "version name normalisation failed for %s; the library is unchanged")
