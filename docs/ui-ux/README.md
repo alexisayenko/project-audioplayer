@@ -15,7 +15,8 @@ ui-ux/
 ├── screens/              # one file per screen (page) — where the user is
 │   └── README.md         # entry: screens section
 ├── journeys.md           # one section per multi-screen path — the sequence
-└── screen-flow.md        # Mermaid navigation maps, key flows and song states, read from the code
+├── screen-flow.md        # Mermaid navigation maps, key flows and song states, read from the code
+└── add-album-wizard.md   # proposal: Add album as a light wizard (web now, iOS later)
 ```
 
 ## Common slots
