@@ -1,6 +1,6 @@
 # API
 
-Code: `server/app/main.py` (app wiring) and one router per area in `server/app/routes/` (`health`, `auth`, `me`, `legacy`, `files`, `catalog`, `genres`, `lookup`, `songs`, `analyze`, `removal`, `backfill`, `legal`, `playlists` (API-229); 14 routers); shared state and dependencies in `server/app/deps.py`, request bodies in `schemas.py`. Same origin as the web UI; JSON bodies; errors
+Code: `server/app/main.py` (app wiring) and one router per area in `server/app/routes/` (`auth`, `me`, `health`, `legal`, `legacy`, `features`, `files`, `peaks`, `plays`, `catalog`, `covers`, `genre_layout`, `genre_references`, `genres`, `lookup`, `playlist_import`, `playlists`, `album_video`, `albums`, `drafts`, `songs`, `analyze`, `backfill`, `metafill`, `removal`, `anon` (playlists: API-229); 26 routers); shared state and dependencies in `server/app/deps.py`, request bodies in `schemas.py`. Same origin as the web UI; JSON bodies; errors
 are `{"error": <code>, "detail": <message>, ...}` (API-026, API-040..046), or a bare `{"detail": "<message>"}` for the plain 401, 403 and 404 refusals (API-297). Every data route works on the caller's own library only (ADR-0012).
 
 ## Auth

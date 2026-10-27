@@ -24,7 +24,7 @@ audio and lock-screen controls. No monetization. Downloading may violate
 YouTube's ToS; the app is not for distribution.
 The web UI's public read-only view (the owner's library, per-IP limits; [ADR-0018](docs/tech/decisions.md)) is off by default (committed, not deployed): signed-out visitors get a sign-in screen; signed-in users get their own library.
 
-A native macOS app (`ElectrophoneMac`, task-0047, ADR-0029, [spec](docs/specs/macos-gui.md)) shows the web GUI with Library, Playback, Add/Edit, Settings, Playlists (placeholder), Genres map, Song stats, Music theory and a visualizer (Mirrored spectrum, Ring); it streams from the server and downloads no audio to the Mac. Status: builds, not tested with a real account or seen on a real UI; no icon; visualizer tap unverified on the real stream (needs Range support on `/files`).
+A native macOS app (`ElectrophoneMac`, task-0047, ADR-0029, [spec](docs/specs/macos-gui.md)) is built from native SwiftUI pages (about 8,000 lines in `ios/MacSources`, sharing `PlayerService` and `LibraryStore` with the iPhone app) that follow the web GUI's layout: Library, Playback, Add/Edit, Settings, Playlists (placeholder), Genres map, Song stats, Music theory and a visualizer (Mirrored spectrum, Ring); it streams from the server and downloads no audio to the Mac. Status: builds, not tested with a real account or seen on a real UI; no icon; visualizer tap unverified on the real stream (needs Range support on `/files`).
 
 Songs carry an optional version (remix, cover, mashup, live, ...) with its own credits: [concept](docs/product/concept-songs-versions-and-credits.md), ADR-0024 (deployed) and ADR-0025 (data model v2, planned, task-0043).
 
