@@ -37,3 +37,7 @@ There is no reset glyph: the Library's Clear action is a text link under the cou
 The iOS Library queue controls reuse the exact `listAdd` and `playlist` paths from `web/js/icons.js` as vector template assets `queue.add` and `queue.included`, with the shared web stroke of 1.8; Add is muted grey on both platforms and included status stays accented.
 
 Every other icon is already in the shared set: SF Symbols on iOS (names listed in `docs/ui-ux/library-v5.md`) and `web/js/icons.js` (Lucide paths, ISC) on the web. Only glyphs that have no SF Symbol or Lucide equivalent live in this folder.
+
+## Link and unlink
+
+[`link.svg`](link.svg) and [`unlink.svg`](unlink.svg) are the chain pair (stroke 1.8). In `unlink.svg` the four short break strokes sit about 3 units (centre line) from the chain ends, so at 24 px they keep a visible gap; the pair on the left mirrors the pair on the right through the centre (12, 12). `web/js/icons.js` carries the same paths.
