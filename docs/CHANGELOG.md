@@ -2,7 +2,11 @@
 
 What shipped, newest first. One line each; the web UI and server are live at https://electrophone.cc. Everything listed here is deployed except the sections marked "built, not deployed" (the 2026-10-14 release went out once the SSH access in [task-0027](tasks/task-0027.md) was restored; the live visualizer files match `origin/main` as of 2026-10-15). Why: [tech/decisions.md](tech/decisions.md); runbook: [tech/deploy.md](tech/deploy.md).
 
-## 2026-10-28 (iOS: HIG audit N1 to N9 fixes; not yet in a build)
+## 2026-10-28 (iOS TestFlight build 20261037)
+
+- iOS: TestFlight build 20261037 uploaded 2026-10-28 (archive and export from `3c99b8a3`; `xcodebuild -exportArchive` with `destination=upload` and `testFlightInternalTestingOnly`; internal group "Alex" only). Both schemes build and `AudioPlayerTests` pass (173 tests). It adds the HIG audit N1 to N9 fixes below; none of it is checked on a device yet. No server or web change.
+
+## 2026-10-28 (iOS: HIG audit N1 to N9 fixes; in TestFlight build 20261037)
 
 - iOS (IOS-124 to IOS-129; HIG audit N1 to N9; both schemes build, unit tests run, checked in the simulator, not run on a device): no "0 of 0 songs" or "In library 0 of N" before the first sync, a 20-second load timeout with Retry, confirmations for Clear queue, Remove from iPhone and Sign out, larger-text fixes (button capsules, drawer rows, Library count), Reduce Motion on the queue swipe and tag editor, Song Details without the duplicate Download, and dimmed transport keys with an empty queue.
 
