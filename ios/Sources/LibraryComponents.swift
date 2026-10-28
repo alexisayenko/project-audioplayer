@@ -63,15 +63,19 @@ struct LibraryFilterChip: View {
     var selected = false
     var count: Int? = nil
     var hint = "Opens the filter"
+    var dropsSymbolAtAccessibility = false
     let action: () -> Void
     @Environment(\.colorScheme) private var scheme
+    @Environment(\.dynamicTypeSize) private var typeSize
 
     var body: some View {
         Button(action: action) {
             HStack(spacing: DS.Space.space1) {
-                Image(systemName: symbol).dsIcon(DS.Icon.iconInline, weight: DS.Icon.iconWeight)
-                    .foregroundStyle(selected ? DS.Color.ink : DS.Color.inkMuted)
-                Text(title).font(selected ? T.subhead.weight(.semibold) : T.subhead.weight(.medium)).lineLimit(1)
+                if !(dropsSymbolAtAccessibility && typeSize.isAccessibilitySize) {
+                    Image(systemName: symbol).dsIcon(DS.Icon.iconInline, weight: DS.Icon.iconWeight)
+                        .foregroundStyle(selected ? DS.Color.ink : DS.Color.inkMuted)
+                }
+                Text(title).font(selected ? T.subhead.weight(.semibold) : T.subhead.weight(.medium)).lineLimit(1).minimumScaleFactor(0.7)
                 if let count, count > 0 {
                     Text("\(count)").font(T.caption.weight(.semibold)).foregroundStyle(scheme.onStrong)
                         .frame(minWidth: DS.Component.badge, minHeight: DS.Component.badge)
@@ -128,10 +132,25 @@ struct LibraryControls: View {
     }
 
     private var stackedControls: some View {
-        VStack(alignment: .trailing, spacing: DS.Space.space2) {
-            sortButtons.frame(maxWidth: .infinity, alignment: .leading)
-            count(showSongs: false)
+        let countLabel = showsCount ? "\(matches) of \(total) songs matched" : "Loading songs"
+        return HStack(spacing: DS.Space.space2) {
+            sortButtons.fixedSize()
+            Group {
+                if typeSize.isAccessibilitySize {
+                    Color.clear.frame(height: 0)
+                } else {
+                    Text(showsCount ? "\(matches) of \(total)" : "")
+                        .font(T.caption).monospacedDigit().lineLimit(2).minimumScaleFactor(0.7).multilineTextAlignment(.trailing)
+                        .foregroundStyle(query.narrowing ? DS.Color.selectInk : DS.Color.inkMuted)
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .trailing)
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(countLabel)
+            .accessibilityFocused($countFocused)
+            actionsMenu
         }
+        .frame(minHeight: DS.Space.hit)
     }
 
     private var sortButtons: some View {
@@ -163,6 +182,24 @@ struct LibraryControls: View {
         }.buttonStyle(LibraryPressStyle()).accessibilityLabel(label)
     }
 
+    private var actionsMenu: some View {
+        Menu {
+            Button("Play all matched", action: play).disabled(!enabled)
+            Button("Show currently playing song", action: showPlaying).disabled(!canShowPlaying)
+            Button("Clear all filters") { query.clear(); scrollTop(); countFocused = true }
+                .disabled(!query.narrowing)
+        } label: {
+            Image(systemName: "ellipsis")
+                .dsIcon(DS.Icon.iconNav, weight: DS.Icon.iconWeight)
+                .foregroundStyle(DS.Color.ink)
+                .frame(width: DS.Control.control, height: DS.Control.control)
+                .background(Circle().fill(DS.Color.surface).dsShadow(DS.Shadow.depthSlab).dsEdge(Circle()))
+                .frame(width: DS.Space.hit, height: DS.Space.hit)
+                .contentShape(Rectangle())
+        }
+        .accessibilityLabel("Library actions")
+    }
+
     private func count(showSongs: Bool) -> some View {
         let suffix = showSongs || typeSize.isAccessibilitySize ? " songs" : ""
         return HStack(spacing: DS.Space.space2) {
@@ -176,21 +213,7 @@ struct LibraryControls: View {
                 .accessibilityElement(children: .ignore)
                 .accessibilityLabel(showsCount ? "\(matches) of \(total) songs matched" : "Loading songs")
                 .accessibilityFocused($countFocused)
-            Menu {
-                Button("Play all matched", action: play).disabled(!enabled)
-                Button("Show currently playing song", action: showPlaying).disabled(!canShowPlaying)
-                Button("Clear all filters") { query.clear(); scrollTop(); countFocused = true }
-                    .disabled(!query.narrowing)
-            } label: {
-                Image(systemName: "ellipsis")
-                    .dsIcon(DS.Icon.iconNav, weight: DS.Icon.iconWeight)
-                    .foregroundStyle(DS.Color.ink)
-                    .frame(width: DS.Control.control, height: DS.Control.control)
-                    .background(Circle().fill(DS.Color.surface).dsShadow(DS.Shadow.depthSlab).dsEdge(Circle()))
-                    .frame(width: DS.Space.hit, height: DS.Space.hit)
-                    .contentShape(Rectangle())
-            }
-            .accessibilityLabel("Library actions")
+            actionsMenu
         }
         .font(T.caption).monospacedDigit().fixedSize(horizontal: true, vertical: false)
         .frame(minHeight: DS.Space.hit)

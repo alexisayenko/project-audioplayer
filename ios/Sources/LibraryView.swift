@@ -10,6 +10,7 @@ struct LibraryView: View {
     @EnvironmentObject private var listening: ListeningStore
     @ObservedObject private var auth = AuthService.shared
     @Environment(\.openSettings) private var openSettings
+    @Environment(\.dynamicTypeSize) private var typeSize
     @State private var facet: LibraryFacet?
     @State private var showHiddenPlaying = false
     @State private var pendingReveal: String?
@@ -189,7 +190,7 @@ struct LibraryView: View {
 
     private var libraryTools: some View {
         VStack(spacing: 0) {
-            LibrarySearchField(text: $query.search)
+            LibrarySearchField(text: $query.search).padding(.vertical, typeSize.isAccessibilitySize ? DS.Space.space2 : 0)
             chipRow.padding(.horizontal, -DS.Space.space4)
         }
         .measuredHeight($toolsHeight)
@@ -220,7 +221,7 @@ struct LibraryView: View {
                 }.padding(.horizontal, DS.Space.space4).padding(.vertical, DS.Space.space2)
             }
             .frame(height: DS.Space.hit + DS.Space.space2 * 2)
-            .scrollBounceBehavior(.basedOnSize, axes: .vertical)
+            .scrollBounceBehavior(.basedOnSize, axes: .vertical).scrollClipDisabled()
             .coordinateSpace(name: "library.chips").onPreferenceChange(LibraryChipEnd.self) { chipEnd = $0 }
             .mask {
                 HStack(spacing: 0) {

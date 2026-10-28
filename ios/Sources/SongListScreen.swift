@@ -75,6 +75,10 @@ struct SongListScreen<Extra: View, MenuItems: View>: View {
     var emptyText = "No songs here yet."
     var transfer: (String) -> (progress: Double, waiting: Bool)? = { _ in nil }
     var showsMenu = true
+    var compactHead = false
+    var trackNumbers: [String: Int] = [:]
+    var albumArtist: String?
+    var transportExtra: AnyView?
     @ViewBuilder var extra: () -> Extra
     @ViewBuilder var menu: () -> MenuItems
 
@@ -146,7 +150,11 @@ struct SongListScreen<Extra: View, MenuItems: View>: View {
         .refreshable { await refreshLibrary() }
     }
 
-    private var head: some View {
+    @ViewBuilder private var head: some View {
+        if compactHead { compactHeader } else { regularHeader }
+    }
+
+    private var regularHeader: some View {
         VStack(spacing: DS.Space.space3) {
             CoverImage(source: coverSource).frame(width: DS.Component.detailsCover, height: DS.Component.detailsCover)
                 .clipShape(RoundedRectangle(cornerRadius: DS.Radius.radiusCard)).dsShadow(DS.Shadow.depthSlab).accessibilityHidden(true)
@@ -157,16 +165,75 @@ struct SongListScreen<Extra: View, MenuItems: View>: View {
         }
     }
 
-    private var transport: some View {
-        let layout = typeSize.isAccessibilitySize ? AnyLayout(VStackLayout(spacing: DS.Space.space2)) : AnyLayout(HStackLayout(spacing: DS.Space.space2))
+    private var compactHeader: some View {
+        let layout = typeSize.isAccessibilitySize
+            ? AnyLayout(VStackLayout(alignment: .leading, spacing: DS.Space.space3))
+            : AnyLayout(HStackLayout(alignment: .top, spacing: DS.Space.space3))
         return layout {
-            Button { playList(shuffled: false) } label: { Label("Play", systemImage: "play.fill") }
-                .buttonStyle(LibraryPrimaryStyle()).disabled(playable.isEmpty)
-            Button { playList(shuffled: true) } label: { Label("Shuffle", systemImage: "shuffle") }
-                .buttonStyle(DSButtonStyle(kind: .outline)).disabled(playable.isEmpty)
-            Button { addAllToQueue() } label: { Label("Queue", systemImage: "text.badge.plus") }
-                .buttonStyle(DSButtonStyle(kind: .outline)).disabled(playable.isEmpty)
+            CoverImage(source: coverSource).frame(width: DS.Component.coverLg, height: DS.Component.coverLg)
+                .clipShape(RoundedRectangle(cornerRadius: DS.Radius.radiusSm)).dsShadow(DS.Shadow.depthSlab).accessibilityHidden(true)
+            VStack(alignment: .leading, spacing: typeSize.isAccessibilitySize ? DS.Space.space2 : DS.Space.space1) {
+                Text(title).font(T.headline).foregroundStyle(DS.Color.ink).lineLimit(typeSize.isAccessibilitySize ? 2 : 3)
+                    .minimumScaleFactor(typeSize.isAccessibilitySize ? 0.7 : 1).accessibilityAddTraits(.isHeader)
+                ForEach(Array(lines.prefix(typeSize.isAccessibilitySize ? 1 : lines.count).enumerated()), id: \.offset) { index, line in
+                    Text(line).font(index == 0 ? T.subhead : T.caption).foregroundStyle(DS.Color.inkMuted)
+                        .lineLimit(1).minimumScaleFactor(0.7)
+                }
+            }.frame(maxWidth: .infinity, alignment: .leading)
         }
+    }
+
+    @ViewBuilder private var transport: some View {
+        if compactHead {
+            HStack(spacing: DS.Space.space2) {
+                albumKey("Play", "play.fill", primary: true, action: { playList(shuffled: false) })
+                albumKey("Shuffle", "shuffle", primary: false, action: { playList(shuffled: true) })
+                albumKey("Queue", "text.badge.plus", primary: false, action: { addAllToQueue() })
+                if let transportExtra { transportExtra }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+        } else if typeSize.isAccessibilitySize {
+            VStack(spacing: DS.Space.space2) {
+                HStack(spacing: DS.Space.space2) { playButton; shuffleButton }
+                queueButton
+                if let transportExtra { transportExtra }
+            }
+        } else {
+            HStack(spacing: DS.Space.space2) {
+                playButton; shuffleButton; queueButton
+                if let transportExtra { transportExtra }
+            }
+        }
+    }
+
+    private var playButton: some View {
+        Button { playList(shuffled: false) } label: { transportLabel("Play", "play.fill") }
+            .buttonStyle(LibraryPrimaryStyle()).disabled(playable.isEmpty)
+    }
+
+    private var shuffleButton: some View {
+        Button { playList(shuffled: true) } label: { transportLabel("Shuffle", "shuffle") }
+            .buttonStyle(DSButtonStyle(kind: .outline)).disabled(playable.isEmpty)
+    }
+
+    private var queueButton: some View {
+        Button { addAllToQueue() } label: { transportLabel("Queue", "text.badge.plus") }
+            .buttonStyle(DSButtonStyle(kind: .outline)).disabled(playable.isEmpty)
+    }
+
+    private func albumKey(_ title: String, _ symbol: String, primary: Bool, action: @escaping () -> Void) -> some View {
+        let iconOnly = typeSize.isAccessibilitySize
+        return Button(action: action) {
+            Label(title, systemImage: symbol).labelStyle(AlbumKeyLabelStyle(iconOnly: iconOnly))
+                .dynamicTypeSize(iconOnly ? .large : typeSize)
+        }
+        .buttonStyle(AlbumKeyStyle(primary: primary, iconOnly: iconOnly)).disabled(playable.isEmpty)
+        .accessibilityLabel(title)
+    }
+
+    private func transportLabel(_ title: String, _ symbol: String) -> some View {
+        Label(title, systemImage: symbol).lineLimit(1).minimumScaleFactor(typeSize.isAccessibilitySize ? 0.5 : 0.7)
+            .frame(maxWidth: .infinity)
     }
 
     private var rows: some View {
@@ -196,6 +263,7 @@ struct SongListScreen<Extra: View, MenuItems: View>: View {
                            queued: queued, waiting: server.waiting.contains(track.id) || extra?.waiting == true,
                            offline: signedIn && server.reachable == false, retry: server.failed.contains(track.id),
                            listenedCount: signedIn && listening.loaded ? listening.entries[track.id]?.listened?.all ?? 0 : nil,
+                           trackNumber: trackNumbers[track.id], albumArtist: albumArtist,
                            toggleQueue: onPhone && !current ? { toggleQueued(track) } : nil,
                            play: { play(track) }, details: { detail = SongRoute(id: track.id) }, download: { download(track) })
         }
@@ -302,6 +370,49 @@ struct SongListScreen<Extra: View, MenuItems: View>: View {
 
     private func refreshLibrary() async {
         await server.syncCatalog(settings: settings, library: library)
+    }
+}
+
+private struct AlbumKeyLabelStyle: LabelStyle {
+    let iconOnly: Bool
+
+    func makeBody(configuration: Configuration) -> some View {
+        if iconOnly {
+            configuration.icon
+        } else {
+            HStack(spacing: DS.Space.space1) {
+                configuration.icon
+                configuration.title.lineLimit(1)
+            }
+        }
+    }
+}
+
+/// One of the album's transport keys: equal flexible width, one label size; icon-only 44 pt at accessibility sizes.
+private struct AlbumKeyStyle: ButtonStyle {
+    let primary: Bool
+    let iconOnly: Bool
+    @Environment(\.isEnabled) private var enabled
+
+    func makeBody(configuration: Configuration) -> some View {
+        let label = configuration.label.font(T.subhead.weight(.semibold))
+            .padding(.horizontal, iconOnly ? 0 : DS.Space.space2)
+            .frame(minWidth: DS.Space.hit, maxWidth: iconOnly ? DS.Space.hit : .infinity, minHeight: DS.Space.hit, maxHeight: iconOnly ? DS.Space.hit : nil)
+        return Group {
+            if primary {
+                label.foregroundStyle(enabled ? DS.Color.onAccent : DS.Color.inkMuted)
+                    .background {
+                        if enabled { Capsule().fill(DS.Color.accent).dsShadow(DS.Shadow.depthGlow) }
+                        else { Capsule().fill(DS.Color.accentTint) }
+                    }
+            } else {
+                label.foregroundStyle(DS.Color.accentInk)
+                    .overlay(Capsule().strokeBorder(DS.Color.accentInk, lineWidth: DS.Stroke.strokeThin))
+                    .opacity(enabled ? 1 : DS.Opacity.dim)
+            }
+        }
+        .contentShape(Capsule())
+        .opacity(configuration.isPressed ? 0.8 : 1)
     }
 }
 

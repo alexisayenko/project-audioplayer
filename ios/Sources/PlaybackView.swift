@@ -16,7 +16,7 @@ struct PlaybackView: View {
     @State private var editing: ServerSong?
     @State private var playlistSongs: [String] = []
     @EnvironmentObject private var settings: Settings
-    @Environment(\.colorSchemeContrast) private var contrast
+    @Environment(\.dynamicTypeSize) private var typeSize
 
     private var signedIn: Bool { ServerLink.hasCredentials(settings) }
     private var current: Track? { player.current }
@@ -39,7 +39,7 @@ struct PlaybackView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: DS.Space.space4) {
-                ScreenHeader(title: "Now playing", align: .top) { menu }
+                ScreenHeader(title: "Now playing", align: typeSize.isAccessibilitySize ? .center : .top, oneLine: typeSize.isAccessibilitySize) { menu }
                 cover
                 genreChips
                 progress
@@ -87,7 +87,7 @@ struct PlaybackView: View {
         Menu {
             Button { showQueue = true } label: { Label("Queue", systemImage: "list.bullet") }
             Button { showTags = true } label: { Label("Add songs by tag", systemImage: "tag") }
-            if let t = current { Button { editing = ServerSong(t) } label: { Label("Song details", systemImage: "info.circle") } }
+            if let t = current { Button { editing = ServerSong(t) } label: { Label("Edit song", systemImage: "info.circle") } }
             if signedIn, let t = current, t.localOnly != true {
                 Button { playlistSongs = [t.id] } label: { Label("Add to playlist", systemImage: "music.note.list") }
             }
@@ -107,29 +107,45 @@ struct PlaybackView: View {
         .accessibilityLabel("More")
     }
 
-    /// The song's cover, full width and square, with title and artist · album · year on a bottom gradient.
+    private func titleBlock(onCover: Bool) -> some View {
+        let big = typeSize.isAccessibilitySize
+        return VStack(alignment: .leading, spacing: 2) {
+            Text(current?.title ?? "Nothing playing").font(T.title)
+                .foregroundStyle(onCover ? DS.Color.surface : DS.Color.ink)
+                .lineLimit(onCover ? 3 : nil)
+            Text(current.map(subtitle) ?? "Pick a song in Library.")
+                .foregroundStyle(onCover ? DS.Color.surface.opacity(0.8) : DS.Color.inkMuted)
+                .font(T.body).lineLimit(onCover ? (big ? 3 : 2) : nil)
+        }
+        .fixedSize(horizontal: false, vertical: !onCover)
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    /// The song's cover on the content gutter, square, with title and artist · album · year on a bottom gradient (below the cover at accessibility sizes).
     private var cover: some View {
-        Color.clear.frame(maxWidth: .infinity).aspectRatio(1, contentMode: .fit).frame(maxHeight: 520)
-            .overlay { CoverImage(source: current?.thumbnail).accessibilityHidden(true) }
-            .overlay(alignment: .bottom) {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(current?.title ?? "Nothing playing").font(T.title).lineLimit(3)
-                    Text(current.map(subtitle) ?? "Pick a song in Library.").foregroundStyle(DS.Color.surface.opacity(0.8))
-                        .font(T.body).lineLimit(2)
+        let stacked = typeSize.isAccessibilitySize
+        return VStack(alignment: .leading, spacing: DS.Space.space3) {
+            Color.clear.aspectRatio(1, contentMode: .fit).frame(maxWidth: stacked ? DS.Space.hit * 3 + DS.Space.space2 : DS.Space.hit * 10)
+                .overlay { CoverImage(source: current?.thumbnail).accessibilityHidden(true) }
+                .overlay(alignment: .bottom) {
+                    if !stacked {
+                        titleBlock(onCover: true)
+                            .environment(\.colorScheme, .light)
+                            .padding(.horizontal, DS.Space.space4).padding(.bottom, 14).padding(.top, 56)
+                            .background(LinearGradient(stops: [.init(color: DS.Color.vinyl.opacity(0), location: 0),
+                                                               .init(color: DS.Color.vinyl.opacity(0.65), location: 0.4),
+                                                               .init(color: DS.Color.vinyl.opacity(0.9), location: 1)],
+                                                       startPoint: .top, endPoint: .bottom))
+                    }
                 }
-                .foregroundStyle(DS.Color.surface)
-                .environment(\.colorScheme, .light)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal, DS.Space.space4).padding(.bottom, 14).padding(.top, 56)
-                .background(LinearGradient(stops: [.init(color: DS.Color.vinyl.opacity(0), location: 0),
-                                                   .init(color: DS.Color.vinyl.opacity(0.65), location: 0.4),
-                                                   .init(color: DS.Color.vinyl.opacity(0.9), location: 1)],
-                                           startPoint: .top, endPoint: .bottom))
-            }
-            .clipShape(RoundedRectangle(cornerRadius: DS.Radius.radiusCard, style: .continuous))
-            .shadow(color: DS.Color.vinyl.opacity(0.16), radius: 10, y: 2)
-            .accessibilityElement(children: .ignore)
-            .accessibilityLabel(current.map { "\($0.title), \(subtitle($0))" } ?? "Nothing playing")
+                .clipShape(RoundedRectangle(cornerRadius: DS.Radius.radiusCard, style: .continuous))
+                .shadow(color: DS.Color.vinyl.opacity(0.16), radius: 10, y: 2)
+                .frame(maxWidth: .infinity, alignment: .center)
+            if stacked { titleBlock(onCover: false) }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(current.map { "\($0.title), \(subtitle($0))" } ?? "Nothing playing")
     }
 
     private var progress: some View {
@@ -152,14 +168,14 @@ struct PlaybackView: View {
                     ForEach(currentGenres, id: \.self) { genre in
                         Text(genre)
                             .font(T.subhead.weight(.medium))
-                            .foregroundStyle(DS.Color.ink)
+                            .foregroundStyle(DS.Color.accentInk)
                             .padding(.horizontal, DS.Space.space3)
                             .frame(minHeight: DS.Control.control)
-                            .background(Capsule().fill(DS.Color.surface).dsShadow(DS.Shadow.depthSlab))
-                            .overlay(Capsule().strokeBorder(contrast.outline, lineWidth: DS.Stroke.strokeThin))
+                            .background(Capsule().fill(DS.Color.accentTint))
                     }
                 }
             }
+            .scrollClipDisabled()
             .accessibilityElement(children: .combine)
             .accessibilityLabel("Genres: \(currentGenres.joined(separator: ", "))")
         }
@@ -182,13 +198,21 @@ struct PlaybackView: View {
 
     private var upNextCard: some View {
         VStack(alignment: .leading, spacing: 10) {
-            HStack {
-                Text("Up next").font(T.headline).foregroundStyle(DS.Color.ink)
-                Spacer()
-                Button { showQueue = true } label: {
-                    Text("Queue (\(player.queue.count))").font(T.subhead.weight(.semibold)).foregroundStyle(DS.Color.accentInk)
-                        .frame(minHeight: 22)
-                        .contentShape(Rectangle().inset(by: -11))
+            let queueButton = Button { showQueue = true } label: {
+                Text("Queue (\(player.queue.count))").font(T.subhead.weight(.semibold)).foregroundStyle(DS.Color.accentInk)
+                    .frame(minHeight: typeSize.isAccessibilitySize ? DS.Space.hit : 22, alignment: .leading)
+                    .contentShape(Rectangle().inset(by: -11))
+            }
+            if typeSize.isAccessibilitySize {
+                VStack(alignment: .leading, spacing: DS.Space.space1) {
+                    Text("Up next").font(T.headline).foregroundStyle(DS.Color.ink)
+                    queueButton
+                }
+            } else {
+                HStack {
+                    Text("Up next").font(T.headline).foregroundStyle(DS.Color.ink)
+                    Spacer()
+                    queueButton
                 }
             }
             if upNext.isEmpty {
@@ -270,6 +294,7 @@ private struct SwipeToRemoveQueueRow<Content: View>: View {
 private struct QueueSheet: View {
     @EnvironmentObject var player: PlayerService
     @Environment(\.dismiss) private var dismiss
+    @State private var confirmClear = false
 
     var body: some View {
         NavigationStack {
@@ -289,7 +314,7 @@ private struct QueueSheet: View {
                 ForEach(Array(player.queue.enumerated()), id: \.element.id) { i, track in
                     HStack(spacing: DS.Space.space2) {
                         Button { player.jump(to: i) } label: {
-                            SongRow(title: track.title, subtitle: track.artist, source: track.source, thumbnail: track.thumbnail, duration: track.duration,
+                            SongRow(title: track.title, subtitle: track.librarySubtitle, thumbnail: track.thumbnail, duration: track.duration,
                                     playing: i == player.index, coverSize: 48)
                         }
                         .buttonStyle(.plain)
@@ -321,10 +346,15 @@ private struct QueueSheet: View {
             .navigationTitle("Queue").navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
-                    Button("Clear") { player.clearQueue() }.foregroundStyle(DS.Color.accentInk).disabled(player.queue.isEmpty)
+                    Button("Clear") { confirmClear = true }.foregroundStyle(DS.Color.accentInk).disabled(player.queue.isEmpty)
                 }
-                ToolbarItem(placement: .topBarTrailing) { Button("Done") { dismiss() }.foregroundStyle(DS.Color.accentInk) }
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("Done") { dismiss() }.foregroundStyle(DS.Color.accentInk)
+                }
             }
+            .confirmationDialog("Clear the queue?", isPresented: $confirmClear, titleVisibility: .visible) {
+                Button("Clear queue", role: .destructive) { player.clearQueue() }
+            } message: { Text("Removes the up-next songs. The current song keeps playing.") }
         }
         .presentationDetents([.medium, .large])
     }

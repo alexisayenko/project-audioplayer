@@ -9,19 +9,16 @@ enum LibraryMode: String, CaseIterable, Identifiable {
 /// "Songs | Albums" under the Library header (IOS-098); shown to signed-in users only.
 struct LibraryModeSwitch: View {
     @Binding var mode: LibraryMode
-    @Environment(\.dynamicTypeSize) private var typeSize
 
     var body: some View {
-        let layout = typeSize.isAccessibilitySize
-            ? AnyLayout(VStackLayout(alignment: .leading, spacing: DS.Space.space2))
-            : AnyLayout(HStackLayout(spacing: DS.Space.space2))
-        return layout {
+        HStack(spacing: DS.Space.space2) {
             ForEach(LibraryMode.allCases) { item in
                 LibraryFilterChip(title: item.rawValue, symbol: item.symbol, selected: mode == item,
-                                  hint: "Shows \(item.rawValue.lowercased())") { mode = item }
+                                  hint: "Shows \(item.rawValue.lowercased())", dropsSymbolAtAccessibility: true) { mode = item }
             }
-            if !typeSize.isAccessibilitySize { Spacer(minLength: 0) }
+            Spacer(minLength: 0)
         }
+        .minimumScaleFactor(0.7)
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 }
@@ -81,7 +78,12 @@ struct AlbumsView: View {
     var body: some View {
         NavigationStack(path: $path) {
             ScrollView {
-                content.padding(.horizontal, DS.Space.space4).padding(.bottom, DS.Space.space4)
+                VStack(spacing: 0) {
+                    if typeSize.isAccessibilitySize {
+                        if !store.albums.isEmpty { LibrarySearchField(text: $search, placeholder: "Search albums, artists, tracks").padding(.top, DS.Space.space2) }
+                    }
+                    content.padding(.top, typeSize.isAccessibilitySize ? DS.Space.space3 : 0)
+                }.padding(.horizontal, DS.Space.space4).padding(.top, DS.Space.space3).padding(.bottom, DS.Space.space4)
             }
             .dockClearance()
             .refreshable { await store.refresh(settings) }
@@ -101,30 +103,60 @@ struct AlbumsView: View {
             ScreenHeader(title: "Library").padding(.horizontal, DS.Space.space4).padding(.top, DS.Space.space2)
             LibraryModeSwitch(mode: $mode).padding(.horizontal, DS.Space.space4)
             if !store.albums.isEmpty {
-                LibrarySearchField(text: $search, placeholder: "Search albums, artists, tracks").padding(.horizontal, DS.Space.space4)
+                if !typeSize.isAccessibilitySize {
+                    LibrarySearchField(text: $search, placeholder: "Search albums, artists, tracks").padding(.horizontal, DS.Space.space4)
+                }
                 controls.padding(.horizontal, DS.Space.space4)
             }
         }.background(DS.Color.ground)
     }
 
     private var controls: some View {
-        HStack(spacing: DS.Space.space2) {
+        let compact = typeSize.isAccessibilitySize
+        let countText = "\(shown.count) of \(store.albums.count)"
+        return HStack(spacing: DS.Space.space2) {
             Menu {
                 Picker("Sort by", selection: $sortRaw) {
                     ForEach(AlbumSort.allCases) { Text($0.rawValue).tag($0.rawValue) }
                 }
                 Toggle("Reverse order", isOn: $reversed)
             } label: {
-                Label(sort.rawValue, systemImage: "arrow.up.arrow.down").font(T.subhead.weight(.medium)).foregroundStyle(DS.Color.ink)
-                    .padding(.horizontal, DS.Space.space3).frame(minHeight: DS.Control.control)
-                    .background(Capsule().fill(DS.Color.surface).dsShadow(DS.Shadow.depthSlab).dsEdge(Capsule()))
-                    .frame(minHeight: DS.Space.hit).contentShape(Rectangle())
-            }.accessibilityLabel("Sort by, \(sort.rawValue)")
-            LibraryFilterChip(title: "On phone", symbol: "iphone", selected: onPhoneOnly, hint: "Shows only albums with every linked track on this iPhone") {
-                onPhoneOnly.toggle()
+                if compact {
+                    Image(systemName: "arrow.up.arrow.down").dsIcon(DS.Icon.iconNav, weight: DS.Icon.iconWeight).foregroundStyle(DS.Color.ink)
+                        .frame(width: DS.Control.control, height: DS.Control.control)
+                        .background(Circle().fill(DS.Color.surface).dsShadow(DS.Shadow.depthSlab).dsEdge(Circle()))
+                        .frame(width: DS.Space.hit, height: DS.Space.hit).contentShape(Rectangle())
+                } else {
+                    Label(sort.rawValue, systemImage: "arrow.up.arrow.down").font(T.subhead.weight(.medium)).foregroundStyle(DS.Color.ink)
+                        .padding(.horizontal, DS.Space.space3).frame(minHeight: DS.Control.control)
+                        .background(Capsule().fill(DS.Color.surface).dsShadow(DS.Shadow.depthSlab).dsEdge(Capsule()))
+                        .frame(minHeight: DS.Space.hit).contentShape(Rectangle())
+                }
+            }.accessibilityLabel("Sort by, \(sort.rawValue)").accessibilityValue(compact ? "\(countText) albums" : "")
+            if compact {
+                Button { onPhoneOnly.toggle() } label: {
+                    Image(systemName: "iphone").dsIcon(DS.Icon.iconNav, weight: DS.Icon.iconWeight)
+                        .foregroundStyle(onPhoneOnly ? DS.Color.ink : DS.Color.inkMuted)
+                        .frame(width: DS.Control.control, height: DS.Control.control)
+                        .background {
+                            if onPhoneOnly { Circle().fill(DS.Color.accentTint) }
+                            else { Circle().fill(DS.Color.surface).dsShadow(DS.Shadow.depthSlab).dsEdge(Circle()) }
+                        }
+                        .overlay(Circle().strokeBorder(onPhoneOnly ? DS.Color.accentInk : .clear, lineWidth: DS.Stroke.strokeThin))
+                        .frame(width: DS.Space.hit, height: DS.Space.hit).contentShape(Rectangle())
+                }
+                .buttonStyle(LibraryPressStyle()).accessibilityLabel("On phone")
+                .accessibilityValue(onPhoneOnly ? "On" : "Off")
+                .accessibilityHint("Shows only albums with every linked track on this iPhone")
+                .accessibilityAddTraits(onPhoneOnly ? .isSelected : [])
+                Spacer(minLength: 0)
+            } else {
+                LibraryFilterChip(title: "On phone", symbol: "iphone", selected: onPhoneOnly, hint: "Shows only albums with every linked track on this iPhone") {
+                    onPhoneOnly.toggle()
+                }
+                Spacer(minLength: 0)
+                Text(countText).font(T.caption).monospacedDigit().foregroundStyle(DS.Color.inkMuted)
             }
-            Spacer(minLength: 0)
-            Text("\(shown.count) of \(store.albums.count)").font(T.caption).monospacedDigit().foregroundStyle(DS.Color.inkMuted)
         }
     }
 
@@ -160,7 +192,7 @@ struct AlbumsView: View {
     private var grid: some View {
         let ids = Set(library.songs.map(\.id))
         let thumbs = Dictionary(library.songs.map { ($0.id, $0.thumbnail) }, uniquingKeysWith: { first, _ in first })
-        let columns = typeSize.isAccessibilitySize ? [GridItem(.flexible())] : [GridItem(.flexible(), spacing: DS.Space.space3), GridItem(.flexible())]
+        let columns = typeSize.isAccessibilitySize ? [GridItem(.flexible())] : [GridItem(.flexible(), spacing: DS.Space.space3), GridItem(.flexible(), spacing: DS.Space.space3)]
         return LazyVGrid(columns: columns, spacing: DS.Space.space4) {
             ForEach(shown) { album in
                 AlbumCard(album: album, cover: AlbumCover.source(album, thumbnails: thumbs), libraryIDs: ids, phoneIDs: library.phoneIDs,
@@ -187,20 +219,27 @@ struct AlbumCard: View {
     let phoneIDs: Set<String>
     var ready = true
     let open: () -> Void
+    @Environment(\.dynamicTypeSize) private var typeSize
+
+    private var statusLine: String {
+        let total = album.tracks.count
+        guard total > 0 else { return "No tracks" }
+        guard ready else { return "\(total) \(total == 1 ? "track" : "tracks")" }
+        return "\(AlbumLogic.linkedCount(album, libraryIDs: libraryIDs))/\(total) · \(AlbumLogic.phoneCount(album, phoneIDs: phoneIDs)) on phone"
+    }
 
     var body: some View {
         Button(action: open) {
             VStack(alignment: .leading, spacing: DS.Space.space2) {
                 Color.clear.aspectRatio(1, contentMode: .fit)
+                    .frame(maxWidth: DS.Component.coverLg * (typeSize.isAccessibilitySize ? 2.5 : 2), alignment: .leading)
                     .overlay { CoverImage(source: cover) }
-                    .clipShape(RoundedRectangle(cornerRadius: DS.Radius.radiusCard)).dsShadow(DS.Shadow.depthSlab)
+                    .clipShape(RoundedRectangle(cornerRadius: DS.Radius.radiusSm)).dsShadow(DS.Shadow.depthSlab)
                     .accessibilityHidden(true)
-                Text(album.title).font(T.headline).foregroundStyle(DS.Color.ink).lineLimit(2).multilineTextAlignment(.leading)
-                let byline = AlbumLogic.byline(album)
-                if !byline.isEmpty { Text(byline).font(T.subhead).foregroundStyle(DS.Color.inkMuted).lineLimit(1) }
-                Text(AlbumLogic.statusText(album, libraryIDs: libraryIDs, ready: ready)).font(T.caption.weight(.semibold))
-                    .foregroundStyle(AlbumLogic.isComplete(album, libraryIDs: libraryIDs, ready: ready) ? DS.Color.accentInk : DS.Color.inkMuted)
-                Text(AlbumLogic.phoneText(album, phoneIDs: phoneIDs)).font(T.caption).foregroundStyle(DS.Color.inkMuted)
+                Text(album.title).font(T.subhead.weight(.semibold)).foregroundStyle(DS.Color.ink)
+                    .lineLimit(typeSize.isAccessibilitySize ? 3 : 2).multilineTextAlignment(.leading)
+                Text(statusLine).font(T.caption).foregroundStyle(DS.Color.inkMuted)
+                    .lineLimit(typeSize.isAccessibilitySize ? nil : 2).multilineTextAlignment(.leading)
             }
             .frame(maxWidth: .infinity, alignment: .topLeading).contentShape(Rectangle())
         }

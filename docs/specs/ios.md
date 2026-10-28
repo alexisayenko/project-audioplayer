@@ -104,6 +104,7 @@ Code: `ios/Sources/PlaybackPersistence.swift`, `ShufflePick.swift`, `QueueAdvanc
 - IOS-127 MUST (HIG audit N7): queue-row swipe and the song form's tag editor animate through `dsWithAnimation`, so Reduce Motion turns them off. Status: implemented
 - IOS-128 MUST (HIG audit N8): Song Details lists Download once (the primary button); the action rows share one fixed icon width (`ScaledMetric`) so labels align. Status: implemented in source
 - IOS-129 MUST (HIG audit N9): with no song loaded the Now playing transport keys are disabled and dimmed, and the header "..." button sits on the same line as the menu button. Status: implemented, seen in the simulator at AX5
+- IOS-130 MUST (task-0125, UI/UX loop): Library and album rows keep the title and the "Artist · year" line readable: the trailing group (duration, play count, Download) shares the row width with the text and does not push the year or the title out; Song Details shows "Artist · year" on one line with Download above the facts; the dock player is shorter at default size. Status: partly implemented, simulator only; open: album-track rows cut titles (repeated thumbnail plus a wide trailing group), dock at AX5 is about 24 percent of the screen
 
 ## Listening history (task-0056 phase 4)
 

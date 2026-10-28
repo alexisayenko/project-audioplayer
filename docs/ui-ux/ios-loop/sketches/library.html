@@ -1,0 +1,258 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Library sketch</title>
+<style>
+:root{--ground:#F3EFE6;--surface:#FBF8F2;--sunken:#E9E3D6;--line:#DDD5C6;--ink:#1B2024;--muted:#5F6669;--faint:#A0A3A2;--accentInk:#0C7289;--tint:#CDEEF3;--accent:#57D3E9}
+body{font:14px -apple-system,system-ui,sans-serif;background:var(--ground);color:var(--ink);margin:0;padding:16px}
+h1{font-size:22px;margin:0 0 4px}h2{font-size:17px;margin:28px 0 8px}p.n{color:var(--muted);margin:2px 0 10px}
+.pair{display:flex;gap:24px;flex-wrap:wrap}.col b{display:block;margin-bottom:6px}
+.ph{width:300px;background:var(--ground);border:1px solid var(--line);border-radius:20px;padding:8px;box-sizing:border-box}
+.row{display:flex;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:6px 8px;margin-bottom:6px}
+.cv{width:44px;height:44px;border-radius:8px;background:var(--sunken);flex:none}
+.cv.l{width:96px;height:96px}.cv.m{width:120px;height:120px}
+.t{font-weight:600}.s{color:var(--muted);font-size:12px}.g{flex:1;min-width:0}
+.pill{border:1.5px solid var(--accentInk);color:var(--accentInk);border-radius:999px;padding:6px 10px;font-size:12px;font-weight:600}
+.pill.q{border:0;padding:6px 10px;min-width:44px;text-align:center}
+.chip{background:var(--tint);border-radius:999px;padding:4px 10px;font-size:12px;display:inline-block}
+.ctl{display:flex;gap:8px;align-items:center;justify-content:space-between;margin-bottom:8px}
+.btn{width:32px;height:32px;border-radius:999px;background:var(--surface);border:1px solid var(--line);display:inline-block;text-align:center;line-height:32px}
+.sz{outline:1px dashed #c0392b;color:#c0392b;font-size:11px;padding:0 3px}
+table{border-collapse:collapse}td,th{border:1px solid var(--line);padding:4px 8px;text-align:left}
+.bad{background:#f6d9d5}.ok{background:#d9efdc}
+</style></head><body>
+<h1>Library Songs and Albums</h1><p class="n"><b>Round 7 (see end: Round 7 sketch, Sizes and Fix spec).</b> <b>Round 5 (see end: Round 5 sketch, Sizes and Fix spec).</b> <b>Round 4 (see end: Round 4 sketch and Fix spec).</b> <b>Round 3 (see end: Round 3 sketch and Fix spec).</b> <b>Round 2 (see end: Round 2 sketch and Fix spec).</b> Round 1. Sketches use design tokens only (light scheme). Red dashed labels are sizes in pt.</p>
+
+<h2>L1 Library at AX5: pinned header</h2>
+<div class="pair"><div class="col"><b>BEFORE (about 43% of screen; + and ... cut off)</b><div class="ph">
+<div class="t" style="font-size:30px">Library</div><div style="font-size:26px;font-weight:700">Songs</div><div style="font-size:26px">Albums</div>
+<div class="ctl"><span>Sort</span><span class="btn" style="margin-right:-24px">+</span></div><div style="font-size:34px;font-weight:700">1,284 songs</div></div></div>
+<div class="col"><b>AFTER (under 25%)</b><div class="ph">
+<div class="t" style="font-size:20px;padding:0 16px">Library</div>
+<div style="display:flex;gap:8px;padding:0 16px"><span class="chip">Songs</span><span class="chip" style="background:var(--surface)">Albums</span></div>
+<div class="ctl" style="padding:0 16px"><span>Sort</span><span><span class="btn">+</span> <span class="btn">...</span></span></div>
+<div class="s" style="padding:0 16px">1,284 songs <span class="sz">scales down, wraps</span></div></div></div></div>
+
+<h2>L3/L4/L10 Song rows</h2>
+<div class="pair"><div class="col"><b>BEFORE</b><div class="ph">
+<div class="row"><div class="cv"></div><div class="g"><div class="t">Astral Dream</div><div class="s">Astral Projec...</div></div><span class="s">12 plays</span><span class="s">5:02</span><span class="pill">Download</span></div>
+<div class="row"><div class="cv"></div><div class="g"><div class="t">Other Song</div><div class="s">Astral Projection · 1995</div></div><span class="s">5:02</span><span class="pill">Download</span></div></div></div>
+<div class="col"><b>AFTER</b><div class="ph">
+<div class="row"><div class="cv"></div><div class="g"><div class="t">Astral Dream</div><div class="s">Astral Projection · 1995</div></div><span class="s" style="width:28px;text-align:right">12</span><span class="s">5:02</span><span class="pill q">&#8681;</span></div>
+<div class="row"><div class="cv"></div><div class="g"><div class="t">Other Song</div><div class="s">Astral Projection · 1995</div></div><span class="s" style="width:28px"></span><span class="s">5:02</span><span class="pill q">&#8681;</span></div>
+<span class="sz">play-count slot 28 wide always reserved; pill: no outline, accentInk glyph, 44x44 hit</span></div></div></div>
+
+<h2>L8 Albums grid</h2>
+<div class="pair"><div class="col"><b>BEFORE (295 tall, 178 cover)</b><div class="ph"><div class="ctl"><span>Sort</span></div><div style="width:130px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:6px"><div class="cv" style="width:118px;height:118px"></div><div class="t">Album</div><div class="s">Artist · 1995</div><div class="s">9/9 on server</div><div class="s">1 on phone</div></div></div></div>
+<div class="col"><b>AFTER (about 200 tall; 12 gap under controls)</b><div class="ph"><div class="ctl" style="margin-bottom:12px"><span>Sort</span></div><span class="sz">gap 12</span><div style="width:130px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:6px"><div class="cv" style="width:118px;height:118px;margin-bottom:4px"></div><div class="t">Album</div><div class="s">9/9 · 1 on phone</div></div></div></div></div>
+
+<h2>L2/L9 Album screen</h2>
+<div class="pair"><div class="col"><b>BEFORE (list starts at 62%)</b><div class="ph"><div class="cv" style="width:200px;height:200px;margin:auto"></div><div class="t">Album</div><div class="s">Artist · 1995</div><div class="s">9 tracks, 62 min</div><div class="s">9/9 on server</div><div>[Play][Shuffle][Queue]</div><div>[Download album]</div>
+<div class="row"><div class="g"><div class="t">Track</div><div class="s">Astral Projection · 1995</div></div></div></div></div>
+<div class="col"><b>AFTER (3+ tracks above fold)</b><div class="ph"><div style="display:flex;gap:12px"><div class="cv l"></div><div><div class="t">Album</div><div class="s">Artist · 1995</div><div class="s">9 tracks, 62 min · 9/9 on server</div></div></div>
+<div style="margin:8px 0">[Play][Shuffle][Queue][&#8681;]</div>
+<div class="row"><span class="s">1</span><div class="g t">Track one</div><span class="s">5:02</span></div>
+<div class="row"><span class="s">2</span><div class="g t">Track two</div><span class="s">6:10</span></div>
+<div class="row"><span class="s">3</span><div class="g"><div class="t">Track three</div><div class="s">Guest Artist</div></div><span class="s">4:40</span></div></div></div></div>
+
+<h2>L11 Chip row</h2><p class="n">BEFORE: scroll view clips chip shadows (lighter band). AFTER: scrollClipDisabled() plus vertical padding space1 (4).</p>
+
+<h2>Sizes</h2>
+<table><tr><th>Item</th><th>Before</th><th>After</th></tr>
+<tr><td>Album cover (screen)</td><td>200</td><td>96</td></tr>
+<tr><td>Albums grid card</td><td>295 tall, 178 cover</td><td>cover about 150, title + 1 status line, about 215 tall</td></tr>
+<tr><td>Gap under controls row</td><td>0</td><td>12 (space3)</td></tr>
+<tr><td>Play-count slot</td><td>variable</td><td>fixed 28 wide</td></tr>
+<tr><td>Download pill hit</td><td>44, outlined</td><td>44, no outline</td></tr>
+<tr><td>AX5 stacked row trailing pad</td><td>0</td><td>12 (space3)</td></tr>
+<tr><td>AX5 pinned header</td><td>43%</td><td>under 25%</td></tr></table>
+
+<h2>Round 2: Albums at AX5 (L-A1, L-A2)</h2>
+<div class="pair"><div class="col"><b>BEFORE (header about 67%)</b><div class="ph">
+<div class="ctl"><span class="chip">Songs</span><span class="chip">Albu...</span></div>
+<div class="ctl"><span class="chip" style="width:40px;word-break:break-all">Recently added</span><span class="chip">...</span></div><div class="s">8 albums</div></div></div>
+<div class="col"><b>AFTER (under 25%, one row of icons)</b><div class="ph">
+<div class="ctl"><span class="chip">Songs</span><span class="chip" style="background:var(--surface)">Albums</span></div>
+<div class="ctl"><span class="btn">&#8645;</span><span class="btn">&#9742;</span><span class="btn">+</span><span class="btn">...</span></div>
+<span class="sz">44x44 hit each; count hidden visually, kept in accessibility label; chips lineLimit 1</span></div></div></div>
+
+<h2>Round 2: Song row at AX5 (L-A3), grid (L-A4), album screen (L-A5)</h2>
+<div class="pair"><div class="col"><b>BEFORE</b><div class="ph"><div class="row"><div class="g"><div class="t">Astral Dream</div><div class="s">Astral Projection<br>. 2016</div></div><span class="pill">Down-<br>load</span></div>
+<div style="width:187px;border:1px dashed var(--line)"><div class="cv" style="width:144px;height:144px"></div><span class="sz">40 dead right</span></div>
+<div class="s">Album: 3-line info, Download album on 2nd row, tracks 93 tall</div></div></div>
+<div class="col"><b>AFTER</b><div class="ph"><div class="row"><div class="g"><div class="t">Astral Dream</div><div class="s">Astral Projection . 2016</div></div></div>
+<div class="row" style="justify-content:center"><span class="pill" style="width:100%;text-align:center">Download</span></div>
+<div style="width:187px;border:1px dashed var(--line)"><div class="cv" style="width:144px;height:144px;margin:auto"></div><span class="sz">centered</span></div>
+<div class="s">Album: info 1 "9 tracks, 62 min", info 2 "8 of 8 . 1 on phone"; Play, Shuffle, Queue, [download icon 44x44]; empty-subtitle track row 56 tall</div></div></div></div>
+
+<h2>Round 2 Fix spec</h2>
+<ol>
+<li>LibraryComponents.swift (AX only): chips Text lineLimit(1), minimumScaleFactor 0.7; Songs/Albums labels unchanged text, same single row.</li>
+<li>Albums controls at AX: sort and On phone become icon-only 44x44 buttons (accessibilityLabel keeps full text); one HStack with spacing space2 (8), gutter space4 (16).</li>
+<li>Count text at AX: .hidden-visually (no view), accessibilityLabel on the header carries it; target pinned header under 25% for Songs and Albums.</li>
+<li>LibrarySongRow.swift stacked layout: Download label lineLimit(1), minimumScaleFactor 0.7, full width, 44 min height; subtitle "Artist . year" as one Text (not two), lineLimit 2.</li>
+<li>AlbumsView.swift: cover frame = column width up to cap 144, centered (frame maxWidth .infinity, alignment .center); text shares the cover width; gutters equal 16.</li>
+<li>AlbumDetailView.swift: info line 1 "N tracks, M min", line 2 "X of Y . Z on phone", both caption inkMuted lineLimit 1 at default size; Download album becomes 44x44 icon in the action row (label via accessibility); track rows with empty subtitle: vertical padding space2 (8), min height 56.</li>
+<li>Shared files Components.swift, Views.swift, DSModifiers.swift: no change needed. No new tokens.</li>
+</ol>
+<h2>Round 1 Fix spec (already applied)</h2>
+<ol>
+<li>LibraryComponents.swift, AX5 (isAccessibilitySize): keep Songs/Albums in one HStack (labels scale, minimumScaleFactor 0.7, lineLimit 1); put + and ... in the controls row with horizontal padding DS.Space.space4 (16) on the whole header; drop fixedSize and hidden sizing text from the count; count uses .caption font, lineLimit 2, minimumScaleFactor 0.7. Pinned block under 25% of screen height.</li>
+<li>AlbumDetailView.swift: header = HStack(alignment .top, spacing space3) with cover 96x96 (radiusSm) and a VStack: title (headline), artist · year (subhead, inkMuted), "N tracks, M min · status" in one caption line (inkMuted). Below: one row of Play, Shuffle, Queue and Download album (icon + short label, 44 pt hit; at AX sizes wrap onto two rows). Check at least 3 track rows are above the fold with the dock.</li>
+<li>Album track rows: hide the "artist · year" subtitle when the artist equals the album artist; show only the track number (monospaced time font, width 24, inkMuted) in the leading slot; show the artist alone when it differs.</li>
+<li>LibrarySongRow.swift: reserve a fixed 28 pt wide trailing slot for the play count on every row (empty when zero), right-aligned, so duration and the pill align. Subtitle lineLimit 1 with the year kept: truncate the artist part first (artist gets layoutPriority 0, year text priority 1). At accessibility sizes subtitle lineLimit 3 and stacked row gets .padding(.trailing, DS.Space.space3).</li>
+<li>Download pill (server-only rows): remove the stroke overlay; glyph/label color DS.Color.accentInk; keep frame minWidth/minHeight DS.Space.hit (44) and contentShape(Rectangle()). Keep the filled/outlined form only while downloading.</li>
+<li>AlbumsView.swift: card cover about 150 (square, radiusSm), then title (subheadStrong, lineLimit 2) and one status line ("9/9 · 1 on phone", caption, inkMuted); drop the separate artist/year and second status line. Add .padding(.top, DS.Space.space3) under the controls row.</li>
+<li>Chip row (LibraryComponents.swift and shared Components.swift chip row): add .scrollClipDisabled() and .padding(.vertical, DS.Space.space1) so shadows are not clipped. Shared files Components.swift, Views.swift, DSModifiers.swift: no changes needed for this group.</li>
+<li>Update ios/Tests only if a test asserts an old value (cover 200, card height). No new colours, sizes or radii outside DesignTokens.</li>
+</ol><h2>Round 3 sketch</h2>
+<div class="pair">
+<div class="col"><b>BEFORE: Library Songs AX5 (header 65%)</b><div class="ph"><div class="t" style="font-size:20px">Library</div><div style="height:100px" class="bad"><span class="sz">Color.clear expands, about 100 band</span></div><div class="ctl"><span>Sort</span><span class="btn">+</span></div><div style="height:100px" class="bad"></div></div></div>
+<div class="col"><b>AFTER (row 44, no band)</b><div class="ph"><div class="t" style="font-size:20px">Library</div><div class="ctl" style="min-height:44px"><span>Sort</span><span class="btn">+</span></div><span class="sz">Color.clear.frame(height: 0)</span><div class="row"><div class="cv"></div><div class="g"><div class="t">Song</div></div></div></div></div>
+<div class="col"><b>BEFORE: album transport (default)</b><div class="ph">[Play][Shuf-<br>fle][Queu<br>e][&#8681;]</div></div>
+<div class="col"><b>AFTER</b><div class="ph"><div style="display:flex;gap:8px"><span class="pill" style="flex:2;white-space:nowrap;text-align:center">Play</span><span class="pill" style="flex:1;white-space:nowrap;text-align:center">Shuffle</span><span class="pill" style="flex:1;white-space:nowrap;text-align:center">Queue</span><span class="pill q">&#8681;</span></div><span class="sz">lineLimit 1, scale 0.7, 44 high</span></div></div>
+<div class="col"><b>BEFORE: album track row 93</b><div class="ph"><div class="row" style="height:93px;align-items:stretch"><div class="cv"></div><div class="g t">Track</div><span class="s" style="align-self:flex-end">Download</span></div></div></div>
+<div class="col"><b>AFTER: row 64, Download on title line</b><div class="ph"><div class="row" style="height:64px"><div class="cv" style="width:64px;height:64px"></div><div class="g t">Track</div><span class="pill q">&#8681;</span></div></div></div>
+<div class="col"><b>BEFORE: Albums grid</b><div class="ph"><div style="margin-left:34px;width:130px" class="cv m"></div><span class="sz">inset 34 vs gutter 16, gap 47</span></div></div>
+<div class="col"><b>AFTER</b><div class="ph" style="padding:8px 16px"><div style="display:flex;gap:12px"><div class="cv m" style="width:128px;height:128px"></div><div class="cv m" style="width:128px;height:128px"></div></div><span class="sz">left edge on 16 gutter, gap 12</span></div></div>
+</div>
+<h2>Round 3 Sizes</h2>
+<table><tr><th>Item</th><th>Before</th><th>After</th></tr>
+<tr><td>Songs AX5 controls band</td><td>about 100 above/below</td><td>0 (row min 44)</td></tr>
+<tr><td>Album track row (no subtitle)</td><td>93</td><td>64</td></tr>
+<tr><td>Albums grid gap</td><td>47</td><td>12 (space3)</td></tr>
+<tr><td>Albums grid left inset</td><td>34</td><td>16 (space4)</td></tr>
+<tr><td>Seek hit zone (MiniProgress)</td><td>13</td><td>44 (DS.Space.hit), overlay upward</td></tr></table>
+<h2>Round 3 Fix spec</h2>
+<ol>
+<li>LibraryComponents.swift stackedControls: replace AX branch Color.clear with Color.clear.frame(height: 0); outer frame(minHeight: DS.Space.hit) stays.</li>
+<li>AlbumDetailView.swift transport: each label Text lineLimit(1), minimumScaleFactor 0.7; Play flexible, Shuffle and Queue equal width, Download album icon 44x44 fixed; height DS.Space.hit.</li>
+<li>AlbumDetailView.swift track rows: with empty subtitle use cover-height row (coverSm 64, vertical padding 0), Download control on the title line (HStack top-aligned), no Spacer band.</li>
+<li>AlbumsView.swift grid: GridItem(.adaptive/flexible) columns with spacing DS.Space.space3 (12); screen padding DS.Space.space4 (16); cover = column width up to cap 144, aligned leading on the gutter; text shares cover width.</li>
+<li>AlbumsView.swift at isAccessibilitySize: single column full width (one GridItem(.flexible)), cover capped, status Text lineLimit(nil) (wraps).</li>
+<li>AlbumDetailView.swift at AX: info limited to 2 lines (lineLimit 1 each, scale 0.7); Play and Shuffle in one HStack (spacing space2) as icon + label with accessibilityLabel; Queue and Download album follow in a second row above the dock inset.</li>
+<li>Views.swift MiniProgress: seekZone = DS.Space.hit; overlay alignment .bottom with the zone extending upward (offset not needed); the 3pt line and dock height unchanged; remove literal 2.</li>
+<li>Player and Details findings (cover alignment, AX5 shrink, Details artist lines) belong to their groups; no new tokens here.</li>
+</ol><h2>Round 4 sketch: trailing column (L-A1, L-C4, L-C5), size 390 pt wide, default Dynamic Type</h2>
+<div class="pair">
+<div class="col"><b>BEFORE</b><div class="ph">
+<div class="row"><div class="cv"></div><div class="g"><div class="t">Title wraps to two lines here</div><div class="s">Static Mov...</div></div><span class="s">3:41</span><span class="pill">Dow...</span></div>
+<div class="row"><div class="cv"></div><div class="g"><div class="t">No subtitle</div></div><span class="s">4:02</span><span class="s">Download</span></div>
+<span class="sz" style="color:#b3261e;border:1px dashed #b3261e;font-size:11px">duration column x differs per row; 60 blank slot without play count</span></div></div>
+<div class="col"><b>AFTER</b><div class="ph">
+<div class="row"><div class="cv"></div><div class="g"><div class="t">Title takes remaining width</div><div class="s">Static Movement</div></div><div style="width:72px;text-align:right"><div class="s">3:41</div><div class="pill" style="padding:2px 6px;text-align:center">Download</div></div></div>
+<div class="row"><div class="cv"></div><div class="g"><div class="t">No subtitle</div></div><div style="width:72px;text-align:right"><div class="s">4:02</div><div class="pill" style="padding:2px 6px;text-align:center">Download</div></div></div>
+<span class="sz" style="color:#b3261e;border:1px dashed #b3261e;font-size:11px">trailing column fixed 72 pt, right-aligned, same on every row</span></div></div>
+</div>
+<h2>Round 4 sketch: album transport (L-A3, L-A4), 390 pt wide</h2>
+<div class="pair">
+<div class="col"><b>BEFORE (default)</b><div class="ph"><div class="ctl"><span class="pill">Play</span><span class="pill" style="font-size:8.5px">Shuffle</span><span class="pill" style="font-size:8.5px">Queue</span></div><span class="sz">Shuffle/Queue scaled to 70 percent</span></div></div>
+<div class="col"><b>AFTER (default)</b><div class="ph"><div class="ctl"><span class="pill">Play</span><span class="pill">Shuffle</span><span class="pill">Queue</span></div><span class="sz">equal 17 pt label (T.subhead), icon + label, no scaling</span></div></div>
+<div class="col"><b>AFTER (AX3-AX5)</b><div class="ph"><div class="ctl"><span class="pill q">Play</span><span class="pill q">Shuf</span><span class="pill q">Que</span><span class="pill q">Dl</span></div><span class="sz">icon-only 44x44 keys, accessibilityLabel kept, info 2 lines</span></div></div>
+</div>
+<h2>Round 4 Sizes</h2>
+<table><tr><th>Item</th><th>Before</th><th>After</th></tr>
+<tr><td>Trailing column (songs and album tracks)</td><td>auto, 0 to 60 plus Download</td><td>72 fixed (min), right-aligned</td></tr>
+<tr><td>Download label</td><td>lineLimit(1) truncates</td><td>fixedSize horizontal, never truncated; wraps at AX</td></tr>
+<tr><td>Album Shuffle/Queue label scale</td><td>0.7</td><td>1.0 (equal to Play)</td></tr>
+<tr><td>Albums cover at AX</td><td>max 190, leading</td><td>full content width (screen width minus 2 x 16)</td></tr>
+<tr><td>Songs subtitle at AX5</td><td>2 lines</td><td>3 lines</td></tr></table>
+<h2>Round 4 Fix spec</h2>
+<ol>
+<li>LibrarySongRow.swift inlineLayout: replace the conditional trailingLayout (HStack vs VStack) with one VStack(alignment: .trailing, spacing: DS.Space.space1) inside .frame(minWidth: 72, alignment: .trailing) for every row; duration first, Download state second.</li>
+<li>LibrarySongRow.swift: playCount slot only exists when listenedCount != nil; when nil add no leading padding and no blank space (already so); move the count under the duration inside the trailing column so the column width is identical on all rows.</li>
+<li>LibrarySongRow.swift audioState: Download label Text .lineLimit(1).fixedSize(horizontal: true, vertical: false) at default size; at isAccessibilitySize allow lineLimit(2) with multilineTextAlignment(.trailing). Never truncate.</li>
+<li>LibrarySongRow.swift textColumn: title lineLimit(1) at default (remove forced two-line wrap), subtitle lineLimit(1) default, lineLimit(3) at isAccessibilitySize; text takes the remaining width via layoutPriority(1).</li>
+<li>AlbumDetailView.swift track rows: reuse the same trailing column (72 pt, right-aligned duration then Download) so the duration x position is identical with or without subtitle; title takes remaining width.</li>
+<li>AlbumDetailView.swift transport: remove minimumScaleFactor(0.7) on Shuffle and Queue; all three keys use T.subhead with lineLimit(1) and equal flexible width; height DS.Space.hit.</li>
+<li>AlbumDetailView.swift at isAccessibilitySize (AX3 and up): Play, Shuffle, Queue and Download album become icon-only 44x44 (DS.Space.hit) keys in one row with accessibilityLabel; header cover capped to DS.Component.coverLg; info limited to 2 lines; Download album stays above the dock inset.</li>
+<li>AlbumsView.swift at isAccessibilitySize: remove .frame(maxWidth: DS.Component.coverLg * 2); cover fills the content width (16 pt gutters), square, text below.</li>
+<li>LibraryComponents.swift at isAccessibilitySize: collapse the pinned controls (chips and search) so the pinned block is at most 25 percent of the height before the first scroll; no Library v5 changes.</li>
+<li>No new tokens; Components.swift, Views.swift and DSModifiers.swift untouched this round. Dock seek overlay (P1) and Now playing/Details items belong to other groups.</li>
+</ol><h2>Round 5 sketch: album transport at AX5 (L-D1), 390 pt wide</h2>
+<div class="pair">
+<div class="col"><b>BEFORE (AX5)</b><div class="ph"><div class="ctl"><span class="pill q">Play</span><span class="pill q">Shuf</span><span class="pill q">Que</span><span class="pill q">Dl</span></div><span class="sz">keys overlap; first track cut by the dock</span></div></div>
+<div class="col"><b>AFTER (AX3-AX5)</b><div class="ph"><div class="ctl" style="gap:0;justify-content:space-around"><span class="btn" style="width:44px;height:44px;line-height:44px">&#9654;</span><span class="btn" style="width:44px;height:44px;line-height:44px">&#8644;</span><span class="btn" style="width:44px;height:44px;line-height:44px">+</span><span class="btn" style="width:44px;height:44px;line-height:44px">&#8681;</span></div><div class="row"><div class="cv"></div><div class="g"><div class="t">1 Track title</div><div class="s">Artist</div></div><div style="width:72px;text-align:right"><div class="s">3:41</div></div></div><span class="sz">fixed 44x44 icon keys, 8 pt apart, cover 96 pt, first track visible with duration</span></div></div>
+<div class="col"><b>AFTER (default): album track row</b><div class="ph"><div class="row" style="align-items:center"><span class="s">1</span><div class="cv"></div><div class="g" style="align-self:center"><div class="t">Title centred on cover</div><div class="s">Artist</div></div><div style="width:72px;text-align:right"><div class="s">3:41</div></div></div><span class="sz">row alignment .center, 8 pt vertical padding</span></div></div>
+</div>
+<h2>Round 5 Sizes</h2>
+<table><tr><th>Item</th><th>Before</th><th>After</th></tr>
+<tr><td>Album keys at AX3 and up</td><td>text pills scaled, overlap</td><td>icon-only, fixed 44 x 44 (DS.Space.hit), no Dynamic Type scaling, 8 pt gap</td></tr>
+<tr><td>Album header cover at AX</td><td>coverLg, stacked above text</td><td>coverLg (96), title max 2 lines, info 1 line</td></tr>
+<tr><td>Album track row alignment</td><td>top</td><td>center, equal 8 pt top and bottom padding</td></tr>
+<tr><td>Library controls at AX5</td><td>chips row pinned (43 percent)</td><td>chips scroll with the list, pinned block at most 25 percent</td></tr></table>
+<h2>Round 5 Fix spec</h2>
+<ol>
+<li>SongListScreen.swift transport (compactHead, isAccessibilitySize): render Play, Shuffle, Queue and transportExtra as icon-only buttons with .frame(width: DS.Space.hit, height: DS.Space.hit), no Text, accessibilityLabel kept, in one HStack(spacing: DS.Space.space2); drop the Spacer and any scaling (no @ScaledMetric, no minimumScaleFactor).</li>
+<li>SongListScreen.swift compactHeader at isAccessibilitySize: cover stays DS.Component.coverLg; title lineLimit(2), first info line lineLimit(1), other lines hidden; VStack spacing DS.Space.space2 so the first track row shows above the dock inset with its duration.</li>
+<li>Album track rows (AlbumDetailView/SongListScreen row): HStack(alignment: .center), title block .frame(maxHeight: .infinity, alignment: .center), vertical padding DS.Space.space2 top and bottom; no top-only offset, so row 1 does not touch the card edge.</li>
+<li>LibraryComponents.swift / LibraryView.swift at isAccessibilitySize: move the chips row out of the pinned block into the scrolling list header (first List item); pinned block keeps title, Songs|Albums switch, controls and search, at most 25 percent of the screen height; default size unchanged.</li>
+<li>No new tokens; Components.swift, Views.swift and DSModifiers.swift untouched. Dock seek zone (player) and Song Details items (details) belong to other groups.</li>
+</ol><h1>Round 6 (library group)</h1>
+<h2>Round 6 sketch: AX5 library, 390 pt wide</h2>
+<div class="pair">
+<div class="col"><b>BEFORE (AX5)</b><div class="ph"><div class="ctl"><span class="pill">Chips row (pinned)</span></div><div class="row"><div class="g"><div class="t">Pinned block 41 percent of screen</div><div class="s">first row without duration or Download</div></div></div><span class="sz">Albums: cover about 370 pt; track row about 260 pt, "Down-load" breaks</span></div></div>
+<div class="col"><b>AFTER (AX3-AX5)</b><div class="ph"><div class="row"><div class="g"><div class="t">Pinned: title, switch, controls, search (max 25 percent)</div></div></div><div class="row"><div class="g"><div class="s">Chips row = first list item, scrolls away</div></div></div><div class="cv" style="width:240px;height:240px"></div><div class="row"><div class="g"><div class="t">Album cover 240 pt max, centred</div></div></div><div class="row"><div class="cv"></div><div class="g"><div class="t">Track</div></div><span class="btn" style="width:44px;height:44px;line-height:44px">&#8681;</span></div><span class="sz">track Download icon-only 44 x 44</span></div></div>
+</div>
+<h2>Round 6 Sizes</h2>
+<table><tr><th>Item</th><th>Before</th><th>After</th></tr>
+<tr><td>Chips row at AX</td><td>pinned (41 percent block)</td><td>first list item, scrolls; pinned block at most 25 percent</td></tr>
+<tr><td>Album card cover at AX</td><td>full width, about 370 pt</td><td>max 240 pt (DS.Component.coverLg * 2.5), leading</td></tr>
+<tr><td>Album track Download at AX</td><td>text, breaks mid-word</td><td>icon-only 44 x 44 (DS.Space.hit), accessibilityLabel "Download"</td></tr></table>
+<h2>Round 6 Fix spec</h2>
+<ol>
+<li>LibraryView.swift / LibraryComponents.swift at isAccessibilitySize: remove chipRow from the pinned tools block and insert it as the first List row (listRowInsets zero, clear background, separator hidden); default size unchanged. Verify the pinned block is at most 25 percent of height at AX5 and that first song row shows duration and Download.</li>
+<li>AlbumsView.swift AlbumCard: replace .frame(maxWidth: .infinity) at isAccessibilitySize with .frame(maxWidth: 240, alignment: .leading); title and status stay below, lineLimit(3)/nil. Use an existing size constant if one equals 240, else coverLg * 2.5.</li>
+<li>AlbumDetailView.swift / SongListScreen.swift album track row at isAccessibilitySize: Download state is an icon-only control, frame(width: DS.Space.hit, height: DS.Space.hit), accessibilityLabel "Download" (or "Retry"); never a wrapped word. Row has one-line title (lineLimit 2) so at least two tracks show on screen.</li>
+<li>No new tokens or colours; Components.swift, Views.swift, DSModifiers.swift untouched. Dock and Now playing (player) and genre chip (details) belong to other groups.</li>
+</ol>
+<h1>Round 7 (library group)</h1>
+<h2>Round 7 sketch: song row at default, 390 pt wide</h2>
+<div class="pair">
+<div class="col"><b>BEFORE (row about 94 pt)</b><div class="ph"><div class="row" style="padding:12px 8px"><div class="cv"></div><div class="g"><div class="t">Astral Dream</div><div class="s">Astral Projection &middot; 1995</div></div><div style="text-align:right"><div class="s">5:02</div><div class="pill q">Download</div></div></div></div></div>
+<div class="col"><b>AFTER (row 68 pt, 4.5 rows visible)</b><div class="ph"><div class="row" style="padding:12px 8px"><div class="cv"></div><div class="g"><div class="t">Astral Dream</div><div class="s">Astral Projection &middot; 1995</div></div><div style="display:flex;gap:8px;align-items:center"><span class="s">5:02</span><span class="pill q">Download</span></div></div><span class="sz">duration and Download on one line; 44 pt hit zone inside the row</span></div></div>
+</div>
+<h2>Round 7 sketch: AX5 pinned block and album track, 390 pt wide</h2>
+<div class="pair">
+<div class="col"><b>BEFORE (AX5)</b><div class="ph"><div class="ctl"><span class="btn">+</span><span class="btn">...</span></div><div class="ctl"><span class="chip">Songs</span><span class="chip">Albums</span></div><div class="ctl bad"><span>Search (touches nothing, no gap)</span></div><div class="row"><div class="g"><div class="t">Title<br>wraps<br>three lines</div></div></div><div class="row"><span class="t">Track 1 title wraps</span></div><span class="s">duration under the cover</span></div></div>
+<div class="col"><b>AFTER (AX5)</b><div class="ph"><div class="ctl"><span class="chip">Songs</span><span class="chip">Albums</span></div><div class="ctl"><span class="btn">+</span><span class="btn">...</span></div><span class="sz">gap 8 (space2)</span><div class="ctl"><span>Search</span></div><div class="row"><div class="g t">Track 1 title scales</div><span class="s">5:02</span></div><span class="sz">duration trailing, same row as title</span></div></div>
+</div>
+<h2>Round 7 Sizes</h2>
+<table><tr><th>Item</th><th>Before</th><th>After</th></tr>
+<tr><td>Song row height, default</td><td>about 94</td><td>68 (cover 44 + 2 x space3)</td></tr>
+<tr><td>Download at default</td><td>own line under duration</td><td>same line as duration, 44 pt hit</td></tr>
+<tr><td>AX5 controls/switch order</td><td>controls above switch</td><td>switch, then controls (as default)</td></tr>
+<tr><td>Gap above search at AX5</td><td>0</td><td>8 (space2)</td></tr>
+<tr><td>Album track duration at AX5</td><td>under the cover</td><td>trailing, beside title</td></tr></table>
+<h2>Round 7 Fix spec</h2>
+<ol>
+<li>LibrarySongRow.swift inlineLayout (default size): replace the trailing VStack with an HStack(alignment: .center, spacing: DS.Space.space1) holding playCount, durationButton, audioState(fullWidth: false), queueMarker; drop the 72 pt minWidth to leading-flexible (frame(minWidth: trailingWidth, alignment: .trailing) kept); textColumn keeps layoutPriority(1) and lineLimit(1). Download keeps its 44 x 44 hit area; row min height cover + rowPad * 2 (68).</li>
+<li>LibrarySongRow.swift stackedLayout (isAccessibilitySize), album track rows (trackNumber != nil): put textColumn and durationButton in one HStack(alignment: .top, spacing: DS.Space.space2) with duration trailing and fixedSize(horizontal: true); title keeps lineLimit(3) with minimumScaleFactor(0.7); Download icon stays on the next line.</li>
+<li>LibraryComponents.swift / LibraryView.swift at isAccessibilitySize: order pinned block as title, Songs|Albums switch, controls row (same as default); add .padding(.top, DS.Space.space2) above the search field; chips stay the first list row (round 6).</li>
+<li>No new tokens; Components.swift, Views.swift, DSModifiers.swift untouched. Dock (player) and Song Details (details) findings belong to other groups.</li>
+</ol>
+<h1>Round 8 (library group)</h1>
+<p class="n"><b>Round 8.</b> Findings: P1 song row trailing overlap (duration over Download, play count over year), P2 album track subtitle over play count. Same root cause. Light scheme, tokens only.</p>
+<h2>Round 8 sketch: server-only song row at default size, 390 pt wide</h2>
+<div class="pair">
+<div class="col"><b>BEFORE (trailing items overlap)</b><div class="ph"><div class="row" style="padding:12px 8px"><div class="cv"></div><div class="g"><div class="t">Astral Dream</div><div class="s">Astral Projection &middot; 1995</div></div><div style="position:relative;width:60px;height:44px"><span class="s bad" style="position:absolute;left:0;top:12px">8:4&#127911;12</span><span class="pill q bad" style="position:absolute;left:8px;top:6px">Download</span></div></div><span class="sz">duration over Download, headphones over year</span></div></div>
+<div class="col"><b>AFTER (trailing group sized from content)</b><div class="ph"><div class="row" style="padding:12px 8px"><div class="cv"></div><div class="g"><div class="t">Astral Dream</div><div class="s">Astral Projection &middot; 1995</div></div><div style="display:flex;gap:8px;align-items:center;flex:none"><span class="s">5:02</span><span class="s">&#127911; 12</span><span class="pill q">Download</span></div></div><span class="sz">text column yields; group never overlaps; gap 8 (space2); trailing inset 12 (space3)</span></div></div>
+</div>
+<h2>Round 8 sketch: album track row, 390 pt wide</h2>
+<div class="pair">
+<div class="col"><b>BEFORE</b><div class="ph"><div class="row"><span class="s">1</span><div class="g"><div class="t">Title</div><div class="s bad">Static Movement &amp; C&#127911;</div></div><span class="s">5:02</span></div></div></div>
+<div class="col"><b>AFTER</b><div class="ph"><div class="row"><span class="s">1</span><div class="g"><div class="t">Title</div><div class="s">Static Movement &amp; C...</div></div><span class="s">5:02</span><span class="s">&#127911; 3</span></div><span class="sz">subtitle truncates before the trailing group</span></div></div>
+</div>
+<h2>Round 8 Sizes</h2>
+<table><tr><th>Item</th><th>Before</th><th>After</th></tr>
+<tr><td>Gap duration / play count / Download</td><td>space1 (4), overlapping</td><td>space2 (8)</td></tr>
+<tr><td>Trailing inset of row</td><td>space3 (12) outside group</td><td>space3 (12), kept; group fixed to content width</td></tr>
+<tr><td>Order in trailing group</td><td>play count, duration, state</td><td>duration, play count, state, queue marker</td></tr>
+<tr><td>Row height, Download hit</td><td>68, 44</td><td>unchanged</td></tr></table>
+<h2>Round 8 Fix spec</h2>
+<ol>
+<li>LibrarySongRow.swift inlineLayout: reorder the trailing HStack to durationButton, playCount(inline: true), audioState(fullWidth: false), queueMarker; set its spacing to DS.Space.space2.</li>
+<li>Same HStack: replace .frame(minWidth: trailingWidth, alignment: .trailing) with .fixedSize(horizontal: true, vertical: false).layoutPriority(2) so the group takes its content width and is never compressed or overlapped; keep .frame(minWidth: trailingWidth, alignment: .trailing) before fixedSize only if the layout needs a stable column.</li>
+<li>textColumn keeps .layoutPriority(1) but in the inline layout drops to .layoutPriority(0), so title and subtitle truncate (lineLimit 1) before the group shrinks. Subtitle year Text keeps fixedSize only when it fits: remove .fixedSize() and .layoutPriority(1) from the year Text in the default-size branch, use .lineLimit(1) on the artist with .layoutPriority(0), and let the whole "Artist · year" truncate together (pairs with details group one-line style).</li>
+<li>playCount(inline: true): drop minimumScaleFactor(0.7) (scaling caused overlap clipping); keep lineLimit(1) and .fixedSize().</li>
+<li>Album track rows (trackNumber != nil, default size) use the same inlineLayout, so the P2 collision is fixed by items 1 to 3; no separate change. AX5 stackedLayout unchanged.</li>
+<li>No new tokens; Components.swift, Views.swift, DSModifiers.swift untouched. Dock (player) and Song Details (details) findings belong to other groups.</li>
+</ol>
+</body></html>

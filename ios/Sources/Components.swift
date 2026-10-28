@@ -95,12 +95,13 @@ private struct FloatSlab: ViewModifier {
 struct ScreenHeader<Trailing: View>: View {
     let title: String
     var align: VerticalAlignment = .center
+    var oneLine = false
     @ViewBuilder var trailing: () -> Trailing
 
     var body: some View {
         HStack(alignment: align, spacing: DS.Space.space1) {
             MenuButton()
-            Text(title).font(T.display).foregroundStyle(DS.Color.ink).lineLimit(2).minimumScaleFactor(0.7)
+            Text(title).font(T.display).foregroundStyle(DS.Color.ink).lineLimit(oneLine ? 1 : 2).minimumScaleFactor(oneLine ? 0.5 : 0.7)
                 .accessibilityAddTraits(.isHeader)
             Spacer(minLength: DS.Space.space2)
             trailing()

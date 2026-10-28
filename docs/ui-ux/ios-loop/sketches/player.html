@@ -1,0 +1,29 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Player sketch</title>
+<style>
+:root{--ground:#f3efe6;--surface:#fbf8f2;--sunken:#e9e3d6;--line:#ddd5c6;--ink:#1b2024;--muted:#5f6669;--faint:#a0a3a2;--accent:#57d3e9;--accentInk:#0c7289;--tint:#cdeef3;--vinyl:#101417}
+body{font:15px -apple-system,system-ui,sans-serif;background:var(--ground);color:var(--ink);margin:16px;max-width:900px}
+h1{font-size:22px}h2{font-size:17px;margin-top:28px}.row{display:flex;gap:16px;flex-wrap:wrap}
+.ph{width:300px;background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:12px;position:relative}
+.ph b.l{display:block;font:600 12px sans-serif;letter-spacing:1px;color:var(--accentInk);margin-bottom:6px}
+.cover{background:var(--vinyl);border-radius:12px;margin:6px auto;color:#fff;font-size:11px;display:flex;align-items:flex-end;justify-content:center}
+.dock{background:var(--surface);border:1px solid var(--line);border-radius:20px;margin-top:8px;position:relative}
+.bar{height:3px;background:var(--sunken);margin:0 12px}.bar i{display:block;width:40%;height:3px;background:var(--accentInk)}
+.chip{display:inline-block;padding:4px 10px;border-radius:999px;font-size:12px;margin:2px}
+.btn{background:var(--surface);box-shadow:0 2px 0 var(--line);border:1px solid var(--line)}
+.tag{background:var(--tint);color:var(--accentInk)}
+.note{font-size:12px;color:var(--muted)}table{border-collapse:collapse}td,th{border:1px solid var(--line);padding:4px 8px;font-size:13px}
+</style><h1>Dock player and Now playing</h1><p class="note"><b>Round 8.</b> Finding P-G1 (audit-r7). Tokens only. Sizes in pt, screen 393 wide.</p>
+<h2>1. Dock at AX5: show the artist</h2><div class="row">
+<div class="ph"><b class="l">BEFORE (r7, AX5)</b><div class="dock" style="padding:12px 12px 43px"><div style="display:flex;gap:12px;align-items:center"><span style="width:44px;height:44px;background:var(--vinyl);border-radius:8px;flex:none"></span><span style="font:600 22px sans-serif;flex:1">State Of Mi...</span><span>&#9654; &#9197;</span></div></div><p class="note">Title 2 lines cut, artist hidden.</p></div>
+<div class="ph"><b class="l">AFTER (AX5)</b><div class="dock" style="padding:12px 12px 43px"><div style="display:flex;gap:12px;align-items:center"><span style="width:44px;height:44px;background:var(--vinyl);border-radius:8px;flex:none"></span><span style="flex:1"><span style="font:600 22px sans-serif;display:block">State Of Mind</span><span style="font:15px sans-serif;color:var(--muted);display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Artist name</span></span><span>&#9654; &#9197;</span></div></div><p class="note">Title up to 2 lines, artist 1 line below. The bottom 43 pt band stays: it is the 44 pt seek zone.</p></div></div>
+<h2>Sizes</h2><table><tr><th>Item</th><th>Before</th><th>After</th></tr>
+<tr><td>Dock artist at AX</td><td>hidden</td><td>1 line, T.caption, inkMuted</td></tr>
+<tr><td>Dock title at AX</td><td>2 lines</td><td>2 lines (unchanged)</td></tr>
+<tr><td>Default size, bottom band</td><td>43 pt</td><td>43 pt (seek zone, kept)</td></tr></table>
+<h2>Fix spec</h2><ol>
+<li>Views.swift MiniPlayer: remove the <code>if !compact</code> around the artist Text; keep T.caption, DS.Color.inkMuted, .lineLimit(1) at all sizes.</li>
+<li>Keep the title .lineLimit(compact ? 2 : 1) and fixedSize(vertical: compact).</li>
+<li>Keep .padding(.bottom, DS.Space.hit - DS.Stroke.strokeProgress): it hosts the 44 pt seek zone, so it is not a blank band to remove.</li>
+<li>Verify AX5 light and dark: title and artist both visible, Play and Next stay 44 pt, default size unchanged.</li>
+</ol>
+</body></html>

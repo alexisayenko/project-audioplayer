@@ -20,6 +20,7 @@ struct SongDetailsView: View {
     @State private var addingToPlaylist = false
     @State private var confirmDelete = false
     @State private var confirmRemove = false
+    @ScaledMetric(relativeTo: .title) private var valueHeight: CGFloat = DS.Space.space8
     @ScaledMetric(relativeTo: .body) private var iconWidth: CGFloat = DS.Component.navIconFrame
     @State private var deleting = false
     @State private var didDelete = false
@@ -27,19 +28,23 @@ struct SongDetailsView: View {
     private var track: Track? { library.songs.first { $0.id == id } }
     private var signedIn: Bool { ServerLink.hasCredentials(settings) }
     private var current: Bool { player.current?.id == id }
+    private var coverSide: CGFloat { typeSize.isAccessibilitySize ? DS.Component.detailsCover * 0.6 : DS.Component.detailsCover }
     private var transferring: Bool { server.transfers[id] != nil || anon.transfers[id] != nil }
 
     var body: some View {
         Group {
             if let track {
                 ScrollView {
-                    VStack(spacing: DS.Space.space4) {
-                        CoverImage(source: track.thumbnail).frame(width: DS.Component.detailsCover, height: DS.Component.detailsCover)
+                    VStack(spacing: typeSize.isAccessibilitySize ? DS.Space.space2 : DS.Space.space4) {
+                        CoverImage(source: track.thumbnail).frame(width: coverSide, height: coverSide)
                             .clipShape(RoundedRectangle(cornerRadius: DS.Radius.radiusCard)).dsShadow(DS.Shadow.depthSlab).accessibilityHidden(true)
                         VStack(spacing: DS.Space.space1) {
                             Text(track.title).font(T.title).foregroundStyle(DS.Color.ink).lineLimit(3)
-                            Text(track.libraryArtist).font(T.body).foregroundStyle(DS.Color.inkMuted)
-                            Text(versionLine(track)).font(T.subhead).foregroundStyle(DS.Color.inkMuted)
+                            Text(artistYearLine(track)).font(T.body).foregroundStyle(DS.Color.inkMuted)
+                                .lineLimit(typeSize.isAccessibilitySize ? 2 : 1).truncationMode(.tail)
+                            if !versionLine(track).isEmpty {
+                                Text(versionLine(track)).font(T.subhead).foregroundStyle(DS.Color.inkMuted)
+                            }
                         }.multilineTextAlignment(.center)
                         primary(track)
                         facts(track)
@@ -77,23 +82,34 @@ struct SongDetailsView: View {
     }
 
     private func header(_ track: Track) -> some View {
-        ZStack {
-            Text("Song Details").font(T.headline).foregroundStyle(DS.Color.ink).accessibilityAddTraits(.isHeader)
-            HStack {
-                Button { dismiss() } label: {
-                    Image(systemName: "chevron.left").dsIcon(DS.Icon.iconNav).foregroundStyle(DS.Color.ink)
-                        .frame(width: DS.Space.hit, height: DS.Space.hit)
-                }.accessibilityLabel("Back")
-                Spacer()
-                if signedIn {
-                    Button("Edit") { editing = ServerSong(track) }.font(T.subhead.weight(.semibold)).foregroundStyle(DS.Color.accentInk)
-                        .frame(minWidth: DS.Space.hit, minHeight: DS.Space.hit)
+        let title = Text("Song Details").font(T.headline).foregroundStyle(DS.Color.ink).accessibilityAddTraits(.isHeader)
+        let bar = HStack {
+            Button { dismiss() } label: {
+                Image(systemName: "chevron.left").dsIcon(DS.Icon.iconNav).foregroundStyle(DS.Color.ink)
+                    .frame(width: DS.Space.hit, height: DS.Space.hit)
+            }.accessibilityLabel("Back")
+            Spacer()
+            if signedIn {
+                Button("Edit") { editing = ServerSong(track) }.font(T.subhead.weight(.semibold)).foregroundStyle(DS.Color.accentInk)
+                    .frame(minWidth: DS.Space.hit, minHeight: DS.Space.hit)
+            }
+        }
+        return Group {
+            if typeSize.isAccessibilitySize {
+                VStack(alignment: .leading, spacing: DS.Space.space2) {
+                    bar
+                    title.frame(maxWidth: .infinity, alignment: .leading)
                 }
+            } else {
+                ZStack { title; bar }
             }
         }.padding(.horizontal, DS.Space.space4).background(DS.Color.ground)
     }
     private func versionLine(_ track: Track) -> String {
-        [track.version?.name ?? track.version?.type?.capitalized ?? "", track.libraryYear.map(String.init) ?? ""]
+        track.version?.name ?? track.version?.type?.capitalized ?? ""
+    }
+    private func artistYearLine(_ track: Track) -> String {
+        [track.libraryArtist, typeSize.isAccessibilitySize ? "" : track.libraryYear.map(String.init) ?? ""]
             .filter { !$0.isEmpty }.joined(separator: " · ")
     }
     private func primary(_ track: Track) -> some View {
@@ -111,42 +127,73 @@ struct SongDetailsView: View {
             idleTitle = pausing ? "Pause" : "Play"
             symbol = pausing ? "pause.fill" : "play.fill"
         } else {
-            idleTitle = noAudio ? "No audio yet" : "Download to iPhone"
+            idleTitle = noAudio ? "No audio yet" : (typeSize.isAccessibilitySize ? "Download" : "Download to iPhone")
             symbol = "arrow.down.circle"
         }
         let title = progress.map { "Downloading \(Int(min(1, max(0, $0)) * 100))%" } ?? idleTitle
         return Button { if phone { play(track) } else { download(track) } } label: {
-            Label(title, systemImage: symbol)
-                .frame(minWidth: DS.Component.detailsCover)
+            if typeSize.isAccessibilitySize {
+                HStack(spacing: DS.Space.space2) {
+                    Image(systemName: symbol)
+                    Text(title).lineLimit(1).minimumScaleFactor(0.6)
+                }.frame(maxWidth: .infinity, minHeight: DS.Component.iconButton).padding(.horizontal, DS.Space.space3)
+            } else {
+                Label(title, systemImage: symbol).frame(minWidth: DS.Component.detailsCover)
+            }
         }
         .buttonStyle(LibraryPrimaryStyle()).disabled(noAudio || progress != nil || (!phone && !signedIn))
+        .accessibilityLabel(!phone && !noAudio && progress == nil ? "Download to iPhone" : title)
     }
     private func facts(_ track: Track) -> some View {
+        var rows: [AnyView] = []
+        var compact: [(String, String)] = []
+        if let duration = track.duration, duration > 0 { compact.append(("Duration", formatTime(duration))) }
+        if let bpm = track.bpm { compact.append(("BPM", "\(Int(bpm.rounded())) BPM")) }
+        if !compact.isEmpty { rows.append(AnyView(compactFacts(compact))) }
+        let genres = LibraryFacet.genres.keys(track).filter { $0 != LibraryFacet.genres.unknown }.sorted().map { LibraryFacet.genres.label($0) }
+        if !genres.isEmpty { rows.append(AnyView(pills("Genres", genres))) }
+        let tags = LibraryFacet.tags.keys(track).sorted().map { LibraryFacet.tags.label($0) }
+        if !tags.isEmpty { rows.append(AnyView(pills("Tags", tags))) }
+        let countries = LibraryFacet.countries.keys(track).filter { $0 != LibraryFacet.countries.unknown }.sorted().map { LibraryFacet.countries.label($0) }
+        if !countries.isEmpty { rows.append(AnyView(fact("Country", countries.joined(separator: ", ")))) }
+        if library.contains(id) {
+            rows.append(AnyView(fact("File name", track.fileURL.lastPathComponent).contextMenu {
+                Button("Copy file name") { UIPasteboard.general.string = track.fileURL.lastPathComponent; notify("File name copied") }
+            }))
+        }
+        if let url = source(track) {
+            rows.append(AnyView(Button { openURL(url) } label: {
+                HStack { Text("Source").foregroundStyle(DS.Color.inkMuted); Spacer(); Text(url.host?.contains("soundcloud") == true ? "SoundCloud" : "YouTube"); Image(systemName: "chevron.right") }
+                    .font(T.subhead).foregroundStyle(DS.Color.ink).frame(minHeight: DS.Component.rowHeight).contentShape(Rectangle())
+            }.buttonStyle(LibraryPressStyle())))
+        }
+        return slab(rows)
+    }
+    private func slab(_ rows: [AnyView]) -> some View {
         VStack(spacing: 0) {
-            if let duration = track.duration, duration > 0 { fact("Duration", formatTime(duration)) }
-            if let bpm = track.bpm { fact("BPM", "\(Int(bpm.rounded())) BPM") }
-            if let year = track.libraryYear { fact("Release year", String(year)) }
-            let genres = LibraryFacet.genres.keys(track).filter { $0 != LibraryFacet.genres.unknown }.sorted().map { LibraryFacet.genres.label($0) }
-            if !genres.isEmpty { pills("Genres", genres) }
-            let tags = LibraryFacet.tags.keys(track).sorted().map { LibraryFacet.tags.label($0) }
-            if !tags.isEmpty { pills("Tags", tags) }
-            let countries = LibraryFacet.countries.keys(track).filter { $0 != LibraryFacet.countries.unknown }.sorted().map { LibraryFacet.countries.label($0) }
-            if !countries.isEmpty { fact("Country", countries.joined(separator: ", ")) }
-            if library.contains(id) {
-                fact("File name", track.fileURL.lastPathComponent).contextMenu {
-                    Button("Copy file name") { UIPasteboard.general.string = track.fileURL.lastPathComponent; notify("File name copied") }
-                }
-            }
-            if let url = source(track) {
-                Button { openURL(url) } label: {
-                    HStack { Text("Source").foregroundStyle(DS.Color.inkMuted); Spacer(); Text(url.host?.contains("soundcloud") == true ? "SoundCloud" : "YouTube"); Image(systemName: "chevron.right") }
-                        .font(T.subhead).foregroundStyle(DS.Color.ink).frame(minHeight: DS.Component.rowHeight).contentShape(Rectangle())
-                }.buttonStyle(LibraryPressStyle())
+            ForEach(rows.indices, id: \.self) { index in
+                if index > 0 { LibraryHairline() }
+                rows[index]
             }
         }.padding(.horizontal, DS.Space.space4).librarySlab()
     }
+    private func compactFacts(_ items: [(String, String)]) -> some View {
+        let cells = ForEach(items.indices, id: \.self) { index in
+            VStack(alignment: .leading, spacing: DS.Space.space1) {
+                Text(items[index].0).font(T.caption).foregroundStyle(DS.Color.inkMuted)
+                Text(items[index].1).font(T.subhead).foregroundStyle(DS.Color.ink).lineLimit(typeSize >= .accessibility2 ? nil : 1).minimumScaleFactor(typeSize >= .accessibility2 ? 1 : 0.7)
+            }.frame(maxWidth: .infinity, alignment: .leading).accessibilityElement(children: .combine)
+        }
+        return Group {
+            if typeSize >= .accessibility2 {
+                VStack(alignment: .leading, spacing: DS.Space.space2) { cells }
+            } else {
+                HStack(spacing: DS.Space.space3) { cells }.frame(minHeight: DS.Component.rowHeight)
+            }
+        }.padding(.vertical, DS.Space.space3)
+    }
     private func fact(_ label: String, _ value: String) -> some View {
-        VStack(spacing: 0) {
+        Group {
             if typeSize.isAccessibilitySize {
                 VStack(alignment: .leading, spacing: DS.Space.space1) {
                     Text(label).foregroundStyle(DS.Color.inkMuted); Text(value).foregroundStyle(DS.Color.ink)
@@ -159,11 +206,10 @@ struct SongDetailsView: View {
                         .lineLimit(label == "File name" ? 1 : nil).truncationMode(.middle)
                 }.frame(minHeight: DS.Component.rowHeight)
             }
-            LibraryHairline()
         }.font(T.subhead).accessibilityElement(children: .combine)
     }
     private func pills(_ title: String, _ values: [String]) -> some View {
-        VStack(spacing: 0) {
+        Group {
             if typeSize.isAccessibilitySize {
                 VStack(alignment: .leading, spacing: DS.Space.space2) {
                     Text(title).font(T.subhead).foregroundStyle(DS.Color.inkMuted)
@@ -176,15 +222,16 @@ struct SongDetailsView: View {
                     pillFlow(values)
                 }.frame(minHeight: DS.Component.rowHeight)
             }
-            LibraryHairline()
         }
     }
     private func pillFlow(_ values: [String]) -> some View {
         FlowLayout {
             ForEach(values, id: \.self) { value in
-                Text(value).font(T.subhead.weight(.medium)).foregroundStyle(DS.Color.ink)
+                let chip = Text(value).font(T.subhead.weight(.medium)).foregroundStyle(DS.Color.ink)
+                    .lineLimit(2).multilineTextAlignment(.leading).fixedSize(horizontal: false, vertical: true)
                     .padding(.horizontal, DS.Space.space3).frame(minHeight: DS.Component.iconButton)
-                    .background(Capsule().fill(DS.Color.accentTint))
+                    .background(RoundedRectangle(cornerRadius: DS.Component.iconButton / 2).fill(DS.Color.accentTint))
+                if typeSize.isAccessibilitySize { chip.flowFill(minWidth: DS.Component.detailsCover) } else { chip }
             }
         }
     }
@@ -194,7 +241,7 @@ struct SongDetailsView: View {
         return VStack(alignment: .leading, spacing: DS.Space.space2) {
             SectionLabel("Playback statistics")
             ViewThatFits(in: .horizontal) {
-                HStack(spacing: DS.Space.space3) { statisticCells(entry, date: date) }
+                HStack(alignment: .top, spacing: DS.Space.space3) { statisticCells(entry, date: date) }
                 VStack(spacing: DS.Space.space3) { statisticCells(entry, date: date) }
             }.padding(DS.Space.space4).frame(maxWidth: .infinity).librarySlab()
         }
@@ -207,35 +254,33 @@ struct SongDetailsView: View {
     }
     private func stat(_ label: String, _ value: String, voice: String? = nil) -> some View {
         VStack(spacing: DS.Space.space1) {
-            Text(value).font(T.title).foregroundStyle(DS.Color.ink)
+            Text(value).font(T.title).foregroundStyle(DS.Color.ink).lineLimit(1).minimumScaleFactor(0.5)
+                .frame(height: valueHeight, alignment: .bottom)
             Text(label).font(T.caption).foregroundStyle(DS.Color.inkMuted)
-        }.frame(maxWidth: .infinity).accessibilityElement(children: .ignore).accessibilityLabel("\(label), \(voice ?? value)")
+        }.frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top).accessibilityElement(children: .ignore).accessibilityLabel("\(label), \(voice ?? value)")
     }
     private func actions(_ track: Track) -> some View {
-        VStack(spacing: 0) {
-            if library.contains(id) && !current {
-                action("Play next", "text.insert") { player.playNext(track); tick += 1; notify("Plays next") }
-                action("Add to queue", "text.badge.plus") {
-                    let added = player.enqueue([track]) > 0
-                    if added { tick += 1 }; notify(added ? "Added to queue" : "Already in queue")
-                }
-            }
-            if signedIn && track.localOnly != true { action("Add to playlist", "music.note.list") { addingToPlaylist = true } }
-            action("Share link", "square.and.arrow.up") { share = true }
-            if library.contains(id) && track.localOnly != true && !current && signedIn {
-                action("Remove from iPhone", "iphone.slash") { confirmRemove = true }
-            }
-        }.padding(.horizontal, DS.Space.space4).librarySlab()
+        var rows: [AnyView] = []
+        if library.contains(id) && !current {
+            rows.append(AnyView(action("Play next", "text.insert") { player.playNext(track); tick += 1; notify("Plays next") }))
+            rows.append(AnyView(action("Add to queue", "text.badge.plus") {
+                let added = player.enqueue([track]) > 0
+                if added { tick += 1 }; notify(added ? "Added to queue" : "Already in queue")
+            }))
+        }
+        if signedIn && track.localOnly != true { rows.append(AnyView(action("Add to playlist", "music.note.list") { addingToPlaylist = true })) }
+        rows.append(AnyView(action("Share link", "square.and.arrow.up") { share = true }))
+        if library.contains(id) && track.localOnly != true && !current && signedIn {
+            rows.append(AnyView(action("Remove from iPhone", "iphone.slash") { confirmRemove = true }))
+        }
+        return slab(rows)
     }
     private func action(_ title: String, _ icon: String, perform: @escaping () -> Void) -> some View {
-        VStack(spacing: 0) {
-            Button(action: perform) {
-                Label { Text(title) } icon: { Image(systemName: icon).frame(width: iconWidth) }
-                    .font(T.body).foregroundStyle(DS.Color.ink)
-                    .frame(maxWidth: .infinity, minHeight: DS.Component.rowHeight, alignment: .leading).contentShape(Rectangle())
-            }.buttonStyle(LibraryPressStyle())
-            LibraryHairline()
-        }
+        Button(action: perform) {
+            Label { Text(title) } icon: { Image(systemName: icon).frame(width: iconWidth) }
+                .font(T.body).foregroundStyle(DS.Color.ink)
+                .frame(maxWidth: .infinity, minHeight: DS.Component.rowHeight, alignment: .leading).contentShape(Rectangle())
+        }.buttonStyle(LibraryPressStyle())
     }
     private func source(_ track: Track) -> URL? {
         ([track.sourceURL] + (track.sources ?? []).map(\.url)).compactMap { $0 }.compactMap(URL.init(string:))

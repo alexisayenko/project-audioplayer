@@ -19,7 +19,7 @@ struct AlbumDetailView: View {
         let songs = byID
         SongListScreen(title: album?.title ?? "Album", lines: lines(songs), coverSource: album.flatMap { AlbumCover.source($0, thumbnails: songs.mapValues(\.thumbnail)) },
                        entries: entries(songs), emptyText: "This album has no tracks.", transfer: { downloader.rowState($0, in: id) },
-                       showsMenu: false, extra: { downloadControls(songs) }, menu: { EmptyView() })
+                       showsMenu: false, compactHead: true, trackNumbers: trackNumbers, albumArtist: album?.artist ?? "", transportExtra: downloader.run(for: id) == nil ? AnyView(downloadButton(songs)) : nil, extra: { downloadControls(songs) }, menu: { EmptyView() })
             .listToast($toast)
             .task { await store.refresh(settings) }
             .sheet(isPresented: $planning) {
@@ -39,11 +39,17 @@ struct AlbumDetailView: View {
         }
     }
 
+    private var trackNumbers: [String: Int] {
+        Dictionary((album?.tracks ?? []).compactMap { track in track.songId.map { ($0, track.no) } }, uniquingKeysWith: { first, _ in first })
+    }
+
     private func lines(_ songs: [String: Track]) -> [String] {
         guard let album else { return [] }
         let ids = Set(songs.keys)
-        return [AlbumLogic.byline(album), AlbumLogic.summary(album),
-                AlbumLogic.statusText(album, libraryIDs: ids, ready: server.libraryReady(signedIn: ServerLink.hasCredentials(settings), hasSongs: !songs.isEmpty)) + " · " + AlbumLogic.phoneText(album, phoneIDs: library.phoneIDs)].filter { !$0.isEmpty }
+        let ready = server.libraryReady(signedIn: ServerLink.hasCredentials(settings), hasSongs: !songs.isEmpty)
+        let status = ready && !album.tracks.isEmpty ? AlbumLogic.statusText(album, libraryIDs: ids, ready: true) : ""
+        let phone = "\(AlbumLogic.phoneCount(album, phoneIDs: library.phoneIDs)) on phone"
+        return [AlbumLogic.byline(album), AlbumLogic.summary(album), [status, phone].filter { !$0.isEmpty }.joined(separator: " · ")].filter { !$0.isEmpty }
     }
 
     private func pending(_ songs: [String: Track]) -> Int {
@@ -62,13 +68,23 @@ struct AlbumDetailView: View {
         if let run = downloader.run(for: id) {
             AlbumRunCard(run: run, cancel: { downloader.cancel(id) }, dismiss: { downloader.dismissResult(id) })
         } else {
-            let count = pending(songs)
-            if count > 0 && server.reachable == false { OfflineDownloadNote(retrying: retrying) { retryServer() } }
-            Button { planning = true } label: {
-                Label(count > 0 ? "Download album (\(count))" : "All linked tracks are on this iPhone", systemImage: "arrow.down.circle")
-            }
-            .buttonStyle(DSButtonStyle(kind: .outline)).disabled(count == 0 || server.reachable == false)
+            if pending(songs) > 0 && server.reachable == false { OfflineDownloadNote(retrying: retrying) { retryServer() } }
         }
+    }
+
+    @ViewBuilder private func downloadButton(_ songs: [String: Track]) -> some View {
+        let count = pending(songs)
+        let blocked = count == 0 || server.reachable == false
+        let label = count > 0 ? "Download album (\(count))" : "All linked tracks are on this iPhone"
+        Button { planning = true } label: {
+            Image(systemName: "arrow.down.circle").dsIcon(DS.Icon.iconNav, weight: DS.Icon.iconWeight)
+                .foregroundStyle(DS.Color.accentInk)
+                .frame(width: DS.Space.hit, height: DS.Space.hit)
+                .overlay(Circle().strokeBorder(DS.Color.accentInk, lineWidth: DS.Stroke.strokeThin))
+                .contentShape(Circle())
+        }
+        .buttonStyle(LibraryPressStyle()).disabled(blocked).opacity(blocked ? DS.Opacity.dim : 1)
+        .accessibilityLabel(label)
     }
 }
 

@@ -12,6 +12,8 @@ struct LibrarySongRow: View {
     var offline = false
     var retry = false
     var listenedCount: Int? = nil
+    var trackNumber: Int? = nil
+    var albumArtist: String? = nil
     var toggleQueue: (() -> Void)? = nil
     let play: () -> Void
     let details: () -> Void
@@ -20,12 +22,18 @@ struct LibrarySongRow: View {
     @ScaledMetric(relativeTo: .body) private var scaledCover = DS.Component.coverRow
     private var cover: CGFloat { min(scaledCover, DS.Component.coverRow * 1.5) }
     private var noAudio: Bool { !onPhone && progress == nil && track.onServer == false }
+    private var subtitleEmpty: Bool {
+        guard let albumArtist else { return false }
+        let artist = track.libraryArtist
+        return artist.isEmpty || artist.caseInsensitiveCompare(albumArtist) == .orderedSame
+    }
+    private var rowPad: CGFloat { subtitleEmpty ? DS.Space.space2 : DS.Space.space3 }
 
     var body: some View {
         Group {
             if typeSize.isAccessibilitySize { stackedLayout } else { inlineLayout }
         }
-        .frame(maxWidth: .infinity, minHeight: cover + DS.Space.space3 * 2)
+        .frame(maxWidth: .infinity, minHeight: cover + rowPad * 2)
         .background {
             (playing ? DS.Color.accentTint : DS.Color.surface).contentShape(Rectangle()).onTapGesture(perform: details)
         }
@@ -36,16 +44,17 @@ struct LibrarySongRow: View {
 
     private var inlineLayout: some View {
         HStack(spacing: 0) {
+            trackNumberLabel.padding(.leading, trackNumber == nil ? 0 : DS.Space.space3)
             coverButton
-            HStack(alignment: .firstTextBaseline, spacing: DS.Space.space2) {
-                textColumn
-                VStack(alignment: .trailing, spacing: DS.Space.space1) {
+            HStack(alignment: .center, spacing: DS.Space.space2) {
+                textColumn.layoutPriority(0)
+                HStack(alignment: .center, spacing: DS.Space.space2) {
                     durationButton
+                    playCount(inline: true)
                     audioState(fullWidth: false)
                     queueMarker
-                }
-            }.padding(.vertical, DS.Space.space3)
-            playCount.padding(.leading, DS.Space.space3)
+                }.fixedSize(horizontal: true, vertical: false).layoutPriority(2)
+            }.padding(.vertical, rowPad)
         }
         .padding(.trailing, DS.Space.space3)
     }
@@ -53,16 +62,31 @@ struct LibrarySongRow: View {
     private var stackedLayout: some View {
         VStack(alignment: .leading, spacing: DS.Space.space2) {
             HStack(alignment: .top, spacing: DS.Space.space3) {
+                trackNumberLabel
                 coverButton
-                textColumn
+                if trackNumber != nil {
+                    HStack(alignment: .top, spacing: DS.Space.space2) {
+                        textColumn
+                        durationButton.fixedSize(horizontal: true, vertical: false)
+                    }
+                } else {
+                    textColumn
+                }
             }
             HStack(spacing: DS.Space.space3) {
-                durationButton
+                if trackNumber == nil { durationButton }
                 audioState(fullWidth: true)
                 queueMarker
-                playCount
+                playCount(inline: false)
             }
-        }.padding(DS.Space.space3)
+        }.padding(DS.Space.space3).padding(.trailing, DS.Space.space3)
+    }
+
+    @ViewBuilder private var trackNumberLabel: some View {
+        if let trackNumber {
+            Text(String(trackNumber)).font(T.time).foregroundStyle(DS.Color.inkMuted)
+                .frame(minWidth: DS.Space.space6, alignment: .trailing).accessibilityHidden(true)
+        }
     }
 
     private var coverButton: some View {
@@ -78,24 +102,43 @@ struct LibrarySongRow: View {
                     }
                 }
                 .clipShape(RoundedRectangle(cornerRadius: DS.Radius.radiusSm)).opacity(noAudio ? DS.Opacity.dim : 1)
-                .padding(typeSize.isAccessibilitySize ? 0 : DS.Space.space3).contentShape(Rectangle())
+                .padding(.horizontal, typeSize.isAccessibilitySize ? 0 : DS.Space.space3)
+                .padding(.vertical, typeSize.isAccessibilitySize ? 0 : rowPad).contentShape(Rectangle())
         }.buttonStyle(LibraryCoverPressStyle())
     }
 
     private var textColumn: some View {
         VStack(alignment: .leading, spacing: DS.Space.space1) {
             Button(action: details) {
-                Text(track.title).font(T.headline).foregroundStyle(DS.Color.ink).lineLimit(typeSize.isAccessibilitySize ? 3 : 2)
+                Text(track.title).font(T.headline).foregroundStyle(DS.Color.ink).lineLimit(typeSize.isAccessibilitySize ? 3 : 1)
+                    .minimumScaleFactor(typeSize.isAccessibilitySize && trackNumber != nil ? 0.7 : 1)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .opacity(noAudio ? DS.Opacity.dim : 1).contentShape(Rectangle())
             }.buttonStyle(LibraryPressStyle())
-            Button(action: details) {
-                Text(track.librarySubtitle).font(T.subhead).foregroundStyle(playing ? DS.Color.ink : DS.Color.inkMuted)
-                    .lineLimit(typeSize.isAccessibilitySize ? 2 : 1)
-                    .opacity(noAudio ? DS.Opacity.dim : 1)
-                    .frame(maxWidth: .infinity, alignment: .leading).contentShape(Rectangle())
-            }.buttonStyle(LibraryPressStyle())
+            subtitle
         }.frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    @ViewBuilder private var subtitle: some View {
+        if albumArtist != nil {
+            if !subtitleEmpty {
+                subtitleButton { Text(track.libraryArtist).lineLimit(typeSize.isAccessibilitySize ? 3 : 1) }
+            }
+        } else if typeSize.isAccessibilitySize {
+            subtitleButton { Text([track.libraryArtist, track.libraryYear.map(String.init) ?? ""].filter { !$0.isEmpty }.joined(separator: "\u{00A0}·\u{00A0}")).lineLimit(3) }
+        } else {
+            subtitleButton {
+                Text([track.libraryArtist, track.libraryYear.map(String.init) ?? ""].filter { !$0.isEmpty }.joined(separator: " · ")).lineLimit(1)
+            }
+        }
+    }
+
+    private func subtitleButton<Content: View>(@ViewBuilder _ content: () -> Content) -> some View {
+        Button(action: details) {
+            content().font(T.subhead).foregroundStyle(playing ? DS.Color.ink : DS.Color.inkMuted)
+                .opacity(noAudio ? DS.Opacity.dim : 1)
+                .frame(maxWidth: .infinity, alignment: .leading).contentShape(Rectangle())
+        }.buttonStyle(LibraryPressStyle())
     }
 
     @ViewBuilder private var durationButton: some View {
@@ -108,13 +151,14 @@ struct LibrarySongRow: View {
         }
     }
 
-    @ViewBuilder private var playCount: some View {
+    @ViewBuilder private func playCount(inline: Bool) -> some View {
         if let listenedCount, listenedCount > 0 {
             HStack(spacing: DS.Space.space1) {
                 Image(systemName: "headphones").dsIcon(DS.Icon.iconInline)
-                Text(String(listenedCount)).font(T.subhead).monospacedDigit()
+                Text(String(listenedCount)).font(inline ? T.caption : T.subhead).monospacedDigit()
             }
-            .foregroundStyle(DS.Color.inkMuted).fixedSize().accessibilityHidden(true)
+            .foregroundStyle(DS.Color.inkMuted).lineLimit(1).fixedSize()
+            .accessibilityHidden(true)
         }
     }
 
@@ -130,11 +174,18 @@ struct LibrarySongRow: View {
                 .frame(maxWidth: fullWidth ? .infinity : nil, minHeight: DS.Space.hit)
         } else if !onPhone && !noAudio {
             Button(action: download) {
-                Text(retry ? "Retry" : "Download").font(T.caption.weight(.semibold)).foregroundStyle(DS.Color.accentInk)
-                    .padding(.horizontal, DS.Space.space3).frame(maxWidth: fullWidth ? .infinity : nil, minHeight: DS.Component.iconButton)
-                    .overlay(Capsule().strokeBorder(DS.Color.accentInk, lineWidth: DS.Stroke.strokeThin))
-                    .frame(minHeight: DS.Space.hit).contentShape(Rectangle())
-            }.buttonStyle(LibraryPressStyle())
+                if typeSize.isAccessibilitySize {
+                    Image(systemName: retry ? "arrow.clockwise" : "arrow.down.circle").dsIcon(DS.Icon.iconNav, weight: DS.Icon.iconWeight)
+                        .foregroundStyle(DS.Color.accentInk)
+                        .frame(maxWidth: fullWidth ? .infinity : nil, alignment: .trailing)
+                        .frame(minWidth: DS.Space.hit, minHeight: DS.Space.hit).contentShape(Rectangle())
+                } else {
+                    Text(retry ? "Retry" : "Download").font(T.caption.weight(.semibold)).foregroundStyle(DS.Color.accentInk)
+                        .lineLimit(1).multilineTextAlignment(.center).fixedSize(horizontal: true, vertical: true)
+                        .padding(.horizontal, fullWidth ? DS.Space.space3 : 0).frame(maxWidth: fullWidth ? .infinity : nil, minHeight: DS.Component.iconButton)
+                        .frame(minWidth: DS.Space.hit, minHeight: DS.Space.hit).contentShape(Rectangle())
+                }
+            }.buttonStyle(LibraryPressStyle()).accessibilityLabel(retry ? "Retry download" : "Download")
         } else if noAudio {
             Button(action: details) {
                 Text("No audio yet")
@@ -172,7 +223,7 @@ struct LibrarySongRow: View {
         return isPlaying ? "playing" : "paused"
     }
     private var accessibilityLabel: String {
-        return [track.title, track.libraryArtist, track.libraryYear.map(String.init) ?? "", track.duration.map(formatTime) ?? "", transferState,
+        return [trackNumber.map { "Track \($0)" } ?? "", track.title, track.libraryArtist, track.libraryYear.map(String.init) ?? "", track.duration.map(formatTime) ?? "", transferState,
                 queued ? "in queue" : "", playState,
                 listenedCount.map { "Listened \($0) \($0 == 1 ? "time" : "times")" } ?? ""].filter { !$0.isEmpty }.joined(separator: ", ")
     }

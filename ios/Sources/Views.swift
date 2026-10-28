@@ -91,6 +91,7 @@ struct RootView: View {
                 MiniPlayer(open: { tab = .playback }, onExpand: { expandedDock = true })
                     .padding(.horizontal, DS.Space.space4).padding(.top, DS.Space.space2).padding(.bottom, DS.Space.space2)
                     .measuredHeight($dockHeight)
+                    .background(DS.Color.ground.ignoresSafeArea(edges: .bottom))
                     .accessibilityHidden(menuOpen)
             }
         }
@@ -174,19 +175,6 @@ struct MiniPlayer: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            if !compact {
-                Button(action: onExpand) {
-                    Capsule().fill(DS.Color.inkFaint)
-                        .frame(width: 36, height: 4)
-                        .frame(maxWidth: .infinity)
-                        .frame(minHeight: DS.Space.hit)
-                        .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel("Expand player")
-                .accessibilityHint("Opens Now Playing")
-            }
-
             HStack(spacing: DS.Space.space3) {
                 CoverImage(source: player.current?.thumbnail)
                     .frame(width: cover, height: cover)
@@ -194,9 +182,8 @@ struct MiniPlayer: View {
                     .accessibilityHidden(true)
                 VStack(alignment: .leading, spacing: 0) {
                     Text(player.current?.title ?? "").font(T.headline).foregroundStyle(DS.Color.ink).lineLimit(compact ? 2 : 1)
-                    if !compact {
-                        Text(player.current?.artist ?? "").font(T.caption).foregroundStyle(DS.Color.inkMuted).lineLimit(1)
-                    }
+                        .fixedSize(horizontal: false, vertical: compact)
+                    Text(player.current?.artist ?? "").font(T.caption).foregroundStyle(DS.Color.inkMuted).lineLimit(1)
                 }
                 Spacer(minLength: 0)
                 Button { player.toggle() } label: {
@@ -210,12 +197,29 @@ struct MiniPlayer: View {
                 }
                 .accessibilityLabel("Next song")
             }
-            .padding(.horizontal, DS.Space.space3).padding(.vertical, DS.Space.space2 + 2)
+            .padding(.horizontal, DS.Space.space3).padding(.top, DS.Space.space2 + 2).padding(.bottom, DS.Space.hit - DS.Stroke.strokeProgress)
             .contentShape(Rectangle())
             .onTapGesture(perform: open)
             MiniProgress().accessibilityHidden(true)
         }
+        .overlay(alignment: .top) {
+            if !compact {
+                Button(action: onExpand) {
+                    Capsule().fill(DS.Color.inkFaint)
+                        .frame(width: 36, height: 4)
+                        .padding(.top, DS.Space.space1)
+                        .frame(width: DS.Space.hit * 2, height: DS.Space.hit, alignment: .top)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .frame(maxWidth: .infinity)
+                .accessibilityLabel("Expand player")
+                .accessibilityHint("Opens Now Playing")
+            }
+        }
         .clipShape(RoundedRectangle(cornerRadius: DS.Radius.radiusCard, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: DS.Radius.radiusCard, style: .continuous)
+            .strokeBorder(DS.Color.line, lineWidth: DS.Stroke.strokeHairline).allowsHitTesting(false))
         .dsFloat(radius: DS.Radius.radiusCard)
         .accessibilityElement(children: .contain)
         .accessibilityAction(named: "Expand player") { onExpand() }
@@ -228,32 +232,35 @@ private struct MiniProgress: View {
     @Environment(\.colorScheme) private var scheme
     @Environment(\.colorSchemeContrast) private var contrast
 
+    private var seekZone: CGFloat { DS.Space.hit }
+
     var body: some View {
         GeometryReader { geo in
-            Rectangle().fill(.clear)
-                .overlay(alignment: .topLeading) {
-                    ZStack(alignment: .leading) {
-                        Rectangle().fill(DS.Color.surfaceSunken)
-                        Rectangle().fill(scheme.progressFill(contrast))
-                            .frame(width: geo.size.width * min(1, clock.position / max(clock.duration, 1)))
-                    }
-                    .frame(height: DS.Stroke.strokeProgress)
-                    .padding(.top, DS.Space.space1)
-                }
-                .contentShape(Rectangle())
-                .highPriorityGesture(SpatialTapGesture().onEnded { tap in
-                    guard clock.duration > 0, geo.size.width > 0 else { return }
-                    let tapped = min(1, max(0, tap.location.x / geo.size.width)) * clock.duration
-                    if let target = PlaybackSeek.tapTarget(current: clock.position, duration: clock.duration, tapped: tapped) {
-                        player.seek(to: target)
-                    }
-                })
-                .simultaneousGesture(DragGesture(minimumDistance: 10).onChanged { drag in
-                    guard clock.duration > 0, geo.size.width > 0 else { return }
-                    let target = min(1, max(0, drag.location.x / geo.size.width)) * clock.duration
-                    player.seek(to: target)
-                })
+            ZStack(alignment: .leading) {
+                Rectangle().fill(DS.Color.surfaceSunken)
+                Rectangle().fill(scheme.progressFill(contrast))
+                    .frame(width: geo.size.width * min(1, clock.position / max(clock.duration, 1)))
+            }
         }
-        .frame(height: DS.Space.space6)
+        .frame(height: DS.Stroke.strokeProgress)
+        .overlay(alignment: .bottom) {
+            GeometryReader { geo in
+                Color.clear
+                    .contentShape(Rectangle())
+                    .highPriorityGesture(SpatialTapGesture().onEnded { tap in
+                        guard clock.duration > 0, geo.size.width > 0 else { return }
+                        let tapped = min(1, max(0, tap.location.x / geo.size.width)) * clock.duration
+                        if let target = PlaybackSeek.tapTarget(current: clock.position, duration: clock.duration, tapped: tapped) {
+                            player.seek(to: target)
+                        }
+                    })
+                    .simultaneousGesture(DragGesture(minimumDistance: 10).onChanged { drag in
+                        guard clock.duration > 0, geo.size.width > 0 else { return }
+                        let target = min(1, max(0, drag.location.x / geo.size.width)) * clock.duration
+                        player.seek(to: target)
+                    })
+            }
+            .frame(height: seekZone)
+        }
     }
 }
