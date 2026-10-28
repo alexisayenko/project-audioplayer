@@ -2,6 +2,10 @@
 
 What shipped, newest first. One line each; the web UI and server are live at https://electrophone.cc. Everything listed here is deployed except the sections marked "built, not deployed" (the 2026-10-14 release went out once the SSH access in [task-0027](tasks/task-0027.md) was restored; the live visualizer files match `origin/main` as of 2026-10-15). Why: [tech/decisions.md](tech/decisions.md); runbook: [tech/deploy.md](tech/deploy.md).
 
+## 2026-10-28 (web: unlink icon)
+
+- Web (owner request; `scripts/check.sh` passes, /health ready after 6 s, served `app.js` byte-identical to `web/dist/app.js`, not seen in a browser): the four short break strokes of the unlink icon sit about 3 units from the chain ends, so they no longer touch the chain at small sizes ([icons README](brand/icons/README.md#link-and-unlink)).
+
 ## 2026-10-28 (iOS: UI/UX team loop, task-0125; in source, not built into TestFlight)
 
 - iOS (IOS-130, [task-0125](tasks/task-0125.md); 8 audit rounds, both schemes build, 173 `AudioPlayerTests` pass, checked in the simulator, not run on a device): tighter Library, album and dock layout, Song Details with one-line "Artist · year", shared song list changes. Not finished: album track titles are still cut and the dock is large at AX5 (see the task).
