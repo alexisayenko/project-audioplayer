@@ -3,6 +3,7 @@ import SwiftUI
 struct TransportKeyStyle: ButtonStyle {
     enum Kind { case key, lit, ghost(on: Bool) }
     var kind: Kind
+    @Environment(\.isEnabled) private var enabled
     @ScaledMetric(relativeTo: .body) private var heightFactor: CGFloat = 1
 
     private var foreground: Color {
@@ -34,7 +35,7 @@ struct TransportKeyStyle: ButtonStyle {
                         .fill(on ? DS.Color.accentTint : Color.clear)
                 }
             }
-            .opacity(configuration.isPressed ? 0.75 : 1)
+            .opacity(enabled ? (configuration.isPressed ? 0.75 : 1) : 0.4)
     }
 }
 

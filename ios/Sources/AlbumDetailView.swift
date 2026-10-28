@@ -43,7 +43,7 @@ struct AlbumDetailView: View {
         guard let album else { return [] }
         let ids = Set(songs.keys)
         return [AlbumLogic.byline(album), AlbumLogic.summary(album),
-                AlbumLogic.statusText(album, libraryIDs: ids) + " · " + AlbumLogic.phoneText(album, phoneIDs: library.phoneIDs)].filter { !$0.isEmpty }
+                AlbumLogic.statusText(album, libraryIDs: ids, ready: server.libraryReady(signedIn: ServerLink.hasCredentials(settings), hasSongs: !songs.isEmpty)) + " · " + AlbumLogic.phoneText(album, phoneIDs: library.phoneIDs)].filter { !$0.isEmpty }
     }
 
     private func pending(_ songs: [String: Track]) -> Int {

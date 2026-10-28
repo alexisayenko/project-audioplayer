@@ -84,14 +84,15 @@ enum AlbumLogic {
     }
 
     /// "In library N of M": a counter beside "On phone N of M", so the two read as one pair; complete (JA) when N equals M.
-    static func statusText(_ album: Album, libraryIDs: Set<String>) -> String {
+    static func statusText(_ album: Album, libraryIDs: Set<String>, ready: Bool = true) -> String {
         let total = album.tracks.count
         guard total > 0 else { return "No tracks" }
+        guard ready else { return "\(total) \(total == 1 ? "track" : "tracks")" }
         return "In library \(linkedCount(album, libraryIDs: libraryIDs)) of \(total)"
     }
 
-    static func isComplete(_ album: Album, libraryIDs: Set<String>) -> Bool {
-        !album.tracks.isEmpty && linkedCount(album, libraryIDs: libraryIDs) == album.tracks.count
+    static func isComplete(_ album: Album, libraryIDs: Set<String>, ready: Bool = true) -> Bool {
+        ready && !album.tracks.isEmpty && linkedCount(album, libraryIDs: libraryIDs) == album.tracks.count
     }
 
     /// "On phone N of M": linked tracks whose audio is on the iPhone, out of all tracks.

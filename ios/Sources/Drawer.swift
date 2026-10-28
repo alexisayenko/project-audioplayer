@@ -227,7 +227,7 @@ struct SideDrawer: View {
 
     private func item(_ tab: AppTab) -> some View {
         let active = tab == selection
-        return DrawerRowButton(action: { select(tab) }) { row(symbol: tab.symbol, label: tab.title, active: active) }
+        return DrawerRowButton(action: { select(tab) }) { row(symbol: tab.symbol, label: tab.title, active: active, lines: dynamicType.isAccessibilitySize ? 1 : 2) }
             .accessibilityLabel(tab.title)
             .accessibilityAddTraits(active ? [.isSelected, .isButton] : .isButton)
     }

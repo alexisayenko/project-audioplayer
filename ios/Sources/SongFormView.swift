@@ -103,7 +103,7 @@ struct SongFormView<BPMRow: View>: View {
         VStack(alignment: .leading, spacing: DS.Space.space2) {
             Text("Tags").font(T.caption.weight(.semibold)).foregroundStyle(DS.Color.inkMuted)
             TagFlow(tags: form.tags.filter { !hiddenKeys.contains(tagKey($0)) }, removable: true, adding: addingTags, onRemove: { t in form.tags.removeAll { $0 == t } }) {
-                withAnimation { addingTags.toggle() }
+                dsWithAnimation { addingTags.toggle() }
             }
             if addingTags {
                 TagEditor(tags: $form.tags, suggested: $form.suggested, pool: pool, input: $form.pendingTag, hiddenKeys: hiddenKeys)

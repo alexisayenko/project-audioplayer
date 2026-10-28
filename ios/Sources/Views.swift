@@ -145,7 +145,7 @@ extension RootView {
             signedIn: signedIn,
             isVisible: tab == .statistics,
             isActive: scenePhase == .active,
-            loaded: !signedIn || server.synced || !library.songs.isEmpty,
+            loaded: server.libraryReady(signedIn: signedIn, hasSongs: !library.songs.isEmpty),
             fetchListening: { try await APIClient(baseURL: settings.serverURL, token: settings.token).fetch(Endpoints.statsListening) })
     }
 

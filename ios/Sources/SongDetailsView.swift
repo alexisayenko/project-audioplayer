@@ -19,6 +19,8 @@ struct SongDetailsView: View {
     @State private var share = false
     @State private var addingToPlaylist = false
     @State private var confirmDelete = false
+    @State private var confirmRemove = false
+    @ScaledMetric(relativeTo: .body) private var iconWidth: CGFloat = DS.Component.navIconFrame
     @State private var deleting = false
     @State private var didDelete = false
     @State private var tick = 0
@@ -57,6 +59,9 @@ struct SongDetailsView: View {
                 } message: {
                     Text(signedIn && track.localOnly != true ? "Removes the song from your library, on the server and on this iPhone." : "Removes the song and its audio from this iPhone.")
                 }
+                .confirmationDialog("Remove \"\(track.title)\" from this iPhone?", isPresented: $confirmRemove, titleVisibility: .visible) {
+                    Button("Remove from iPhone", role: .destructive) { library.removeAudio(id); notify("Removed from this iPhone") }
+                } message: { Text("The song stays in your library. Tap Download to get it back.") }
                 .sheet(isPresented: $addingToPlaylist) { PlaylistPickerSheet(songIDs: [id]) { notify($0) } }
                 .sheet(isPresented: $share) {
                     ShareSheet(track: track, position: current ? player.position : 0, duration: track.duration ?? 0)
@@ -217,17 +222,16 @@ struct SongDetailsView: View {
             }
             if signedIn && track.localOnly != true { action("Add to playlist", "music.note.list") { addingToPlaylist = true } }
             action("Share link", "square.and.arrow.up") { share = true }
-            if !library.contains(id) && track.onServer != false && !transferring && signedIn {
-                action("Download", "arrow.down.circle") { download(track) }
-            } else if library.contains(id) && track.localOnly != true && !current && signedIn {
-                action("Remove from iPhone", "iphone.slash") { library.removeAudio(id); notify("Removed from this iPhone") }
+            if library.contains(id) && track.localOnly != true && !current && signedIn {
+                action("Remove from iPhone", "iphone.slash") { confirmRemove = true }
             }
         }.padding(.horizontal, DS.Space.space4).librarySlab()
     }
     private func action(_ title: String, _ icon: String, perform: @escaping () -> Void) -> some View {
         VStack(spacing: 0) {
             Button(action: perform) {
-                Label(title, systemImage: icon).font(T.body).foregroundStyle(DS.Color.ink)
+                Label { Text(title) } icon: { Image(systemName: icon).frame(width: iconWidth) }
+                    .font(T.body).foregroundStyle(DS.Color.ink)
                     .frame(maxWidth: .infinity, minHeight: DS.Component.rowHeight, alignment: .leading).contentShape(Rectangle())
             }.buttonStyle(LibraryPressStyle())
             LibraryHairline()

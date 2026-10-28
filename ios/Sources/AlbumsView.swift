@@ -59,6 +59,7 @@ struct AlbumsView: View {
     @EnvironmentObject private var store: AlbumStore
     @EnvironmentObject private var library: LibraryStore
     @EnvironmentObject private var settings: Settings
+    @EnvironmentObject private var server: ServerLink
     @Environment(\.dynamicTypeSize) private var typeSize
     @StoredValue("albums.sort") private var sortRaw = AlbumSort.added.rawValue
     @StoredValue("albums.reversed") private var reversed = false
@@ -162,7 +163,8 @@ struct AlbumsView: View {
         let columns = typeSize.isAccessibilitySize ? [GridItem(.flexible())] : [GridItem(.flexible(), spacing: DS.Space.space3), GridItem(.flexible())]
         return LazyVGrid(columns: columns, spacing: DS.Space.space4) {
             ForEach(shown) { album in
-                AlbumCard(album: album, cover: AlbumCover.source(album, thumbnails: thumbs), libraryIDs: ids, phoneIDs: library.phoneIDs) {
+                AlbumCard(album: album, cover: AlbumCover.source(album, thumbnails: thumbs), libraryIDs: ids, phoneIDs: library.phoneIDs,
+                          ready: server.libraryReady(signedIn: signedIn, hasSongs: !library.songs.isEmpty)) {
                     path.append(AlbumRoute(id: album.id))
                 }
             }
@@ -183,6 +185,7 @@ struct AlbumCard: View {
     let cover: String?
     let libraryIDs: Set<String>
     let phoneIDs: Set<String>
+    var ready = true
     let open: () -> Void
 
     var body: some View {
@@ -195,15 +198,15 @@ struct AlbumCard: View {
                 Text(album.title).font(T.headline).foregroundStyle(DS.Color.ink).lineLimit(2).multilineTextAlignment(.leading)
                 let byline = AlbumLogic.byline(album)
                 if !byline.isEmpty { Text(byline).font(T.subhead).foregroundStyle(DS.Color.inkMuted).lineLimit(1) }
-                Text(AlbumLogic.statusText(album, libraryIDs: libraryIDs)).font(T.caption.weight(.semibold))
-                    .foregroundStyle(AlbumLogic.isComplete(album, libraryIDs: libraryIDs) ? DS.Color.accentInk : DS.Color.inkMuted)
+                Text(AlbumLogic.statusText(album, libraryIDs: libraryIDs, ready: ready)).font(T.caption.weight(.semibold))
+                    .foregroundStyle(AlbumLogic.isComplete(album, libraryIDs: libraryIDs, ready: ready) ? DS.Color.accentInk : DS.Color.inkMuted)
                 Text(AlbumLogic.phoneText(album, phoneIDs: phoneIDs)).font(T.caption).foregroundStyle(DS.Color.inkMuted)
             }
             .frame(maxWidth: .infinity, alignment: .topLeading).contentShape(Rectangle())
         }
         .buttonStyle(LibraryPressStyle())
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel([album.title, AlbumLogic.byline(album), AlbumLogic.statusText(album, libraryIDs: libraryIDs),
+        .accessibilityLabel([album.title, AlbumLogic.byline(album), AlbumLogic.statusText(album, libraryIDs: libraryIDs, ready: ready),
                              AlbumLogic.phoneText(album, phoneIDs: phoneIDs)].filter { !$0.isEmpty }.joined(separator: ", "))
         .accessibilityAddTraits(.isButton)
     }

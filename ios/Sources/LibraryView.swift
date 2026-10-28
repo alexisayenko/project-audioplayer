@@ -14,6 +14,9 @@ struct LibraryView: View {
     @State private var showHiddenPlaying = false
     @State private var pendingReveal: String?
     @State private var showSort = false
+    @State private var removing: Track?
+    @State private var loadTimedOut = false
+    @State private var retryTick = 0
     var mode: Binding<LibraryMode>?
     @State private var showAdd = false
     @State private var playlistSongs: [String] = []
@@ -33,6 +36,9 @@ struct LibraryView: View {
     @AccessibilityFocusState private var facetFocus: LibraryFacet?
     @AccessibilityFocusState private var errorFocus: Bool
 
+    private static let loadTimeout = 20.0
+    private struct LoadWatch: Hashable { let waiting: Bool; let tick: Int }
+
     private var signedIn: Bool { ServerLink.hasCredentials(settings) }
     private var songs: [Track] { signedIn ? library.songs : library.tracks }
     private var tracks: [Track] {
@@ -46,10 +52,20 @@ struct LibraryView: View {
         (Array(server.transfers.values) + Array(anon.transfers.values)).map(\.track)
             .filter { track in !library.songs.contains { $0.id == track.id } }.sorted { $0.id < $1.id }
     }
-    private var loading: Bool {
+    private var waiting: Bool {
         signedIn && songs.isEmpty && (server.syncing || !server.synced && server.failureMessage == nil)
     }
+    private var loading: Bool { waiting && !loadTimedOut }
+    private var ready: Bool { server.libraryReady(signedIn: signedIn, hasSongs: !songs.isEmpty) }
     private var failed: Bool { signedIn && songs.isEmpty && !loading && (!server.synced || server.forbidden) }
+    private var failedTitle: String {
+        if server.forbidden { return "Access denied" }
+        return waiting ? "Taking too long" : "Can't reach the server"
+    }
+    private var failedDetail: String {
+        if server.forbidden { return APIError.forbiddenMessage }
+        return waiting ? "The server is slow to answer. Your downloaded songs still play offline." : "Check the connection and try again."
+    }
     private var hideTools: Bool { !signedIn && songs.isEmpty && arriving.isEmpty }
 
     var body: some View {
@@ -120,6 +136,15 @@ struct LibraryView: View {
         .overlay(alignment: .top) { toastView }
         .sensoryFeedback(.success, trigger: queueTick).sensoryFeedback(.warning, trigger: deleteTick)
         .task(id: accountKey) { await listening.load(settings: settings, signedIn: signedIn, reset: true) }
+        .task(id: LoadWatch(waiting: waiting, tick: retryTick)) {
+            guard waiting else { loadTimedOut = false; return }
+            do { try await Task.sleep(for: .seconds(Self.loadTimeout)) } catch { return }
+            loadTimedOut = true
+        }
+        .confirmationDialog("Remove \"\(removing?.title ?? "")\" from this iPhone?", isPresented: Binding(get: { removing != nil }, set: { if !$0 { removing = nil } }),
+                            titleVisibility: .visible) {
+            Button("Remove from iPhone", role: .destructive) { if let track = removing { removeAudio(track) }; removing = nil }
+        } message: { Text("The song stays in your library. Tap Download to get it back.") }
         .onChange(of: accountKey) { _, _ in query.clear(); path = []; resetScroll += 1 }
         .onChange(of: listening.loaded) { _, loaded in if !loaded { query.neverListened = false } }
         .onChange(of: signedIn) { _, value in if !value { query.clear(); path = [] } }
@@ -149,7 +174,7 @@ struct LibraryView: View {
             header
             if signedIn, let mode { LibraryModeSwitch(mode: mode).padding(.horizontal, DS.Space.space4) }
             if !hideTools {
-                LibraryControls(matches: matches.count, total: songs.count,
+                LibraryControls(matches: matches.count, total: songs.count, showsCount: ready,
                                 enabled: !matches.isEmpty && !loading && !failed,
                                 canShowPlaying: player.current.map { current in songs.contains { $0.id == current.id } } ?? false,
                                 showPlaying: { showPlaying(proxy) },
@@ -211,9 +236,8 @@ struct LibraryView: View {
     @ViewBuilder private func content(_ matches: [Track], queued: Set<String>) -> some View {
         if loading { LibrarySkeleton() }
         else if failed {
-            LibraryEmpty(title: server.forbidden ? "Access denied" : "Can't reach the server", symbol: server.forbidden ? "lock.slash" : "wifi.slash",
-                         detail: server.forbidden ? APIError.forbiddenMessage : "Check the connection and try again.") {
-                Button("Retry") { Task { await refresh(); errorFocus = true } }.buttonStyle(LibraryPrimaryStyle())
+            LibraryEmpty(title: failedTitle, symbol: server.forbidden ? "lock.slash" : "wifi.slash", detail: failedDetail) {
+                Button("Retry") { loadTimedOut = false; retryTick += 1; Task { await refresh(); errorFocus = true } }.buttonStyle(LibraryPrimaryStyle())
             }.accessibilityFocused($errorFocus)
         } else if songs.isEmpty && arriving.isEmpty {
             LibraryEmpty(title: "No songs yet", symbol: "music.note",
@@ -276,7 +300,7 @@ struct LibraryView: View {
                     else { Button("Get audio") { getAudio(track) } }
                 }
                 if onPhone && !current && track.localOnly != true && signedIn {
-                    Button("Remove from iPhone") { removeAudio(track) }
+                    Button("Remove from iPhone") { removing = track }
                 }
             }
     }
@@ -292,7 +316,7 @@ struct LibraryView: View {
         if signedIn { Button { editing = ServerSong(track) } label: { Label("Edit", systemImage: "pencil") } }
         if signedIn { Button { playlistSongs = [track.id] } label: { Label("Add to playlist", systemImage: "music.note.list") } }
         if signedIn && onPhone && !current && track.localOnly != true {
-            Button(role: .destructive) { removeAudio(track) } label: { Label("Remove from iPhone", systemImage: "iphone.slash") }
+            Button(role: .destructive) { removing = track } label: { Label("Remove from iPhone", systemImage: "iphone.slash") }
         }
     }
     private func play(_ track: Track, in matches: [Track]) {

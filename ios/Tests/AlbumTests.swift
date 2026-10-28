@@ -35,6 +35,8 @@ final class AlbumTests: XCTestCase {
         XCTAssertEqual(AlbumLogic.statusText(full, libraryIDs: ["s1", "s2"]), "In library 2 of 2")
         XCTAssertTrue(AlbumLogic.isComplete(full, libraryIDs: ["s1", "s2"]))
         XCTAssertEqual(AlbumLogic.statusText(album(tracks: []), libraryIDs: []), "No tracks")
+        XCTAssertEqual(AlbumLogic.statusText(a, libraryIDs: [], ready: false), "3 tracks")
+        XCTAssertFalse(AlbumLogic.isComplete(full, libraryIDs: ["s1", "s2"], ready: false))
     }
 
     func testPhoneText() {

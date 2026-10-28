@@ -2,6 +2,10 @@
 
 What shipped, newest first. One line each; the web UI and server are live at https://electrophone.cc. Everything listed here is deployed except the sections marked "built, not deployed" (the 2026-10-14 release went out once the SSH access in [task-0027](tasks/task-0027.md) was restored; the live visualizer files match `origin/main` as of 2026-10-15). Why: [tech/decisions.md](tech/decisions.md); runbook: [tech/deploy.md](tech/deploy.md).
 
+## 2026-10-28 (iOS: HIG audit N1 to N9 fixes; not yet in a build)
+
+- iOS (IOS-124 to IOS-129; HIG audit N1 to N9; both schemes build, unit tests run, checked in the simulator, not run on a device): no "0 of 0 songs" or "In library 0 of N" before the first sync, a 20-second load timeout with Retry, confirmations for Clear queue, Remove from iPhone and Sign out, larger-text fixes (button capsules, drawer rows, Library count), Reduce Motion on the queue swipe and tag editor, Song Details without the duplicate Download, and dimmed transport keys with an empty queue.
+
 ## 2026-10-28 (Web: Add album takes the Discogs titles automatically; deployed in `bfd6a17`)
 
 - Web (LIB-270, owner request "change titles automatically"; unit tests and `scripts/check.sh` pass, /health ready after 6 s, served `app.js` byte-identical to `web/dist/app.js`, not seen in a browser): on the Review step a row with a Discogs track and a YouTube match takes the Discogs title for the new song; the checkbox "Use the Discogs title" (`titlesDiffer`, `offersDiscTitle`) is removed. A version the song form's title reader recognises (`splitDiscTitle`) goes into the version field, other brackets such as "(Metal Mix)" stay in the title; re-assigning the YouTube track recomputes the title, a title typed in the pencil wins and survives it; leftover and unmatched tracks keep their YouTube titles.

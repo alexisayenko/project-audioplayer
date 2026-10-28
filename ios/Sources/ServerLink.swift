@@ -125,6 +125,9 @@ final class ServerLink: ObservableObject {
         book.contains(id) ? board.values[id] ?? 0 : nil
     }
 
+    /// True once the catalog has been fetched (or a cached one is on screen), so counts do not read "0 of 0" while the first sync runs.
+    func libraryReady(signedIn: Bool, hasSongs: Bool) -> Bool { !signedIn || synced || hasSongs }
+
     static func hasCredentials(_ settings: Settings) -> Bool {
         !settings.token.isEmpty || AuthService.shared.isSignedIn
     }

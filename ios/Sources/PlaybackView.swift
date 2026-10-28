@@ -12,6 +12,7 @@ struct PlaybackView: View {
     @State private var showQueue = false
     @State private var showShare = false
     @State private var toast: String?
+    @State private var confirmClear = false
     @State private var editing: ServerSong?
     @State private var playlistSongs: [String] = []
     @EnvironmentObject private var settings: Settings
@@ -38,7 +39,7 @@ struct PlaybackView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: DS.Space.space4) {
-                ScreenHeader(title: "Now playing", align: .top) { menu.padding(.top, DS.Space.space2) }
+                ScreenHeader(title: "Now playing", align: .top) { menu }
                 cover
                 genreChips
                 progress
@@ -46,6 +47,7 @@ struct PlaybackView: View {
                               onShuffle: { shuffleTaps += 1; player.shuffle.toggle() }, onPrevious: { player.previous() },
                               onToggle: { toggleTaps += 1; player.toggle() }, onNext: { player.next() },
                               onRepeat: { repeatTaps += 1; player.repeatMode = player.repeatMode.next })
+                    .disabled(current == nil)
                 upNextCard
             }
             .padding(.horizontal, DS.Space.space4).padding(.top, DS.Space.space2).padding(.bottom, DS.Space.space4)
@@ -68,6 +70,9 @@ struct PlaybackView: View {
                 toast = n == 0 ? "No new songs for these tags" : "Added \(n) \(n == 1 ? "song" : "songs")"
             }
         }
+        .confirmationDialog("Clear the queue?", isPresented: $confirmClear, titleVisibility: .visible) {
+            Button("Clear queue", role: .destructive) { player.clearQueue() }
+        } message: { Text("Removes the up-next songs. The current song keeps playing.") }
         .sheet(isPresented: $showQueue) { QueueSheet() }
         .sheet(item: $editing) { SongEditView(song: $0) }
         .sheet(isPresented: Binding(get: { !playlistSongs.isEmpty }, set: { if !$0 { playlistSongs = [] } })) {
@@ -93,7 +98,7 @@ struct PlaybackView: View {
                 .disabled(current.map { !SongShare.isValidID($0.id) } ?? true)
             Button { player.skip(by: -5) } label: { Label("Back 5 seconds", systemImage: "gobackward.5") }
             Button { player.skip(by: 5) } label: { Label("Forward 5 seconds", systemImage: "goforward.5") }
-            Button(role: .destructive) { player.clearQueue() } label: { Label("Clear queue", systemImage: "trash") }
+            Button(role: .destructive) { confirmClear = true } label: { Label("Clear queue", systemImage: "trash") }
         } label: {
             Image(systemName: "ellipsis").font(.system(size: min(menuIcon, menuSize / 2))).foregroundStyle(DS.Color.ink)
                 .frame(width: menuSize, height: menuSize)
@@ -195,7 +200,7 @@ struct PlaybackView: View {
                     upNextRow(t)
                 } onRemove: {
                     guard let base = player.index.map({ $0 + 1 }) else { return }
-                    withAnimation(.easeOut(duration: 0.2)) {
+                    dsWithAnimation {
                         player.removeFromQueue(at: IndexSet(integer: base + i))
                     }
                 }
@@ -250,9 +255,9 @@ private struct SwipeToRemoveQueueRow<Content: View>: View {
                         let distance = offset + value.translation.width
                         translation = 0
                         if distance < -104 {
-                            withAnimation(.easeOut(duration: 0.2)) { onRemove() }
+                            dsWithAnimation { onRemove() }
                         } else {
-                            withAnimation(.easeOut(duration: 0.2)) { offset = distance < -34 ? -76 : 0 }
+                            dsWithAnimation { offset = distance < -34 ? -76 : 0 }
                         }
                     })
         }

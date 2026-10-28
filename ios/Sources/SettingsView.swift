@@ -14,6 +14,7 @@ struct SettingsView: View {
     @State private var confirmRemoveAll = false
     @State private var removedTick = 0
     @State private var confirmReset = false
+    @State private var confirmSignOut = false
     @State private var filesTick = 0
     @State private var filesNotice: String?
     @Environment(\.openURL) private var openURL
@@ -43,6 +44,9 @@ struct SettingsView: View {
         .confirmationDialog("Reset to the default server?", isPresented: $confirmReset, titleVisibility: .visible) {
             Button("Reset", role: .destructive) { settings.resetConnection(); Task { await server.check(settings: settings) } }
         } message: { Text("This clears the saved server address and token. Your songs stay.") }
+        .confirmationDialog("Sign out?", isPresented: $confirmSignOut, titleVisibility: .visible) {
+            Button("Sign out", role: .destructive) { auth.signOut(); server.cancelBackgroundWork(); server.clearForbidden() }
+        } message: { Text("Songs downloaded to this iPhone stay and keep playing. Sign in again to sync your library.") }
         .task { await server.check(settings: settings) }
         .onChange(of: auth.session?.email) { _, _ in server.clearForbidden(); Task { await server.check(settings: settings) } }
         .task(id: library.tracks.count) {
@@ -129,7 +133,12 @@ struct SettingsView: View {
     private func accountStatus(_ session: AuthService.Session) -> String {
         if auth.expired { return "Expired, sign in again" }
         if server.forbidden { return "Not allowed on this server" }
-        return "via \(session.provider == .apple ? "Apple" : "Google")"
+        let provider = "via \(session.provider == .apple ? "Apple" : "Google")"
+        switch server.reachable {
+        case .some(true): return provider + " \u{00B7} Server online"
+        case .some(false): return provider + " \u{00B7} Server unavailable"
+        case .none: return provider
+        }
     }
 
     private var accountCard: some View {
@@ -144,7 +153,7 @@ struct SettingsView: View {
                         }
                     }
                     .accessibilityElement(children: .combine)
-                    Button("Sign out") { auth.signOut(); server.cancelBackgroundWork(); server.clearForbidden() }.buttonStyle(DSButtonStyle(kind: .danger))
+                    Button("Sign out") { confirmSignOut = true }.buttonStyle(DSButtonStyle(kind: .danger))
                 }
                 if !auth.isSignedIn || auth.expired {
                     VStack(spacing: DS.Space.space2) {

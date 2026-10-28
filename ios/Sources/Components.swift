@@ -139,6 +139,7 @@ enum DSButtonKind { case outline, quiet, danger }
 struct DSButtonStyle: ButtonStyle {
     var kind: DSButtonKind
     @Environment(\.isEnabled) private var enabled
+    @Environment(\.dynamicTypeSize) private var typeSize
 
     private func opacity(pressed: Bool) -> Double {
         if !enabled { return 0.4 }
@@ -148,8 +149,10 @@ struct DSButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         let label = configuration.label
             .font(T.subhead.weight(.semibold))
-            .lineLimit(2).multilineTextAlignment(.center)
+            .lineLimit(typeSize.isAccessibilitySize ? 3 : 2).multilineTextAlignment(.center)
+            .fixedSize(horizontal: false, vertical: true)
             .padding(.horizontal, DS.Space.space4)
+            .padding(.vertical, typeSize.isAccessibilitySize ? DS.Space.space3 : 0)
             .frame(minHeight: kind == .danger ? 40 : DS.Space.hit)
         return Group {
             switch kind {

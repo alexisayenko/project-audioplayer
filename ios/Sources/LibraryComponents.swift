@@ -99,6 +99,7 @@ struct LibraryControls: View {
     @AccessibilityFocusState private var countFocused: Bool
     let matches: Int
     let total: Int
+    var showsCount = true
     let enabled: Bool
     let canShowPlaying: Bool
     let showPlaying: () -> Void
@@ -163,15 +164,17 @@ struct LibraryControls: View {
     }
 
     private func count(showSongs: Bool) -> some View {
-        let suffix = showSongs ? " songs" : ""
+        let suffix = showSongs || typeSize.isAccessibilitySize ? " songs" : ""
         return HStack(spacing: DS.Space.space2) {
-            Text("\(total) of \(total)\(suffix)").hidden()
+            Text("\(total) of \(total)\(suffix)").lineLimit(1).minimumScaleFactor(0.5).hidden()
                 .overlay(alignment: .trailing) {
-                    Text("\(matches) of \(total)\(suffix)")
-                        .foregroundStyle(query.narrowing ? DS.Color.selectInk : DS.Color.inkMuted)
+                    if showsCount {
+                        Text("\(matches) of \(total)\(suffix)").lineLimit(1).minimumScaleFactor(0.5)
+                            .foregroundStyle(query.narrowing ? DS.Color.selectInk : DS.Color.inkMuted)
+                    }
                 }
                 .accessibilityElement(children: .ignore)
-                .accessibilityLabel("\(matches) of \(total) songs matched")
+                .accessibilityLabel(showsCount ? "\(matches) of \(total) songs matched" : "Loading songs")
                 .accessibilityFocused($countFocused)
             Menu {
                 Button("Play all matched", action: play).disabled(!enabled)
