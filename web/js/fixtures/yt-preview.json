@@ -273,6 +273,9 @@
       "year": 1995,
       "country": "UK",
       "label": "Dragonfly Records",
+      "labels": [
+        "Dragonfly Records"
+      ],
       "trackCount": 9,
       "cover": "https://i.discogs.com/t.jpg",
       "genres": [
