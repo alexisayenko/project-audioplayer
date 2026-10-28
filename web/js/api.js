@@ -202,6 +202,7 @@ async function previewStream(url, signal, onEvent) {
 }
 
 const q = (id) => encodeURIComponent(id);
+let coverEpoch = 0;
 
 async function authCall(method, path, body) {
   const headers = { ...CSRF };
@@ -339,5 +340,9 @@ export const api = {
   setCover: (id, choice) => (choice instanceof Blob ? sendCoverFile(id, choice) : request('PUT', `/songs/${q(id)}/cover`, choice)),
   deleteCover: (id) => request('DELETE', `/songs/${q(id)}/cover`),
   coverSuggestions: (id, signal) => request('GET', `/songs/${q(id)}/cover/suggestions`, undefined, signal),
-  coverUrl: (id, v) => (v ? `/covers/${q(id)}?v=${encodeURIComponent(v)}` : `/covers/${q(id)}`),
+  coverUrl: (id, v) => {
+    const params = [v ? `v=${encodeURIComponent(v)}` : '', coverEpoch ? `r=${coverEpoch}` : ''].filter(Boolean).join('&');
+    return `/covers/${q(id)}${params ? `?${params}` : ''}`;
+  },
+  bumpCovers: () => { coverEpoch += 1; },
 };

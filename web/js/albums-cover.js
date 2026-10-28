@@ -27,7 +27,7 @@ export function songsResult(r) {
   const n = (k) => `${k} ${plural(k, 'song', 'songs')}`;
   const parts = [];
   if (r.applied) parts.push(`Set art on ${n(r.applied)}`);
-  if (r.unchanged && !r.applied) parts.push(`${n(r.unchanged)} already had this art`);
+  if (r.unchanged) parts.push(`${n(r.unchanged)} already had this art`);
   if (r.skipped) parts.push(`${n(r.skipped)} kept their own art: click again to replace it`);
   if (r.failed) parts.push(`${n(r.failed)} failed`);
   return parts.join('. ') || 'No linked songs';
@@ -80,6 +80,7 @@ export function albumCoverSection(album, onChanged = () => {}) {
     setBusy(true);
     try {
       const r = await api.albumCoverToSongs(id, replacing > 0);
+      if (r.applied) api.bumpCovers();
       await store.refresh().catch(() => {});
       replacing = r.skipped;
       const text = songsResult(r);

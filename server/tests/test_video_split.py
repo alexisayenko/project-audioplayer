@@ -444,3 +444,24 @@ def test_the_song_cover_is_the_video_thumbnail(tools, monkeypatch):
     run(tracks=[TRACKS[0]])
     assert songs_by_id()["trk_a"]["cover"] == "covers/trk_a.jpg"
     assert (deps.covers_dir(OWNER_UID) / "trk_a.jpg").read_bytes() == b"jpg"
+
+
+@pytest.mark.parametrize("fields", [{"cover_source": "custom"}, {"cover_source": "default"}, {"cover_off": True}, {"cover": "covers/trk_a.jpg"}])
+def test_a_late_thumbnail_never_overwrites_the_art_a_song_already_has(tools, monkeypatch, fields):
+    make_songs(ids=("trk_a",))
+    path = deps.covers_dir(OWNER_UID) / "trk_a.jpg"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_bytes(b"album-art")
+    songs = deps.load_songs(OWNER_UID)
+    songs[0].update(fields)
+    if "cover_source" in fields:
+        songs[0].update(cover="covers/trk_a.jpg", cover_v="v")
+    deps.save_songs(OWNER_UID, songs)
+
+    def fake_cover(video_id, dest, artwork=None):
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        dest.write_bytes(b"youtube-thumbnail")
+
+    monkeypatch.setattr(extractor, "fetch_cover", fake_cover)
+    run(tracks=[TRACKS[0]])
+    assert path.read_bytes() == b"album-art"

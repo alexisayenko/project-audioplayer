@@ -197,8 +197,15 @@ def apply_to_new_songs(uid: str, album_id: str, song_ids: Any) -> None:
         log.warning("album cover to new songs: %s", type(exc).__name__)
 
 
+def _file_is(path, jpeg: bytes) -> bool:
+    try:
+        return path.is_file() and path.read_bytes() == jpeg
+    except OSError:
+        return False
+
+
 def apply_to_songs(uid: str, album_id: str, overwrite: bool = False, only: set[str] | None = None) -> dict[str, Any] | None:
-    """Copy the album's own cover to every linked song that exists in the library (task-0120, API-305), in one library write; `only` limits it to those song ids. A song whose cover the user chose (`custom`, or the pinned placeholder `default`) is kept unless `overwrite`; an automatic or missing cover is replaced; a song that already has this very image is left. Returns `{linked, applied, unchanged, skipped, failed}`, None for an unknown album; raises `no_cover` when the album has no cover of its own."""
+    """Copy the album's own cover to every linked song that exists in the library (task-0120, API-305), in one library write; `only` limits it to those song ids. A song whose cover the user chose (`custom`, or the pinned placeholder `default`) is kept unless `overwrite`; an automatic or missing cover is replaced; a song counts as already having this art only when its record says so AND the stored image file really is the album image (a record that says so over a different file is rewritten and counted as applied). Returns `{linked, applied, unchanged, skipped, failed}`, None for an unknown album; raises `no_cover` when the album has no cover of its own."""
     with deps.tx(uid, f"album cover to songs {album_id}"):
         album = next((a for a in albums.load(deps.albums_path(uid)) if a["id"] == album_id), None)
         if album is None:
@@ -216,9 +223,10 @@ def apply_to_songs(uid: str, album_id: str, overwrite: bool = False, only: set[s
         for sid in ids:
             song = by_id[sid]
             chosen = song.get("cover_source") in ("custom", "default")
-            if song.get("cover") and song.get("cover_source") == "custom" and song.get("cover_v") == version:
+            this_art = bool(song.get("cover")) and song.get("cover_source") == "custom" and song.get("cover_v") == version
+            if this_art and _file_is(deps.covers_dir(uid) / f"{sid}.jpg", jpeg):
                 result["unchanged"] += 1
-            elif chosen and not overwrite:
+            elif chosen and not overwrite and not this_art:
                 result["skipped"] += 1
             else:
                 try:

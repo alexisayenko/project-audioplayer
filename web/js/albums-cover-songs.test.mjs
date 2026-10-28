@@ -35,6 +35,7 @@ test('songsResult words each outcome', () => {
   assert.equal(songsResult({ linked: 7, applied: 7, unchanged: 0, skipped: 0, failed: 0 }), 'Set art on 7 songs');
   assert.equal(songsResult({ linked: 1, applied: 1, unchanged: 0, skipped: 0, failed: 0 }), 'Set art on 1 song');
   assert.equal(songsResult({ linked: 2, applied: 0, unchanged: 2, skipped: 0, failed: 0 }), '2 songs already had this art');
+  assert.equal(songsResult({ linked: 9, applied: 7, unchanged: 2, skipped: 0, failed: 0 }), 'Set art on 7 songs. 2 songs already had this art');
   assert.match(songsResult({ linked: 3, applied: 1, unchanged: 0, skipped: 2, failed: 0 }), /^Set art on 1 song\. 2 songs kept their own art: click again/);
   assert.match(songsResult({ linked: 3, applied: 2, unchanged: 0, skipped: 0, failed: 1 }), /1 song failed/);
 });
@@ -51,6 +52,17 @@ test('the button is labelled, enabled with an own cover and linked songs, and po
   assert.ok(s.calls.some((c) => c.url === '/library'), 'the library is reloaded so the songs show the new art');
   assert.equal(document.getElementById('toast').textContent, 'Set art on 2 songs');
   assert.equal(s.btn.disabled, false);
+});
+
+test('after art is set the cover addresses change so the browser fetches the new image', async () => {
+  const { api } = await import('./api.js');
+  const before = api.coverUrl('aaaaaaaaaaa', 'v1');
+  const s = section(ALBUM, [{ linked: 2, applied: 2, unchanged: 0, skipped: 0, failed: 0 }]);
+  fire(s.btn, 'click');
+  await settle();
+  const after = api.coverUrl('aaaaaaaaaaa', 'v1');
+  assert.notEqual(after, before);
+  assert.match(after, /^\/covers\/aaaaaaaaaaa\?v=v1&r=\d+$/);
 });
 
 test('songs with their own art ask first: the next click replaces them with overwrite true', async () => {

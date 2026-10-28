@@ -513,6 +513,21 @@ def test_cover_to_songs_covers_only_the_new_songs(client, video, real_cover):
     assert songs[old_two]["cover_v"] == "mine"
 
 
+def test_the_chosen_art_survives_the_split_finishing_after_the_create(client, video, real_cover, tmp_path):
+    r = client.post("/albums/from-video", json=with_cover(None, coverToSongs=True), headers=H)
+    assert r.status_code == 202, r.text
+    ids = r.json()["songIds"]
+    assert len(ids) == 3
+    for n, sid in enumerate(ids):
+        produced = tmp_path / f"p{n}.m4a"
+        produced.write_bytes(b"audio")
+        video_split._attach(OWNER_UID, sid, produced, 10.0, None, b"youtube-thumbnail")
+    songs = song_covers()
+    for sid in ids:
+        assert (songs[sid]["cover"], songs[sid]["cover_source"], songs[sid]["file"]) == (f"covers/{sid}.jpg", "custom", f"{sid}.m4a")
+        assert (deps.covers_dir(OWNER_UID) / f"{sid}.jpg").read_bytes() == b"jpeg-bytes"
+
+
 @pytest.mark.parametrize("extra", [{}, {"coverToSongs": False}, {"coverToSongs": "yes"}])
 def test_cover_to_songs_off_leaves_the_song_covers_alone(client, video, real_cover, extra):
     ids = client.post("/albums/from-video", json=with_cover(None, **extra), headers=H).json()["songIds"]

@@ -37,6 +37,37 @@ def test_the_album_cover_goes_to_every_linked_song(client, covers, tmp_path):
     assert again == {"linked": 2, "applied": 0, "unchanged": 2, "skipped": 0, "failed": 0}
 
 
+def covers_path(vid):
+    return deps.covers_dir(OWNER_UID) / f"{vid}.jpg"
+
+
+def test_a_mix_of_same_art_and_a_video_thumbnail_counts_each_honestly(client, covers, tmp_path):
+    album = linked_album(client, VID, VID2)
+    client.post(url(album), json={}, headers=H)
+    songs = library.load(deps.library_path(OWNER_UID))
+    songs[1].update(cover=f"covers/{VID2}.jpg", cover_v="thumb", cover_source=None)
+    deps.save_songs(OWNER_UID, songs)
+    covers_path(VID2).write_bytes(b"youtube-thumbnail")
+    r = client.post(url(album), json={}, headers=H).json()
+    assert r == {"linked": 2, "applied": 1, "unchanged": 1, "skipped": 0, "failed": 0}
+    assert covers_path(VID2).read_bytes() == cover_file(tmp_path, album["id"]).read_bytes()
+    assert song_of(VID2)["cover_source"] == "custom"
+
+
+def test_a_record_that_says_the_art_is_there_over_another_file_is_rewritten(client, covers, tmp_path):
+    album = linked_album(client, VID, VID2)
+    client.post(url(album), json={}, headers=H)
+    for vid in (VID, VID2):
+        covers_path(vid).write_bytes(b"youtube-thumbnail")
+    for overwrite in (False, True):
+        covers_path(VID).write_bytes(b"youtube-thumbnail")
+        r = client.post(url(album), json={"overwrite": overwrite}, headers=H).json()
+        assert r["unchanged"] == 0
+        assert r["applied"] == 2
+        assert covers_path(VID).read_bytes() == cover_file(tmp_path, album["id"]).read_bytes()
+        covers_path(VID2).write_bytes(b"youtube-thumbnail")
+
+
 def test_a_cover_the_user_chose_is_kept_unless_overwrite(client, covers, tmp_path):
     album = linked_album(client, VID, VID2)
     songs = library.load(deps.library_path(OWNER_UID))

@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import contextlib
 import logging
 import os
 import re
@@ -294,12 +293,16 @@ def _detect_bpm(path: Path, song_id: str) -> float | None:
         return None
 
 
+def _wants_thumbnail(song: dict[str, Any]) -> bool:
+    """The video thumbnail is only the automatic cover: a song that has a cover already, one the user switched off or one pinned (`custom`, `default`, e.g. the album art copied by `coverToSongs` while the split was still running) keeps its own."""
+    return not song.get("cover") and not song.get("cover_off") and song.get("cover_source") not in ("custom", "default")
+
+
 def _store_cover(uid: str, song_id: str, jpeg: bytes | None) -> str | None:
     if jpeg is None:
         return None
     try:
-        with deps.SYNC.exclusive() if deps.SYNC else contextlib.nullcontext():
-            write_bytes_atomic(deps.covers_dir(uid) / f"{song_id}.jpg", jpeg)
+        write_bytes_atomic(deps.covers_dir(uid) / f"{song_id}.jpg", jpeg)
     except Exception:
         return None
     return f"covers/{song_id}.jpg"
@@ -314,7 +317,7 @@ def _fetch_thumbnail(video_id: str, stage: Path, thumbnail: str | None) -> bytes
         return None
 
 
-def _attach(uid: str, song_id: str, produced: Path, seconds: float, value: float | None, cover: str | None) -> None:
+def _attach(uid: str, song_id: str, produced: Path, seconds: float, value: float | None, thumbnail: bytes | None) -> None:
     out = deps.audio_dir(uid)
     final = out / f"{song_id}.m4a"
     out.mkdir(parents=True, exist_ok=True)
@@ -329,8 +332,8 @@ def _attach(uid: str, song_id: str, produced: Path, seconds: float, value: float
             song["duration"] = seconds
             if song.get("bpm") is None and value is not None:
                 song["bpm"] = round(value)
-            if cover and not song.get("cover") and not song.get("cover_off"):
-                song["cover"] = cover
+            if thumbnail is not None and _wants_thumbnail(song):
+                song["cover"] = _store_cover(uid, song_id, thumbnail) or song.get("cover")
             song["updated_at"] = library.now_utc()
             deps.save_songs(uid, songs)
     except Exception:
@@ -352,7 +355,7 @@ def _split_one(uid: str, owner: bool, stage: Path, source: Path, source_seconds:
     produced = stage / f"{song_id}.cut.m4a"
     seconds = _cut_one(source, produced, source_seconds, track, album, fades, track["pos"])
     value = _detect_bpm(produced, song_id)
-    _attach(uid, song_id, produced, seconds, value, _store_cover(uid, song_id, cover) if cover is not None else None)
+    _attach(uid, song_id, produced, seconds, value, cover)
 
 
 def _failure(track: dict[str, Any], exc: Exception) -> dict[str, Any]:
