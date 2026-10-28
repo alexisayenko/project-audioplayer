@@ -2,6 +2,10 @@
 
 What shipped, newest first. One line each; the web UI and server are live at https://electrophone.cc. Everything listed here is deployed except the sections marked "built, not deployed" (the 2026-10-14 release went out once the SSH access in [task-0027](tasks/task-0027.md) was restored; the live visualizer files match `origin/main` as of 2026-10-15). Why: [tech/decisions.md](tech/decisions.md); runbook: [tech/deploy.md](tech/deploy.md).
 
+## 2026-10-28 (iOS TestFlight build 20261038)
+
+- iOS: TestFlight build 20261038 uploaded 2026-10-28 and VALID in App Store Connect (archive and export from `0a239a05`; `xcodebuild -exportArchive` with `destination=upload`, signed-in Xcode account; internal group "Alex" only). It adds the UI/UX loop fixes for library, albums, playback and song details, readable album track titles and the one-line dock title.
+
 ## 2026-10-28 (web: unlink icon, second pass)
 
 - Web (owner request "a bit further"; `scripts/check.sh` passes, /health ready after 6 s, served `app.js` byte-identical to `web/dist/app.js`, checked as a render at 24, 48 and 192 px, not seen in a browser): the four break strokes of the unlink icon moved another 0.9 unit outward, so they sit about 4 units from the chain ends ([icons README](brand/icons/README.md#link-and-unlink)).
