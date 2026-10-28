@@ -14,7 +14,7 @@ const PV = {
 
 test('state: album from the preview, Discogs link kept, youtube link is the playlist, rows checked', () => {
   const st = playlistState(PV, PV.playlist.url);
-  assert.deepEqual(st.album, { title: 'B', albumArtist: 'A', type: 'EP', year: '1999', genres: ['Techno'], links: { discogs: 'https://www.discogs.com/master/1', youtube: PV.playlist.url }, coverUrl: 'https://i/d.jpg' });
+  assert.deepEqual(st.album, { title: 'B', albumArtist: 'A', type: 'EP', year: '1999', genres: ['Techno'], labels: [], links: { discogs: 'https://www.discogs.com/master/1', youtube: PV.playlist.url }, coverUrl: 'https://i/d.jpg' });
   assert.equal(st.discogsMatch, 'https://www.discogs.com/master/1');
   assert.deepEqual(st.rows.map((r) => [r.no, r.position, r.include, r.artists, r.songId]), [[1, 1, true, 'A & C', null], [2, 3, true, 'A', 's1']]);
 });
