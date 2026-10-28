@@ -10,6 +10,10 @@ What shipped, newest first. One line each; the web UI and server are live at htt
 
 - Web (owner request "a bit further"; `scripts/check.sh` passes, /health ready after 6 s, served `app.js` byte-identical to `web/dist/app.js`, checked as a render at 24, 48 and 192 px, not seen in a browser): the four break strokes of the unlink icon moved another 0.9 unit outward, so they sit about 4 units from the chain ends ([icons README](brand/icons/README.md#link-and-unlink)).
 
+## 2026-10-28 (Server and web: record labels on albums and songs; deployed in `0bd4026`)
+
+- Server and web (DATA-209, API-312, API-313, CAT-062, LIB-277; owner decision KI3; `scripts/check.sh` passes with 5088 server tests, /health ready after 11 s, unauthenticated `PATCH /albums/x`, `PATCH /songs/x`, `POST /songs`, `POST /albums/youtube/commit` and `POST /albums/from-video` answer 401, served `app.js` byte-identical to `web/dist/app.js`, not seen in a browser): an album and a song can hold a list of record labels (for example "Blue Room Released" and "Phonokol"). The song form, the album Edit dialog and the Add album Review step have a Labels pills field with suggestions from the labels already in the library; the wizard prefills it from the picked Discogs album (" (2)" marks and "Not On Label" or self-released placeholders removed) and the new songs of the album get the same labels; a song edited by hand keeps its own list. Labels show in the album info box, the album head and Song Details, and the Library and album searches match them. Additive: no field removed, shipped iOS builds are unaffected; iOS has no labels yet. Not built: a Labels filter chip and a "Use for songs" button for labels ([task-0120](tasks/task-0120.md)).
+
 ## 2026-10-28 (web: unlink icon)
 
 - Web (owner request; `scripts/check.sh` passes, /health ready after 6 s, served `app.js` byte-identical to `web/dist/app.js`, not seen in a browser): the four short break strokes of the unlink icon sit about 3 units from the chain ends, so they no longer touch the chain at small sizes ([icons README](brand/icons/README.md#link-and-unlink)).
