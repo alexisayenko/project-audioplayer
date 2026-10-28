@@ -1,6 +1,6 @@
 {
   "esbuild": "0.27.7",
-  "sources": "8025f3d25dc2e04b750ecf8f07f82790fd8604954ff6b439c0146fc57cc10c87",
+  "sources": "ea01e9b68207fffa264f4f0106e25af46a52cd6791110b1083c8a3b678fbbe69",
   "modules": [
     "js/about.js",
     "js/add-preview.js",
@@ -126,6 +126,9 @@
     "js/identify-plan.js",
     "js/idle-task.js",
     "js/input-modality.js",
+    "js/label-field.js",
+    "js/label-names.js",
+    "js/label-suggest.js",
     "js/lazy-route.js",
     "js/lazy-ui.js",
     "js/legal.js",
@@ -323,17 +326,17 @@
   "tier1": [
     "dist/app.js",
     "dist/icons.js",
-    "dist/chunk-K4REJ6EY.js",
-    "dist/chunk-UTAXSKZ4.js",
-    "dist/chunk-4V6YK7OV.js",
+    "dist/chunk-B6DCJMZU.js",
+    "dist/chunk-YFBZ6OAM.js",
+    "dist/chunk-3NVFIIBT.js",
     "dist/chunk-UT7STWSY.js",
     "dist/chunk-EEQXK5JZ.js",
     "dist/chunk-WOT6VMZA.js"
   ],
   "tier2": [
-    "dist/lazy-ui-G5ZPOBOY.js",
+    "dist/lazy-ui-NJYSVGAX.js",
     "dist/chunk-N44TH7US.js",
-    "dist/chunk-AVMWEDOJ.js",
-    "dist/lazy-genres-SBIEBTKX.js"
+    "dist/chunk-DA2DX4QC.js",
+    "dist/lazy-genres-5SZGZ3VY.js"
   ]
 }
