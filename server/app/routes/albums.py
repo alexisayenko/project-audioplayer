@@ -130,7 +130,7 @@ def patch_album(album_id: str, body: AlbumPatchRequest, user: User):
             changes[key] = albums.clean_link(key, value)
         if "rymUrl" in body.model_fields_set:
             changes["rateyourmusic"] = albums.clean_rym(body.rymUrl)
-        for key in ("title", "artist", "year", "genres"):
+        for key in ("title", "artist", "year", "genres", "labels"):
             if key in body.model_fields_set:
                 fields[key] = albums.clean_field(key, getattr(body, key))
     except albums.AlbumError as exc:

@@ -13,11 +13,11 @@ from typing import Any
 
 from fastapi import HTTPException
 
-from . import album_covers, albums, credit_title, credits_split, credits_v1, deps, discogs_lookup, downloads, extractor, genre_filter, genre_lookup, library, limits, playlist_import, timeutil, urlclean, users
+from . import album_covers, albums, credit_title, credits_split, credits_v1, deps, discogs_lookup, downloads, extractor, genre_filter, genre_lookup, labels, library, limits, playlist_import, timeutil, urlclean, users
 from .links import Resolved
 
 MAX_CANDIDATES = 8
-MAX_LABELS = 3
+MAX_SEARCH_LABELS = 3
 BEST_MIN_SCORE = 0.7
 BEST_MARGIN = 0.1
 SUBSTRING_SCORE = 0.6
@@ -372,6 +372,7 @@ def _fallback_payload(raw: Any, selected: list[dict[str, Any]], list_id: str) ->
         "artist": str(data.get("artist") or "").strip()[: albums.MAX_TEXT],
         "year": timeutil.valid_year(year) if isinstance(year, int) and not isinstance(year, bool) else None,
         "genres": albums._genres({"genres": vocab_genres(data.get("genres"))}),
+        "labels": labels.tidy(data.get("labels")),
         "type": albums.clean_type(data.get("type")),
         "rymUrl": None,
         "links": {"discogs": None, "rateyourmusic": None, "youtube": None, "wikipedia": None},
@@ -390,7 +391,7 @@ def _album_payload(raw: Any, selected: list[dict[str, Any]], list_id: str, playl
     order = sorted(selected, key=lambda s: s["trackNo"]) if numbered else selected
     numbers = {s["position"]: (s["trackNo"] if numbered else i) for i, s in enumerate(order, 1)}
     payload = {
-        "title": a["title"], "artist": a["artist"], "year": a["year"], "genres": a["genres"], "type": a["type"], "rymUrl": links["rateyourmusic"], "links": links,
+        "title": a["title"], "artist": a["artist"], "year": a["year"], "genres": a["genres"], "labels": a["labels"], "type": a["type"], "rymUrl": links["rateyourmusic"], "links": links,
         "source": {"type": "youtube", "id": list_id, "url": urlclean.playlist_url(list_id)},
         "tracks": [{"no": numbers[s["position"]], "title": s["title"], "durationS": s["durationS"]} for s in order],
     }
@@ -524,6 +525,8 @@ def _create(uid: str, entry: dict[str, Any], album: dict[str, Any] | None = None
         meta["albums"] = [album["title"]]
         if album.get("year"):
             meta["releaseYear"] = album["year"]
+        if album.get("labels"):
+            meta["labels"] = labels.tidy(album["labels"])
     if entry["withArtists"]:
         meta["withArtists"] = entry["withArtists"]
     if entry["version"]:
@@ -538,8 +541,11 @@ def _create(uid: str, entry: dict[str, Any], album: dict[str, Any] | None = None
 
 
 def fill_song(song: dict[str, Any], album: dict[str, Any], artist: str | None = None) -> bool:
-    """Copies the album's title, year, vocabulary genres and the track (else album) artist into the song's EMPTY fields; nothing non-empty is overwritten. Returns whether the song changed."""
+    """Copies the album's title, year, vocabulary genres, labels and the track (else album) artist into the song's EMPTY fields; nothing non-empty is overwritten. Returns whether the song changed."""
     changed = False
+    names = labels.tidy(album.get("labels"))
+    if names and not labels.tidy(song.get("labels")):
+        song["labels"], changed = names, True
     title, year = str(album.get("title") or "").strip(), album.get("year")
     if title and not song.get("albums"):
         song["albums"], changed = [title], True
@@ -661,7 +667,7 @@ def find_releases(artist: Any, title: Any, year: Any = None) -> dict[str, Any]:
 def public_candidates(found: list[dict[str, Any]]) -> list[dict[str, Any]]:
     return [{
         "id": c["discogsId"], "url": c["url"], "title": c["title"], "artist": c["artist"], "year": c["year"], "country": c["country"],
-        "label": (c["labels"] or [None])[0], "trackCount": c["trackCount"], "cover": c.get("image") or c["thumb"], "genres": c["genres"][:MAX_SUGGESTED_GENRES],
+        "label": (c["labels"] or [None])[0], "labels": c["labels"], "trackCount": c["trackCount"], "cover": c.get("image") or c["thumb"], "genres": c["genres"][:MAX_SUGGESTED_GENRES],
         "type": format_type(c["formats"]), "kind": "release", "styles": c["styles"], "masterId": c["masterId"], "releaseId": c["discogsId"], "links": {"discogs": c["url"]},
     } for c in found]
 
@@ -738,6 +744,7 @@ def _candidate(item: dict[str, Any], artist: str, album: str, count: int | None,
     ident = int(item["id"])
     genres: list[str] = []
     styles: list[str] = []
+    names = labels.from_discogs(_texts(item.get("label")))[:MAX_SEARCH_LABELS]
     image = None
     master = item.get("master_id")
     head, _, tail = str(item.get("title") or "").partition(" - ")
@@ -752,6 +759,7 @@ def _candidate(item: dict[str, Any], artist: str, album: str, count: int | None,
         genres = albums._genres({"genres": [*(detail.get("styles") or []), *(detail.get("genres") or [])]})
         styles = [str(x) for x in detail.get("styles") or []][:MAX_SUGGESTED_GENRES]
         master = detail.get("master_id") or master
+        names = labels.from_discogs([lb.get("name") for lb in detail.get("labels") or [] if isinstance(lb, dict)]) or names
     except Exception:
         pass
     score = _score(album, artist, count, total, title, who, tracks)
@@ -759,7 +767,7 @@ def _candidate(item: dict[str, Any], artist: str, album: str, count: int | None,
         "url": f"https://www.discogs.com/release/{ident}", "discogsId": ident, "title": title,
         "artist": discogs_lookup._DISAMBIG.sub("", who).rstrip(), "year": timeutil.valid_year(year) if year else None,
         "trackCount": len(tracks) if tracks is not None else None, "score": score, "best": False,
-        "formats": _texts(item.get("format")), "labels": _texts(item.get("label"), MAX_LABELS),
+        "formats": _texts(item.get("format")), "labels": names,
         "country": _text(item.get("country")), "catno": _text(item.get("catno")),
         "thumb": _text(item.get("thumb")) if str(item.get("thumb") or "").startswith("https://") else None,
         "tracks": tracks or [], "genres": genres, "image": image, "styles": styles,

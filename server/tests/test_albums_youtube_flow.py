@@ -247,7 +247,7 @@ def test_discogs_find_lists_releases_with_type_and_year_first(client, hallu, dis
     r = client.post("/albums/discogs/search", json={"artist": "Hallucinogen", "title": "Twisted", "year": 1995, "all": True}, headers=H)
     data = r.json()
     assert (r.status_code, data["searchError"], data["candidates"][0]["id"], data["candidates"][0]["year"], data["candidates"][0]["type"]) == (200, None, 77001, 1995, "album")
-    assert {"id", "url", "title", "artist", "year", "country", "label", "trackCount", "cover", "genres", "type", "kind", "styles", "masterId", "releaseId", "links"} == set(data["candidates"][0])
+    assert {"id", "url", "title", "artist", "year", "country", "label", "labels", "trackCount", "cover", "genres", "type", "kind", "styles", "masterId", "releaseId", "links"} == set(data["candidates"][0])
     assert data["candidates"][0]["label"] == "Dragonfly Records" and data["candidates"][1]["type"] == "compilation"
 
 

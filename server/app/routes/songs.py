@@ -10,7 +10,7 @@ from typing import Any
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import JSONResponse
 
-from .. import credits, deps, discogs_lookup, genre_lookup, jobs, library, limits, loops, sources, titleclean, urlclean, users, wiki_lookup
+from .. import credits, deps, discogs_lookup, genre_lookup, jobs, labels, library, limits, loops, sources, titleclean, urlclean, users, wiki_lookup
 from .. import trim as trimming
 from ..downloads import (
     add_metadata_only, mark_started, new_job, reject_unknown_country, reject_unknown_genre, run_download, run_fetch_audio,
@@ -38,6 +38,14 @@ def _check_credits(changes: dict[str, Any], current: dict[str, Any] | None = Non
         raise HTTPException(status_code=422, detail=str(exc)) from exc
 
 
+def _check_labels(value: Any) -> list[str]:
+    """The cleaned label names of a request; 422 with the message of labels.clean."""
+    try:
+        return labels.clean(value)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+
 def _started_response(vid: str, began: bool) -> dict[str, str]:
     return {"id": vid, "status": "downloading" if began else "queued"}
 
@@ -57,6 +65,7 @@ def create_song(req: CreateSongRequest, user: dict[str, Any] = Depends(deps.requ
     reject_unknown_genre(cleaned)
     sent = req.metadata.model_dump(exclude_unset=True)
     _check_credits(sent)
+    names = _check_labels(req.labels)
     trim = req.trim.model_dump(exclude_unset=True) if req.trim else None
     if trim:
         _checked_trim(trim.get("start"), trim.get("end"), None)
@@ -83,6 +92,8 @@ def create_song(req: CreateSongRequest, user: dict[str, Any] = Depends(deps.requ
         meta["source_raw"] = req.source_raw.model_dump(exclude_none=True)
     if trim:
         meta["trim"] = trim
+    if names:
+        meta["labels"] = names
     if meta.get("title") and not req.keep_title:
         meta["title"] = titleclean.clean(meta["title"])
     if not req.audio:
@@ -282,6 +293,17 @@ def _apply_tag_changes(updated: dict[str, Any], song: dict[str, Any], changes: d
     updated["tags"] = library.drop_derived_tags(cleaned)
 
 
+def _apply_labels(updated: dict[str, Any], changes: dict[str, Any]) -> None:
+    """The song's own label list replaces the old one; an empty list (or null) clears it, and a song without labels carries no key."""
+    if "labels" not in changes:
+        return
+    names = _check_labels(changes["labels"])
+    if names:
+        updated["labels"] = names
+    else:
+        updated.pop("labels", None)
+
+
 def _edited(song: dict[str, Any], changes: dict[str, Any]) -> dict[str, Any]:
     updated = dict(song)
     for key in _TEXT_FIELDS:
@@ -303,6 +325,7 @@ def _edited(song: dict[str, Any], changes: dict[str, Any]) -> dict[str, Any]:
         else:
             updated.pop("loops", None)
     _apply_links(updated, changes)
+    _apply_labels(updated, changes)
     _apply_tag_changes(updated, song, changes)
     if not updated.get("title"):
         raise HTTPException(status_code=422, detail="title must not be empty")

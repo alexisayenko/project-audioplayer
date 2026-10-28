@@ -10,7 +10,7 @@ from typing import Any
 
 from fastapi import HTTPException
 
-from . import album_covers, album_preview, album_youtube, albums, credits, deps, extractor, library, limits, playlist_import, previewcache, sources, tracklist, urlclean, users, video_split
+from . import album_covers, album_preview, album_youtube, albums, credits, deps, extractor, labels, library, limits, playlist_import, previewcache, sources, tracklist, urlclean, users, video_split
 from .problems import Problem
 
 MAX_SECONDS = video_split.MAX_SECONDS
@@ -203,7 +203,8 @@ def _included(raw: Any, duration: float | None) -> list[dict[str, Any]]:
 
 
 def _request_key(vid: str, album: dict[str, Any], tracks: list[dict[str, Any]], fades: bool) -> str:
-    blob = json.dumps([vid, album["title"], album["artist"], album["type"], album["year"], fades, tracks], sort_keys=True, default=str)
+    parts = [vid, album["title"], album["artist"], album["type"], album["year"], fades, tracks, *([album["labels"]] if album["labels"] else [])]
+    blob = json.dumps(parts, sort_keys=True, default=str)
     return hashlib.sha1(blob.encode(), usedforsecurity=False).hexdigest()[:16]
 
 
@@ -226,6 +227,7 @@ def _song_record(vid: str, album: dict[str, Any], track: dict[str, Any], song_id
         "duration": length,
         "added_at": library.now_utc(),
         "tags": library.merge_genres(album["genres"], []),
+        **labels.fields(album["labels"]),
         "sourceVideoId": vid,
         "sourceStartSec": track["start"],
         "sourceEndSec": track["end"],
@@ -244,7 +246,7 @@ def _album_record(uid: str, vid: str, album: dict[str, Any], tracks: list[dict[s
         raise HTTPException(status_code=409, detail="album_limit")
     link = albums.clean_link("youtube", f"https://youtu.be/{vid}")
     payload = {
-        "title": album["title"], "artist": album["artist"], "year": album["year"], "genres": album["genres"], "rymUrl": album["links"]["rateyourmusic"],
+        "title": album["title"], "artist": album["artist"], "year": album["year"], "genres": album["genres"], "labels": album["labels"], "rymUrl": album["links"]["rateyourmusic"],
         "links": {**album["links"], "youtube": link},
         "source": {"type": "video", "id": vid, "url": urlclean.watch_url(vid)},
         "tracks": [{"no": i, "title": t["title"], "durationS": max(1, round(t["end"] - t["start"]))} for i, t in enumerate(tracks, 1)],

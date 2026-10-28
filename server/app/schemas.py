@@ -43,6 +43,7 @@ class AlbumPatchRequest(BaseModel):
     artist: Any = None
     year: Any = None
     genres: Any = None
+    labels: Any = None
 
 
 class AlbumPlaylistTrack(BaseModel):
@@ -139,6 +140,7 @@ class CreateSongRequest(BaseModel):
     metadata: SongMeta = SongMeta()
     tags: list[str] = []
     genres: list[str] = []
+    labels: list[str] | None = None
     keep_title: bool = False
     source_raw: SourceRaw | None = None
     trim: TrimIn | None = None
@@ -147,6 +149,7 @@ class CreateSongRequest(BaseModel):
 class PatchSongRequest(SongMeta):
     tags: list[str] | None = None
     genres: list[str] | None = None
+    labels: list[str] | None = None
     youtube_url: str | None = None
     soundcloud_url: str | None = None
     url: str | None = Field(default=None, max_length=2048)

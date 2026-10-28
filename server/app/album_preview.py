@@ -7,7 +7,7 @@ from typing import Any
 
 from fastapi import HTTPException
 
-from . import album_covers, album_youtube, albums, credits_split, playlist_import, timeutil
+from . import album_covers, album_youtube, albums, credits_split, labels, playlist_import, timeutil
 from .version_norm import normalize_version
 
 VARIOUS = "Various Artists"
@@ -103,7 +103,7 @@ def clean_links(raw: Any) -> dict[str, str | None]:
 
 
 def clean_album(raw: Any) -> dict[str, Any]:
-    """The album of a commit validated: title, artist and a type are required (422 `bad_album`); year, vocabulary genres, an https cover and the three links are optional."""
+    """The album of a commit validated: title, artist and a type are required (422 `bad_album`); year, vocabulary genres, label names (422 `bad_album` when malformed), an https cover and the three links are optional."""
     data = raw if isinstance(raw, dict) else {}
     title = str(data.get("title") or "").strip()[: albums.MAX_TEXT]
     artist = str(data.get("albumArtist") or "").strip()[: albums.MAX_TEXT]
@@ -116,9 +116,13 @@ def clean_album(raw: Any) -> dict[str, Any]:
     genres = data.get("genres")
     if genres is not None and (not isinstance(genres, list) or not all(isinstance(g, str) for g in genres)):
         raise _bad("bad_album")
+    try:
+        names = labels.clean(data.get("labels"))
+    except ValueError:
+        raise _bad("bad_album") from None
     cover = data.get("coverUrl")
     return {
-        "title": title, "artist": artist, "type": kind, "year": year, "genres": albums._genres({"genres": genres or []}),
+        "title": title, "artist": artist, "type": kind, "year": year, "genres": albums._genres({"genres": genres or []}), "labels": names,
         "coverUrl": cover if isinstance(cover, str) and cover.startswith("https://") and len(cover) <= 500 else None,
         "links": clean_links(data.get("links")),
     }

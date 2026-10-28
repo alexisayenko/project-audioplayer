@@ -10,7 +10,7 @@ from typing import Any
 
 from fastapi import HTTPException
 
-from . import album_youtube, albums, discogs_lookup, timeutil
+from . import album_youtube, albums, discogs_lookup, labels, timeutil
 
 log = logging.getLogger(__name__)
 
@@ -63,7 +63,7 @@ def _row(ident: int, who: str, title: str, year: Any, tracks: list[dict[str, Any
     url = f"https://www.discogs.com/master/{ident}"
     return {
         "id": ident, "url": url, "links": {"discogs": url}, "masterId": ident, "releaseId": _positive(main), "styles": styles, "title": title, "artist": discogs_lookup._DISAMBIG.sub("", who).rstrip(),
-        "year": timeutil.valid_year(album_youtube._year_of(year)), "country": None, "label": None, "trackCount": len(tracks) if tracks is not None else None,
+        "year": timeutil.valid_year(album_youtube._year_of(year)), "country": None, "label": None, "labels": [], "trackCount": len(tracks) if tracks is not None else None,
         "cover": cover, "genres": genres[: album_youtube.MAX_SUGGESTED_GENRES], "type": kind_type, "kind": "master",
         "mainRelease": _positive(main),
     }
@@ -178,15 +178,20 @@ def _fail(exc: albums.AlbumError) -> dict[str, Any]:
     return {"candidate": None, "searchError": "discogs_not_found" if code == "not_found" else code}
 
 
+def _label_names(detail: dict[str, Any]) -> list[str]:
+    """The cleaned label names of a Discogs release (`labels[].name`: disambiguators and placeholders removed)."""
+    return labels.from_discogs([lb.get("name") for lb in detail.get("labels") or [] if isinstance(lb, dict)])
+
+
 def _resolve_release(ident: int) -> dict[str, Any]:
     detail = _cached(f"releases/{ident}")
     url = f"https://www.discogs.com/release/{ident}"
-    labels = [str(lb.get("name") or "").strip() for lb in detail.get("labels") or [] if isinstance(lb, dict)]
+    names = _label_names(detail)
     master = _positive(detail.get("master_id"))
     row = {
         "id": ident, "url": url, "links": {"discogs": url}, "masterId": master, "releaseId": ident, "styles": _styles(detail.get("styles")),
         "title": str(detail.get("title") or ""), "artist": discogs_lookup._DISAMBIG.sub("", albums._artists(detail)).rstrip(), "year": timeutil.valid_year(album_youtube._year_of(detail.get("year"))),
-        "country": album_youtube._text(detail.get("country")), "label": next((lb for lb in labels if lb), None), "tracks": albums._flat_tracks(detail),
+        "country": album_youtube._text(detail.get("country")), "label": (names or [None])[0], "labels": names, "tracks": albums._flat_tracks(detail),
         "cover": album_youtube._best_image(detail), "genres": albums._genres({"genres": [*(detail.get("styles") or []), *(detail.get("genres") or [])]})[: album_youtube.MAX_SUGGESTED_GENRES],
         "type": album_youtube.format_type(_formats(detail)), "kind": "release",
     }
@@ -218,4 +223,6 @@ def resolve(kind: Any, ident: Any) -> dict[str, Any]:
     row = _row(ident, albums._artists(detail) or albums._artists(release), str(detail.get("title") or release.get("title") or ""), detail.get("year") or release.get("year"), tracks,
                album_youtube._best_image(detail) or album_youtube._best_image(release), genres, _styles(detail.get("styles")) or _styles(release.get("styles")), main, album_youtube.format_type(_formats(release)))
     row["tracks"] = tracks
+    row["labels"] = _label_names(release)
+    row["label"] = (row["labels"] or [None])[0]
     return {"candidate": row, "searchError": None}

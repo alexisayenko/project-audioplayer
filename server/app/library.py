@@ -12,6 +12,7 @@ from pathlib import Path
 from typing import Any
 
 from . import countrycodes, credits, discogs_lookup, genre_filter, genre_lookup, langcodes, loops, sources, urlclean, wiki_lookup
+from . import labels as label_names
 from .jsonio import write_json_atomic
 from .tags import namespace, namespaced_values
 from .timeutil import max_year, now_utc  # noqa: F401
@@ -173,6 +174,12 @@ def normalize_song(song: dict[str, Any]) -> dict[str, Any]:
         else:
             del s["loops"]
     s.pop("original", None)
+    if "labels" in s:
+        found = label_names.tidy(s["labels"])
+        if found:
+            s["labels"] = found
+        else:
+            del s["labels"]
     normalize_tags(s)
     return s
 

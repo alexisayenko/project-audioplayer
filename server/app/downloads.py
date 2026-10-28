@@ -15,7 +15,7 @@ from typing import Any
 from fastapi import HTTPException
 from fastapi.responses import JSONResponse
 
-from . import bpm, coverimg, credits, deps, discogs_lookup, extractor, genre_filter, genre_lookup, genre_vocab, identify, jobs, library, limits, previewcache, sources, urlclean, wiki_lookup
+from . import bpm, coverimg, credits, deps, discogs_lookup, extractor, genre_filter, genre_lookup, genre_vocab, identify, jobs, labels, library, limits, previewcache, sources, urlclean, wiki_lookup
 from . import trim as trimming
 from .jsonio import write_bytes_atomic
 from .links import Resolved, short_error
@@ -183,6 +183,7 @@ def _downloaded_song(uid: str, owner: bool, out: Path, vid: str, meta: dict[str,
         "duration": info.get("duration"),
         "added_at": library.now_utc(),
         "tags": tags,
+        **labels.fields(meta.get("labels")),
     }
     if trimming.is_cut(trim):
         trimming.persist(record, info.get("trim") or trim, info.get("source_duration"))
@@ -339,6 +340,7 @@ def add_metadata_only(uid: str, vid: str, link: Resolved, meta: dict[str, Any], 
             "duration": found.get("duration"),
             "added_at": library.now_utc(),
             "tags": tags or _known_country_tags(library.clean_tags(found.get("tags") or [])),
+            **labels.fields(meta.get("labels")),
         }
         with deps.tx(uid, f"add {vid}"):
             songs = library.load(deps.library_path(uid))
