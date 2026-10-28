@@ -127,6 +127,6 @@ test('feedback shows the percentage and announces it, then hides', async () => {
   assert.equal($('mini-vol-sr').textContent, 'Volume 55%');
   assert.match(readFileSync(new URL('../index.html', import.meta.url), 'utf8'), /id="mini-vol-note"[^>]*aria-live="polite"/);
   assert.equal($('mini-vol-note').classList.contains('show'), true);
-  await new Promise((r) => setTimeout(r, 1100));
+  for (let i = 0; i < 3; i += 1) await new Promise((r) => setTimeout(r, 400));
   assert.equal($('mini-vol-note').classList.contains('show'), false);
 });
