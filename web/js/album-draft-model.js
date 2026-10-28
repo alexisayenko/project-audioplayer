@@ -1,4 +1,5 @@
 import { plural } from './dom.js';
+import { cleanLabels } from './label-names.js';
 
 export const ALBUM_TYPES = [['album', 'Album'], ['EP', 'EP'], ['single', 'Single'], ['mix', 'Mix'], ['compilation', 'Compilation']];
 export const normalType = (t) => ALBUM_TYPES.find(([k]) => k.toLowerCase() === String(t ?? '').toLowerCase())?.[0] || 'album';
@@ -54,6 +55,7 @@ export function albumOf(preview, address, youtube) {
     type: normalType(a.type),
     year: Number.isInteger(a.year) ? String(a.year) : '',
     genres: (Array.isArray(a.genres) ? a.genres : Array.isArray(preview.genres) ? preview.genres : []).filter((x) => typeof x === 'string' && x.trim()),
+    labels: cleanLabels(a.labels),
     links: { ...extraLinks(preview.links), youtube: youtube || address },
     coverUrl: a.coverUrl || preview.thumbnail || null,
   };
@@ -76,6 +78,7 @@ export function albumPayload(st) {
     type: a.type,
     year: year ? Number(year) : null,
     genres: a.genres,
+    ...(cleanLabels(a.labels).length ? { labels: cleanLabels(a.labels) } : {}),
     coverUrl: a.coverUrl || null,
     ...(extraLinks(a.links) ? { links: extraLinks(a.links) } : {}),
   };

@@ -4,6 +4,8 @@ import { el, field } from './dom.js';
 import { tokenGroup } from './token-field.js';
 import { wikiFields } from './wiki-links.js';
 import { chipField } from './chip-field.js';
+import { labelField } from './label-field.js';
+import { labelsOf } from './label-names.js';
 import { linkSection, ownLinkUrls } from './song-form-links.js';
 import { metadataSection } from './song-form-meta.js';
 import { creditsBlock, initialCredits } from './song-form-credits.js';
@@ -95,6 +97,7 @@ export function songForm({ mode = 'add', song = {}, source = null, onChange = nu
   const editor = tagEditor({ tags: tags0, suggested: isAdd ? tags0 : [], hideNs: true });
   const genres = chipField('genre', editor);
   const countries = chipField('country', editor);
+  const labels = labelField({ initial: labelsOf(initial) });
   const wiki = wikiFields({ song: initial.wikipedia_song, artist: initial.wikipedia_artist, album: initial.wikipedia_album });
 
   let gen = 0;
@@ -142,20 +145,23 @@ export function songForm({ mode = 'add', song = {}, source = null, onChange = nu
     meta.metaMsg,
     ident.node,
     el('div', { class: 'grid2' }, field('Album', f.album), field('First released', f.released)),
+    labels.node,
     bpmEl,
     genres.node, orig.node, countries.node,
     el('div', { class: 'field' }, el('label', {}, 'Tags'), editor.node));
   node.append(trim.node);
   node.addEventListener('input', credits.paint);
   if (onChange) node.addEventListener('input', onChange);
+  labels.subscribe(emit);
 
   const values = ({ commit = true } = {}) => {
-    commitChips(commit, genres, countries);
+    commitChips(commit, genres, countries, labels);
     return {
       title: f.title.value,
       keep_title: tc.restoredRaw !== null && f.title.value === tc.restoredRaw,
       ...credits.values(),
       albums: [f.album.value.trim(), ...moreAlbums].filter(Boolean),
+      labels: labels.get(),
       tags: editor.getTags({ commit }),
       ...wiki.values(),
       musicbrainz_url: links.state.mbUrl,
@@ -197,6 +203,7 @@ export function songForm({ mode = 'add', song = {}, source = null, onChange = nu
       trim.reset();
       tc.clearRestored();
       tc.paintCleaned(first.removed);
+      labels.set(labelsOf(initial));
       setValues(initialValues(initial, startTitle));
       credits.resetYear(initial.published_year);
     },

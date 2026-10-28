@@ -6,6 +6,7 @@ import { normalType } from './album-draft-model.js';
 import { fold } from './album-candidates.js';
 import { splitTokens } from './tokens.js';
 import { suggest } from './credits-split.js';
+import { cleanLabels } from './label-names.js';
 
 export const STEPS = ['link', 'details', 'discogs', 'review', 'run'];
 export const STEP_LABEL = { link: 'Link', details: 'Details', discogs: 'Discogs', review: 'Review', run: 'Import' };
@@ -49,7 +50,7 @@ export function newDraft() {
     preview: null, st: null, base: null, fields: { artist: '', album: '', year: '' }, edited: false,
     discogs: { key: '', state: 'idle', all: false, candidates: [], error: '', pick: null, resolved: null, auto: false, linked: null },
     review: null, art: { chosen: null },
-    album: { type: 'album', genres: [], links: {} }, touched: { genres: false, type: false },
+    album: { type: 'album', genres: [], labels: [], links: {} }, touched: { genres: false, type: false, labels: false },
     genreHints: { key: '', state: 'idle', items: [], page: null, error: '' },
     rym: { url: '', text: '' }, linkEdits: {},
   };
@@ -61,7 +62,7 @@ export function applyPreview(draft, kind, url, preview) {
   Object.assign(draft, newDraft(), keep, { kind, url, preview, st, step: 'details' });
   draft.base = { artist: st.album.albumArtist, album: st.album.title, year: st.album.year };
   draft.fields = { ...draft.base };
-  draft.album = { type: normalType(st.album.type), genres: [...st.album.genres], links: { ...st.album.links } };
+  draft.album = { type: normalType(st.album.type), genres: [...st.album.genres], labels: cleanLabels(st.album.labels), links: { ...st.album.links } };
   draft.art.chosen = null;
   return draft;
 }
@@ -274,9 +275,11 @@ export function setLinkEdit(draft, key, value) {
 export function albumNow(draft) {
   return {
     title: draft.fields.album.trim(), albumArtist: artistName(draft.fields.artist), year: draft.fields.year.trim(), type: draft.album.type,
-    genres: draft.album.genres, links: linksNow(draft), coverUrl: draft.art.chosen || null,
+    genres: draft.album.genres, labels: draft.album.labels, links: linksNow(draft), coverUrl: draft.art.chosen || null,
   };
 }
+
+export const discogsLabels = (resolved) => cleanLabels(resolved?.labels);
 
 export function reviewView(draft) {
   const rows = reviewRows(draft);

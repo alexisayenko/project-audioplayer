@@ -278,7 +278,7 @@ export const api = {
   metadata: (body, signal) => request('POST', '/metadata', body, signal),
   playlist: (url, signal) => request('POST', '/import/youtube-playlist', { url }, signal),
   playlistDetails: (ids, signal) => request('POST', '/import/youtube-playlist/details', { ids }, signal),
-  addSong: (url, metadata, tags, keepTitle = false, sourceRaw = null, trim = null) => request('POST', '/songs', { url, metadata, tags, audio: false, ...(keepTitle ? { keep_title: true } : {}), ...(sourceRaw ? { source_raw: sourceRaw } : {}), ...(trim ? { trim } : {}) }),
+  addSong: (url, metadata, tags, keepTitle = false, sourceRaw = null, trim = null, labels = null) => request('POST', '/songs', { url, metadata, tags, audio: false, ...(keepTitle ? { keep_title: true } : {}), ...(sourceRaw ? { source_raw: sourceRaw } : {}), ...(trim ? { trim } : {}), ...(labels?.length ? { labels } : {}) }),
   redownload: (id, trim = null) => request('POST', `/songs/${q(id)}/redownload`, { trim }),
   patch: (id, changes) => request('PATCH', `/songs/${q(id)}`, changes),
   fetchAudio: (id) => request('POST', `/songs/${q(id)}/audio`),

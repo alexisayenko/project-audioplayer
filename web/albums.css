@@ -139,6 +139,7 @@ input[type=text].album-year { height: var(--hit); box-sizing: content-box; flex:
 .album-edit-foot .album-download { margin-right: auto; }
 .album-edit-foot .del-left { margin-right: 0; }
 .album-stats { margin: 0; }
+.album-labels { margin: 0; overflow-wrap: anywhere; }
 .album-info-tracks { gap: var(--space-4); }
 .album-track-line { display: grid; grid-template-columns: 2.5ch minmax(0, 1fr) auto; align-items: baseline; gap: var(--space-2); }
 .album-track-line .album-len { text-align: right; }

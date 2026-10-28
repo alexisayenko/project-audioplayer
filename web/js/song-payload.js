@@ -1,5 +1,6 @@
 import { MIN_YEAR, maxYear } from './constants.js';
 import { joinNames } from './credits.js';
+import { cleanLabels, sameLabels } from './label-names.js';
 
 export const yearValue = (v) => (v === '' || v == null ? null : Number(v));
 
@@ -94,8 +95,10 @@ export const storedTags = (tags) => (Array.isArray(tags) ? tags.filter((t) => !/
 export const genresOf = (tags) => (Array.isArray(tags) ? tags.filter((t) => /^genre:/i.test(t)).map((t) => t.slice(6).trim()).filter(Boolean) : []);
 export const otherTags = (tags) => (Array.isArray(tags) ? tags.filter((t) => !/^(genre|decade|lang):/i.test(t)) : []);
 
+const labelChange = (v, stored) => (v.labels === undefined || sameLabels(v.labels, stored?.labels) ? {} : { labels: cleanLabels(v.labels) });
+
 export function patchBody(v, stored = {}) {
-  return { ...songFields(v, stored), version: versionOf(v, storedYears(stored).version), genres: genresOf(v.tags), tags: otherTags(v.tags), ...wikiFieldsOf(v), ...sourceLinkChanges(v, stored) };
+  return { ...songFields(v, stored), version: versionOf(v, storedYears(stored).version), genres: genresOf(v.tags), tags: otherTags(v.tags), ...wikiFieldsOf(v), ...sourceLinkChanges(v, stored), ...labelChange(v, stored) };
 }
 
 

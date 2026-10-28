@@ -9,7 +9,7 @@ import {
 import { clearLinks } from './album-wizard-songlink.js';
 import { mountRows } from './album-wizard-rows.js';
 import { mountPaste } from './album-wizard-paste.js';
-import { artPicker, genreArea, linkRows, typeSelect } from './album-wizard-extras.js';
+import { artPicker, genreArea, labelArea, linkRows, typeSelect } from './album-wizard-extras.js';
 
 export const NETWORK_MESSAGE = 'The server could not be reached. Check the connection and try again.';
 
@@ -42,6 +42,7 @@ export function mountReview(ctx) {
   let links = null;
   const sub = { ...ctx, refreshLinks: () => links?.refresh() };
   const genres = genreArea(sub);
+  const labels = labelArea(ctx);
   links = linkRows(sub);
   const stat = el('p', { class: 't-subhead av-summary', role: 'status' });
   const toggle = el('button', { class: 'link-btn t-caption av-select-all', type: 'button' });
@@ -68,7 +69,7 @@ export function mountReview(ctx) {
   void api.me().then((m) => { if (ctx.live() && m?.owner === true) { owner = true; paint(); } }, () => {});
 
   const node = el('div', { class: 'wiz-step wiz-review' },
-    strip, art, genres.node, links.node,
+    strip, art, genres.node, labels.node, links.node,
     el('section', { class: 'wiz-sec' },
       el('h3', { class: 't-headline' }, 'Tracks'),
       el('p', { class: 'muted t-caption' }, draft.review.disc.length
@@ -90,6 +91,7 @@ export function mountReview(ctx) {
     nextLabel: createLabel(draft),
     async run() {
       genres.commit();
+      labels.commit();
       draft.album.type = draft.album.type || 'album';
       const bad = [...fieldIssues(draft.fields), ...createIssues(draft)];
       if (bad.length) { ctx.say(bad[0]); return; }

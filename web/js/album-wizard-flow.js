@@ -1,6 +1,6 @@
 import { api } from './api.js';
 import { normalType } from './album-draft-model.js';
-import { artistName, searchKey, isConfident, buildReview, genresPayload, initialGenres, parseRym } from './album-wizard-model.js';
+import { artistName, searchKey, isConfident, buildReview, genresPayload, initialGenres, parseRym, discogsLabels } from './album-wizard-model.js';
 
 export const DISCOGS_ERRORS = {
   discogs_unavailable: 'Discogs search is not set up on this server.',
@@ -20,6 +20,7 @@ export function setPick(draft, pick) {
   if (same) return false;
   draft.discogs.pick = pick;
   draft.discogs.resolved = null;
+  if (!draft.touched.labels) draft.album.labels = [];
   clearDownstream(draft);
   return true;
 }
@@ -74,6 +75,7 @@ export async function resolvePick(draft, candidate, { resolve = api.albumDiscogs
   setPick(draft, candidate);
   draft.discogs.pick = candidate;
   draft.discogs.resolved = { ...candidate, ...full };
+  if (!draft.touched.labels) draft.album.labels = discogsLabels(draft.discogs.resolved);
   if (draft.discogs.resolved.type && !draft.touched.type) draft.album.type = normalType(draft.discogs.resolved.type);
   if (!draft.fields.year.trim() && draft.discogs.resolved.year) draft.fields.year = String(draft.discogs.resolved.year);
   buildReview(draft);

@@ -13,6 +13,7 @@ import { genreChip } from './genre-chip.js';
 import { playlistsOn } from './playlists-store.js';
 import { creditParts, subtitle, titleNodes, detailsLines, yearFact, albumOf, albumsOf, displayLine } from './credits.js';
 import { icon } from './icons.js';
+import { labelsOf } from './label-names.js';
 import { bpmLabel, liveBpmLabel, LIVE_IDLE } from './bpm-label.js';
 import { visibleTags, tagGroups, tagLabel, splitTag } from './tagname.js';
 import { genreLines } from './genre-levels.js';
@@ -50,6 +51,7 @@ export function cardModel(song) {
     yearFact: yearFact(song),
     details: detailsLines(song).filter(({ label }) => !HIDDEN_DETAILS.has(label)).map(({ label, value }) => (label === 'Cover of' ? `Cover of ${value}` : `${label}: ${value}`)),
     albums: albumsOf(song),
+    labels: labelsOf(song),
     bpm: bpmLabel(song?.bpm),
     duration: song?.duration ? fmtTime(song.duration) : '',
     links: storedLinkStates(song),
@@ -249,6 +251,7 @@ function detailsBlock(m, songId) {
     m.yearFact ? el('span', { class: 'detail' }, `Year: ${m.yearFact}`) : null,
     ...m.details.map((d) => el('span', { class: 'detail' }, d)),
     m.albums.length ? el('span', { class: 'detail' }, `${albumsLabel(m.albums)}: ${m.albums.join(', ')}`) : null,
+    m.labels.length ? el('span', { class: 'detail card-labels' }, `${m.labels.length === 1 ? 'Label' : 'Labels'}: ${m.labels.join(', ')}`) : null,
   ].filter(Boolean);
   return items.length ? el('p', { class: 'facts t-caption card-details' }, ...items) : null;
 }

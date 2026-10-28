@@ -57,7 +57,7 @@ export function previewCard({ preview, sf, dlg, onSaved }) {
     }
     save.disabled = true;
     try {
-      const added = await api.addSong(preview.source_url, addBody(v), storedTags(v.tags), v.keep_title, preview.raw ?? null, sf.trimValue());
+      const added = await api.addSong(preview.source_url, addBody(v), storedTags(v.tags), v.keep_title, preview.raw ?? null, sf.trimValue(), v.labels);
       if (added?.song && store.loaded) store.insert(added.song); else await store.refresh().catch(() => {});
       if (autoDownloadOn() && added?.id) autodl.request([added.id], { front: true });
       dlg.close();

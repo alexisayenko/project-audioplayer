@@ -1,5 +1,6 @@
 import { el, plural } from './dom.js';
 import { genreEditor } from './album-genre-editor.js';
+import { labelField } from './label-field.js';
 import { ALBUM_TYPES } from './album-draft-model.js';
 import { artOptions, SOURCE_LABEL, linksNow, linkWarning, setLinkEdit, parseRym } from './album-wizard-model.js';
 import { albumLinksPanel } from './album-form.js';
@@ -109,6 +110,23 @@ export function genreArea(ctx) {
       el('h3', { class: 't-headline' }, 'Genres'),
       ed.node, status, sugs,
       el('div', { class: 'wiz-rym' }, rymIn, rymAdd), rymNote),
+  };
+}
+
+export function labelArea(ctx) {
+  const { draft } = ctx;
+  const field = labelField({ initial: draft.album.labels });
+  field.subscribe(() => {
+    draft.album.labels = field.get();
+    draft.touched.labels = true;
+    ctx.touch();
+  });
+  return {
+    commit: () => field.commit(),
+    node: el('section', { class: 'wiz-sec wiz-labels' },
+      el('h3', { class: 't-headline' }, 'Labels'),
+      field.node,
+      el('p', { class: 'muted t-caption' }, 'The labels go on the album and on every new song of it.')),
   };
 }
 

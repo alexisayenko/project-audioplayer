@@ -77,7 +77,7 @@ export function suggestLinks({ lk, titleF, artistsF, yearIn, lookup = api.albumS
   return { btn, status };
 }
 
-export function albumFields({ title = '', artist = '', year = '', type = 'album', genres, links = {}, linksId, lookup }) {
+export function albumFields({ title = '', artist = '', year = '', type = 'album', genres, labels = null, links = {}, linksId, lookup }) {
   const tg = tokenGroup();
   const titleF = tg.field('title', title);
   const artistsF = tg.field('artists', artist);
@@ -95,6 +95,7 @@ export function albumFields({ title = '', artist = '', year = '', type = 'album'
     field('Album artists', artistsF),
     el('div', { class: 'album-yt-row2' }, field('Year', yearIn), field('Type', typeSel)),
     genres.node,
+    labels?.node,
     lk.node);
   return {
     node, titleF, artistsF, yearIn, typeSel, links: lk, suggest: sg,

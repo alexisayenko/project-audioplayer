@@ -1,6 +1,7 @@
 import { store } from './store.js';
 import { fmtTime } from './dom.js';
 import { storeGet, storeSet } from './storage.js';
+import { labelsOf } from './label-names.js';
 
 export const ALBUMS_KEY = 'electrophone.albumsView';
 
@@ -65,7 +66,7 @@ const fold = (s) => String(s ?? '').normalize('NFD').replaceAll(/\p{M}/gu, '').t
 export function matchesQuery(album, query) {
   const q = fold(query);
   if (!q) return true;
-  const hay = [album.title, album.artist, ...FACETS[0].of(album), ...(album.tracks || []).map((t) => t.title)];
+  const hay = [album.title, album.artist, ...FACETS[0].of(album), ...labelsOf(album), ...(album.tracks || []).map((t) => t.title)];
   return hay.some((h) => fold(h).includes(q));
 }
 

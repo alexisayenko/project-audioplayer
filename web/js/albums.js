@@ -19,6 +19,9 @@ import { openAddAlbum } from './album-wizard.js';
 import { ALBUMS_CHANGED, fold, lengthText } from './album-candidates.js';
 import { albumCoverImg, albumCoverSection } from './albums-cover.js';
 import { albumGenresToSongs } from './albums-genres.js';
+import { labelField } from './label-field.js';
+import { labelsOf, labelsCaption, sameLabels } from './label-names.js';
+import { noteAlbums } from './label-suggest.js';
 import { dialogHead } from './edit-dialog.js';
 import { artistLine, titleLine, displayLine, albumsOf, albumOf, releasedYear } from './credits.js';
 import { openPlDialog, closePlDialog } from './playlist-dialogs.js';
@@ -57,7 +60,8 @@ export function albumHead(a, tag = 'span', onName = null) {
         el(tag, { class: 'album-title t-headline' },
           onName ? el('button', { class: 'album-name-btn', type: 'button', title: 'Album info', onclick: (e) => onName(e.currentTarget) }, a.title) : a.title,
           el('span', { class: 'album-meta' }, ` · ${n} ${plural(n, 'track', 'tracks')}`, totalNode(a.tracks))),
-        el('span', { class: 'album-sub muted t-subhead' }, [a.artist, a.year].filter(Boolean).join(' · '))),
+        el('span', { class: 'album-sub muted t-subhead' }, [a.artist, a.year].filter(Boolean).join(' · ')),
+        labelsCaption(a) ? el('span', { class: 'album-labels muted t-caption' }, labelsCaption(a)) : null),
       el('div', { class: 'album-facts muted t-caption' },
         bpm ?el('span', { class: 'album-bpm' }, bpm) : null)),
     genres.length ? el('div', { class: 'chips album-genres' }, genres.map((g) => el('span', { class: 'chip tint' }, g))) : null);
@@ -284,7 +288,8 @@ export function openAlbumCard(album, opener = null) {
         albumCoverImg(cur, `${[cur.artist, cur.title].filter(Boolean).join(' - ')} cover`, 'cover card-cover')),
       el('div', { class: 'card-head album-card-head' },
         el('h2', { id: 'song-card-title', class: 't-title' }, heading),
-        facts ? el('p', { class: 'card-sub t-subhead album-stats' }, facts) : null),
+        facts ? el('p', { class: 'card-sub t-subhead album-stats' }, facts) : null,
+        labelsCaption(cur) ? el('p', { class: 'card-sub muted t-caption album-labels' }, labelsCaption(cur)) : null),
       genres.length ? el('div', { class: 'chip-groups card-tags' }, el('div', { class: 'chip-groups', role: 'group', 'aria-label': 'Genres' },
         el('div', { class: 'chip-group card-genre-line' }, genres.map((g) => genreChip(g))))) : null,
       Object.keys(links).length ? el('div', { class: 'album-links' }, linkIconRow(links)) : null,
@@ -419,9 +424,9 @@ function deleteStep(album, dlg, onDone) {
   only.focus();
 }
 
-export const EDIT_LABELS = { title: 'Album title', artist: 'Album artists', year: 'Year', genres: 'Genres', type: 'Type' };
+export const EDIT_LABELS = { title: 'Album title', artist: 'Album artists', year: 'Year', genres: 'Genres', labels: 'Labels', type: 'Type' };
 
-function albumPatch(album, form, nextGenres) {
+function albumPatch(album, form, nextGenres, nextLabels = null) {
   const body = {};
   const title = form.title();
   if (!title) return { error: { key: 'title', text: 'Title is required.' } };
@@ -434,6 +439,7 @@ function albumPatch(album, form, nextGenres) {
   if (year !== (album.year || null)) body.year = year;
   if (form.type() !== normalType(album.type)) body.type = form.type();
   if (JSON.stringify(nextGenres) !== JSON.stringify(album.genres || [])) body.genres = nextGenres;
+  if (nextLabels && !sameLabels(nextLabels, album.labels)) body.labels = nextLabels;
   const changed = {};
   const now = form.links.get();
   for (const key of Object.keys(now)) if (now[key] !== (form.links.have[key] || '')) changed[key] = now[key] || null;
@@ -452,7 +458,8 @@ export function openAlbumEdit(album, onSaved, closeCard = () => {}) {
   const dlg = document.getElementById('edit-dialog');
   const close = () => dlg.close();
   const genres = genreEditor(album.genres);
-  const form = albumFields({ title: album.title || '', artist: album.artist || '', year: album.year, type: album.type, genres, links: albumLinks(album), linksId: 'album-links-edit' });
+  const labels = labelField({ initial: labelsOf(album) });
+  const form = albumFields({ title: album.title || '', artist: album.artist || '', year: album.year, type: album.type, genres, labels, links: albumLinks(album), linksId: 'album-links-edit' });
   const errs = {};
   const place = (key, host) => {
     errs[key] = el('p', { class: 'msg error t-caption', role: 'alert', hidden: true });
@@ -463,6 +470,7 @@ export function openAlbumEdit(album, onSaved, closeCard = () => {}) {
   place('year', form.yearIn.parentNode);
   place('type', form.typeSel.parentNode);
   place('genres', genres.node);
+  place('labels', labels.node);
   genres.node.append(albumGenresToSongs(album, genres).node);
   const general = el('p', { class: 'msg error', role: 'alert', hidden: true });
   const showErr = (key, text) => { const e = errs[key]; if (e) { e.textContent = text; e.hidden = false; } else { general.textContent = text; general.hidden = false; } };
@@ -490,10 +498,11 @@ export function openAlbumEdit(album, onSaved, closeCard = () => {}) {
   form_.addEventListener('submit', async (e) => {
     e.preventDefault();
     genres.commit();
+    labels.commit();
     for (const x of Object.values(errs)) x.hidden = true;
     form.links.panel.setErrors({});
     general.hidden = true;
-    const patch = albumPatch(album, form, genres.get());
+    const patch = albumPatch(album, form, genres.get(), labels.get());
     if (patch.error) { showErr(patch.error.key, patch.error.text); return; }
     const { body } = patch;
     if (!Object.keys(body).length) { close(); return; }
@@ -709,6 +718,7 @@ export function mountAlbums(pane, id = albumIdOf(location.hash)) {
       }
       const full = await Promise.all(albums.map((a) => (Array.isArray(a.tracks) ? a : api.album(a.id).then((d) => ({ ...a, ...d }), () => a))));
       if (gone) return;
+      noteAlbums(full);
       all = full;
       paintAll();
     }
