@@ -528,6 +528,23 @@ def test_the_chosen_art_survives_the_split_finishing_after_the_create(client, vi
         assert (deps.covers_dir(OWNER_UID) / f"{sid}.jpg").read_bytes() == b"jpeg-bytes"
 
 
+def test_every_new_song_gets_the_album_genres_and_the_split_finishing_later_keeps_them(client, video, real_cover, tmp_path):
+    r = client.post("/albums/from-video", json=with_cover(None, coverToSongs=True), headers=H)
+    assert r.status_code == 202, r.text
+    ids = r.json()["songIds"]
+    assert len(ids) == 3
+    for sid in ids:
+        assert [t for t in song_covers()[sid]["tags"] if t.startswith("genre:")] == ["genre:psytrance"]
+    for n, sid in enumerate(ids):
+        produced = tmp_path / f"g{n}.m4a"
+        produced.write_bytes(b"audio")
+        video_split._attach(OWNER_UID, sid, produced, 10.0, None, b"youtube-thumbnail")
+    for sid in ids:
+        song = song_covers()[sid]
+        assert song["file"] == f"{sid}.m4a"
+        assert [t for t in song["tags"] if t.startswith("genre:")] == ["genre:psytrance"]
+
+
 @pytest.mark.parametrize("extra", [{}, {"coverToSongs": False}, {"coverToSongs": "yes"}])
 def test_cover_to_songs_off_leaves_the_song_covers_alone(client, video, real_cover, extra):
     ids = client.post("/albums/from-video", json=with_cover(None, **extra), headers=H).json()["songIds"]

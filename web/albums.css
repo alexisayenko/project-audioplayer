@@ -90,6 +90,8 @@
 .album-cover-thumb { --cover-size: calc(var(--hit) * 1.6); width: var(--cover-size); height: var(--cover-size); object-fit: cover; }
 .album-cover-actions { display: flex; flex-wrap: wrap; gap: var(--space-2); }
 .album-cover-actions .btn { width: auto; }
+.album-genres-songs-row { margin-top: var(--space-2); }
+.album-genres-actions .btn { width: auto; }
 @media (max-width: 479px) {
   .album-cover-edit { grid-template-columns: minmax(0, 1fr); justify-items: start; }
   .album-cover-edit .cover-edit-img { --cover-size: calc(var(--hit) * 2.5); }

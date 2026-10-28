@@ -18,6 +18,7 @@ import { backdropClose } from './dialog-backdrop.js';
 import { openAddAlbum } from './album-wizard.js';
 import { ALBUMS_CHANGED, fold, lengthText } from './album-candidates.js';
 import { albumCoverImg, albumCoverSection } from './albums-cover.js';
+import { albumGenresToSongs } from './albums-genres.js';
 import { dialogHead } from './edit-dialog.js';
 import { artistLine, titleLine, displayLine, albumsOf, albumOf, releasedYear } from './credits.js';
 import { openPlDialog, closePlDialog } from './playlist-dialogs.js';
@@ -462,6 +463,7 @@ export function openAlbumEdit(album, onSaved, closeCard = () => {}) {
   place('year', form.yearIn.parentNode);
   place('type', form.typeSel.parentNode);
   place('genres', genres.node);
+  genres.node.append(albumGenresToSongs(album, genres).node);
   const general = el('p', { class: 'msg error', role: 'alert', hidden: true });
   const showErr = (key, text) => { const e = errs[key]; if (e) { e.textContent = text; e.hidden = false; } else { general.textContent = text; general.hidden = false; } };
   const save = el('button', { type: 'submit', class: 'btn primary glow' }, 'Save');

@@ -145,6 +145,8 @@ def test_commit_applies_album_fields_links_cover_and_track_fields(client, playli
     assert [a for a in two["mainArtists"]] == ["A", "B"]
     assert three["mainArtists"] == ["Hallucinogen"]
     assert [t for t in one["tags"] if t.startswith("genre:")] == ["genre:psytrance"]
+    for song in (one, two, three):
+        assert [t for t in song["tags"] if t.startswith("genre:")] == ["genre:psytrance"]
     assert two["version"]["name"]
 
 
