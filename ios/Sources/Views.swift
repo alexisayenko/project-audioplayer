@@ -181,8 +181,7 @@ struct MiniPlayer: View {
                     .clipShape(RoundedRectangle(cornerRadius: DS.Radius.radiusSm, style: .continuous))
                     .accessibilityHidden(true)
                 VStack(alignment: .leading, spacing: 0) {
-                    Text(player.current?.title ?? "").font(T.headline).foregroundStyle(DS.Color.ink).lineLimit(compact ? 2 : 1)
-                        .fixedSize(horizontal: false, vertical: compact)
+                    Text(player.current?.title ?? "").font(T.headline).foregroundStyle(DS.Color.ink).lineLimit(1)
                     Text(player.current?.artist ?? "").font(T.caption).foregroundStyle(DS.Color.inkMuted).lineLimit(1)
                 }
                 Spacer(minLength: 0)
@@ -197,7 +196,7 @@ struct MiniPlayer: View {
                 }
                 .accessibilityLabel("Next song")
             }
-            .padding(.horizontal, DS.Space.space3).padding(.top, DS.Space.space2 + 2).padding(.bottom, DS.Space.hit - DS.Stroke.strokeProgress)
+            .padding(.horizontal, DS.Space.space3).padding(.top, DS.Space.space2 + 2).padding(.bottom, DS.Space.hit - DS.Stroke.strokeProgress - DS.Space.space2)
             .contentShape(Rectangle())
             .onTapGesture(perform: open)
             MiniProgress().accessibilityHidden(true)

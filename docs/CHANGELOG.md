@@ -12,7 +12,7 @@ What shipped, newest first. One line each; the web UI and server are live at htt
 
 ## 2026-10-28 (iOS: UI/UX team loop, task-0125; in source, not built into TestFlight)
 
-- iOS (IOS-130, [task-0125](tasks/task-0125.md); 8 audit rounds, both schemes build, 173 `AudioPlayerTests` pass, checked in the simulator, not run on a device): tighter Library, album and dock layout, Song Details with one-line "Artist · year", shared song list changes. Not finished: album track titles are still cut and the dock is large at AX5 (see the task).
+- iOS (IOS-130, [task-0125](tasks/task-0125.md); 8 audit rounds, both schemes build, 173 `AudioPlayerTests` pass, checked in the simulator, not run on a device): tighter Library, album and dock layout, Song Details with one-line "Artist · year", shared song list changes. Follow-up: album track rows no longer cut titles (44 pt thumbnail, two title lines, duration over play count), the Songs/Albums switch is icons at AX sizes, the dock title is one line and its reserved band is 8 pt shorter; the unit tests pass again (the earlier failures were the flaky `ReachabilityTests`, not the UI).
 
 ## 2026-10-28 (iOS TestFlight build 20261037)
 

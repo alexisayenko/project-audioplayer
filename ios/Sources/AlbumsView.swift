@@ -14,7 +14,7 @@ struct LibraryModeSwitch: View {
         HStack(spacing: DS.Space.space2) {
             ForEach(LibraryMode.allCases) { item in
                 LibraryFilterChip(title: item.rawValue, symbol: item.symbol, selected: mode == item,
-                                  hint: "Shows \(item.rawValue.lowercased())", dropsSymbolAtAccessibility: true) { mode = item }
+                                  hint: "Shows \(item.rawValue.lowercased())", dropsTitleAtAccessibility: true) { mode = item }
             }
             Spacer(minLength: 0)
         }

@@ -64,6 +64,7 @@ struct LibraryFilterChip: View {
     var count: Int? = nil
     var hint = "Opens the filter"
     var dropsSymbolAtAccessibility = false
+    var dropsTitleAtAccessibility = false
     let action: () -> Void
     @Environment(\.colorScheme) private var scheme
     @Environment(\.dynamicTypeSize) private var typeSize
@@ -75,7 +76,9 @@ struct LibraryFilterChip: View {
                     Image(systemName: symbol).dsIcon(DS.Icon.iconInline, weight: DS.Icon.iconWeight)
                         .foregroundStyle(selected ? DS.Color.ink : DS.Color.inkMuted)
                 }
-                Text(title).font(selected ? T.subhead.weight(.semibold) : T.subhead.weight(.medium)).lineLimit(1).minimumScaleFactor(0.7)
+                if !(dropsTitleAtAccessibility && typeSize.isAccessibilitySize) {
+                    Text(title).font(selected ? T.subhead.weight(.semibold) : T.subhead.weight(.medium)).lineLimit(1).minimumScaleFactor(0.7)
+                }
                 if let count, count > 0 {
                     Text("\(count)").font(T.caption.weight(.semibold)).foregroundStyle(scheme.onStrong)
                         .frame(minWidth: DS.Component.badge, minHeight: DS.Component.badge)

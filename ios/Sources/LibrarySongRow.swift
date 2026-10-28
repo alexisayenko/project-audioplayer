@@ -20,7 +20,8 @@ struct LibrarySongRow: View {
     let download: () -> Void
     @Environment(\.dynamicTypeSize) private var typeSize
     @ScaledMetric(relativeTo: .body) private var scaledCover = DS.Component.coverRow
-    private var cover: CGFloat { min(scaledCover, DS.Component.coverRow * 1.5) }
+    private var cover: CGFloat { trackNumber != nil ? DS.Space.hit : min(scaledCover, DS.Component.coverRow * 1.5) }
+    private var hasMeta: Bool { (!noAudio && (track.duration ?? 0) > 0) || (listenedCount ?? 0) > 0 }
     private var noAudio: Bool { !onPhone && progress == nil && track.onServer == false }
     private var subtitleEmpty: Bool {
         guard let albumArtist else { return false }
@@ -49,8 +50,12 @@ struct LibrarySongRow: View {
             HStack(alignment: .center, spacing: DS.Space.space2) {
                 textColumn.layoutPriority(0)
                 HStack(alignment: .center, spacing: DS.Space.space2) {
-                    durationButton
-                    playCount(inline: true)
+                    if hasMeta {
+                        VStack(alignment: .trailing, spacing: 0) {
+                            durationButton
+                            playCount(inline: true)
+                        }
+                    }
                     audioState(fullWidth: false)
                     queueMarker
                 }.fixedSize(horizontal: true, vertical: false).layoutPriority(2)
@@ -102,7 +107,7 @@ struct LibrarySongRow: View {
                     }
                 }
                 .clipShape(RoundedRectangle(cornerRadius: DS.Radius.radiusSm)).opacity(noAudio ? DS.Opacity.dim : 1)
-                .padding(.horizontal, typeSize.isAccessibilitySize ? 0 : DS.Space.space3)
+                .padding(.horizontal, typeSize.isAccessibilitySize ? 0 : (trackNumber != nil ? DS.Space.space2 : DS.Space.space3))
                 .padding(.vertical, typeSize.isAccessibilitySize ? 0 : rowPad).contentShape(Rectangle())
         }.buttonStyle(LibraryCoverPressStyle())
     }
@@ -110,7 +115,7 @@ struct LibrarySongRow: View {
     private var textColumn: some View {
         VStack(alignment: .leading, spacing: DS.Space.space1) {
             Button(action: details) {
-                Text(track.title).font(T.headline).foregroundStyle(DS.Color.ink).lineLimit(typeSize.isAccessibilitySize ? 3 : 1)
+                Text(track.title).font(T.headline).foregroundStyle(DS.Color.ink).lineLimit(typeSize.isAccessibilitySize ? 3 : 2)
                     .minimumScaleFactor(typeSize.isAccessibilitySize && trackNumber != nil ? 0.7 : 1)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .opacity(noAudio ? DS.Opacity.dim : 1).contentShape(Rectangle())
