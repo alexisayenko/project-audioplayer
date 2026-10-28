@@ -1,6 +1,6 @@
 {
   "esbuild": "0.27.7",
-  "sources": "67a4a284e19479da99e8317d88c92060dc6fb74fa248d3c7ac0b0697fbaaecc0",
+  "sources": "9caa6b223b5a91db775e3205df4b7e9a21dd132fdae50c3be18b09fa68721198",
   "modules": [
     "js/about.js",
     "js/add-preview.js",
@@ -28,6 +28,7 @@
     "js/album-wizard.js",
     "js/album-youtube-model.js",
     "js/albums-cover.js",
+    "js/albums-genres.js",
     "js/albums-model.js",
     "js/albums-youtube.js",
     "js/albums.js",
@@ -322,17 +323,17 @@
   "tier1": [
     "dist/app.js",
     "dist/icons.js",
-    "dist/chunk-V4F7GP4J.js",
-    "dist/chunk-NNIHR4OF.js",
-    "dist/chunk-3FEXTM2L.js",
+    "dist/chunk-FEXNNZD2.js",
+    "dist/chunk-MID7NMMS.js",
+    "dist/chunk-L3SCC3GK.js",
     "dist/chunk-DDUC7YAS.js",
     "dist/chunk-EEQXK5JZ.js",
     "dist/chunk-WOT6VMZA.js"
   ],
   "tier2": [
-    "dist/lazy-ui-S27UAKZK.js",
+    "dist/lazy-ui-KA2NX6OL.js",
     "dist/chunk-N44TH7US.js",
-    "dist/chunk-VCC3VS4A.js",
-    "dist/lazy-genres-QVMP3VYT.js"
+    "dist/chunk-QU5IHHTD.js",
+    "dist/lazy-genres-D2RSPIJZ.js"
   ]
 }
