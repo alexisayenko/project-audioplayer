@@ -40,4 +40,4 @@ Every other icon is already in the shared set: SF Symbols on iOS (names listed i
 
 ## Link and unlink
 
-[`link.svg`](link.svg) and [`unlink.svg`](unlink.svg) are the chain pair (stroke 1.8). In `unlink.svg` the four short break strokes sit about 3 units (centre line) from the chain ends, so at 24 px they keep a visible gap; the pair on the left mirrors the pair on the right through the centre (12, 12). `web/js/icons.js` carries the same paths.
+[`link.svg`](link.svg) and [`unlink.svg`](unlink.svg) are the chain pair (stroke 1.8). In `unlink.svg` the four short break strokes sit about 4 units (centre line) from the chain ends, so at 24 px they keep a visible gap; the pair on the left mirrors the pair on the right through the centre (12, 12). `web/js/icons.js` carries the same paths.
