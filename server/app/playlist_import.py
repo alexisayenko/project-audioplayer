@@ -18,7 +18,7 @@ from .problems import Problem
 from .ratelimit import KeyedWindow
 
 MAX_ENTRIES = 200
-LONG_SECONDS = 300
+LONG_SECONDS = 720
 MAX_DETAIL_IDS = 10
 DETAIL_WORKERS = 2
 DETAIL_DELAY_S = (0.5, 1.5)

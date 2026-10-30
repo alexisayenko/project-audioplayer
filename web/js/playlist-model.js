@@ -14,7 +14,7 @@ export function markOf(row, outcome) {
   if (outcome?.kind === 'failed') return { kind: 'failed', text: 'Failed', tip: outcome.message };
   if (!isListed(row)) return { kind: 'unavailable', text: 'Unavailable', tip: row.reason ? `${row.reason} video` : null };
   if (row.duplicate) return { kind: 'library', text: 'In library', tip: row.duplicate === 'id' ? 'This video is already in your library' : 'A song with the same title, artists and version is already in your library' };
-  if (row.long) return { kind: 'long', text: 'Over 5 min' };
+  if (row.long) return { kind: 'long', text: 'Over 12 min' };
   return null;
 }
 

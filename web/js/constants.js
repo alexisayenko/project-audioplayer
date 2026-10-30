@@ -25,7 +25,7 @@ export const TOUCH_SLOP_PX = 10;
 export const CLICK_SWALLOW_MS = 400;
 export const VIBRATE_MS = 10;
 
-export const LONG_SONG_SECONDS = 300;
+export const LONG_SONG_SECONDS = 720;
 export const EAGER_COVERS = 12;
 export const PREFETCH_BATCH = 6;
 export const PREFETCH_COVER_WAIT_MS = 4000;

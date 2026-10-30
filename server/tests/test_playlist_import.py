@@ -115,8 +115,8 @@ def test_listing_makes_no_lookup_calls(client, fake, monkeypatch):
     assert post(client).status_code == 200
 
 
-def test_songs_over_five_minutes_are_flagged_long(client, fake):
-    fake["entries"] = [flat(A, "A - Short", duration=300), flat(B, "A - Long", duration=301), flat(C, "A - Unknown", duration=None)]
+def test_songs_over_twelve_minutes_are_flagged_long(client, fake):
+    fake["entries"] = [flat(A, "A - Short", duration=720), flat(B, "A - Long", duration=721), flat(C, "A - Unknown", duration=None)]
     rows = by_id(post(client).json())
     assert [rows[i]["long"] for i in (A, B, C)] == [False, True, False]
 

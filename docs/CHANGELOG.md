@@ -4,6 +4,7 @@ What shipped, newest first. One line each; the web UI and server are live at htt
 
 ## Unreleased (to deploy)
 
+- Web and server (to deploy): the long-song cap `LONG_SONG_SECONDS` is 12 minutes (720 s) instead of 5: "Download all" and the playlist import treat only longer songs as long (WEB-083, ADD-081, ADD-152, YTC-052). `web/js/constants.js`, `server/app/playlist_import.py`.
 - Data (to deploy): Genres map: Chicago House and Garage House are curated genres under House (the Legacy copy of garage house is removed), and House has a fuller description (`server/data/genres_v2.json`, `server/data/genre_descriptions.json`).
 - Server (to deploy): the nine curated genres that had no v1 name (Chicago House, Balearic Trance, Big Room Trance, Electro Trance, Buchiage Trance, Hi-Tech Full-On, NRG, Trance 2.0, Chillsynth) can now be put on songs and albums (GEN-117, task-0096).
 - Data (to deploy): Genres map: Chicago House is a curated genre under House, and House has a fuller description with its tempo set to about 115-135 BPM (`server/data/genres_v2.json`, `server/data/genre_descriptions.json`).

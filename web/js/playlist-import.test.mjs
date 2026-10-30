@@ -67,7 +67,7 @@ test('lists one row per video with the Library title span, artists, version, len
   assert.equal(row(imp, 5).querySelector('.imp-version').textContent, 'Remix');
   assert.equal(row(imp, 1).querySelector('.imp-artists').textContent, 'Artist 1');
   assert.equal(row(imp, 1).querySelector('.imp-dur').textContent, '3:20');
-  assert.match(row(imp, 2).textContent, /Over 5 min/);
+  assert.match(row(imp, 2).textContent, /Over 12 min/);
   assert.match(row(imp, 3).textContent, /In library/);
   assert.match(row(imp, 4).textContent, /Unavailable/);
   assert.match(row(imp, 4).querySelector('.sub').textContent, /Private video/);

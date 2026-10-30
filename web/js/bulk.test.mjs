@@ -64,14 +64,14 @@ test('three failures in a row stop the run; a success resets the streak', () => 
   assert.deepEqual(b.failedList(r, [{ id: 'a', artist: 'A', title: 'T' }]), ['A - T (a): x', 'c (c)', 'd (d)']);
 });
 
-test('long songs: more than 5 minutes or unknown length', () => {
-  assert.equal(LONG_SONG_SECONDS, 300);
-  const songs = [{ id: 's', duration: 300 }, { id: 'l', duration: 301 }, { id: 'u' }, { id: 'z', duration: 0 }];
+test('long songs: more than 12 minutes or unknown length', () => {
+  assert.equal(LONG_SONG_SECONDS, 720);
+  const songs = [{ id: 's', duration: 720 }, { id: 'l', duration: 721 }, { id: 'u' }, { id: 'z', duration: 0 }];
   const { short, long } = b.splitLong(songs);
   assert.deepEqual(short.map((x) => x.id), ['s']);
   assert.deepEqual(long.map((x) => x.id), ['l', 'u', 'z']);
   const text = b.longText([{ id: 'l', artist: 'A', title: 'T', duration: 3600 }, { id: 'u' }, { id: 'x', duration: 400 }, { id: 'y', duration: 500 }]);
-  assert.match(text, /^4 songs are longer than 5 minutes/);
+  assert.match(text, /^4 songs are longer than 12 minutes/);
   assert.match(text, /A - T \(1:00:00\); u \(unknown length\); x \(6:40\); and 1 more/);
 });
 
@@ -90,7 +90,7 @@ test('download card skips long songs unless included', async () => {
   fire(card.querySelectorAll('button')[0], 'click');
   await flush();
   assert.match(card.textContent, /Download 1 song,/);
-  assert.match(card.textContent, /1 song is longer than 5 minutes/);
+  assert.match(card.textContent, /1 song is longer than 12 minutes/);
   const go = [...card.querySelectorAll('button')].find((x) => x.textContent === 'Start');
   fire(go, 'click');
   await flush();

@@ -15,11 +15,11 @@ test('default selection: listed, short and not already in the library', () => {
   assert.equal(defaultChecked(row('a', { state: 'unavailable' })), false);
 });
 
-test('marks: unavailable, in library, over 5 minutes, added and failed; duplicates stay tickable', () => {
+test('marks: unavailable, in library, over 12 minutes, added and failed; duplicates stay tickable', () => {
   assert.equal(markOf(row('a')), null);
   assert.deepEqual(markOf(row('a', { state: 'unavailable', reason: 'Private' })), { kind: 'unavailable', text: 'Unavailable', tip: 'Private video' });
   assert.equal(markOf(row('a', { duplicate: 'id' })).text, 'In library');
-  assert.equal(markOf(row('a', { long: true })).text, 'Over 5 min');
+  assert.equal(markOf(row('a', { long: true })).text, 'Over 12 min');
   assert.equal(markOf(row('a'), { kind: 'added' }).text, 'Added');
   assert.equal(markOf(row('a'), { kind: 'failed', message: 'boom' }).tip, 'boom');
   assert.equal(canTick(row('a', { duplicate: 'id' })), true);

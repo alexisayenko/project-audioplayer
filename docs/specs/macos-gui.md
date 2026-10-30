@@ -234,7 +234,7 @@ Left column cards (signed in):
 - Library: "N songs" with "X h of music" (or minutes), a divider, then rows Storage (`GET /me/usage`: "N / 500 songs · X / 5 GB", the owner "N songs · X"), Sync (text from `describeSync`: "In sync with git", "Saving to git", warnings with a "!" mark), Server (host).
 - BPM detection: "N songs have audio but no BPM", "Detect missing BPM" (disabled at 0 or running), progress bar, "Detecting... 12 of 56 (3 failed)", Cancel; polls `GET /me/backfill/bpm` every 2 s only while running and visible; `POST` starts, `DELETE` cancels.
 - Metadata for downloaded songs: "N downloaded songs have no metadata yet" ("Every downloaded song has its metadata." at zero), "Get metadata", "Getting metadata... N of M", Cancel, "Done: N updated, N nothing found, N failed." (`/me/backfill/metadata`).
-- Download all songs: "N songs are not downloaded yet", "Download all", confirm step (count, hourly-limit note, optional "Include long songs" for songs over 300 s), progress "Downloading... N of M", Cancel, summary, failed list with "Copy failed songs".
+- Download all songs: "N songs are not downloaded yet", "Download all", confirm step (count, hourly-limit note, optional "Include long songs" for songs over 720 s), progress "Downloading... N of M", Cancel, summary, failed list with "Copy failed songs".
 
 Right column: Playback card with the checkbox "Auto-download songs" (hint "Download songs you play or add to the queue. Each download counts toward the hourly add limit."), Visualizer card (mode, Terrain style, height selects; disabled without Web Audio). Footer: legal note.
 
