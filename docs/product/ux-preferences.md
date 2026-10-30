@@ -45,6 +45,7 @@ Living rulebook of Alex's UI/UX expectations, so UI decisions can be taken from 
 - Link/unlink are icons; the unlinked state shows the link icon (2026-10-27).
 - Lists of items to review: read-only text labels by default, edit on demand via a pencil icon (2026-10-27).
 - Songs not downloaded show a download icon in place of the queue mark, same styling (2026-10-19).
+- Grouped lists: a group header is one button (chevron, name, count, `aria-expanded`) that folds the group; fold state is remembered; the existing sort applies inside groups; "No grouping" stays the default (2026-10-30, Albums by genre).
 
 ## Dialogs
 

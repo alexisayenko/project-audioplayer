@@ -224,7 +224,7 @@ test('Edit dialog: fields, only changed keys sent, genres from the vocabulary fi
   assert.equal(dlg.querySelector('.album-edit-tracks') === null, A.tracks.length === 0);
   assert.ok(dlg.querySelector('.chip-field'));
   assert.deepEqual([...dlg.querySelectorAll('.row.end > button')].map((b) => b.textContent), ['', 'Delete from library', 'Save']);
-  assert.deepEqual([...dlg.querySelectorAll('.lk-row input')].map((i) => i.getAttribute('data-key')), ['youtube', 'wikipedia', 'discogs', 'rateyourmusic']);
+  assert.deepEqual([...dlg.querySelectorAll('.lk-row input')].map((i) => i.getAttribute('data-key')), ['youtube', 'wikipedia', 'discogs', 'rateyourmusic', 'website']);
   assert.equal(yearOf(dlg).getAttribute('maxlength') ?? '4', '4');
   setTokens(dlg, 'Album title', ' Alpha 2 ');
   yearOf(dlg).value = '2001';
@@ -382,4 +382,74 @@ test('the list payload carries the tracks: no per-album request; a list without 
   await unmount.ready;
   assert.equal(calls.filter((c) => c.url !== '/albums').length, 3);
   unmount();
+});
+
+const grp = () => { model.albumPrefs.group = 'none'; model.foldedGroups.clear(); };
+const pickGroup = (v, value) => { const s = [...v.pane.querySelectorAll('select')].find((x) => x.getAttribute('aria-label') === 'Group by'); s.value = value; fire(s, 'change'); };
+const heads = (v) => [...v.pane.querySelectorAll('.album-genre-head')];
+
+test('Group by genre lists each album once under its first genre, sorted groups, No genre last', async () => {
+  const none = mk('Delta', { genres: [], created_at: '2026-10-05T00:00:00Z' });
+  const v = await open([A, B, C, none]);
+  grp();
+  assert.deepEqual(v.names(), ['Delta', 'Bravo', 'Charlie', 'Alpha']);
+  pickGroup(v, 'genre');
+  assert.deepEqual(heads(v).map((h) => h.dataset.group), ['House', 'Techno', 'No genre']);
+  assert.deepEqual(v.names(), ['Charlie', 'Alpha', 'Bravo', 'Delta']);
+  assert.equal(heads(v)[0].querySelector('.muted').textContent, '2');
+  assert.equal(JSON.parse(localStorage.getItem(model.ALBUMS_KEY)).group, 'genre');
+  pickGroup(v, 'none');
+  assert.equal(heads(v).length, 0);
+  assert.deepEqual(v.names(), ['Delta', 'Bravo', 'Charlie', 'Alpha']);
+  v.unmount();
+});
+
+test('sort applies within each genre group and filters hide empty groups', async () => {
+  const v = await open();
+  grp();
+  model.albumPrefs.sort = 'title';
+  model.albumPrefs.reverse = true;
+  pickGroup(v, 'genre');
+  assert.deepEqual(v.names(), ['Charlie', 'Alpha', 'Bravo']);
+  typeSearch(v, 'zed');
+  assert.deepEqual(heads(v).map((h) => h.dataset.group), ['Techno']);
+  assert.equal(heads(v)[0].querySelector('.muted').textContent, '1');
+  model.albumPrefs.reverse = false;
+  v.unmount();
+});
+
+test('clicking a genre head folds it, persists, and Fold all / Unfold all toggles every group', async () => {
+  const v = await open();
+  grp();
+  pickGroup(v, 'genre');
+  const [house, techno] = heads(v);
+  assert.equal(house.getAttribute('aria-expanded'), 'true');
+  house.click();
+  assert.equal(house.getAttribute('aria-expanded'), 'false');
+  assert.equal([...v.pane.querySelectorAll('.album-genre-body')][0].hidden, true);
+  assert.deepEqual(JSON.parse(localStorage.getItem(model.FOLDED_KEY)), ['House']);
+  const all = [...v.pane.querySelectorAll('.sort-actions button')].find((b) => /fold all/i.test(b.textContent));
+  assert.equal(all.textContent, 'Fold all');
+  all.click();
+  assert.equal(heads(v).every((h) => h.getAttribute('aria-expanded') === 'false'), true);
+  const again = [...v.pane.querySelectorAll('.sort-actions button')].find((b) => /fold all/i.test(b.textContent));
+  assert.equal(again.textContent, 'Unfold all');
+  again.click();
+  assert.equal(heads(v).every((h) => h.getAttribute('aria-expanded') === 'true'), true);
+  assert.deepEqual(JSON.parse(localStorage.getItem(model.FOLDED_KEY)), []);
+  void techno;
+  v.unmount();
+});
+
+test('group choice and folded groups load back from storage', async () => {
+  localStorage.setItem(model.ALBUMS_KEY, JSON.stringify({ sort: 'title', reverse: false, group: 'genre', genres: [], years: [] }));
+  localStorage.setItem(model.FOLDED_KEY, JSON.stringify(['Techno']));
+  model.loadAlbumPrefs();
+  model.loadFolded();
+  assert.equal(model.albumPrefs.group, 'genre');
+  assert.equal(model.foldedGroups.has('Techno'), true);
+  localStorage.setItem(model.ALBUMS_KEY, JSON.stringify({ group: 'bogus' }));
+  model.loadAlbumPrefs();
+  assert.equal(model.albumPrefs.group, 'none');
+  grp();
 });

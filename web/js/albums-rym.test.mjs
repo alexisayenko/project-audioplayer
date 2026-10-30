@@ -34,7 +34,7 @@ test('albumLinks reads the four keys, ignores bad values, keeps the legacy fallb
   assert.deepEqual(albumLinks({ links: { discogs: DISCOGS, rateyourmusic: RYM, youtube: 'https://youtu.be/x', wikipedia: 'not a url' } }), { discogs: DISCOGS, rateyourmusic: RYM, youtube: 'https://youtu.be/x' });
   assert.deepEqual(albumLinks({ source: 'discogs:545650', rymUrl: RYM }), { discogs: 'https://www.discogs.com/release/545650', rateyourmusic: RYM });
   assert.deepEqual(albumLinks({ links: { discogs: null, rateyourmusic: null }, source: 'discogs:1', rymUrl: RYM }), {});
-  assert.equal(LINK_KEYS.length, 4);
+  assert.equal(LINK_KEYS.length, 5);
 });
 
 test('the info box row shows one icon per set link in a new tab; no Edit links toggle, no inline form, no old RYM field', async () => {
@@ -63,7 +63,7 @@ test('the Edit dialog has the Links panel with labelled inputs, prefilled', asyn
   const v = await open(() => ok({ ...ALBUM, links: { ...NO_LINKS, discogs: DISCOGS } }));
   const edit = openEdit(v);
   const inputs = [...edit.querySelectorAll('.lk-row input')];
-  assert.deepEqual(inputs.map((i) => i.getAttribute('aria-label')), ['YouTube link', 'Wikipedia: album', 'Discogs link', 'Rate Your Music link']);
+  assert.deepEqual(inputs.map((i) => i.getAttribute('aria-label')), ['YouTube link', 'Wikipedia: album', 'Discogs link', 'Rate Your Music link', 'Website link']);
   assert.equal(input(edit, 'discogs').value, DISCOGS);
   assert.ok(inputs.every((i) => i.tagName === 'INPUT' && i.getAttribute('placeholder')));
   assert.deepEqual([...edit.querySelectorAll('.row.end > button')].map((b) => b.textContent), ['', 'Delete from library', 'Save']);
@@ -116,7 +116,7 @@ test('422 bad_link shows the error under that field and keeps the typed text', a
 test('regression: the link inputs sit in the shared Links panel in the Edit dialog, which is not a sheet', async () => {
   const v = await open(() => ok(ALBUM));
   const edit = openEdit(v);
-  assert.equal(edit.querySelectorAll('.lk-row input').length, 4);
+  assert.equal(edit.querySelectorAll('.lk-row input').length, 5);
   assert.equal(edit.classList.contains('sheet'), false);
   const { readFileSync } = await import('node:fs');
   const css = readFileSync(new URL('../albums.css', import.meta.url), 'utf8');
@@ -159,4 +159,10 @@ test('the unlink button uses the broken-chain icon (no image file)', async () =>
   assert.equal(btn.getAttribute('aria-label'), 'Unlink song');
   assert.ok(btn.querySelector('svg'));
   v.dlg.close();
+});
+
+test('the website link shows in the album links', () => {
+  const url = 'https://iono-music.com/releases/release-2277/';
+  assert.equal(albumLinks({ links: { website: url } }).website, url);
+  assert.equal(albumLinks({ links: { website: 'javascript:alert(1)' } }).website, undefined);
 });

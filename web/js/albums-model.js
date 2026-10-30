@@ -97,12 +97,44 @@ export const ALBUM_SORTS = {
   }],
 };
 
-export const albumPrefs = { sort: 'added', reverse: false, sel: { genres: new Set(), years: new Set() } };
+export const ALBUM_GROUPS = { none: 'No grouping', genre: 'Genre' };
+export const NO_GENRE = 'No genre';
+export const FOLDED_KEY = 'electrophone.albumsFolded';
+
+export const albumPrefs = { sort: 'added', reverse: false, group: 'none', sel: { genres: new Set(), years: new Set() } };
 
 export function sortedAlbums(list) {
   const cmp = (ALBUM_SORTS[albumPrefs.sort] || ALBUM_SORTS.added)[1];
   const out = [...list].sort(cmp);
   return albumPrefs.reverse ? out.reverse() : out;
+}
+
+export function groupedAlbums(list) {
+  const sorted = sortedAlbums(list);
+  if (albumPrefs.group !== 'genre') return [{ key: '', name: '', albums: sorted }];
+  const map = new Map();
+  for (const a of sorted) {
+    const name = FACETS[0].of(a)[0] || NO_GENRE;
+    if (!map.has(name)) map.set(name, []);
+    map.get(name).push(a);
+  }
+  const named = [...map].filter(([n]) => n !== NO_GENRE).sort((x, y) => fold(x[0]).localeCompare(fold(y[0])) || x[0].localeCompare(y[0]));
+  if (map.has(NO_GENRE)) named.push([NO_GENRE, map.get(NO_GENRE)]);
+  return named.map(([name, albums]) => ({ key: name, name, albums }));
+}
+
+export const foldedGroups = new Set();
+
+export function loadFolded() {
+  try {
+    const raw = JSON.parse(storeGet(FOLDED_KEY) || 'null');
+    foldedGroups.clear();
+    if (Array.isArray(raw)) for (const x of raw) if (typeof x === 'string') foldedGroups.add(x);
+  } catch { /* a damaged value is ignored */ }
+}
+
+export function saveFolded() {
+  try { storeSet(FOLDED_KEY, JSON.stringify([...foldedGroups])); } catch { /* nothing to save to */ }
 }
 
 export function loadAlbumPrefs() {
@@ -111,6 +143,7 @@ export function loadAlbumPrefs() {
     if (!raw || typeof raw !== 'object') return;
     if (typeof raw.sort === 'string' && raw.sort in ALBUM_SORTS) albumPrefs.sort = raw.sort;
     albumPrefs.reverse = raw.reverse === true;
+    albumPrefs.group = raw.group in ALBUM_GROUPS ? raw.group : 'none';
     for (const f of FACETS) {
       albumPrefs.sel[f.id] = new Set(Array.isArray(raw[f.id]) ? raw[f.id].filter((x) => typeof x === 'string') : []);
     }
@@ -119,8 +152,9 @@ export function loadAlbumPrefs() {
 
 export function saveAlbumPrefs() {
   try {
-    storeSet(ALBUMS_KEY, JSON.stringify({ sort: albumPrefs.sort, reverse: albumPrefs.reverse, genres: [...albumPrefs.sel.genres], years: [...albumPrefs.sel.years] }));
+    storeSet(ALBUMS_KEY, JSON.stringify({ sort: albumPrefs.sort, reverse: albumPrefs.reverse, group: albumPrefs.group, genres: [...albumPrefs.sel.genres], years: [...albumPrefs.sel.years] }));
   } catch { /* nothing to save to */ }
 }
 
 loadAlbumPrefs();
+loadFolded();

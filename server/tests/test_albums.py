@@ -379,3 +379,19 @@ def test_patch_unknown_keys_are_422(client, discogs):
     album = made_album(client)
     assert client.patch(f"/albums/{album['id']}", json={"tracks": []}, headers=H).status_code == 422
     assert client.patch(f"/albums/{album['id']}", json={"id": "alb_00000000"}, headers=H).status_code == 422
+
+
+def test_website_link_accepts_any_https_page(client, discogs):
+    page = "https://iono-music.com/releases/release-2277/"
+    assert albums.clean_link("website", f"{page}#top") == page
+    assert albums.clean_link("website", "  ") is None
+    for bad in ("http://iono-music.com/x", "https://localhost/x", "https://u:p@iono-music.com/x", "https://iono-music.com:99999/x", "ftp://a.com"):
+        with pytest.raises(albums.AlbumError) as e:
+            albums.clean_link("website", bad)
+        assert (e.value.status, e.value.code, e.value.key) == (422, "bad_link", "website")
+    album = client.post("/albums", json=preview(client).json(), headers=H).json()
+    assert "website" not in album["links"]
+    url = f"/albums/{album['id']}"
+    assert client.patch(url, json={"links": {"website": page}}, headers=H).json()["links"]["website"] == page
+    assert client.get(url, headers=H).json()["links"]["website"] == page
+    assert "website" not in client.patch(url, json={"links": {"website": ""}}, headers=H).json()["links"]

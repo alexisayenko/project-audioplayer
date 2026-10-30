@@ -34,7 +34,7 @@ import { prefs, savePrefs } from './library-data.js';
 import { addAllToQueue, playAll } from './play-all.js';
 import { scrollTarget } from './reveal.js';
 import { ROW_FLASH_MS } from './constants.js';
-import { countOf, totalTime, albumLength, bpmRange, FACETS, facetValues, matchesFacets, matchesQuery, ALBUM_SORTS, albumPrefs, sortedAlbums, saveAlbumPrefs } from './albums-model.js';
+import { countOf, totalTime, albumLength, bpmRange, FACETS, facetValues, matchesFacets, matchesQuery, ALBUM_SORTS, albumPrefs, sortedAlbums, saveAlbumPrefs, ALBUM_GROUPS, groupedAlbums, foldedGroups, saveFolded } from './albums-model.js';
 
 export { totalTime, bpmRange, facetValues, matchesFacets, openAddAlbum };
 export { ALBUMS_CHANGED, QUOTA_PER_HOUR, errorCode, youtubeErrorText } from './album-candidates.js';
@@ -80,6 +80,7 @@ export const LINK_KEYS = [
   { key: 'rateyourmusic', label: 'Rate Your Music', placeholder: 'https://rateyourmusic.com/release/album/...' },
   { key: 'youtube', label: 'YouTube', placeholder: 'https://www.youtube.com/playlist?list=...' },
   { key: 'wikipedia', label: 'Wikipedia', placeholder: 'https://en.wikipedia.org/wiki/...' },
+  { key: 'website', label: 'Website', placeholder: 'https://...' },
 ];
 
 const DISCOGS_HOST = /^https?:\/\/([a-z0-9-]+\.)*discogs\.com\//i;
@@ -641,6 +642,9 @@ export function mountAlbums(pane, id = albumIdOf(location.hash)) {
     });
     const sort = el('select', { 'aria-label': 'Sort', onchange: (e) => { albumPrefs.sort = e.target.value; saveAlbumPrefs(); paintAll(); } },
       ...Object.entries(ALBUM_SORTS).map(([k, [label]]) => el('option', { value: k, selected: k === albumPrefs.sort }, label)));
+    const group = el('select', { 'aria-label': 'Group by', onchange: (e) => { albumPrefs.group = e.target.value; saveAlbumPrefs(); paintAll(); } },
+      ...Object.entries(ALBUM_GROUPS).map(([k, label]) => el('option', { value: k, selected: k === albumPrefs.group }, k === 'none' ? label : `Group by ${label.toLowerCase()}`)));
+    const foldAll = el('button', { class: 'btn outline small', type: 'button', hidden: true });
     const reverse = el('button', { class: 'icon sort-reverse', type: 'button', title: 'Reverse order', 'aria-label': 'Reverse order', 'aria-pressed': String(!!albumPrefs.reverse) }, icon('arrowUpDown', 'inline'));
     reverse.addEventListener('click', () => {
       albumPrefs.reverse = !albumPrefs.reverse;
@@ -659,7 +663,8 @@ export function mountAlbums(pane, id = albumIdOf(location.hash)) {
       el('span'), el('span', {}, 'Album'), el('span', { class: 'c-genres' }, 'Genres'));
     const sortbar = el('div', { class: 'sortbar', hidden: true },
       el('label', { class: 'sort t-headline' }, sort, icon('chevron', 'inline')), reverse,
-      summary, el('div', { class: 'sort-actions' }, clearFilters, playAllBtn, addAllBtn));
+      el('label', { class: 'sort t-headline' }, group, icon('chevron', 'inline')),
+      summary, el('div', { class: 'sort-actions' }, foldAll, clearFilters, playAllBtn, addAllBtn));
     const listSlot = el('div', { class: 'albums-list' }, el('p', { class: 'muted t-subhead state', role: 'status' }, 'Loading albums...'));
     const sel = albumPrefs.sel;
     let all = [];
@@ -673,7 +678,7 @@ export function mountAlbums(pane, id = albumIdOf(location.hash)) {
 
     const filtered = () => !!(prefs.query.trim() || sel.genres.size || sel.years.size);
     const songsOf = () => shown.flatMap((a) => linkedSongs(a.tracks));
-    const visible = () => sortedAlbums(all.filter((a) => matchesQuery(a, prefs.query) && matchesFacets(a, sel)));
+    const visible = () => groupedAlbums(all.filter((a) => matchesQuery(a, prefs.query) && matchesFacets(a, sel)));
     const albumOfSong = (id, from) => from.find((a) => linkedIds(a).includes(id)) || null;
     const clearAll = () => {
       prefs.query = '';
@@ -731,7 +736,8 @@ export function mountAlbums(pane, id = albumIdOf(location.hash)) {
       }
     }
 
-    const filterSummary = (picked, total) => `${total} in your albums · ${picked} selected · ${visible().length} ${plural(visible().length, 'album', 'albums')}`;
+    const liveCount = () => visible().reduce((n, g) => n + g.albums.length, 0);
+    const filterSummary = (picked, total) => `${total} in your albums · ${picked} selected · ${liveCount()} ${plural(liveCount(), 'album', 'albums')}`;
 
     function facetChip(f) {
       const values = facetValues(all, f);
@@ -751,7 +757,9 @@ export function mountAlbums(pane, id = albumIdOf(location.hash)) {
     function paintAll() {
       pruneSelections();
       saveAlbumPrefs();
-      shown = visible();
+      const groups = visible();
+      shown = groups.flatMap((g) => g.albums);
+      group.value = albumPrefs.group;
       toolbar.hidden = !all.length;
       sortbar.hidden = !all.length;
       window.dispatchEvent(new CustomEvent('albums-total', { detail: { text: all.length ? `${all.length} ${plural(all.length, 'album', 'albums')}` : '' } }));
@@ -777,18 +785,49 @@ export function mountAlbums(pane, id = albumIdOf(location.hash)) {
         listSlot.replaceChildren(el('div', { class: 'state card' }, el('p', { class: 'muted t-subhead' }, 'No albums match. Clear the search or the filters.')));
         return;
       }
-      const list = el('ul', { class: 'songs album-list' }, shown.map(albumRow));
-      list.addEventListener('click', (e) => {
-        const row = e.target.closest('li.song');
-        const album = row && !isRowControl(e.target) ? all.find((a) => a.id === row.dataset.id) : null;
-        if (album) openAlbumCard(album, row.querySelector('.open'));
-      });
-      paintCurrent(list);
-      listSlot.replaceChildren(el('div', { class: 'group album-group' }, head, list));
+      const grouped = albumPrefs.group === 'genre';
+      const makeList = (albums) => {
+        const list = el('ul', { class: 'songs album-list' }, albums.map(albumRow));
+        list.addEventListener('click', (e) => {
+          const row = e.target.closest('li.song');
+          const album = row && !isRowControl(e.target) ? all.find((a) => a.id === row.dataset.id) : null;
+          if (album) openAlbumCard(album, row.querySelector('.open'));
+        });
+        paintCurrent(list);
+        return list;
+      };
+      const foldLabel = () => (groups.every((g) => foldedGroups.has(g.key)) ? 'Unfold all' : 'Fold all');
+      foldAll.hidden = !grouped;
+      if (!grouped) {
+        listSlot.replaceChildren(el('div', { class: 'group album-group' }, head, makeList(shown)));
+        return;
+      }
+      foldAll.textContent = foldLabel();
+      listSlot.replaceChildren(...groups.map((g) => {
+        const folded = foldedGroups.has(g.key);
+        const btn = el('button', { class: 'album-genre-head', type: 'button', 'aria-expanded': String(!folded), 'data-group': g.key },
+          icon('chevron', 'inline'), el('span', { class: 'album-genre-name' }, g.name), el('span', { class: 'muted t-caption' }, String(g.albums.length)));
+        const panel = el('div', { class: 'album-genre-body', hidden: folded }, head.cloneNode(true), makeList(g.albums));
+        btn.addEventListener('click', () => {
+          const open = btn.getAttribute('aria-expanded') === 'true';
+          btn.setAttribute('aria-expanded', String(!open));
+          panel.hidden = open;
+          if (open) foldedGroups.add(g.key); else foldedGroups.delete(g.key);
+          saveFolded();
+          foldAll.textContent = foldLabel();
+        });
+        return el('div', { class: 'group album-group album-genre', 'data-group': g.key }, btn, panel);
+      }));
     }
+    foldAll.addEventListener('click', () => {
+      const groups = visible();
+      const every = groups.every((g) => foldedGroups.has(g.key));
+      for (const g of groups) if (every) foldedGroups.delete(g.key); else foldedGroups.add(g.key);
+      saveFolded();
+      paintAll();
+    });
     cleanups.push(player.onChange(() => {
-      const ul = listSlot.querySelector('ul.album-list');
-      if (ul) paintCurrent(ul);
+      for (const ul of listSlot.querySelectorAll('ul.album-list')) paintCurrent(ul);
       showPlaying.hidden = !(player.current && albumOfSong(player.current.id, all));
     }));
     await loadList();

@@ -18,8 +18,9 @@ const ALBUM = {
 
 function section(album, answers, songs = SONGS) {
   store.songs = songs;
-  const calls = stubFetch((u) => {
+  const calls = stubFetch((u, o) => {
     if (u === '/library') return ok({ songs });
+    if (o.method === 'PATCH') return ok({ genres: JSON.parse(o.body).genres });
     if (u.endsWith('/genres/to-songs')) { const a = answers.shift(); return a.status ? a : ok(a); }
     return ok({});
   });
@@ -71,16 +72,26 @@ test('songs with other genres are kept first; the next click says Replace and se
   assert.equal(document.getElementById('toast').textContent, 'Set genres on 1 song');
 });
 
-test('editing the genre pills resets the replace step and disables the button until the album is saved', async () => {
+test('new genres are saved on the album first, then given to the songs', async () => {
+  const s = section(ALBUM, [{ linked: 2, applied: 2, unchanged: 0, skipped: 0, failed: 0 }]);
+  s.editor.add(['Progressive Psytrance']);
+  assert.equal(s.btn.disabled, false);
+  fire(s.btn, 'click');
+  await settle();
+  const order = s.calls.filter((c) => c.url.includes('alb_1')).map((c) => `${c.opts.method} ${c.url}`);
+  assert.deepEqual(order, ['PATCH /albums/alb_1', 'POST /albums/alb_1/genres/to-songs']);
+  const patch = s.calls.find((c) => c.opts.method === 'PATCH');
+  assert.deepEqual(JSON.parse(patch.opts.body), { genres: ['Rock', 'Breakbeat', 'Progressive Psytrance'] });
+  assert.equal(s.msg(), 'Set genres on 2 songs');
+});
+
+test('editing the genre pills resets the replace step and keeps the button enabled', async () => {
   const s = section(ALBUM, [{ linked: 2, applied: 0, unchanged: 0, skipped: 2, failed: 0 }]);
   fire(s.btn, 'click');
   await settle();
   assert.equal(s.btn.textContent, 'Replace genres on 2 songs');
   s.editor.add(['House']);
   assert.equal(s.btn.textContent, 'Use for songs');
-  assert.equal(s.btn.disabled, true);
-  assert.equal(s.hint.textContent, 'Save the album to use the changed genres');
-  s.editor.set(ALBUM.genres);
   assert.equal(s.btn.disabled, false);
 });
 

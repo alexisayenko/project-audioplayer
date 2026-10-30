@@ -4,7 +4,11 @@ What shipped, newest first. One line each; the web UI and server are live at htt
 
 ## Unreleased (to deploy)
 
-- Data (to deploy): the Genres map BPM badge now also shows for Suomisaundi (about 140-150), House (120-130), Techno (120-150), Trance (125-150) and Drum 'n' Bass (160-180); their `Tempo:` lines were added to `server/data/genre_descriptions.json`, the source of the v2 descriptions of those rows. Psytrance, Goa, Dark, Progressive, Forest, Full-on, Hi-tech, Psycore, Nitzhonot and Dreamwave already had one; Breakbeat, Hardcore, Zenonesque, Synthwave, Vaporwave, Chillsynth, Darksynth, Outrun and Sovietwave stay without (no confident value or no description).
+- Web and server (to deploy): albums take a "Website" link (any https address, e.g. a label release page such as iono-music.com) in Edit album > Links, shown in the album infobox as an external-link icon (LIB-279, task-0120).
+- Web (to deploy): Albums can be grouped by genre: a new "Group by" select (No grouping, Group by genre) next to Sort; each genre is a fold/unfold group with its album count, an album sits under its first genre, "No genre" is last, Sort applies within a group, and "Fold all" / "Unfold all" and the choices are remembered (LIB-278).
+- Web (to deploy): the album Edit dialog "Use for songs" for genres no longer sits disabled while the genre pills are unsaved (a genre just added, e.g. Progressive Psytrance, looked like a dead button); it saves the pills on the album, then gives them to the linked songs (LIB-276).
+- Data (to deploy): the Genres map BPM badge now also shows for Suomisaundi (about 140-150), House (120-130), Techno (120-150), Trance (130-150) and Drum 'n' Bass (160-180); their `Tempo:` lines were added to `server/data/genre_descriptions.json`, the source of the v2 descriptions of those rows. Psytrance, Goa, Dark, Progressive, Forest, Full-on, Hi-tech, Psycore, Nitzhonot and Dreamwave already had one; Breakbeat, Hardcore, Zenonesque, Synthwave, Vaporwave, Chillsynth, Darksynth, Outrun and Sovietwave stay without (no confident value or no description).
+- Data (to deploy): 16 curated Trance subgenres added to `server/data/genres_v2.json` (Acid, Balearic, Big Room, Dream, Electro, Euro, Hard, Progressive, Tech, Uplifting and Vocal Trance, Trance 2.0, Hi-Tech Full-On, NRG; Hands Up under Euro Trance, Buchiage Trance under Hands Up), texts from Rate Your Music in own words in `server/data/genre_descriptions.json` or the row; Trance tempo corrected to 130-150 BPM.
 
 ## 2026-10-28 (iOS TestFlight build 20261038)
 

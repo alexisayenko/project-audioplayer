@@ -52,6 +52,7 @@ def clean_rym(value: Any) -> str | None:
 
 
 LINK_KEYS = ("discogs", "rateyourmusic", "youtube", "wikipedia")
+OPTIONAL_LINK_KEYS = ("website",)
 _YT_HOSTS = {"youtube.com", "www.youtube.com", "m.youtube.com", "music.youtube.com"}
 _WP_HOST = re.compile(r"(?:[a-z0-9-]+\.)+wikipedia\.org")
 
@@ -62,7 +63,7 @@ def _bad(key: str) -> AlbumError:
 
 def clean_link(key: str, value: Any) -> str | None:
     """A link of one kind normalised (https only, fragment dropped, at most 300 characters); empty or None is None; anything else raises 422 bad_link with the key."""
-    if key not in LINK_KEYS:
+    if key not in LINK_KEYS and key not in OPTIONAL_LINK_KEYS:
         raise _bad(str(key))
     if value is None or (isinstance(value, str) and not value.strip()):
         return None
@@ -86,7 +87,20 @@ def _clean_hosted(key: str, text: str) -> str | None:
         host = (parts.hostname or "").lower()
     except ValueError:
         raise _bad(key) from None
+    if key == "website":
+        return _clean_website(key, host, parts)
     return _clean_wikipedia(host, parts) if key == "wikipedia" else _clean_youtube(host, parts)
+
+
+def _clean_website(key: str, host: str, parts: Any) -> str | None:
+    try:
+        port = f":{parts.port}" if parts.port else ""
+    except ValueError:
+        raise _bad(key) from None
+    if "." not in host or parts.username or parts.password:
+        return None
+    query = f"?{parts.query}" if parts.query else ""
+    return f"https://{host}{port}{parts.path}{query}"
 
 
 def _clean_wikipedia(host: str, parts: Any) -> str | None:
@@ -123,6 +137,9 @@ def full_links(album: dict[str, Any]) -> dict[str, str | None]:
         source = album.get("source")
         out["discogs"] = _stored_link("discogs", source.get("url")) if isinstance(source, dict) else None
     out["rateyourmusic"] = _stored_rym(album.get("rymUrl")) or out["rateyourmusic"]
+    site = _stored_link("website", stored.get("website"))
+    if site:
+        out["website"] = site
     return out
 
 
@@ -130,6 +147,8 @@ def set_links(album: dict[str, Any], changes: dict[str, Any]) -> None:
     """Applies already-validated link changes and keeps `rymUrl` and links.rateyourmusic equal."""
     links = full_links(album)
     links.update(changes)
+    if not links.get("website"):
+        links.pop("website", None)
     album["links"] = links
     album["rymUrl"] = links["rateyourmusic"]
 
@@ -309,7 +328,7 @@ def validate(body: Any) -> dict[str, Any]:
         "labels": labels.tidy(body.get("labels")),
         "discogsThumb": thumb if isinstance(thumb, str) and thumb.startswith("https://") and len(thumb) <= 500 else None,
         "rymUrl": links.get("rateyourmusic"),
-        "links": {key: links.get(key) for key in LINK_KEYS},
+        "links": {**{key: links.get(key) for key in LINK_KEYS}, **({"website": links["website"]} if links.get("website") else {})},
         "source": {"type": "discogs", "id": ident, "url": f"https://www.discogs.com/release/{ident}"},
         "tracks": tracks,
     }

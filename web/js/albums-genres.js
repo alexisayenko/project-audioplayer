@@ -31,8 +31,7 @@ export function albumGenresToSongs(album, editor) {
 
   const linkedCount = () => (album.tracks || []).filter((t) => t.songId && store.get(t.songId)).length;
   const why = () => {
-    if (!same(editor.get(), saved())) return 'Save the album to use the changed genres';
-    if (!saved().length) return 'Add genres to the album first';
+    if (!editor.get().length) return 'Add genres to the album first';
     if (!linkedCount()) return 'No linked songs';
     return '';
   };
@@ -50,6 +49,13 @@ export function albumGenresToSongs(album, editor) {
     msg.textContent = 'Working...';
     paint();
     try {
+      editor.commit?.();
+      const want = editor.get();
+      if (!same(want, saved())) {
+        const full = await api.patchAlbum(id, { genres: want });
+        album.genres = Array.isArray(full?.genres) ? full.genres : want;
+        replacing = 0;
+      }
       const r = await api.albumGenresToSongs(id, replacing > 0);
       await store.refresh().catch(() => {});
       replacing = r.skipped;

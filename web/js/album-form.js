@@ -13,6 +13,7 @@ export const LINK_ROWS = [
   { key: 'wikipedia', kind: 'wikipedia', label: 'Wikipedia: album' },
   { key: 'discogs', kind: 'discogs', label: 'Discogs link' },
   { key: 'rateyourmusic', kind: 'rateyourmusic', label: 'Rate Your Music link' },
+  { key: 'website', kind: 'website', label: 'Website link' },
 ];
 
 const httpUrl = (v) => (/^https?:\/\/\S+$/i.test(v || '') ? v : null);
