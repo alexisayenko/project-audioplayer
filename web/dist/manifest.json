@@ -1,6 +1,6 @@
 {
   "esbuild": "0.27.7",
-  "sources": "ef9d59d70f57f21c75ec5fee3475a0f5977fae840f3cbabe46fa426af6131a77",
+  "sources": "4a9eebdb59fb5b25653cf5459416b6b8f4dbf4e255001324c0198a09808ecba7",
   "modules": [
     "js/about.js",
     "js/add-preview.js",
@@ -69,6 +69,8 @@
     "js/drafts-playlist.js",
     "js/drafts-store.js",
     "js/drafts.js",
+    "js/duplicates-tool.js",
+    "js/duplicates.js",
     "js/edit-dialog.js",
     "js/end-guard.js",
     "js/fade-control.js",
@@ -326,17 +328,17 @@
   "tier1": [
     "dist/app.js",
     "dist/icons.js",
-    "dist/chunk-5A3Q7V5J.js",
-    "dist/chunk-IT6QZISW.js",
-    "dist/chunk-LZCGQJPW.js",
+    "dist/chunk-LOJQ2OBH.js",
+    "dist/chunk-RI72GNU7.js",
+    "dist/chunk-CDIT23CU.js",
     "dist/chunk-UT7STWSY.js",
     "dist/chunk-EEQXK5JZ.js",
     "dist/chunk-WOT6VMZA.js"
   ],
   "tier2": [
-    "dist/lazy-ui-OAJ4QVBK.js",
+    "dist/lazy-ui-DDSHP3RD.js",
     "dist/chunk-N44TH7US.js",
-    "dist/chunk-CQ7G6WBC.js",
-    "dist/lazy-genres-37SK3U3X.js"
+    "dist/chunk-4JGBXOEO.js",
+    "dist/lazy-genres-JHVKCSZQ.js"
   ]
 }

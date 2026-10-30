@@ -1114,3 +1114,12 @@ body:has(.legal:not([hidden])) main, body:has(.legal:not([hidden])) .player { pa
 .nav-count { margin-left: auto; padding: 0 var(--space-2); border-radius: var(--radius-pill); background: var(--surface-sunken); color: var(--ink); font-variant-numeric: tabular-nums; }
 .nav-count:empty { display: none; }
 body.side-collapsed #nav .nav-count { display: none; }
+
+/* Find duplicates (Settings Library card) */
+.dup-panel { margin-top: var(--space-3); }
+.dup-panel input[type="number"] { flex: none; width: 5rem; }
+.dup-group { margin-top: var(--space-3); }
+.dup-list { list-style: none; margin: 0; padding: 0; }
+.dup-song { display: flex; align-items: center; gap: var(--space-2); min-height: var(--hit); }
+.dup-song .info { flex: 1; min-width: 0; }
+.dup-title, .dup-song .info .muted { overflow-wrap: anywhere; }

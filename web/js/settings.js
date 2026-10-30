@@ -9,6 +9,7 @@ import { describeSync } from './sync-status.js';
 import { isGuest, ownerLabel } from './guest.js';
 import { downloadAllRow } from './bulk-download.js';
 import { bpmCard, metadataCard } from './backfill-card.js';
+import { duplicatesCard } from './duplicates-tool.js';
 import { isSupported as vizSupported } from './audio-graph.js';
 import {
   vizCaps, vizMode, setVizMode, vizHeightId, setVizHeight,
@@ -155,7 +156,7 @@ export function renderSettings(root) {
     root.append(pageHead('Settings', `You are viewing ${ownerLabel()}'s library.`), el('div', { class: 'settings-grid' }, accountCard()));
     return null;
   }
-  const tools = auth.email ? [downloadAllRow(), metadataCard(), bpmCard()] : [];
+  const tools = auth.email ? [downloadAllRow(), metadataCard(), bpmCard(), duplicatesCard()] : [];
   let card = libraryCard(tools);
   const rebuild = () => { const next = libraryCard(tools); card.replaceWith(next); card = next; };
   const unsub = store.subscribe(rebuild);

@@ -4,8 +4,9 @@ What shipped, newest first. One line each; the web UI and server are live at htt
 
 ## Unreleased (to deploy)
 
+- Web (to deploy): Settings > Library has a "Find duplicates" tool: it groups songs of about the same length (tolerance 10 seconds by default, adjustable) and, with "Also match by title" (on by default), only those with the same title; each group lists its songs with Play and Edit (LIB-280, task-0126).
 - Web and server (to deploy): the long-song cap `LONG_SONG_SECONDS` is 12 minutes (720 s) instead of 5: "Download all" and the playlist import treat only longer songs as long (WEB-083, ADD-081, ADD-152, YTC-052). `web/js/constants.js`, `server/app/playlist_import.py`.
-- Data (to deploy): Genres map: Chicago House and Garage House are curated genres under House (the Legacy copy of garage house is removed), and House has a fuller description (`server/data/genres_v2.json`, `server/data/genre_descriptions.json`).
+- Data (to deploy): Genres map: Chicago House and Garage House are curated genres under House (the Legacy copy of garage house is removed), and House has a fuller description; Chicago House and Garage House descriptions now contrast the sound (raw, dry, drum-machine driven vs. vocal, piano and organ, warm dub reverb) (`server/data/genres_v2.json`, `server/data/genre_descriptions.json`).
 - Server (to deploy): the nine curated genres that had no v1 name (Chicago House, Balearic Trance, Big Room Trance, Electro Trance, Buchiage Trance, Hi-Tech Full-On, NRG, Trance 2.0, Chillsynth) can now be put on songs and albums (GEN-117, task-0096).
 - Data (to deploy): Genres map: Chicago House is a curated genre under House, and House has a fuller description with its tempo set to about 115-135 BPM (`server/data/genres_v2.json`, `server/data/genre_descriptions.json`).
 - Data (to deploy): Genres map: the Psytrance branch no longer shows doubles in Legacy ("goa trance" next to "Goa Trance"); its eleven Legacy copies are removed and Psybient is a curated genre under Psytrance (`server/data/genres_v2.json`, `scripts/migrate_genres_v2_legacy.py`).
