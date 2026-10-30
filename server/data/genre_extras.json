@@ -480,6 +480,12 @@
     "synthwave"
    ],
    "note": "curated v2 genre made taggable on songs and albums (task-0096, GEN-120)"
+  },
+  "detroit techno": {
+   "parents": [
+    "techno"
+   ],
+   "note": "curated v2 genre made taggable on songs and albums (task-0096, GEN-120)"
   }
  }
 }

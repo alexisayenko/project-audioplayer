@@ -38,8 +38,8 @@
     "level4": 0
    },
    "techno": {
-    "total": 11,
-    "level2": 11,
+    "total": 12,
+    "level2": 12,
     "level3": 0,
     "level4": 0
    },
@@ -104,7 +104,7 @@
     "level4": 0
    }
   },
-  "total": 546,
+  "total": 547,
   "non_discogs": {
    "Blues": 0,
    "Classical": 0,
@@ -4475,6 +4475,13 @@
  "chillsynth": {
   "parents": [
    "synthwave"
+  ],
+  "discogs": false,
+  "status": "approved"
+ },
+ "detroit techno": {
+  "parents": [
+   "techno"
   ],
   "discogs": false,
   "status": "approved"

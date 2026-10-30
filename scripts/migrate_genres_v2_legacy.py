@@ -20,7 +20,7 @@ CLUSTER = {"id": "legacy", "name": "Legacy", "colour": "#8A8A8A", "note": "Holdi
 LEGACY = {"id": "legacy", "name": "Legacy", "level": 1, "cluster": "legacy", "parents": [], "legacy": True, "description": "Holding area for genres not yet curated."}
 
 
-MIGRATED = {"acid trance", "dream trance", "euro trance", "hands up", "hard trance", "progressive trance", "tech trance", "uplifting trance", "vocal trance", "psytrance", "goa trance", "dark psytrance", "progressive psytrance", "forest psytrance", "full-on psytrance", "hi-tech psytrance", "psycore", "nitzhonot", "suomisaundi", "zenonesque", "psybient", "garage house", "chicago house", "balearic trance", "big room trance", "electro trance", "buchiage trance", "hi-tech full-on", "nrg", "trance 2.0", "chillsynth"}
+MIGRATED = {"acid trance", "dream trance", "euro trance", "hands up", "hard trance", "progressive trance", "tech trance", "uplifting trance", "vocal trance", "psytrance", "goa trance", "dark psytrance", "progressive psytrance", "forest psytrance", "full-on psytrance", "hi-tech psytrance", "psycore", "nitzhonot", "suomisaundi", "zenonesque", "psybient", "garage house", "detroit techno", "chicago house", "balearic trance", "big room trance", "electro trance", "buchiage trance", "hi-tech full-on", "nrg", "trance 2.0", "chillsynth"}
 
 
 def slug(name: str) -> str:

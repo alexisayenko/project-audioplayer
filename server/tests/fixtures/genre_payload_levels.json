@@ -3096,6 +3096,25 @@
    "status": null,
    "synonyms": []
   },
+  "detroit techno": {
+   "description": "Tempo: about 125-140 BPM.\nTechno from Detroit in the mid 1980s, shaped by Juan Atkins, Derrick May and Kevin Saunderson, the Belleville Three. A futuristic, machine-made sound with soul: Kraftwerk and electro, funk and Chicago house fed into hypnotic drum-machine grooves, driving basslines, lush synth pads and strings, and melodies that are often emotional. A harder, more minimal second wave followed, led by Underground Resistance, Jeff Mills and Robert Hood.",
+   "discogs": false,
+   "display": null,
+   "families": [
+    "techno"
+   ],
+   "family": "techno",
+   "flavours": [],
+   "level": 2,
+   "modifiers": [],
+   "parents": [
+    "techno"
+   ],
+   "provisional": false,
+   "status": "approved",
+   "subfamily": "Techno",
+   "synonyms": []
+  },
   "disco": {
    "description": "Dance music of the 1970s built on a steady four-on-the-floor beat, a prominent bassline, strings and brass, and groove-heavy vocals.",
    "discogs": true,

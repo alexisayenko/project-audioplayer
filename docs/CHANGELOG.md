@@ -4,6 +4,7 @@ What shipped, newest first. One line each; the web UI and server are live at htt
 
 ## Unreleased (to deploy)
 
+- Data (to deploy): Genres map: Detroit Techno is a curated genre under Techno and can be put on songs and albums (`server/data/genres_v2.json`, `server/data/genre_descriptions.json`, GEN-117).
 - Web (to deploy): Settings > Library has a "Find duplicates" tool: it groups songs of about the same length (tolerance 10 seconds by default, adjustable) and, with "Also match by title" (on by default), only those with the same title; each group lists its songs with Play and Edit (LIB-280, task-0126).
 - Web and server (to deploy): the long-song cap `LONG_SONG_SECONDS` is 12 minutes (720 s) instead of 5: "Download all" and the playlist import treat only longer songs as long (WEB-083, ADD-081, ADD-152, YTC-052). `web/js/constants.js`, `server/app/playlist_import.py`.
 - Data (to deploy): Genres map: Chicago House and Garage House are curated genres under House (the Legacy copy of garage house is removed), and House has a fuller description; Chicago House and Garage House descriptions now contrast the sound (raw, dry, drum-machine driven vs. vocal, piano and organ, warm dub reverb) (`server/data/genres_v2.json`, `server/data/genre_descriptions.json`).
