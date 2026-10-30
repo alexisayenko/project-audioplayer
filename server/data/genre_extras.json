@@ -426,6 +426,60 @@
     "progressive psytrance"
    ],
    "note": "added 2026-10-24 (owner: Rate Your Music page Zenonesque, 48 releases, described as a form of Progressive Psytrance; the breadcrumb was not shown, so the parent is inferred from that text; not in Discogs)"
+  },
+  "chicago house": {
+   "parents": [
+    "house"
+   ],
+   "note": "curated v2 genre made taggable on songs and albums (task-0096, GEN-120)"
+  },
+  "balearic trance": {
+   "parents": [
+    "trance"
+   ],
+   "note": "curated v2 genre made taggable on songs and albums (task-0096, GEN-120)"
+  },
+  "big room trance": {
+   "parents": [
+    "trance"
+   ],
+   "note": "curated v2 genre made taggable on songs and albums (task-0096, GEN-120)"
+  },
+  "electro trance": {
+   "parents": [
+    "trance"
+   ],
+   "note": "curated v2 genre made taggable on songs and albums (task-0096, GEN-120)"
+  },
+  "buchiage trance": {
+   "parents": [
+    "hands up"
+   ],
+   "note": "curated v2 genre made taggable on songs and albums (task-0096, GEN-120)"
+  },
+  "hi-tech full-on": {
+   "parents": [
+    "trance"
+   ],
+   "note": "curated v2 genre made taggable on songs and albums (task-0096, GEN-120)"
+  },
+  "nrg": {
+   "parents": [
+    "trance"
+   ],
+   "note": "curated v2 genre made taggable on songs and albums (task-0096, GEN-120)"
+  },
+  "trance 2.0": {
+   "parents": [
+    "trance"
+   ],
+   "note": "curated v2 genre made taggable on songs and albums (task-0096, GEN-120)"
+  },
+  "chillsynth": {
+   "parents": [
+    "synthwave"
+   ],
+   "note": "curated v2 genre made taggable on songs and albums (task-0096, GEN-120)"
   }
  }
 }

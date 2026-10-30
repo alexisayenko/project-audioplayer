@@ -4,6 +4,10 @@ What shipped, newest first. One line each; the web UI and server are live at htt
 
 ## Unreleased (to deploy)
 
+- Data (to deploy): Genres map: Chicago House and Garage House are curated genres under House (the Legacy copy of garage house is removed), and House has a fuller description (`server/data/genres_v2.json`, `server/data/genre_descriptions.json`).
+- Server (to deploy): the nine curated genres that had no v1 name (Chicago House, Balearic Trance, Big Room Trance, Electro Trance, Buchiage Trance, Hi-Tech Full-On, NRG, Trance 2.0, Chillsynth) can now be put on songs and albums (GEN-117, task-0096).
+- Data (to deploy): Genres map: Chicago House is a curated genre under House, and House has a fuller description with its tempo set to about 115-135 BPM (`server/data/genres_v2.json`, `server/data/genre_descriptions.json`).
+- Data (to deploy): Genres map: the Psytrance branch no longer shows doubles in Legacy ("goa trance" next to "Goa Trance"); its eleven Legacy copies are removed and Psybient is a curated genre under Psytrance (`server/data/genres_v2.json`, `scripts/migrate_genres_v2_legacy.py`).
 - Web and server (to deploy): albums take a "Website" link (any https address, e.g. a label release page such as iono-music.com) in Edit album > Links, shown in the album infobox as an external-link icon (LIB-279, task-0120).
 - Web (to deploy): Albums can be grouped by genre: a new "Group by" select (No grouping, Group by genre) next to Sort; each genre is a fold/unfold group with its album count, an album sits under its first genre, "No genre" is last, Sort applies within a group, and "Fold all" / "Unfold all" and the choices are remembered (LIB-278).
 - Web (to deploy): the album Edit dialog "Use for songs" for genres no longer sits disabled while the genre pills are unsaved (a genre just added, e.g. Progressive Psytrance, looked like a dead button); it saves the pills on the album, then gives them to the linked songs (LIB-276).

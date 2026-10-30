@@ -171,7 +171,7 @@
   },
   "house": {
    "colour": "Others",
-   "description": "Tempo: about 120-130 BPM.\nFour-on-the-floor dance music at a steady tempo, with a pulsing kick, repeating grooves and a warm bassline. It emerged in the 1980s.",
+   "description": "Tempo: about 120-130 BPM.\nSteady 4/4 dance music on a four-on-the-floor kick with claps or snares on beats 2 and 4, hi-hat and percussion loops, a warm, soulful synth bass groove, repetitive chords, simple melodies, vocal samples and a swinging, feel-good groove. Releases span roughly 115-135 BPM but cluster around 123-125, the narrowest spread of any dance genre, which makes it easy to mix in long, DJ-friendly tracks. It grew out of disco in 1980s Chicago (the Warehouse, Frankie Knuckles, Roland machines, Italo disco and synthpop influences; first records around 1984), alongside New York garage house (Paradise Garage, Larry Levan), and spread worldwide in three broad waves: the classic Chicago, garage and acid sound, the European styles, and electro house with its offshoots.",
    "discogs": true,
    "display": null,
    "families": [
@@ -1074,6 +1074,24 @@
    "subfamily": "House",
    "synonyms": []
   },
+  "balearic trance": {
+   "discogs": false,
+   "display": null,
+   "families": [
+    "trance"
+   ],
+   "family": "trance",
+   "flavours": [],
+   "level": 2,
+   "modifiers": [],
+   "parents": [
+    "trance"
+   ],
+   "provisional": false,
+   "status": "approved",
+   "subfamily": "Trance",
+   "synonyms": []
+  },
   "ballad": {
    "discogs": true,
    "display": null,
@@ -1369,6 +1387,24 @@
    "provisional": false,
    "status": null,
    "subfamily": "Breaks & bass",
+   "synonyms": []
+  },
+  "big room trance": {
+   "discogs": false,
+   "display": null,
+   "families": [
+    "trance"
+   ],
+   "family": "trance",
+   "flavours": [],
+   "level": 2,
+   "modifiers": [],
+   "parents": [
+    "trance"
+   ],
+   "provisional": false,
+   "status": "approved",
+   "subfamily": "Trance",
    "synonyms": []
   },
   "black metal": {
@@ -1781,6 +1817,27 @@
    "status": null,
    "synonyms": []
   },
+  "buchiage trance": {
+   "discogs": false,
+   "display": null,
+   "families": [
+    "house",
+    "trance",
+    "Funk / Soul",
+    "Pop"
+   ],
+   "family": "house",
+   "flavours": [],
+   "level": 3,
+   "modifiers": [],
+   "parents": [
+    "hands up"
+   ],
+   "provisional": false,
+   "status": "approved",
+   "subfamily": "Eurodance & disco",
+   "synonyms": []
+  },
   "cabaret": {
    "discogs": true,
    "display": null,
@@ -2053,6 +2110,24 @@
    "status": null,
    "synonyms": []
   },
+  "chicago house": {
+   "discogs": false,
+   "display": null,
+   "families": [
+    "house"
+   ],
+   "family": "house",
+   "flavours": [],
+   "level": 2,
+   "modifiers": [],
+   "parents": [
+    "house"
+   ],
+   "provisional": false,
+   "status": "approved",
+   "subfamily": "House",
+   "synonyms": []
+  },
   "chillstep": {
    "description": "A calm, melodic offshoot of dubstep with ambient and chillout colours: half-time beats, soft pads and emotional melodies.",
    "discogs": false,
@@ -2077,6 +2152,24 @@
    "synonyms": [
     "chill step"
    ]
+  },
+  "chillsynth": {
+   "discogs": false,
+   "display": null,
+   "families": [
+    "synthwave"
+   ],
+   "family": "synthwave",
+   "flavours": [],
+   "level": 2,
+   "modifiers": [],
+   "parents": [
+    "synthwave"
+   ],
+   "provisional": false,
+   "status": "approved",
+   "subfamily": "Synth & wave",
+   "synonyms": []
   },
   "chillwave": {
    "discogs": true,
@@ -3547,6 +3640,24 @@
    "subfamily": "House",
    "synonyms": []
   },
+  "electro trance": {
+   "discogs": false,
+   "display": null,
+   "families": [
+    "trance"
+   ],
+   "family": "trance",
+   "flavours": [],
+   "level": 2,
+   "modifiers": [],
+   "parents": [
+    "trance"
+   ],
+   "provisional": false,
+   "status": "approved",
+   "subfamily": "Trance",
+   "synonyms": []
+  },
   "electroclash": {
    "discogs": true,
    "display": null,
@@ -4346,6 +4457,7 @@
    "synonyms": []
   },
   "garage house": {
+   "description": "Tempo: about 118-126 BPM.\nHouse style from Larry Levan's sets at the Paradise Garage in New York, rooted in disco, R&B, soul and funk with gospel, dub and some new wave mixed in; synth playing and Levan's studio work added dub-style delay, echo and reverb (the Peech Boys' \"Don't Make Me Wait\"), and François K. was influential. Where Chicago house went raw and stripped down, garage kept gospel and soul and a smoother, more organic sound; the Jersey Sound (Club Zanzibar, Movin' Records, Newark) put songwriting over beats with crisp syncopated hi-hats and minor-chord pads and dominated from the late 1980s, later Masters at Work (Kenny Dope, Louie Vega) and Strictly Rhythm Records carried it, with staccato piano riffs and synth stabs as 1990s hallmarks, and from the mid 1990s it was the template for UK garage.",
    "discogs": true,
    "display": null,
    "families": [
@@ -5130,6 +5242,24 @@
    "provisional": false,
    "status": null,
    "subfamily": "Eurodance & disco",
+   "synonyms": []
+  },
+  "hi-tech full-on": {
+   "discogs": false,
+   "display": null,
+   "families": [
+    "trance"
+   ],
+   "family": "trance",
+   "flavours": [],
+   "level": 2,
+   "modifiers": [],
+   "parents": [
+    "trance"
+   ],
+   "provisional": false,
+   "status": "approved",
+   "subfamily": "Trance",
    "synonyms": []
   },
   "hi-tech psytrance": {
@@ -7098,6 +7228,24 @@
    ],
    "provisional": true,
    "status": null,
+   "synonyms": []
+  },
+  "nrg": {
+   "discogs": false,
+   "display": null,
+   "families": [
+    "trance"
+   ],
+   "family": "trance",
+   "flavours": [],
+   "level": 2,
+   "modifiers": [],
+   "parents": [
+    "trance"
+   ],
+   "provisional": false,
+   "status": "approved",
+   "subfamily": "Trance",
    "synonyms": []
   },
   "nu metal": {
@@ -9733,6 +9881,24 @@
    ],
    "provisional": true,
    "status": null,
+   "synonyms": []
+  },
+  "trance 2.0": {
+   "discogs": false,
+   "display": null,
+   "families": [
+    "trance"
+   ],
+   "family": "trance",
+   "flavours": [],
+   "level": 2,
+   "modifiers": [],
+   "parents": [
+    "trance"
+   ],
+   "provisional": false,
+   "status": "approved",
+   "subfamily": "Trance",
    "synonyms": []
   },
   "trap": {
