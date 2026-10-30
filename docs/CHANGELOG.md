@@ -2,6 +2,10 @@
 
 What shipped, newest first. One line each; the web UI and server are live at https://electrophone.cc. Everything listed here is deployed except the sections marked "built, not deployed" (the 2026-10-14 release went out once the SSH access in [task-0027](tasks/task-0027.md) was restored; the live visualizer files match `origin/main` as of 2026-10-15). Why: [tech/decisions.md](tech/decisions.md); runbook: [tech/deploy.md](tech/deploy.md).
 
+## Unreleased (to deploy)
+
+- Data (to deploy): the Genres map BPM badge now also shows for Suomisaundi (about 140-150), House (120-130), Techno (120-150), Trance (125-150) and Drum 'n' Bass (160-180); their `Tempo:` lines were added to `server/data/genre_descriptions.json`, the source of the v2 descriptions of those rows. Psytrance, Goa, Dark, Progressive, Forest, Full-on, Hi-tech, Psycore, Nitzhonot and Dreamwave already had one; Breakbeat, Hardcore, Zenonesque, Synthwave, Vaporwave, Chillsynth, Darksynth, Outrun and Sovietwave stay without (no confident value or no description).
+
 ## 2026-10-28 (iOS TestFlight build 20261038)
 
 - iOS: TestFlight build 20261038 uploaded 2026-10-28 and VALID in App Store Connect (archive and export from `0a239a05`; `xcodebuild -exportArchive` with `destination=upload`, signed-in Xcode account; internal group "Alex" only). It adds the UI/UX loop fixes for library, albums, playback and song details, readable album track titles and the one-line dock title.
