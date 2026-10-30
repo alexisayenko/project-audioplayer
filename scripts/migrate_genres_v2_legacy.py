@@ -1,6 +1,6 @@
 """Idempotent: regenerates the Legacy section of server/data/genres_v2.json (ADR-0045, task-0096).
 
-Curated v2 genres (no `legacy` flag) stay byte for byte. Legacy is one level 1 genre holding a COMPLETE copy of the v1 vocabulary: every v1 genre, including those that also exist as curated v2 genres, gets a `legacy: true` row with id `legacy-<slug>`, its plain v1 name, `v1` = its exact v1 name and its v1 parents among the copies (v1 top-level genres are level 2 children of `legacy`); `legacyParents` lists v1 parents outside the vocabulary. Nothing is folded into curated genres. Previous legacy rows are removed first. Run from server/: python ../scripts/migrate_genres_v2_legacy.py"""
+Curated v2 genres (no `legacy` flag) stay byte for byte. Legacy is one level 1 genre holding a COMPLETE copy of the v1 vocabulary: every v1 genre, including those that also exist as curated v2 genres, gets a `legacy: true` row with id `legacy-<slug>`, its plain v1 name, `v1` = its exact v1 name and its v1 parents among the copies (v1 top-level genres are level 2 children of `legacy`); `legacyParents` lists v1 parents outside the vocabulary. Nothing is folded into curated genres, except the v1 names in MIGRATED (owner decision 2026-10-30: curated under Trance, no Legacy copy; their v1 children hang under their other parents or under Legacy, `legacyParents` keeps the name). Previous legacy rows are removed first. Run from server/: python ../scripts/migrate_genres_v2_legacy.py"""
 
 from __future__ import annotations
 
@@ -18,6 +18,9 @@ from app import genre_vocab as gv  # noqa: E402
 FILE = ROOT / "server" / "data" / "genres_v2.json"
 CLUSTER = {"id": "legacy", "name": "Legacy", "colour": "#8A8A8A", "note": "Holding area: a complete copy of the v1 vocabulary hierarchy, duplicates of curated genres included, every row flagged legacy. Curated genres live in their own clusters."}
 LEGACY = {"id": "legacy", "name": "Legacy", "level": 1, "cluster": "legacy", "parents": [], "legacy": True, "description": "Holding area for genres not yet curated."}
+
+
+MIGRATED = {"acid trance", "dream trance", "euro trance", "hands up", "hard trance", "progressive trance", "tech trance", "uplifting trance", "vocal trance"}
 
 
 def slug(name: str) -> str:
@@ -40,6 +43,8 @@ def vocab_rows() -> dict[str, dict]:
     v = gv.load()
     rows = {}
     for name, e in v.entries.items():
+        if name in MIGRATED:
+            continue
         if name in levels:
             syn, shown = levels[name]["synonyms"], levels[name]["display"]
         elif name in forms:

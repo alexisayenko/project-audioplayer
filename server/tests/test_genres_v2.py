@@ -116,7 +116,7 @@ def test_v1_routes_are_unchanged(client):
     assert "Drum 'n' Bass" not in {g["name"] for g in body["genres"]}
 
 
-CURATED = ["breakbeat", "drum-n-bass", "hardcore", "house", "techno", "trance", "psytrance", "goa-trance", "dark-psytrance", "progressive-psytrance", "forest-psytrance", "full-on-psytrance", "hi-tech-psytrance", "psycore", "nitzhonot", "suomisaundi", "zenonesque", "synthwave", "vaporwave", "chillsynth", "darksynth", "dreamwave", "outrun", "sovietwave"]
+CURATED = ["breakbeat", "drum-n-bass", "hardcore", "house", "techno", "trance", "psytrance", "goa-trance", "dark-psytrance", "progressive-psytrance", "forest-psytrance", "full-on-psytrance", "hi-tech-psytrance", "psycore", "nitzhonot", "suomisaundi", "zenonesque", "acid-trance", "balearic-trance", "big-room-trance", "dream-trance", "electro-trance", "euro-trance", "hands-up", "buchiage-trance", "hard-trance", "hi-tech-full-on", "nrg", "progressive-trance", "tech-trance", "trance-2-0", "uplifting-trance", "vocal-trance", "synthwave", "vaporwave", "chillsynth", "darksynth", "dreamwave", "outrun", "sovietwave"]
 
 
 def _split():
@@ -139,11 +139,12 @@ def test_legacy_holds_a_complete_copy_of_v1_including_duplicates():
     assert len({g["id"] for g in rows}) == len(rows)
     v1 = genre_vocab.load().entries
     copies = [g for g in rows if g.get("legacy") and g["id"] != "legacy"]
-    assert len(copies) == len(v1) == len({g["v1"] for g in copies})
-    assert {g["v1"] for g in copies} == set(v1)
+    migrated = {"acid trance", "dream trance", "euro trance", "hands up", "hard trance", "progressive trance", "tech trance", "uplifting trance", "vocal trance"}
+    assert len(copies) == len(v1) - len(migrated) == len({g["v1"] for g in copies})
+    assert {g["v1"] for g in copies} == set(v1) - migrated
     assert all(g["id"].startswith("legacy-") and g["cluster"] == "legacy" for g in copies)
     shared = {g["v1"] for g in curated if g.get("v1")}
-    assert shared and shared <= {g["v1"] for g in copies}
+    assert shared and shared - migrated <= {g["v1"] for g in copies} and not shared & {g["v1"] for g in copies} & migrated
     assert {"synthwave", "trance", "psytrance", "goa trance"} <= shared
 
 

@@ -144,7 +144,7 @@
  "forms": {
   "drum and bass": {
    "colour": "Others",
-   "description": "Fast electronic dance music from the 1990s: breakbeats at around 160 to 180 beats per minute over deep sub-bass lines.",
+   "description": "Tempo: about 160-180 BPM.\nFast electronic dance music from the 1990s: breakbeats at around 160 to 180 beats per minute over deep sub-bass lines.",
    "discogs": true,
    "display": "drum & bass",
    "families": [
@@ -171,7 +171,7 @@
   },
   "house": {
    "colour": "Others",
-   "description": "Four-on-the-floor dance music at a steady tempo, with a pulsing kick, repeating grooves and a warm bassline. It emerged in the 1980s.",
+   "description": "Tempo: about 120-130 BPM.\nFour-on-the-floor dance music at a steady tempo, with a pulsing kick, repeating grooves and a warm bassline. It emerged in the 1980s.",
    "discogs": true,
    "display": null,
    "families": [
@@ -216,7 +216,7 @@
   },
   "techno": {
    "colour": "Others",
-   "description": "Repetitive, machine-driven electronic dance music built on a steady kick drum and layered rhythms. It emerged in the 1980s.",
+   "description": "Tempo: about 120-150 BPM.\nRepetitive, machine-driven electronic dance music built on a steady kick drum and layered rhythms. It emerged in the 1980s.",
    "discogs": true,
    "display": null,
    "families": [
@@ -234,7 +234,7 @@
   },
   "trance": {
    "colour": "Others",
-   "description": "Melodic electronic dance music with repeating, hypnotic phrases and long builds towards an emotional peak. It emerged in the 1990s.",
+   "description": "Tempo: about 130-150 BPM.\nMelodic electronic dance music with repeating, hypnotic phrases and long builds towards an emotional peak. It emerged in the 1990s.",
    "discogs": true,
    "display": null,
    "families": [
@@ -560,6 +560,7 @@
    "synonyms": []
   },
   "acid trance": {
+   "description": "Trance that adds squelching acid basslines to its evolving structures.",
    "discogs": false,
    "display": null,
    "families": [
@@ -3188,6 +3189,7 @@
    "synonyms": []
   },
   "dream trance": {
+   "description": "Tempo: about 130 BPM.\nA slow, laid-back and carefree trance with a dreamlike sound. It has strong roots in progressive house and uses beats typical of Eurodance and dance-pop.",
    "discogs": false,
    "display": null,
    "families": [
@@ -3680,6 +3682,7 @@
    ]
   },
   "euro trance": {
+   "description": "A fusion of trance and Eurodance: fast tempos, more accessible grooves and structures, and simple, catchy melodies with vocals and saw synth leads.",
    "discogs": true,
    "display": null,
    "families": [
@@ -4832,6 +4835,7 @@
    "synonyms": []
   },
   "hands up": {
+   "description": "Euro trance built on prominent, melodic supersaw leads and dance-pop hooks, with sidechained basslines and hard, powerful drums.",
    "discogs": true,
    "display": null,
    "families": [
@@ -4944,6 +4948,7 @@
    "synonyms": []
   },
   "hard trance": {
+   "description": "A rave-oriented trance with faster, thumping rhythms and strong melody and bassline sections. It grew out of the first wave of Western European trance in the early 1990s.",
    "discogs": true,
    "display": null,
    "families": [
@@ -7964,7 +7969,7 @@
    "synonyms": []
   },
   "progressive trance": {
-   "description": "Trance that evolves slowly: gradual builds, layered melodies and a smoother, less abrupt structure than classic trance.",
+   "description": "A mix of progressive house and early trance from Western Europe in the early to mid-1990s: gradual development, atmospheric textures, restrained energy and subtle melodic progression.",
    "discogs": true,
    "display": null,
    "families": [
@@ -9348,7 +9353,7 @@
    "synonyms": []
   },
   "suomisaundi": {
-   "description": "Suomisaundi, Finnish for Finnish sound and also called spugedelic trance, is a Finnish deviation of psytrance, rooted in the Goa trance that Finnish party collectives introduced in the early 1990s and taking shape by the mid-1990s. It prizes free-form experimentation and humor: organic, Goa-style grooves mix with humppa, techno, punk rock, breakbeat, spoken word, hip hop, industrial metal, folk, funky guitar, video game music and cheap vintage electronics. The word spuge means an alcoholic, and the drunken feel shows in lyrics and titles about everyday life. Pioneers such as Tim Thick and Exogenic Records helped it win fans in Australia, New Zealand, Japan and Russia.",
+   "description": "Tempo: about 140-150 BPM.\nSuomisaundi, Finnish for Finnish sound and also called spugedelic trance, is a Finnish deviation of psytrance, rooted in the Goa trance that Finnish party collectives introduced in the early 1990s and taking shape by the mid-1990s. It prizes free-form experimentation and humor: organic, Goa-style grooves mix with humppa, techno, punk rock, breakbeat, spoken word, hip hop, industrial metal, folk, funky guitar, video game music and cheap vintage electronics. The word spuge means an alcoholic, and the drunken feel shows in lyrics and titles about everyday life. Pioneers such as Tim Thick and Exogenic Records helped it win fans in Australia, New Zealand, Japan and Russia.",
    "discogs": false,
    "display": null,
    "families": [
@@ -9607,6 +9612,7 @@
    "synonyms": []
   },
   "tech trance": {
+   "description": "A style from the late 1990s with energetic percussion, loud kicks, filtered hi-hats and tribal drums. Sidechained, detuned, repetitive leads and raw, distorted sounds come from techno, hard trance and electro house.",
    "discogs": true,
    "display": null,
    "families": [
@@ -9898,6 +9904,7 @@
    "synonyms": []
   },
   "uplifting trance": {
+   "description": "Tempo: about 135-142 BPM.\nEuphoric melodies, build-breakdown-anthem structures and frequent supersaws.",
    "discogs": false,
    "display": null,
    "families": [
@@ -9995,6 +10002,7 @@
    "synonyms": []
   },
   "vocal trance": {
+   "description": "Tempo: about 120-145 BPM.\nMelodic, polished, pop-like trance centred on vocals. It often overlaps with progressive, uplifting and Euro trance.",
    "discogs": false,
    "display": null,
    "families": [
