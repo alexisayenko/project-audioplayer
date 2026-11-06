@@ -15,6 +15,10 @@ _lock = threading.Lock()
 _clock = time.monotonic
 
 
+def enabled() -> bool:
+    return os.environ.get("AUDIO_RANGE_RAMP", "").strip() == "1"
+
+
 def _chunk(step: int) -> int:
     tier = min(step, len(RANGE_CHUNK_BYTES) - 1)
     try:

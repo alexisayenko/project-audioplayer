@@ -51,7 +51,8 @@ T1, T2, T3 = 128 * K, 512 * K, 2048 * K
 
 
 @pytest.fixture(autouse=True)
-def _fresh_runs():
+def _fresh_runs(monkeypatch):
+    monkeypatch.setenv("AUDIO_RANGE_RAMP", "1")
     audio_range.reset()
     yield
     audio_range.reset()
@@ -192,3 +193,37 @@ def test_guest_open_range_is_charged_for_the_step_only(lib, tmp_path, monkeypatc
     r = web().get(f"/files/{VID}", headers={"Range": "bytes=0-"})
     assert r.status_code == 206
     assert seen == [T1]
+
+
+@pytest.mark.parametrize("value", [None, "", "0", "true"])
+def test_ramp_is_off_unless_switched_on(lib, tmp_path, monkeypatch, value):
+    if value is None:
+        monkeypatch.delenv("AUDIO_RANGE_RAMP")
+    else:
+        monkeypatch.setenv("AUDIO_RANGE_RAMP", value)
+    total = 4 * T3
+    put_audio(tmp_path, total)
+    r = get_range(lib, "bytes=0-")
+    assert r.status_code == 206
+    assert len(r.content) == total
+    assert r.headers["content-range"] == f"bytes 0-{total - 1}/{total}"
+    assert r.headers["content-length"] == str(total)
+    assert r.headers["accept-ranges"] == "bytes"
+    assert audio_range._runs == {}
+
+
+def test_ramp_off_serves_oversized_and_mid_ranges_untouched(lib, tmp_path, monkeypatch):
+    monkeypatch.delenv("AUDIO_RANGE_RAMP")
+    total = 4 * T3
+    put_audio(tmp_path, total)
+    assert len(get_range(lib, f"bytes=0-{T3}").content) == T3 + 1
+    assert len(get_range(lib, f"bytes={T1}-").content) == total - T1
+    assert audio_range._runs == {}
+
+
+def test_ramp_switch_is_read_per_request(lib, tmp_path, monkeypatch):
+    put_audio(tmp_path, 4 * T3)
+    monkeypatch.delenv("AUDIO_RANGE_RAMP")
+    assert len(get_range(lib, "bytes=0-").content) == 4 * T3
+    monkeypatch.setenv("AUDIO_RANGE_RAMP", "1")
+    assert len(get_range(lib, "bytes=0-").content) == T1

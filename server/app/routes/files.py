@@ -55,7 +55,7 @@ def get_file(request: Request, video_id: str, download: bool = Query(default=Fal
 
 def _cap_request_range(request: Request, path: Path, key: tuple[str, str]) -> None:
     header = request.headers.get("range")
-    if header is None:
+    if header is None or not audio_range.enabled():
         return
     capped = audio_range.capped_range(header, path.stat().st_size, key, record=request.method == "GET")
     if capped != header:
