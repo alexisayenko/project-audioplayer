@@ -6,7 +6,7 @@ from typing import Any
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.responses import FileResponse
 
-from .. import deps, guest, library
+from .. import audio_range, deps, guest, library
 from ..problems import Problem
 from ..safepath import safe_join
 
@@ -47,9 +47,20 @@ def get_file(request: Request, video_id: str, download: bool = Query(default=Fal
     if download:
         headers["Content-Disposition"] = library.content_disposition(library.download_name(song, video_id))
         return FileResponse(path, media_type=AUDIO_TYPE, headers=headers)
+    _cap_request_range(request, path, (uid, video_id))
     if visitor and request.method == "GET":
         return _guest_stream(request, path, headers)
     return FileResponse(path, media_type=AUDIO_TYPE, filename=path.name, headers=headers)
+
+
+def _cap_request_range(request: Request, path: Path, key: tuple[str, str]) -> None:
+    header = request.headers.get("range")
+    if header is None:
+        return
+    capped = audio_range.capped_range(header, path.stat().st_size, key, record=request.method == "GET")
+    if capped != header:
+        request.scope["headers"] = [(k, v) for k, v in request.scope["headers"] if k != b"range"] + [(b"range", capped.encode())]
+        request.__dict__.pop("_headers", None)
 
 
 def _guest_stream(request: Request, path: Path, headers: dict[str, str]) -> FileResponse:

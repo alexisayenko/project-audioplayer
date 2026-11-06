@@ -103,10 +103,19 @@ export function prefetchDue({ on, nextSrc, cached, status, busy }) {
   return !!on && !!nextSrc && !cached && !busy && (status === 'ready' || status === 'building');
 }
 
+export const PREFETCH_AFTER_FRAC = 0.5;
+export const PREFETCH_LAST_S = 60;
+
+export function prefetchWindowOpen(time, duration) {
+  if (!Number.isFinite(time) || !Number.isFinite(duration) || duration <= 0) return false;
+  return time >= duration * PREFETCH_AFTER_FRAC || duration - time <= PREFETCH_LAST_S;
+}
+
 export function statusText(st) {
   const { status, error, done = 0, total = 0, cached, stage } = st;
   const tag = cached ? ' (cached)' : '';
   if (status === 'idle') return 'timeline: idle';
+  if (status === 'loading' && stage === 'wait') return 'timeline: waiting for playback';
   if (status === 'loading') return `timeline: loading ${stage || 'fetch'}`;
   if (status === 'building') return `timeline: building ${total ? Math.floor((100 * done) / total) : 0}%${tag}`;
   if (status === 'ready') return `timeline: ready${tag}`;

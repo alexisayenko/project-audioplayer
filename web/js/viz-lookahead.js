@@ -1,17 +1,22 @@
 import {
   createTimeline, downmixMono, makeTimeFollower, createWorkerRunner, createInlineRunner, LOOKAHEAD_MAX_S, LOOKAHEAD_MAX_BYTES,
-  markRows, uncoveredSpans, timelineCovers, prefetchDue, statusText, PREFETCH_S,
+  markRows, uncoveredSpans, timelineCovers, prefetchDue, prefetchWindowOpen, statusText, PREFETCH_S,
 } from './viz-timeline.js';
 import { LOOK_S, HISTORY_BINS, ROWS_PER_SECOND } from './viz-terrain-math.js';
 
 export const LOOK_MARGIN_S = 1.2;
 const CACHE_MAX = 4;
+const CACHE_MAX_BYTES = 64 * 1024 * 1024;
+export const BUFFER_AHEAD_S = 10;
+export const PLAY_WAIT_MS = 5000;
+export const SEEK_RESET_S = 3;
 const RETRY_MAX = 2;
 const RETRY_GAP_MS = 2000;
 const FOCUS_AHEAD_S = 10;
 const FOCUS_GAP_MS = 1000;
 const PREFETCH_GAP_MS = 2000;
 const srcOf = (audio) => audio?.currentSrc || audio?.src || '';
+const timelineBytes = (tl) => (tl?.data?.byteLength || 0) + (tl?.parts?.byteLength || 0) + (tl?.pitch?.byteLength || 0);
 
 function defaultRunner(win) {
   if (typeof win.Worker !== 'function') return createInlineRunner();
@@ -30,7 +35,7 @@ export function decodeBuffer(ctx, bytes) {
 
 export function createLookahead({
   audio, win = globalThis, fetchFn = (...a) => win.fetch(...a), getSampleRate = () => 44100, getBands = () => 300,
-  makeRunner = () => defaultRunner(win), makeCtx = (sr) => new (win.OfflineAudioContext || win.webkitOfflineAudioContext)(1, 1, sr),
+  now = () => Date.now(), makeRunner = () => defaultRunner(win), makeCtx = (sr) => new (win.OfflineAudioContext || win.webkitOfflineAudioContext)(1, 1, sr),
   maxSeconds = LOOKAHEAD_MAX_S, maxBytes = LOOKAHEAD_MAX_BYTES, getNextSrc = () => '', warn = (...a) => win.console?.warn?.(...a),
 } = {}) {
   const keys = new Set();
@@ -52,13 +57,81 @@ export function createLookahead({
   let lastFocus = -1e9;
   let lastFocusAt = -1e9;
   let lastPrefetchAt = -1e9;
+  let playingSince = 0;
+  let lastT = 0;
+  let waitSeed = null;
   const emit = () => { for (const fn of listeners) fn(status); };
 
   function remember(key, tl, complete) {
     if (!tl || !(tl.done > 0 || tl.ranges?.length)) return;
     cache.delete(key);
     cache.set(key, { tl, complete });
-    while (cache.size > CACHE_MAX) cache.delete(cache.keys().next().value);
+    let bytes = 0;
+    for (const e of cache.values()) bytes += timelineBytes(e.tl);
+    for (const k of cache.keys()) {
+      if (cache.size <= 1 || (cache.size <= CACHE_MAX && bytes <= CACHE_MAX_BYTES)) break;
+      bytes -= timelineBytes(cache.get(k).tl);
+      cache.delete(k);
+    }
+  }
+
+  const hidden = () => win.document?.hidden === true;
+
+  function audioPlaying() {
+    return !!audio && !audio.paused && !audio.ended && !audio.seeking && (audio.readyState ?? 4) >= 3;
+  }
+
+  function bufferedAhead() {
+    const t = audio.currentTime || 0;
+    const b = audio.buffered;
+    if (!b?.length) return 0;
+    for (let i = 0; i < b.length; i += 1) {
+      if (b.start(i) <= t + 0.25 && b.end(i) >= t) {
+        const end = b.end(i);
+        if (Number.isFinite(audio.duration) && end >= audio.duration - 0.25) return Infinity;
+        return end - t;
+      }
+    }
+    return 0;
+  }
+
+  function gateOpen() {
+    if (!audioPlaying()) return false;
+    const t = now();
+    if (!playingSince) playingSince = t;
+    return t - playingSince >= PLAY_WAIT_MS || bufferedAhead() >= BUFFER_AHEAD_S;
+  }
+
+  function tryStart() {
+    if (status !== 'loading' || stage !== 'wait' || !keys.size || !src || hidden() || !gateOpen()) return;
+    stage = 'fetch';
+    void load(src, gen, waitSeed);
+  }
+
+  function toWait() {
+    gen += 1;
+    job?.abort?.abort();
+    job = null;
+    playingSince = 0;
+    if (status === 'loading') {
+      stage = 'wait';
+      error = '';
+    }
+  }
+
+  function dropLoad() {
+    gen += 1;
+    job?.abort?.abort();
+    job = null;
+    timeline = null;
+    src = '';
+    status = 'idle';
+    stage = '';
+    error = '';
+    cached = false;
+    waitSeed = null;
+    playingSince = 0;
+    follower.reset();
   }
 
   function cancel() {
@@ -73,6 +146,8 @@ export function createLookahead({
     stage = '';
     error = '';
     cached = false;
+    waitSeed = null;
+    playingSince = 0;
     follower.reset();
   }
 
@@ -87,7 +162,7 @@ export function createLookahead({
     const pre0 = audio.duration;
     if (Number.isFinite(pre0) && pre0 > maxSeconds) throw Object.assign(new Error(`too long: ${Math.round(pre0)} s`), { fatal: true });
     setStage('fetch');
-    const res = await fetchFn(url, { credentials: 'same-origin', signal: abort?.signal });
+    const res = await fetchFn(url, { credentials: 'same-origin', priority: 'low', signal: abort?.signal });
     if (!res.ok) throw Object.assign(new Error(`http ${res.status ?? 'error'}`), { fatal: res.status >= 400 && res.status < 500 });
     const len = Number(res.headers?.get?.('content-length'));
     if (len > maxBytes) throw Object.assign(new Error(`file too big: ${Math.round(len / 1048576)} MB`), { fatal: true });
@@ -207,10 +282,21 @@ export function createLookahead({
 
   function sync() {
     const cur = srcOf(audio);
-    if (cur !== src && status !== 'idle') cancel();
-    if (!keys.size || !audio) return;
-    if (cur === src || !cur) return;
-    if (pre && pre.src === cur) cancelPre();
+    if (cur !== src) {
+      if (status !== 'idle') cancel();
+      cancelPre();
+      playingSince = 0;
+    }
+    if (!keys.size || !audio) {
+      if (status === 'loading') dropLoad();
+      cancelPre();
+      return;
+    }
+    if (hidden()) {
+      if (status === 'loading' && stage !== 'wait') toWait();
+      cancelPre();
+    }
+    if (cur === src || !cur) { tryStart(); return; }
     src = cur;
     retries = 0;
     fatal = false;
@@ -226,40 +312,49 @@ export function createLookahead({
     }
     cached = !!hit;
     timeline = hit?.tl ?? null;
+    waitSeed = hit?.tl ?? null;
     status = 'loading';
-    stage = 'fetch';
+    stage = 'wait';
     error = '';
-    void load(cur, gen, hit?.tl ?? null);
+    tryStart();
   }
 
   function retry() {
     if (status !== 'failed' || fatal || retries >= RETRY_MAX || !keys.size) return;
     if (Date.now() - failedAt < RETRY_GAP_MS) return;
-    const seed = timeline;
+    waitSeed = timeline;
     retries += 1;
-    const n = retries;
-    const s = src;
     status = 'loading';
-    stage = 'fetch';
+    stage = 'wait';
     error = '';
     job = null;
     gen += 1;
-    void load(s, gen, seed).then(() => { retries = n; });
+    tryStart();
   }
 
   const onAudio = (ev) => {
-    if (!keys.size) { sync(); return; }
+    const type = ev?.type;
+    if (type === 'loadstart' || type === 'emptied') { playingSince = 0; lastT = 0; }
+    if (type === 'seeking' || type === 'seeked') {
+      const ct = Number.isFinite(audio.currentTime) ? audio.currentTime : 0;
+      if (Math.abs(ct - lastT) > SEEK_RESET_S && status === 'loading' && src === srcOf(audio)) toWait();
+      lastT = ct;
+    } else if (type === 'timeupdate' && !audio.seeking && Number.isFinite(audio.currentTime)) lastT = audio.currentTime;
     sync();
-    if (ev?.type === 'seeked' && job?.run?.focus) {
+    if (type === 'seeked' && job?.run?.focus) {
       const row = Math.round(audio.currentTime * (timeline?.rps ?? ROWS_PER_SECOND));
       job.run.focus(row);
       lastFocus = row;
     }
     retry();
-    emit();
+    if (type !== 'timeupdate' && type !== 'progress') emit();
   };
-  const evs = ['loadstart', 'emptied', 'seeked', 'loadedmetadata', 'canplay'];
+  const evs = ['loadstart', 'emptied', 'seeking', 'seeked', 'loadedmetadata', 'canplay', 'playing', 'pause', 'progress', 'timeupdate'];
   for (const t of evs) audio?.addEventListener?.(t, onAudio);
+  const onVisibility = () => { if (hidden()) { sync(); emit(); } else onAudio({ type: 'visibilitychange' }); };
+  const onPageHide = () => { if (status === 'loading' && stage !== 'wait') toWait(); cancelPre(); };
+  win.document?.addEventListener?.('visibilitychange', onVisibility);
+  win.addEventListener?.('pagehide', onPageHide);
 
   function steer(t, nowMs) {
     const tl = timeline;
@@ -277,6 +372,7 @@ export function createLookahead({
     if (nowMs - lastPrefetchAt < PREFETCH_GAP_MS) return;
     lastPrefetchAt = nowMs;
     const nextSrc = getNextSrc?.() || '';
+    if (hidden() || !prefetchWindowOpen(audio.currentTime, audio.duration)) return;
     if (!prefetchDue({ on: keys.size > 0, nextSrc: nextSrc && nextSrc !== src ? nextSrc : '', cached: cache.has(nextSrc), status, busy: !!pre })) return;
     if (status !== 'ready') return;
     void runPrefetch(nextSrc);
@@ -316,6 +412,8 @@ export function createLookahead({
       cancelPre();
       cancel();
       for (const t of evs) audio?.removeEventListener?.(t, onAudio);
+      win.document?.removeEventListener?.('visibilitychange', onVisibility);
+      win.removeEventListener?.('pagehide', onPageHide);
     },
   };
 }

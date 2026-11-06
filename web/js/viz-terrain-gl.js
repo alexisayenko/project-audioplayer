@@ -23,6 +23,7 @@ function resolveAhead(ahead, style) {
 export const TERRAIN_MAX_DPR = 1.5;
 const ACC_NAMES = ['u_acc0', 'u_acc1', 'u_acc2', 'u_acc3'];
 const STAR_COUNT = STAR_VISIBLE.at(-1);
+const ATTRIB_SLOTS = 5;
 const STAR_SEED = 20261014;
 const NEAR = 0.3;
 const FAR = 160;
@@ -523,6 +524,16 @@ export function createTerrain(canvas, opts = {}) {
     s.res.tiers = s.tiers;
   }
 
+  function releaseAttribs() {
+    if (!s.en) return;
+    for (let i = 0; i < ATTRIB_SLOTS; i += 1) {
+      if (s.en[i]) {
+        gl.disableVertexAttribArray(i);
+        s.en[i] = false;
+      }
+    }
+  }
+
   function freeTier(g) {
     for (const k of ['xz', 'h', 'l', 'depth', 'cross', 'mBuf']) if (g[k]) gl.deleteBuffer(g[k]);
     if (g.ribbon) for (const k of ['xz', 'side', 'h', 'l', 'depth', 'cross', 'm']) if (g.ribbon[k]) gl.deleteBuffer(g.ribbon[k]);
@@ -530,6 +541,7 @@ export function createTerrain(canvas, opts = {}) {
 
   function freeGrid() {
     if (!s.res?.tiers) return;
+    releaseAttribs();
     s.res.tiers.forEach(freeTier);
     s.res.tiers = null;
     s.tiers = [];
@@ -568,6 +580,7 @@ export function createTerrain(canvas, opts = {}) {
   }
 
   function init() {
+    s.en = new Array(ATTRIB_SLOTS).fill(false);
     s.res = { tiers: null, bloom: null };
     s.res.grid_p = linkProgram(gl, GRID_VS, GRID_FS, ['a_p', 'a_h', 'a_s', 'a_l', 'a_m']);
     buildBg();
@@ -584,6 +597,7 @@ export function createTerrain(canvas, opts = {}) {
 
   function freeAll() {
     if (!s.res) return;
+    releaseAttribs();
     freeGrid();
     freeBloom();
     if (s.res.quad) gl.deleteBuffer(s.res.quad);
@@ -592,34 +606,40 @@ export function createTerrain(canvas, opts = {}) {
     s.res = null;
   }
 
-  function attrib(i, size, stride, offset) {
+  function attrib(i, size, stride, offset, buf) {
+    if (!buf) return false;
+    gl.bindBuffer(gl.ARRAY_BUFFER, buf);
     gl.enableVertexAttribArray(i);
     gl.vertexAttribPointer(i, size, gl.FLOAT, false, stride, offset);
+    s.en[i] = true;
+    return true;
+  }
+
+  function attribOff(i) {
+    if (s.en[i]) {
+      gl.disableVertexAttribArray(i);
+      s.en[i] = false;
+    }
   }
 
   function drawQuadWith(p) {
+    if (!s.res.quad) return;
     gl.useProgram(p.prog);
-    gl.bindBuffer(gl.ARRAY_BUFFER, s.res.quad);
-    attrib(0, 2, 0, 0);
+    for (let i = 1; i < ATTRIB_SLOTS; i += 1) attribOff(i);
+    if (!attrib(0, 2, 0, 0, s.res.quad)) return;
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
   }
 
   function setSide(buf) {
-    if (buf) {
-      gl.bindBuffer(gl.ARRAY_BUFFER, buf);
-      attrib(2, 1, 0, 0);
-    } else {
-      gl.disableVertexAttribArray(2);
+    if (!attrib(2, 1, 0, 0, buf)) {
+      attribOff(2);
       gl.vertexAttrib1f(2, 0);
     }
   }
 
   function setMel(buf) {
-    if (buf && (s.melodyOn || s.fullOn)) {
-      gl.bindBuffer(gl.ARRAY_BUFFER, buf);
-      attrib(4, 3, 0, 0);
-    } else {
-      gl.disableVertexAttribArray(4);
+    if (!(buf && (s.melodyOn || s.fullOn)) || !attrib(4, 3, 0, 0, buf)) {
+      attribOff(4);
       gl.vertexAttrib3f(4, 0, 0, 0);
     }
   }
@@ -679,53 +699,50 @@ export function createTerrain(canvas, opts = {}) {
     const p = s.res.grid_p;
     const rb = g.ribbon;
     gridUniforms(p, 0, s.bass, g);
-    if (rb) {
-      gl.bindBuffer(gl.ARRAY_BUFFER, rb.xz);
-      attrib(0, 2, 0, 0);
-      gl.bindBuffer(gl.ARRAY_BUFFER, rb.h);
-      attrib(1, 1, 0, 0);
-      gl.bindBuffer(gl.ARRAY_BUFFER, rb.l);
-      attrib(3, 1, 0, 0);
+    if (rb && tierBound(rb.xz, rb.h, rb.l)) {
       setMel(rb.m);
       setSide(rb.side);
-      gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, rb.depth);
-      gl.drawElements(gl.TRIANGLES, rb.depthCount, rb.indexType, 0);
+      drawIndexed(gl.TRIANGLES, rb.depth, rb.depthCount, rb.indexType);
       u1(p, 'u_mode', 3);
       u1(p, 'u_axis', 1);
-      gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, rb.cross);
-      gl.drawElements(gl.TRIANGLES, rb.crossCount, rb.indexType, 0);
+      drawIndexed(gl.TRIANGLES, rb.cross, rb.crossCount, rb.indexType);
       u1(p, 'u_axis', 0);
     }
-    gl.bindBuffer(gl.ARRAY_BUFFER, g.xz);
-    attrib(0, 2, 0, 0);
-    gl.bindBuffer(gl.ARRAY_BUFFER, g.h);
-    attrib(1, 1, 0, 0);
-    gl.bindBuffer(gl.ARRAY_BUFFER, g.l);
-    attrib(3, 1, 0, 0);
+    if (!tierBound(g.xz, g.h, g.l)) return;
     setMel(g.mBuf);
     setSide(null);
     if (!rb) {
-      gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, g.depth);
-      gl.drawElements(gl.LINES, g.depthCount, g.indexType, 0);
+      drawIndexed(gl.LINES, g.depth, g.depthCount, g.indexType);
       u1(p, 'u_mode', 3);
-      gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, g.cross);
-      gl.drawElements(gl.LINES, g.crossCount, g.indexType, 0);
+      drawIndexed(gl.LINES, g.cross, g.crossCount, g.indexType);
     }
     u1(p, 'u_mode', 1);
-    gl.drawArrays(gl.POINTS, 0, g.vertices);
+    if (g.vertices > 0) gl.drawArrays(gl.POINTS, 0, g.vertices);
+  }
+
+  function tierBound(xz, h, l) {
+    attribOff(2);
+    attribOff(4);
+    return attrib(0, 2, 0, 0, xz) && attrib(1, 1, 0, 0, h) && attrib(3, 1, 0, 0, l);
+  }
+
+  function drawIndexed(mode, buf, count, type) {
+    if (!buf || count <= 0) return;
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, buf);
+    gl.drawElements(mode, count, type, 0);
   }
 
   function drawStars() {
     const p = s.res.grid_p;
     gridUniforms(p, 4, 0);
-    gl.bindBuffer(gl.ARRAY_BUFFER, s.res.stars);
-    attrib(0, 2, 12, 0);
-    attrib(1, 1, 12, 8);
-    gl.disableVertexAttribArray(3);
+    const n = STAR_VISIBLE[s.level];
+    if (!s.res.stars || !(n > 0)) return;
+    attribOff(3);
     gl.vertexAttrib1f(3, 0);
     setMel(null);
     setSide(null);
-    gl.drawArrays(gl.POINTS, 0, STAR_VISIBLE[s.level]);
+    if (!attrib(0, 2, 12, 0, s.res.stars) || !attrib(1, 1, 12, 8, s.res.stars)) return;
+    gl.drawArrays(gl.POINTS, 0, n);
   }
 
   function drawBackground(cam) {

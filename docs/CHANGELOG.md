@@ -2,6 +2,12 @@
 
 What shipped, newest first. One line each; the web UI and server are live at https://electrophone.cc. Everything listed here is deployed except the sections marked "built, not deployed" (the 2026-10-14 release went out once the SSH access in [task-0027](tasks/task-0027.md) was restored; the live visualizer files match `origin/main` as of 2026-10-15). Why: [tech/decisions.md](tech/decisions.md); runbook: [tech/deploy.md](tech/deploy.md).
 
+## 2026-11-06 (built, not deployed)
+
+- Web (built, not deployed): the Terrain lookahead analysis no longer downloads the whole song in parallel with the audio stream at start: the fetch waits until the audio is playing with 10 s buffered (or 5 s after it started), is skipped when the tab is hidden or the mode is not a scene mode, runs at low priority, and is aborted on a track change, a seek of over 3 s, a mode change and page hide; the next-song prefetch waits for the analysis and the second half (or last minute) of the song (VIZ-108, `viz-lookahead.js`, `viz-lookahead-gating.test.mjs`). Terrain shows the live view until the timeline is ready; not checked in a real browser.
+- Web (built, not deployed): Terrain no longer triggers Safari's "WebGL: INVALID_OPERATION: drawArrays: no buffer is bound to enabled attribute": vertex attribute arrays left enabled on deleted grid buffers after a quality, size or yaw rebuild are now disabled before the buffers are freed, and every pass enables only the arrays it reads (VIZ-107, `viz-terrain-gl.js`, `viz-terrain-attribs.test.mjs`). Rendering is unchanged (draw and uniform calls identical); not run on a real Safari GPU.
+- Server (built, not deployed): web playback starts faster: `GET /files/{id}` answers an open-ended or oversized Range request in a three-step ramp per run of continuations, 128 KiB, then 512 KiB, then 2 MiB (a seek restarts at 128 KiB; in-process memory, `server/app/audio_range.py`), instead of the whole file in one 206 that Safari waited 3 s for through the tunnel; no-Range requests, `?download=1`, suffix and small ranges are unchanged (API-314).
+
 ## Unreleased (to deploy)
 
 - Data (to deploy): Genres map: Detroit Techno is a curated genre under Techno and can be put on songs and albums (`server/data/genres_v2.json`, `server/data/genre_descriptions.json`, GEN-117).

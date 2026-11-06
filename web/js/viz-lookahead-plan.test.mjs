@@ -167,7 +167,8 @@ const flush = () => new Promise((r) => setTimeout(r, 15));
 function harness({ duration = NaN, fail = null } = {}) {
   const l = {};
   const audio = {
-    currentSrc: '/files/a', duration, currentTime: 0, paused: false, ended: false, playbackRate: 1,
+    currentSrc: '/files/a', duration, currentTime: 0, paused: false, ended: false, playbackRate: 1, readyState: 4, seeking: false,
+    buffered: { length: 1, start: () => 0, end: () => 30 },
     addEventListener: (t, fn) => { l[t] = fn; }, removeEventListener() {}, fire: (t) => l[t]?.({ type: t }),
   };
   const log = { fetches: [], warns: [], jobs: [], focus: [] };
@@ -236,6 +237,8 @@ test('the next queue track is prefetched while the current one is ready', async 
   la.request('a', true);
   await flush();
   next = '/files/n';
+  h.audio.duration = 100;
+  h.audio.currentTime = 60;
   la.get(5000);
   await flush();
   assert.deepEqual(h.log.fetches, ['/files/a', '/files/n']);

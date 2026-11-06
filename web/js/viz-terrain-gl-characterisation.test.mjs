@@ -5,15 +5,15 @@ import { createTerrain } from './viz-terrain-gl.js';
 import { setStyle, TERRAIN_STYLES, resetStyleForTests } from './viz-terrain-style.js';
 import { markRows } from './viz-terrain-math.js';
 
-// A golden digest pins the exact GL call stream, so any renderer change breaks it. Four style/mode
+// A golden digest pins the exact GL call stream, so any renderer change breaks it (re-pinned after the VIZ-107 attribute-array rule: only enable/disable/bind calls changed, draws and uniforms are identical). Four style/mode
 // combinations plus the quality-2 bloom path (together all five modes) are enough to catch an
 // unintended change; the repeatability tests below cover every style without a digest.
 const GOLDEN = {
-  'relief/live': 'd0ac978dc9bf35c644a30fbf2cc68994ddfda1285fab00e526c6fd77fe4a216a',
-  'multi/static': '0ca91ee6c793a6e315bd1480a88f273c82ba0529d92d0ee7eb32959d7e9c4b27',
-  'lava/partial': '08438a448fc34c0ba214aa190649170807315b0133bed30133d3e8b5529ef2c2',
-  'melody/noparts': 'fae8c1d744de0806dc1c032a4778f18d40c6bbf7bd3c750b86446bdb6673857b',
-  'q2': '794413bafe5260908008adc541b5de3487f7485740a3c66e1ee17aae90ab73be',
+  'relief/live': 'ad624cefe9d502654f05fdd26aa130b52f69ae7ec29d64b8bbd0c18e0f99dc4a',
+  'multi/static': 'd6c79312b4e5582f46357be7d5d90c30cc22b917f9c6fe6c96c7cf4972c36efc',
+  'lava/partial': 'd2c9959001d0c3ab83415c21984ba1de85b946c277e0795698d836c7aa9b2c98',
+  'melody/noparts': 'c1245f3280176af97eccc4096142b81e44f5fcabf1c4ac29928c8e76a49f923b',
+  'q2': 'ef3db3dc940bc7e1a37cdeba50109869ca1f668f661fdda26daa4ef522d24b8e',
 };
 
 function fakeGL() {

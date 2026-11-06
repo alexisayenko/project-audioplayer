@@ -123,7 +123,8 @@ test('inline runner delivers every row in slices and can be cancelled', () => {
 function fakeAudio(over = {}) {
   const l = {};
   return Object.assign({
-    currentSrc: '/files/a', duration: 3, currentTime: 0, paused: false, ended: false, playbackRate: 1,
+    currentSrc: '/files/a', duration: 3, currentTime: 0, paused: false, ended: false, playbackRate: 1, readyState: 4,
+    buffered: { length: 1, start: () => 0, end: () => 30 },
     addEventListener: (t, fn) => { l[t] = fn; }, removeEventListener: (t) => { delete l[t]; }, fire: (t) => l[t]?.(), l,
   }, over);
 }
