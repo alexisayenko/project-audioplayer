@@ -10,7 +10,7 @@ from typing import Any, Iterator
 
 from fastapi import Header, HTTPException, Query, Request
 
-from . import extractor, gitstore, guest, jobs, library, limits, oauth, session, users
+from . import extractor, gitstore, guest, jobs, library, limits, oauth, session, songindex, users
 from .problems import Problem
 
 DOWNLOAD_DIR = Path(os.environ.get("AUDIO_DOWNLOAD_DIR", "downloads"))
@@ -94,7 +94,7 @@ def music_root() -> str:
     if os.environ.get("AUDIO_MUSIC_ROOT"):
         return os.environ["AUDIO_MUSIC_ROOT"]
     for path in (library_path(users.owner_uid()), data_root() / "library.json"):
-        found = library.load_doc(path)["settings"].get("music_root")
+        found = songindex.get(path).music_root
         if found:
             return found
     return str(DOWNLOAD_DIR)
@@ -137,8 +137,15 @@ def load_songs(uid: str) -> list[dict[str, Any]]:
         return library.load(library_path(uid))
 
 
+def song_audio(uid: str, video_id: str) -> tuple[bool, str | None]:
+    """`(listed, audio file name)` of one song without parsing the library or taking the user lock (writes replace the file atomically; see `songindex`)."""
+    files = songindex.get(library_path(uid)).files
+    return video_id in files, files.get(video_id)
+
+
 def save_songs(uid: str, songs: list[dict[str, Any]]) -> None:
     library.save(library_path(uid), songs, default_music_root=music_root())
+    songindex.invalidate(library_path(uid))
 
 
 def load_doc(uid: str) -> dict[str, Any]:
@@ -150,6 +157,7 @@ def save_doc(uid: str, doc: dict[str, Any]) -> None:
     if not doc["settings"].get("music_root"):
         doc["settings"]["music_root"] = music_root()
     library.save_doc(library_path(uid), doc)
+    songindex.invalidate(library_path(uid))
 
 
 @contextmanager
