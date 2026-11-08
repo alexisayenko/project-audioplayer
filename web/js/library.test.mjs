@@ -439,6 +439,7 @@ test('the cover button plays now, shows Pause on the playing song and Play when 
   assert.equal(cover('b').classList.contains('persist'), false);
   cover('b').focus();
   cover('b').click();
+  await flush();
   assert.equal(player.current.id, 'b');
   assert.equal(player.playing, true);
   assert.equal(cover('b').getAttribute('aria-label'), 'Pause beta');
@@ -446,6 +447,7 @@ test('the cover button plays now, shows Pause on the playing song and Play when 
   assert.equal(cover('a').getAttribute('aria-label'), 'Play Alpha');
   assert.ok(document.activeElement === cover('b'), 'the rebuilt cover keeps keyboard focus');
   cover('b').click();
+  await flush();
   assert.equal(player.playing, false);
   assert.equal(cover('b').getAttribute('aria-label'), 'Play beta');
   assert.equal(cover('b').classList.contains('persist'), true);
@@ -466,10 +468,13 @@ test('a player state change keeps the loaded cover images and still repaints the
   assert.equal(before.length, 3);
   assert.ok(before.every((i) => i.getAttribute('src')?.startsWith('/covers/')));
   player.playNow('b');
+  await flush();
   assert.deepEqual(imgs(), before, 'covers survive the song change');
   player.toggle();
+  await flush();
   assert.deepEqual(imgs(), before, 'covers survive pause');
   player.toggle();
+  await flush();
   assert.deepEqual(imgs(), before, 'covers survive play');
   const row = rows().find((r) => r.dataset.id === 'b');
   assert.equal(row.classList.contains('current'), true);
@@ -543,6 +548,7 @@ test('Show playing sits on the Library toolbar only while a song is current and 
   assert.equal(show().parentElement.className, 'toolbar', 'beside the search, not in the sort bar actions');
   assert.deepEqual([...root.querySelectorAll('.sortbar .sort-actions button')].map((b) => b.textContent.replace(/ \d+.*/, '')), ['Clear filters', 'Play all', 'Add all']);
   player.playNow('a');
+  await flush();
   assert.equal(show().hidden, false);
   assert.equal(show().getAttribute('aria-label'), 'Show the playing song in the list');
   show().click();

@@ -43,7 +43,7 @@ const fader = createFader({ audio, settings: fadeSettings, loop, volumeOk: () =>
 let endGuard = null;
 const retry = createMediaRetry({
   audio,
-  onChange: () => { paintConn(); render(true); },
+  onChange: () => { paintConn(); renderSoon(false); },
   onGone: () => { audio.pause(); fail(); },
   nearEnd: () => nearEnd(audio),
   onEnd: () => endGuard?.finish(),
@@ -521,8 +521,8 @@ function load(autoplay) {
   if (autoplay) {
     mark('audio.play() called');
     trackPlay(audio.play()).catch(fail);
-  }
-  render();
+    renderSoon(true);
+  } else render();
   mark('load() done');
 }
 
@@ -596,7 +596,33 @@ function renderDetails(song) {
   $('cover-art').classList.toggle('noart', !song.cover);
 }
 
+let renderTimer = null;
+let renderFull = false;
+let renderedSig = null;
+
+const stateSig = () => [player.current, qs, shownPlaying(), retry.state, shuffle, repeat, !!audio.error];
+
+// Media events and a started song ask for a render here: one render per task burst, run after audio.play(), and none when nothing it shows has changed.
+function renderSoon(full) {
+  renderFull ||= full;
+  if (renderTimer != null) return;
+  renderTimer = setTimeout(() => {
+    renderTimer = null;
+    const all = renderFull;
+    renderFull = false;
+    if (!all && renderedSig && stateSig().every((v, i) => v === renderedSig[i])) return;
+    render(!all);
+  }, 0);
+}
+
 function render(coversOnly = false) {
+  if (renderTimer != null) {
+    clearTimeout(renderTimer);
+    renderTimer = null;
+    if (renderFull) coversOnly = false;
+    renderFull = false;
+  }
+  renderedSig = stateSig();
   mark(coversOnly ? 'render(covers) start' : 'render() start');
   const song = player.current;
   const n = qs.items.length;
@@ -686,15 +712,15 @@ export function initPlayer() {
   });
   initMenus();
   watchMedia(audio);
-  audio.addEventListener('play', () => render(true));
-  audio.addEventListener('pause', () => { saveResume(true); render(true); });
+  audio.addEventListener('play', () => renderSoon(false));
+  audio.addEventListener('pause', () => { saveResume(true); renderSoon(false); });
   audio.addEventListener('timeupdate', () => { saveResume(false); renderProgress(); });
   audio.addEventListener('seeked', () => saveResume(true));
   window.addEventListener('pagehide', () => saveResume(true));
   document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') saveResume(true); });
   audio.addEventListener('durationchange', renderProgress);
   audio.addEventListener('ended', () => { resume.clear(); window.dispatchEvent(new Event('song-ended')); if (!loop.onEnded()) player.next(true); });
-  for (const ev of ['playing', 'error', 'emptied', 'abort', 'loadstart']) audio.addEventListener(ev, () => render(true));
+  for (const ev of ['playing', 'error', 'emptied', 'abort', 'loadstart']) audio.addEventListener(ev, () => renderSoon(false));
   endGuard = createEndGuard({ audio });
   initLoopChip($('mini-loop'), loop);
   const recorder = createPlayRecorder({

@@ -79,6 +79,7 @@ test('Song info button opens the read-only card, not the edit dialog; guests kee
   store.songs = [both];
   store.loaded = true;
   player.playNow('a');
+  await flush();
   assert.equal($('p-view').hidden, false);
   assert.equal($('p-edit'), null);
   $('p-view').dispatchEvent(makeEvent('click'));

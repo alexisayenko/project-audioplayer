@@ -9,7 +9,7 @@ import { getListening } from './listening-data.js';
 import { LIBRARY_FRESH_MS, EAGER_COVERS } from './constants.js';
 import { findRowIndex, registerRevealer } from './reveal.js';
 import { prefs, SORTS, savePrefs, visibleSongs, setListening, hasListening, listeningData } from './library-data.js';
-import { songRow, paintDownloadRows } from './library-rows.js';
+import { songRow, paintDownloadRows, playKey, rowPlayKey } from './library-rows.js';
 import { loadReferences, onReferencesChange } from './references.js';
 import { disposeAll } from './marquee.js';
 import { isRowControl, keepCovers } from './row-cover.js';
@@ -186,6 +186,31 @@ export function renderLibrary(root) {
     if (songsPane.hidden) renderLater(); else paintList();
   }
 
+  const listenedOf = (data, s) => (data ? data.songs[s.id]?.listened?.all || 0 : null);
+
+  // A player change (current song, play/pause, queue) rebuilds only the rows whose play state differs, never the whole list.
+  function patchPlayState() {
+    if (stale || gone) return;
+    const cur = player.current;
+    showPlaying.hidden = !(store.loaded && cur);
+    const rows = [...list.querySelectorAll('li.song')];
+    if (!rows.length) return;
+    const byId = new Map(store.songs.map((s) => [s.id, s]));
+    const data = isGuest() ? null : listeningData();
+    const focusedEl = document.activeElement;
+    const focusedCls = ['row-cover', 'act-pl', 'act-queue', 'sq-btn'].find((c) => focusedEl?.classList?.contains(c));
+    const focusedRow = focusedCls ? focusedEl.closest('li.song') : null;
+    for (const row of rows) {
+      const song = byId.get(row.dataset.id);
+      if (!song || rowPlayKey(row) === playKey(song, cur)) continue;
+      const next = songRow(song, cur, flashedId(), listenedOf(data, song));
+      keepCovers([row], [next]);
+      disposeAll(row);
+      row.replaceWith(next);
+      if (row === focusedRow) next.querySelector(`.${focusedCls}`)?.focus();
+    }
+  }
+
   function paintList() {
     stale = false;
     const songs = visibleSongs();
@@ -211,7 +236,7 @@ export function renderLibrary(root) {
     const focusedCls = ['row-cover', 'act-pl', 'act-queue', 'sq-btn'].find((c) => focusedEl?.classList?.contains(c));
     const focusedId = focusedCls ? focusedEl.closest('li.song')?.dataset.id : null;
     const prevRows = [...list.querySelectorAll('li.song')];
-    const rows = songs.map((s) => songRow(s, cur, flashedId(), data ? data.songs[s.id]?.listened?.all || 0 : null));
+    const rows = songs.map((s) => songRow(s, cur, flashedId(), listenedOf(data, s)));
     keepCovers(prevRows, rows);
     disposeAll(list);
     list.replaceChildren(...empty, ...rows);
@@ -254,7 +279,7 @@ export function renderLibrary(root) {
     paintSwitch();
     setView(routeView());
   } else setView('songs');
-  const unsubPlayer = player.onChange(renderList);
+  const unsubPlayer = player.onChange(patchPlayState);
   const unsubDl = autodl.onChange(paintDownloads);
 
   let loadError = null;

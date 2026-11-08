@@ -92,6 +92,17 @@ function statsCell(n) {
   return el('div', { class: `c-stats t-subhead${n ? '' : ' zero'}`, title: text, 'aria-label': text }, String(n));
 }
 
+const playKeys = new WeakMap();
+
+// Everything in a row that follows the player: current, play/pause, queue membership and position.
+export function playKey(s, cur) {
+  const here = hasAudio(s) && !!cur && cur.id === s.id;
+  const q = player.inQueue(s.id) ? player.queuePosition(s.id) : null;
+  return `${here ? (player.playing ? 'p' : 'c') : '-'}${q ? `${q.pos}/${q.total}` : ''}`;
+}
+
+export const rowPlayKey = (row) => playKeys.get(row);
+
 export function songRow(s, cur, flashId, listened = null) {
   const full = titleLine(s);
   const tip = tooltipLine(s);
@@ -114,6 +125,7 @@ export function songRow(s, cur, flashId, listened = null) {
     listened == null ? null : statsCell(listened),
     dl ? lineNode(dl) : null);
   marquee(open, { auto: !!here, host: row });
+  playKeys.set(row, playKey(s, cur));
   return row;
 }
 

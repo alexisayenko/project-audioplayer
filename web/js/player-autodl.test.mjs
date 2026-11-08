@@ -82,6 +82,7 @@ test('prev skips songs without audio when auto-download is off', () => {
 test('media keys: mini buttons drive the same actions', async () => {
   await import('./song-card.js');
   player.playNow('a');
+  await flush();
   $('mini-next').click();
   assert.equal(player.current.id !== 'a', true);
   $('mini-prev').click();

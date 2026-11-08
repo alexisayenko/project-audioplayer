@@ -33,10 +33,11 @@ test('empty player: nothing playing, controls disabled, mini hidden', () => {
   assert.equal(document.title, 'Electrophone');
 });
 
-test('playNow loads the file, plays, and fills mini/full player details', () => {
+test('playNow loads the file, plays, and fills mini/full player details', async () => {
   player.playNow('a');
   assert.equal(audio.getAttribute('src'), '/files/a');
   assert.equal(audio.plays, 1);
+  await flush();
   assert.equal(player.current.id, 'a');
   assert.equal($('mini').hidden, false);
   assert.equal($('mini-title').textContent, 'Alpha');
@@ -81,8 +82,9 @@ test('next/prev walk the queue; prev restarts when past 3 s', () => {
   assert.equal(player.current.id, 'a', 'nothing before the first song');
 });
 
-test('at the end of the queue Next is disabled; auto-advance stops', () => {
+test('at the end of the queue Next is disabled; auto-advance stops', async () => {
   player.playAt(2);
+  await flush();
   assert.equal($('mini-next').disabled, true);
   const before = audio.plays;
   audio.dispatchEvent(makeEvent('ended'));
@@ -279,6 +281,7 @@ test('tag picker adds songs by tag and the Apply label counts new tags', async (
 test('a failed media request shows the play icon and the Reconnecting note, then recovers', async () => {
   reset();
   player.playNow('a');
+  await flush();
   assert.equal($('mini-play').getAttribute('aria-label'), 'Pause');
   audio.error = { code: 4 };
   const real = globalThis.fetch;
@@ -291,6 +294,7 @@ test('a failed media request shows the play icon and the Reconnecting note, then
   assert.equal($('mini-conn').hidden, false);
   audio.error = null;
   audio.dispatchEvent(makeEvent('playing'));
+  await flush();
   assert.equal($('mini-conn').hidden, true);
   assert.equal($('mini-play').getAttribute('aria-label'), 'Pause');
 });

@@ -72,17 +72,17 @@ test('guest without audio: the card offers the source link and rows cannot be qu
   g.clearGuest();
 });
 
-test('guest: player edit and download controls are hidden, the mini-player has no edit button; the Song info button stays', () => {
+test('guest: player edit and download controls are hidden, the mini-player has no edit button; the Song info button stays', async () => {
   g.setGuest({ guest: true, audio: true });
   player.playNow('a');
+  await flush();
   assert.equal($('p-view').hidden, false);
   assert.equal($('p-edit'), null);
   assert.equal($('mini-edit'), null);
   assert.equal($('p-download').hidden, true);
   assert.equal($('mini-play').hidden, false);
   g.clearGuest();
-  player.toggle();
-  player.toggle();
+  store.listeners.forEach((fn) => fn());
   assert.equal($('p-view').hidden, false);
   assert.equal($('mini-edit'), null);
   assert.equal($('p-download').hidden, false);
