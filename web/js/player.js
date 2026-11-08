@@ -11,8 +11,10 @@ import { autodl, autoDownloadOn } from './autodl.js';
 import { attachScrubber } from './scrubber.js';
 import { storeGet, storeSet, storeRemove } from './storage.js';
 import { createResumePosition } from './resume-position.js';
-import { paintCover, currentCoverModel, paintQueueCovers } from './row-cover.js';
+import { paintCover, currentCoverModel, paintQueueCovers, keepCovers } from './row-cover.js';
 import { $, setIcon, setToggle, setCover, queueRow, updateDl, paintTimes, initTimeToggle, initMiniCompact } from './player-ui.js';
+import { MINI_PX } from './cover-url.js';
+import { watchMedia } from './cover-loader.js';
 import { paintSideMini, paintSideRing, initSideMini } from './side-mini.js';
 import { updateMediaSession, setupMediaSession, updatePositionState, setVolume, storedVolume } from './player-media.js';
 import { canSetVolume } from './volume-logic.js';
@@ -33,6 +35,7 @@ import { initLoopChip } from './loop-chip.js';
 import { createFader } from './fade-control.js';
 import { fadeSettings } from './fade-settings.js';
 import { gt } from './cmp.js';
+import { mark, watchAudio, trackPlay } from './perf.js';
 
 const audio = document.getElementById('audio');
 const loop = createLoop(audio, undefined, createGapless({ audio }));
@@ -80,7 +83,7 @@ function armResume(id) {
     audio.removeEventListener('loadedmetadata', onMeta);
     if (player.currentId === id) {
       const pos = resume.positionFor(id, audio.duration);
-      if (pos > 0) audio.currentTime = pos;
+      if (pos > 0) { mark('resume: currentTime set', pos); audio.currentTime = pos; }
     }
     resumeGuard = false;
   };
@@ -188,6 +191,7 @@ export const player = {
   onChange(fn) { listeners.add(fn); return () => listeners.delete(fn); },
 
   playNow(id) {
+    mark('handler: playNow');
     if (!canQueue(store.get(id))) return;
     qs = Q.playNow(qs, id);
     saveQueue();
@@ -238,6 +242,7 @@ export const player = {
   },
 
   playListed(songs, tags) {
+    mark('handler: playListed');
     const playable = songs.filter(canQueue);
     const r = Q.playListed(qs, playable, tags, false);
     if (!r.count) return { count: 0, skipped: songs.length, replaced: false };
@@ -333,12 +338,14 @@ export const player = {
   },
 
   playAt(i) {
+    mark('handler: playAt');
     if (i < 0 || i >= qs.items.length) return;
     if (i === qs.index) { player.toggle(); return; }
     jumpTo(i);
   },
 
   toggle() {
+    mark('handler: toggle');
     const song = player.current;
     if (!song) return;
     if (!hasAudio(song)) { wantAudio(song); return; }
@@ -487,6 +494,7 @@ function replayCurrent() {
 }
 
 function load(autoplay) {
+  mark('load() entry');
   const song = player.current;
   retry.reset();
   loop.clear();
@@ -507,10 +515,15 @@ function load(autoplay) {
   resumeGuard = false;
   if (!restoring) resume.clear();
   audio.src = api.fileUrl(song.id);
+  mark('audio.src set');
   fader.apply();
   if (restoring) armResume(song.id);
-  if (autoplay) audio.play().catch(fail);
+  if (autoplay) {
+    mark('audio.play() called');
+    trackPlay(audio.play()).catch(fail);
+  }
   render();
+  mark('load() done');
 }
 
 let servicesSeq = 0;
@@ -578,12 +591,13 @@ function renderDetails(song) {
   const bpm = song.bpm != null ? Math.round(song.bpm) : null;
   $('player-bpm').replaceChildren(...(bpm == null ? [] : [el('span', { class: 'bpm-badge', title: 'Beats per minute (estimated)', 'aria-label': `BPM ${bpm}` }, `${bpm} `, el('small', { 'aria-hidden': 'true' }, 'BPM'))]));
   updateDl(player.current);
-  setCover($('mini-cover'), song);
+  setCover($('mini-cover'), song, MINI_PX);
   setCover($('player-cover'), song);
   $('cover-art').classList.toggle('noart', !song.cover);
 }
 
 function render(coversOnly = false) {
+  mark(coversOnly ? 'render(covers) start' : 'render() start');
   const song = player.current;
   const n = qs.items.length;
   document.body.classList.toggle('has-mini', !!song);
@@ -602,7 +616,9 @@ function render(coversOnly = false) {
   followQueue(song.id, qs.index);
   document.title = `${titleLine(song)} - Electrophone`;
   renderProgress();
+  mark('render: listeners start', listeners.size);
   listeners.forEach((fn) => fn());
+  mark('render() end');
 }
 
 function renderPlaylistControls() {
@@ -634,7 +650,10 @@ function renderQueue() {
   $('queue-empty').hidden = qs.items.length > 0;
   disposeAll($('queue-list'));
   const focused = document.activeElement?.closest?.('#queue-list .row-cover') ? [...$('queue-list').children].indexOf(document.activeElement.closest('li')) : -1;
-  $('queue-list').replaceChildren(...qs.items.map((item, i) => queueRow(item, i, queueCtx())));
+  const prevRows = [...$('queue-list').children];
+  const rows = qs.items.map((item, i) => queueRow(item, i, queueCtx()));
+  keepCovers(prevRows, rows);
+  $('queue-list').replaceChildren(...rows);
   if (focused >= 0) $('queue-list').children[focused]?.querySelector('.row-cover')?.focus();
   updateDl(player.current);
 }
@@ -655,6 +674,7 @@ function renderProgress() {
 }
 
 export function initPlayer() {
+  watchAudio(audio);
   setupMediaSession({
     play: () => { if (retry.state === 'failed') retry.retryNow(); else audio.play().catch(fail); },
     pause: () => audio.pause(),
@@ -665,6 +685,7 @@ export function initPlayer() {
     seekforward: (d) => player.seek(audio.currentTime + (d.seekOffset || 10)),
   });
   initMenus();
+  watchMedia(audio);
   audio.addEventListener('play', () => render(true));
   audio.addEventListener('pause', () => { saveResume(true); render(true); });
   audio.addEventListener('timeupdate', () => { saveResume(false); renderProgress(); });

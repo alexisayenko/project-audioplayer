@@ -13,6 +13,7 @@ import { songRow, paintDownloadRows } from './library-rows.js';
 import { loadReferences, onReferencesChange } from './references.js';
 import { disposeAll } from './marquee.js';
 import { isRowControl, keepCovers } from './row-cover.js';
+import { revealCovers } from './cover-url.js';
 import { mountScrollTop } from './scroll-top.js';
 import { searchBox } from './search-box.js';
 import { addAllToQueue, playAll as playAllSongs } from './play-all.js';
@@ -31,12 +32,7 @@ if (typeof window !== 'undefined') window.addEventListener('auth-changed', () =>
 let albumsTotal = '';
 
 export function prioritizeCovers(rows, count = EAGER_COVERS) {
-  for (const row of rows.slice(0, count)) {
-    const img = row.querySelector?.('img.cover');
-    if (!img) continue;
-    img.setAttribute('fetchpriority', 'high');
-    img.loading = 'eager';
-  }
+  revealCovers(rows.slice(0, count).map((row) => row.querySelector?.('img.cover')).filter(Boolean));
 }
 
 export function renderLibrary(root) {
@@ -216,10 +212,10 @@ export function renderLibrary(root) {
     const focusedId = focusedCls ? focusedEl.closest('li.song')?.dataset.id : null;
     const prevRows = [...list.querySelectorAll('li.song')];
     const rows = songs.map((s) => songRow(s, cur, flashedId(), data ? data.songs[s.id]?.listened?.all || 0 : null));
-    prioritizeCovers(rows);
     keepCovers(prevRows, rows);
     disposeAll(list);
     list.replaceChildren(...empty, ...rows);
+    prioritizeCovers(rows);
     if (focusedId) [...list.querySelectorAll('li.song')].find((r) => r.dataset.id === focusedId)?.querySelector(`.${focusedCls}`)?.focus();
   }
 

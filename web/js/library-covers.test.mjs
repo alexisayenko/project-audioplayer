@@ -17,12 +17,23 @@ const row = () => {
   return li;
 };
 
-test('WEB-122: the first rows get eager high-priority covers, the rest stay lazy', () => {
-  const rows = Array.from({ length: EAGER_COVERS + 5 }, row);
+test('WEB-122: the first rows jump the cover queue (at most 3 load at once); none is high priority', async () => {
+  const { resetCoverLoader, coverLoadState } = await import('./cover-loader.js');
+  resetCoverLoader();
+  const rows = Array.from({ length: EAGER_COVERS + 5 }, (_, i) => {
+    const li = row();
+    li.querySelector('img.cover').dataset.src = `/covers/c${i}`;
+    document.body.append(li);
+    return li;
+  });
   prioritizeCovers(rows);
   const imgs = rows.map((r) => r.querySelector('img.cover'));
-  assert.ok(imgs.slice(0, EAGER_COVERS).every((i) => i.getAttribute('fetchpriority') === 'high' && i.loading === 'eager'));
-  assert.ok(imgs.slice(EAGER_COVERS).every((i) => i.getAttribute('fetchpriority') === null && i.getAttribute('loading') === 'lazy'));
+  assert.deepEqual(imgs.slice(0, 3).map((i) => i.getAttribute('src')), ['/covers/c0', '/covers/c1', '/covers/c2']);
+  assert.equal(imgs.filter((i) => i.getAttribute('src')).length, 3);
+  assert.deepEqual(coverLoadState(), { paused: false, loading: 3, waiting: EAGER_COVERS - 3 });
+  assert.ok(imgs.every((i) => i.getAttribute('fetchpriority') !== 'high'));
+  assert.ok(imgs.every((i) => i.getAttribute('loading') === 'lazy'));
+  resetCoverLoader();
 });
 
 test('WEB-122: rows without a cover image are skipped', () => {

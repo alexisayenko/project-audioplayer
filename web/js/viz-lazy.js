@@ -1,14 +1,18 @@
 import { isVizKey } from './viz-keys.js';
 import { setIcon } from './player-ui.js';
+import { mark } from './perf.js';
 
 export function lazyVisualizer({ player, load = () => import('./viz-ui.js'), audio = document.getElementById('audio'), button = document.getElementById('mini-viz') }) {
   let loading = null;
   let ready = null;
   let opening = false;
   const ensure = () => {
+    if (!loading) mark('visualizer chunk requested');
     loading ??= load().then((mod) => {
+      mark('visualizer chunk loaded');
       detach();
       ready = mod.initVisualizer({ player });
+      mark('visualizer init done');
       return ready;
     }, (err) => {
       loading = null;

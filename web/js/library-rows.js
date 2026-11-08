@@ -1,4 +1,3 @@
-import { api } from './api.js';
 import { player } from './player.js';
 import { el, fmtTime } from './dom.js';
 import { icon } from './icons.js';
@@ -16,13 +15,9 @@ import { marquee } from './marquee.js';
 import { songMarks, marksTip } from './references.js';
 import { playlistsOn } from './playlists-store.js';
 import { openPlaylistPicker } from './lazy-ui.js';
+import { thumbImg, ROW_PX } from './cover-url.js';
 
-function cover(s) {
-  const img = el('img', { class: 'cover', alt: '', loading: 'lazy' });
-  if (s?.cover) img.src = api.coverUrl(s.id, s.cover_v);
-  img.addEventListener('error', () => img.removeAttribute('src'));
-  return img;
-}
+const cover = (s) => thumbImg(s, ROW_PX, { defer: true });
 
 export const coverTile = (s) => el('span', { class: 'row-cover' }, el('span', { class: 'cover-mark', 'aria-hidden': 'true' }, icon('coverPlaceholder')), cover(s));
 

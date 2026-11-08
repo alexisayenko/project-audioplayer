@@ -3,11 +3,13 @@ import { storeGet, storeSet } from './storage.js';
 import { $ } from './player-ui.js';
 import { titleLine, artistLine, albumOf } from './credits.js';
 import { clampVolume, parseVolume } from './volume-logic.js';
+import { mark } from './perf.js';
 
 const VOLUME_KEY = 'ap2.volume';
 
 export function updateMediaSession(song) {
   if (!('mediaSession' in navigator)) return;
+  mark('mediaSession metadata start');
   const artwork = song.cover
     ? [{ src: new URL(api.coverUrl(song.id, song.cover_v), location.href).href, sizes: '480x360', type: 'image/jpeg' }]
     : [];
@@ -17,6 +19,7 @@ export function updateMediaSession(song) {
     album: albumOf(song),
     artwork,
   });
+  mark('mediaSession metadata done');
 }
 
 export function setupMediaSession(handlers) {

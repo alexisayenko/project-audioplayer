@@ -3,7 +3,7 @@ import { icon } from './icons.js';
 import { isGuest } from './guest.js';
 import { openAdd, openSongCard } from './lazy-ui.js';
 import { store } from './store.js';
-import { api } from './api.js';
+import { thumbImg, ROW_PX, SMALL_PX } from './cover-url.js';
 import { hasAudio } from './playable.js';
 import { autodl } from './autodl.js';
 import { ringModel } from './dl-progress.js';
@@ -115,9 +115,7 @@ export function createReferencesPanel({ compact = false } = {}) {
   function coverNode(e) {
     const id = e.in_library ? (e.song?.id || e.song_id) : null;
     const s = id ? (store.get(id) || e.song) : null;
-    const img = el('img', { class: 'cover', alt: '', loading: 'lazy' });
-    if (s?.cover) img.src = api.coverUrl(s.id, s.cover_v);
-    img.addEventListener('error', () => img.removeAttribute('src'));
+    const img = thumbImg(s, compact ? SMALL_PX : ROW_PX);
     return el('div', { class: 'row-cover' }, compact ? el('span', { class: 'cover-mark', 'aria-hidden': 'true' }, icon('coverPlaceholder')) : null, img);
   }
 

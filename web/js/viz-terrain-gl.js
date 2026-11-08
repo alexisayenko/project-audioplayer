@@ -5,6 +5,7 @@ import {
   makeRowClock, clamp01, LOOK_S, timelineCovers, applyNowLine, addBaseRelief, BEAT_BASE_RELIEF, layerFullRelief, NOW_LINE_GAIN_H, nowGains, HEIGHT_CAP, resample, yawStepOf, smoothHeights, HEIGHT_RESAMPLE_CAP, ROWS_PER_SECOND, gridDims, fillLight, LIGHT_GAIN, NODE_GAIN, FOG_NEAR, FOG_FAR, FOG_LOW_MIN, FOG_H0, FOG_H1,
 } from './viz-terrain-math.js';
 import { getCam } from './viz-cam-debug.js';
+import { mark } from './perf.js';
 import { flight } from './viz-flight.js';
 import { getStyle, isBeatStyle, isFullStyle, isLavaStyle, isMelodyStyle } from './viz-terrain-style.js';
 import {
@@ -321,6 +322,7 @@ function compile(gl, type, src) {
 }
 
 export function linkProgram(gl, vsSrc, fsSrc, attribs) {
+  mark('WebGL program compile start');
   const vs = compile(gl, gl.VERTEX_SHADER, vsSrc);
   const fs = compile(gl, gl.FRAGMENT_SHADER, fsSrc);
   const prog = gl.createProgram();
@@ -335,6 +337,7 @@ export function linkProgram(gl, vsSrc, fsSrc, attribs) {
     gl.deleteProgram(prog);
     throw new Error(`program link failed: ${log}`);
   }
+  mark('WebGL program linked');
   return { gl, prog, locs: new Map(), vals: new Map(), mvpV: -1 };
 }
 
@@ -1015,8 +1018,10 @@ export function createTerrain(canvas, opts = {}) {
     }
   }
 
+  let drewOnce = false;
   function draw(spectrum, t = 0, aheadIn = null, latS = 0) {
     if (s.lost || s.disposed || !s.res) return;
+    if (!drewOnce) { drewOnce = true; mark('terrain first frame start'); }
     const lat = Number.isFinite(latS) ? latS : 0;
     const ahead = shiftedAhead(aheadIn, lat);
     const sp = spectrum || [];
@@ -1099,8 +1104,10 @@ export function createTerrain(canvas, opts = {}) {
     }
   }
 
+  mark('terrain init start');
   try {
     init();
+    mark('terrain init done');
   } catch (err) {
     freeAll();
     onError(err);

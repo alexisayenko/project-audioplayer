@@ -39,7 +39,8 @@ async def _http_error(request: Request, exc: StarletteHTTPException) -> Response
 async def _no_store(request: Request, call_next: Callable[[Request], Awaitable[Response]]) -> Response:
     response = await call_next(request)
     if request.method in ("GET", "HEAD") and (request.url.path in guest.READ_PATHS or request.url.path.startswith(guest.READ_PREFIXES)):
-        response.headers["Cache-Control"] = "private, no-cache"
+        if not response.headers.get("cache-control", "").startswith("private, max-age="):
+            response.headers["Cache-Control"] = "private, no-cache"
         response.headers["Vary"] = "Cookie, Authorization"
     elif "cache-control" not in response.headers:
         response.headers["Cache-Control"] = "no-store"

@@ -341,8 +341,8 @@ export const api = {
   setCover: (id, choice) => (choice instanceof Blob ? sendCoverFile(id, choice) : request('PUT', `/songs/${q(id)}/cover`, choice)),
   deleteCover: (id) => request('DELETE', `/songs/${q(id)}/cover`),
   coverSuggestions: (id, signal) => request('GET', `/songs/${q(id)}/cover/suggestions`, undefined, signal),
-  coverUrl: (id, v) => {
-    const params = [v ? `v=${encodeURIComponent(v)}` : '', coverEpoch ? `r=${coverEpoch}` : ''].filter(Boolean).join('&');
+  coverUrl: (id, v, size) => {
+    const params = [v ? `v=${encodeURIComponent(v)}` : '', coverEpoch ? `r=${coverEpoch}` : '', size ? `size=${size}` : ''].filter(Boolean).join('&');
     return `/covers/${q(id)}${params ? `?${params}` : ''}`;
   },
   bumpCovers: () => { coverEpoch += 1; },

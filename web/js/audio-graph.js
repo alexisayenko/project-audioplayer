@@ -1,4 +1,5 @@
 import { FFT_SIZE, ANALYSER_SMOOTHING } from './viz-constants.js';
+import { mark } from './perf.js';
 
 const listeners = new Set();
 let graph = null;
@@ -30,8 +31,9 @@ export function onState(cb) {
 const BLOCKED_AFTER_MS = 250;
 
 function callResume(ctx) {
+  mark('audioContext resume() called', ctx.state);
   try {
-    return Promise.resolve(ctx.resume?.()).then(() => {}, () => {});
+    return Promise.resolve(ctx.resume?.()).then(() => { mark('audioContext resume() settled', ctx.state); }, () => { mark('audioContext resume() rejected'); });
   } catch {
     return Promise.resolve();
   }
@@ -50,7 +52,9 @@ function build(ctx, audio) {
   gain.connect(fade);
   fade.connect(analyser);
   analyser.connect(ctx.destination);
+  mark('createMediaElementSource start');
   const source = ctx.createMediaElementSource(audio);
+  mark('createMediaElementSource done');
   try {
     source.connect(gain);
   } catch (err) {
@@ -124,6 +128,7 @@ export function unlock(audio, { win = globalThis } = {}) {
   let ctx;
   try {
     ctx = new Ctor();
+    mark('audioContext created', ctx.state);
   } catch {
     setState('failed');
     return null;

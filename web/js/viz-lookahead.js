@@ -3,6 +3,7 @@ import {
   markRows, uncoveredSpans, timelineCovers, prefetchDue, prefetchWindowOpen, statusText, PREFETCH_S,
 } from './viz-timeline.js';
 import { LOOK_S, HISTORY_BINS, ROWS_PER_SECOND } from './viz-terrain-math.js';
+import { mark } from './perf.js';
 
 export const LOOK_MARGIN_S = 1.2;
 const CACHE_MAX = 4;
@@ -105,6 +106,7 @@ export function createLookahead({
   function tryStart() {
     if (status !== 'loading' || stage !== 'wait' || !keys.size || !src || hidden() || !gateOpen()) return;
     stage = 'fetch';
+    mark('lookahead fetch+decode start');
     void load(src, gen, waitSeed);
   }
 
@@ -197,8 +199,10 @@ export function createLookahead({
     try {
       const { bytes } = await fetchDecode(url, abort, setStage);
       if (mine !== gen) return;
+      mark('lookahead bytes fetched', bytes?.byteLength);
       const decoded = await decode(bytes, setStage);
       if (mine !== gen) return;
+      mark('lookahead decoded');
       const pcm = downmixMono(decoded);
       let tl = createTimeline(pcm.length / decoded.sampleRate, HISTORY_BINS, ROWS_PER_SECOND);
       if (!tl.total) throw new Error('empty audio');

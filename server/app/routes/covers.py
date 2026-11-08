@@ -9,7 +9,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.concurrency import run_in_threadpool
 from pydantic import BaseModel, Field
 
-from .. import coverimg, coverupload, deps, discogs_cover, downloads, library, wiki_lookup
+from .. import coverimg, coverupload, deps, discogs_cover, downloads, library, thumbs, wiki_lookup
 from ..jsonio import write_bytes_atomic
 from ..problems import Problem
 
@@ -38,6 +38,7 @@ def _store(uid: str, video_id: str, jpeg: bytes) -> dict[str, Any]:
         dest = deps.covers_dir(uid) / f"{video_id}.jpg"
         dest.parent.mkdir(parents=True, exist_ok=True)
         write_bytes_atomic(dest, jpeg)
+        thumbs.drop(uid, video_id)
         song.update(cover=f"covers/{video_id}.jpg", cover_v=coverimg.version_of(jpeg), cover_off=None, cover_source="custom", updated_at=library.now_utc())
         deps.save_songs(uid, songs)
         return deps.public_song(uid, song)
@@ -50,6 +51,7 @@ def _pin_default(uid: str, video_id: str) -> dict[str, Any]:
         if song is None:
             raise HTTPException(status_code=404, detail=deps.UNKNOWN_SONG)
         (deps.covers_dir(uid) / f"{video_id}.jpg").unlink(missing_ok=True)
+        thumbs.drop(uid, video_id)
         song.update(cover=None, cover_v=None, cover_off=None, cover_source="default", updated_at=library.now_utc())
         deps.save_songs(uid, songs)
         return deps.public_song(uid, song)
@@ -139,6 +141,7 @@ def delete_cover(video_id: str, user: Annotated[dict[str, Any], Depends(deps.req
         if song is None:
             raise HTTPException(status_code=404, detail=deps.UNKNOWN_SONG)
         was_pinned = song.pop("cover_source", None) in PINNED
+        thumbs.drop(uid, video_id)
         if was_pinned and restored:
             song.update(cover=f"covers/{video_id}.jpg", cover_v=coverimg.version_of(restored), cover_off=None)
         else:

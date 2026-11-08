@@ -1,4 +1,5 @@
 import * as audioGraph from './audio-graph.js';
+import { mark } from './perf.js';
 import { createViz } from './viz-canvas.js';
 import { api } from './api.js';
 import { createLookahead } from './viz-lookahead.js';
@@ -141,6 +142,7 @@ export function initVisualizer({
       for (const sw of switches) sw.setNote(fallbackNote);
     }
   };
+  mark('visualizer mode init start', 'initVisualizer');
   const fullViz = createViz({ canvas: $('viz-full-canvas'), mode: 'full', deps: vizDeps(audio, graph, { lookahead, onNotice: noticeOf, ...deps }) });
   const refreshAll = () => { fullViz.refresh(); };
   graph.onState?.(refreshAll);
@@ -164,6 +166,7 @@ export function initVisualizer({
   fullViz.setHeightScale(vizHeightScale());
   onVizHeight((s) => { fullViz.setHeightScale(s); });
   fullViz.setVizMode(currentMode);
+  mark('visualizer mode init done', currentMode);
   const syncSwitchVisibility = () => {
     syncDock();
   };

@@ -1,9 +1,11 @@
 import { MEDIA_RETRY_DELAYS_MS } from './constants.js';
+import { mark } from './perf.js';
 
 const RETRYABLE = new Set([2, 4]);
 const STABLE_S = 5;
 
 async function defaultProbe(src) {
+  mark('media-retry: probe bytes=0-0');
   try {
     const r = await fetch(src, { headers: { Range: 'bytes=0-0' } });
     return r.status >= 400 && r.status < 500 ? 'gone' : 'retry';
@@ -43,6 +45,7 @@ export function createMediaRetry({ audio, onChange = () => {}, onGone = () => {}
   }
 
   function reload() {
+    mark('media-retry: reload src');
     audio.src = src;
     if (seeker) audio.removeEventListener('loadedmetadata', seeker);
     seeker = null;

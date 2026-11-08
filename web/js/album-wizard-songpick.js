@@ -1,4 +1,4 @@
-import { api } from './api.js';
+import { thumbImg, SMALL_PX } from './cover-url.js';
 import { el } from './dom.js';
 import { icon } from './icons.js';
 import { store } from './store.js';
@@ -8,10 +8,7 @@ import { searchSongs, usedFor } from './album-wizard-songlink.js';
 let serial = 0;
 
 function thumb(song) {
-  const img = el('img', { class: 'cover', alt: '', loading: 'lazy' });
-  if (song.cover) img.src = api.coverUrl(song.id, song.cover_v);
-  img.addEventListener('error', () => img.removeAttribute('src'));
-  return el('span', { class: 'row-cover' }, el('span', { class: 'cover-mark', 'aria-hidden': 'true' }, icon('coverPlaceholder')), img);
+  return el('span', { class: 'row-cover' }, el('span', { class: 'cover-mark', 'aria-hidden': 'true' }, icon('coverPlaceholder')), thumbImg(song, SMALL_PX));
 }
 
 export function songPicker({ draft, rowKey, name, onPick, onClose }) {

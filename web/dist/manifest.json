@@ -1,6 +1,6 @@
 {
   "esbuild": "0.27.7",
-  "sources": "2ed9289b1131185bb413985420d973a8e7df76df2e57941ed50607dccf95d051",
+  "sources": "8e7f3f7679a3ee71403c33b88c0e8fe729c8756eda8bee394937af656767fed5",
   "modules": [
     "js/about.js",
     "js/add-preview.js",
@@ -51,6 +51,8 @@
     "js/countries.js",
     "js/cover-dialog.js",
     "js/cover-edit.js",
+    "js/cover-loader.js",
+    "js/cover-url.js",
     "js/credit-title.js",
     "js/credits-split.js",
     "js/credits-suggestions.js",
@@ -163,6 +165,7 @@
     "js/part-info.js",
     "js/part-popover.js",
     "js/peaks.js",
+    "js/perf.js",
     "js/play-all.js",
     "js/play-recorder.js",
     "js/playable.js",
@@ -328,17 +331,17 @@
   "tier1": [
     "dist/app.js",
     "dist/icons.js",
-    "dist/chunk-GBPQ6KOI.js",
-    "dist/chunk-Y7GAVZ6T.js",
-    "dist/chunk-WX7NSB4R.js",
+    "dist/chunk-VWIJKFLA.js",
+    "dist/chunk-LXRWOJMV.js",
+    "dist/chunk-CZMYYSJE.js",
     "dist/chunk-UT7STWSY.js",
     "dist/chunk-EEQXK5JZ.js",
     "dist/chunk-WOT6VMZA.js"
   ],
   "tier2": [
-    "dist/lazy-ui-B3IE24LU.js",
+    "dist/lazy-ui-QLMCOPNJ.js",
     "dist/chunk-XHXQGYQY.js",
-    "dist/chunk-VZOQLAC5.js",
-    "dist/lazy-genres-KD5PADVX.js"
+    "dist/chunk-BYBQHTOA.js",
+    "dist/lazy-genres-2BZQAWPZ.js"
   ]
 }

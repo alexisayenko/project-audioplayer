@@ -1,6 +1,7 @@
 import { el } from './dom.js';
 import { icon } from './icons.js';
 import { can } from './guest.js';
+import { unwatchCover } from './cover-url.js';
 
 const ACTIONS = {
   pause: { icon: 'pause', verb: 'Pause' },
@@ -26,6 +27,7 @@ export function coverModel({ audio, queueable, here, playing, dl = 'none', sourc
 export const isRowControl = (target) => !!target?.closest?.('a, button:not(.open)');
 
 const coverImg = (row) => row.querySelector?.('.row-cover img.cover');
+const coverSrc = (img) => img.dataset?.src || img.getAttribute('src');
 
 export function keepCovers(prevRows, nextRows) {
   const loaded = new Map();
@@ -36,7 +38,11 @@ export function keepCovers(prevRows, nextRows) {
   for (const row of nextRows) {
     const fresh = coverImg(row);
     const kept = loaded.get(row.dataset.id);
-    if (fresh && kept && kept !== fresh && kept.getAttribute('src') === fresh.getAttribute('src')) fresh.replaceWith(kept);
+    if (fresh && kept && kept !== fresh && coverSrc(kept) === coverSrc(fresh)) {
+      loaded.delete(row.dataset.id);
+      unwatchCover(fresh);
+      fresh.replaceWith(kept);
+    }
   }
 }
 

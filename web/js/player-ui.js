@@ -13,6 +13,7 @@ import { editDialog } from './lazy-ui.js';
 import { titleLine, artistLine, titleNodes } from './credits.js';
 import { marquee } from './marquee.js';
 import { can } from './guest.js';
+import { thumbImg, coverUrl, QUEUE_PX } from './cover-url.js';
 import { coverButton, queueCoverModel, isRowControl } from './row-cover.js';
 
 export const $ = (id) => document.getElementById(id);
@@ -58,8 +59,8 @@ export function setToggle(ids, on, label, iconName) {
   }
 }
 
-export function setCover(img, song) {
-  const src = song?.cover ? api.coverUrl(song.id, song.cover_v) : '';
+export function setCover(img, song, px = 0) {
+  const src = song?.cover ? (px ? coverUrl(song, px) : api.coverUrl(song.id, song.cover_v)) : '';
   if (img.dataset.src === src) return;
   img.dataset.src = src;
   if (src) img.src = src; else img.removeAttribute('src');
@@ -67,9 +68,7 @@ export function setCover(img, song) {
 
 export function queueRow(item, i, { count, index, move, removeAt, playAt, openCard = () => {}, playing = false }) {
   const s = store.get(item.id);
-  const cover = el('img', { class: 'cover', alt: '', loading: 'lazy' });
-  if (s?.cover) cover.src = api.coverUrl(s.id, s.cover_v);
-  cover.addEventListener('error', () => cover.removeAttribute('src'));
+  const cover = thumbImg(s, QUEUE_PX, { defer: true, exempt: i === index });
   const title = s ? titleLine(s) : item.id;
   const more = el('button', {
     class: 'more', type: 'button', title: 'Song menu', 'aria-label': `Song menu: ${title}`, 'aria-haspopup': 'menu', 'aria-expanded': 'false',
@@ -83,7 +82,7 @@ export function queueRow(item, i, { count, index, move, removeAt, playAt, openCa
   ]));
   const coverBtn = coverButton(cover, queueCoverModel(i === index, playing), title, { run: () => playAt(i) });
   coverBtn.dataset.title = title;
-  const row = el('li', { class: `qrow${i === index ? ' current' : ''}${s && !hasAudio(s) ? ' no-audio' : ''}`, 'aria-current': i === index ? 'true' : null },
+  const row = el('li', { class: `qrow${i === index ? ' current' : ''}${s && !hasAudio(s) ? ' no-audio' : ''}`, 'data-id': item.id, 'aria-current': i === index ? 'true' : null },
     el('span', { class: 'c-idx t-time' }, i + 1),
     coverBtn,
     el('div', { class: 'info' },
