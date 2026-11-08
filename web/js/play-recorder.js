@@ -12,6 +12,7 @@ export const LAST_KEY = 'ap2.plays.last';
 export const CONT_WINDOW_MS = 600000;
 export const LOG_KEY = 'ap2.plays.log';
 export const LOG_CAP = 40;
+export const START_HOLD_MS = 3000;
 const TRACKED = ['play', 'playing', 'pause', 'ended', 'seeking', 'seeked', 'waiting', 'stalled', 'emptied', 'loadstart', 'abort', 'error', 'durationchange'];
 
 const DROP_STATUSES = new Set([400, 404, 409, 410, 413, 422]);
@@ -41,6 +42,7 @@ export function createPlayRecorder({
   now = () => new Date(),
   keyFn = newBatchKey,
   intervalMs = FLUSH_MS,
+  holdMs = START_HOLD_MS,
   doc = typeof document === 'undefined' ? null : document,
   win = typeof window === 'undefined' ? null : window,
 } = {}) {
@@ -61,6 +63,24 @@ export function createPlayRecorder({
   const srcOf = () => audio.getAttribute?.('src') ?? audio.src ?? null;
   let inflight = false;
   let timer = null;
+  let holdTimer = null;
+  let held = false;
+
+  function release() {
+    clearTimeout(holdTimer);
+    holdTimer = null;
+    if (!held) return;
+    held = false;
+    flushQuiet();
+  }
+
+  // A song start keeps the plays upload back until the new song plays (or holdMs passes), so it never competes with the audio request.
+  function hold() {
+    if (holdTimer != null || !(holdMs > 0)) return;
+    held = false;
+    holdTimer = setTimeout(release, holdMs);
+    holdTimer?.unref?.();
+  }
 
   const loadQueue = () => readJson(QUEUE_KEY, []).filter(validPlay);
   const saveQueue = (q) => {
@@ -115,6 +135,7 @@ export function createPlayRecorder({
         if (mismatchLogged !== id) { mismatchLogged = id; log('ignored', 'id-flicker', { id2: id }); }
       } else {
         end(openSrc ? 'src-change' : 'id-change');
+        hold();
         flushQuiet();
       }
     } else mismatchLogged = null;
@@ -157,10 +178,13 @@ export function createPlayRecorder({
   }
 
   const flushQuiet = (opts) => {
+    if (holdTimer != null && !opts?.keepalive) { held = true; return; }
     void flush(opts).catch((ex) => log('error', 'flush', { msg: String(ex?.message ?? ex) }));
   };
 
   const onPlay = () => { tick(); };
+  const onPlaying = () => { tick(); release(); };
+  const onLoadStart = () => { hold(); };
   const onPause = () => {
     tick();
     lastT = null;
@@ -195,7 +219,8 @@ export function createPlayRecorder({
   const onVisibility = () => { if (doc?.visibilityState === 'hidden') onHidden(); };
 
   audio.addEventListener('play', onPlay);
-  audio.addEventListener('playing', onPlay);
+  audio.addEventListener('playing', onPlaying);
+  audio.addEventListener('loadstart', onLoadStart);
   audio.addEventListener('pause', onPause);
   audio.addEventListener('timeupdate', tick);
   audio.addEventListener('ended', onEnded);
@@ -222,7 +247,9 @@ export function createPlayRecorder({
     destroy() {
       clearInterval(timer);
       audio.removeEventListener('play', onPlay);
-      audio.removeEventListener('playing', onPlay);
+      clearTimeout(holdTimer);
+      audio.removeEventListener('playing', onPlaying);
+      audio.removeEventListener('loadstart', onLoadStart);
       audio.removeEventListener('pause', onPause);
       audio.removeEventListener('timeupdate', tick);
       audio.removeEventListener('ended', onEnded);

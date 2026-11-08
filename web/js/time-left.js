@@ -30,6 +30,12 @@ export function setTimeLeft(on) {
   for (const fn of listeners) fn(showLeft);
 }
 
+export const DEFAULT_DOCK_CH = 4;
+
+export function dockTimeCh(dur, prev = DEFAULT_DOCK_CH) {
+  return known(dur) ? fmtTime(dur).length : prev;
+}
+
 export const DEFAULT_ELAPSED_CH = 6;
 
 export function elapsedWidthCh(durText) {

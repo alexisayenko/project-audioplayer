@@ -707,9 +707,9 @@ body.signed-out main { padding-bottom: var(--space-6); }
   .mini-foot { display: flex; grid-column: 2 / -1; grid-row: 2; align-items: center; gap: var(--space-3); color: var(--ink-muted); }
   .mini-foot > :not(.mini-progress) { display: revert; }
   .mini-foot > .slider { display: block; flex: none; width: 110px; height: var(--control-sm); }
-  .mini-foot .t-time { flex: none; width: 18ch; }
-  .mini-foot .t-elapsed { width: 8ch; min-width: 0; }
-  .mini-foot #mini-dur { display: inline-block; width: 10ch; white-space: pre; text-align: left; }
+  .mini-foot .t-time { flex: none; --time-ch: 4; --time-neg: 0; width: calc((var(--time-ch) * 2 + var(--time-neg) + 3) * 1ch); text-align: left; }
+  .mini-foot .t-elapsed { width: calc((var(--time-ch) + var(--time-neg)) * 1ch); min-width: 0; text-align: left; }
+  .mini-foot #mini-dur { display: inline-block; width: calc((var(--time-ch) + 3) * 1ch); white-space: pre; text-align: left; }
   .mini-progress { position: relative; flex: 1; left: auto; right: auto; bottom: auto; border-radius: 0; overflow: visible; --fill-min: calc(var(--thumb-seek) * .7); }
   .mini-progress .scrub-rail { top: 50%; bottom: auto; margin-top: calc(var(--track-seek) / -2); height: var(--track-seek); border-radius: var(--radius-pill); }
   .mini-progress .scrub-thumb { display: block; }

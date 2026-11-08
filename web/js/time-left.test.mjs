@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { fmtRemaining, fmtRemainingClock, elapsedWidthCh } from './time-left.js';
+import { fmtRemaining, fmtRemainingClock, elapsedWidthCh, dockTimeCh } from './time-left.js';
 
 test('remaining time rounds up so -0:00 appears only at the end', () => {
   assert.equal(fmtRemaining(221, 256), '-0:35');
@@ -34,4 +34,13 @@ test('elapsed width fits the longest value plus the minus sign', () => {
   assert.equal(elapsedWidthCh('3:33.0'), 7);
   assert.equal(elapsedWidthCh(''), 6);
   assert.equal(elapsedWidthCh(undefined), 6);
+});
+
+test('dock time width follows the duration format and keeps the previous one while unknown', () => {
+  assert.equal(dockTimeCh(156), 4);
+  assert.equal(dockTimeCh(3599), 5);
+  assert.equal(dockTimeCh(4200), 7);
+  assert.equal(dockTimeCh(Number.NaN, 7), 7);
+  assert.equal(dockTimeCh(0, 5), 5);
+  assert.equal(dockTimeCh(undefined), 4);
 });

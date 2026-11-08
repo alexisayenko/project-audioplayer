@@ -27,11 +27,11 @@ test('thumbs keep their token size: 16px seek, 12px volume, no override on focus
   assert.match(rule('.slider::-webkit-slider-thumb'), /width: var\(--thumb-volume\); height: var\(--thumb-volume\)/);
 });
 
-test('dock time readout has a fixed width: elapsed and duration boxes sized for h:mm:ss, no inline resize', () => {
+test('dock time readout reserves only the current song format, left-aligned, set by --time-ch', () => {
   const src = readFileSync(new URL('./player-ui.js', import.meta.url), 'utf8');
   assert.doesNotMatch(src, /fitElapsed/);
-  assert.match(css, /\.mini-foot \.t-time \{ flex: none; width: 18ch; \}/);
-  assert.match(css, /\.mini-foot \.t-elapsed \{ width: 8ch; min-width: 0; \}/);
-  assert.match(css, /\.mini-foot #mini-dur \{ display: inline-block; width: 10ch; white-space: pre; text-align: left; \}/);
-  for (const s of ['-1:02:33', ' / 1:10:00']) assert.ok(s.length <= 10);
+  assert.match(src, /setProperty\('--time-ch'/);
+  assert.match(css, /\.mini-foot \.t-time \{ flex: none; --time-ch: 4; --time-neg: 0; width: calc\(\(var\(--time-ch\) \* 2 \+ var\(--time-neg\) \+ 3\) \* 1ch\); text-align: left; \}/);
+  assert.match(css, /\.mini-foot \.t-elapsed \{ width: calc\(\(var\(--time-ch\) \+ var\(--time-neg\)\) \* 1ch\); min-width: 0; text-align: left; \}/);
+  assert.match(css, /\.mini-foot #mini-dur \{ display: inline-block; width: calc\(\(var\(--time-ch\) \+ 3\) \* 1ch\); white-space: pre; text-align: left; \}/);
 });

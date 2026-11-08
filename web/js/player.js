@@ -36,6 +36,7 @@ import { createFader } from './fade-control.js';
 import { fadeSettings } from './fade-settings.js';
 import { gt } from './cmp.js';
 import { mark, watchAudio, trackPlay } from './perf.js';
+import { createWarmer, watchRowPress, watchNextProbe, saveDataOn } from './warm.js';
 
 const audio = document.getElementById('audio');
 const loop = createLoop(audio, undefined, createGapless({ audio }));
@@ -99,6 +100,11 @@ const usable = (item) => {
   return hasAudio(s) || (!!s && autoDownloadOn() && autodl.view(item.id).kind !== 'failed');
 };
 const hasAudioId = (id) => hasAudio(store.get(id));
+const warmer = createWarmer({
+  urlOf: (id) => api.fileUrl(id),
+  canPrepare: (id) => !isGuest() && id !== player.currentId && hasAudioId(id),
+  canProbeNext: (id) => !isGuest() && !saveDataOn() && hasAudioId(id),
+});
 let recentPlaysFn = () => ({ plays: [], open: null });
 const shuffleRank = createShuffleRank({
   getCounts: () => {
@@ -352,6 +358,8 @@ export const player = {
     if (retry.state === 'failed') { retry.retryNow(); return; }
     if (audio.paused) audio.play().catch(fail); else audio.pause();
   },
+
+  prepare(id) { return warmer.prepare(id); },
 
   peekNextId() {
     if (shuffle || !qs.items.length) return null;
@@ -723,6 +731,14 @@ export function initPlayer() {
   for (const ev of ['playing', 'error', 'emptied', 'abort', 'loadstart']) audio.addEventListener(ev, () => renderSoon(false));
   endGuard = createEndGuard({ audio });
   initLoopChip($('mini-loop'), loop);
+  watchRowPress(document, (id) => player.prepare(id));
+  watchNextProbe({
+    audio,
+    currentId: () => player.currentId,
+    peekNext: () => player.peekNextId(),
+    probe: (id) => warmer.probeNext(id),
+    enabled: () => !isGuest() && !saveDataOn() && !shuffle,
+  });
   const recorder = createPlayRecorder({
     audio,
     getSongId: () => player.currentId,

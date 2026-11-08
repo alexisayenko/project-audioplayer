@@ -2,7 +2,7 @@ import { api } from './api.js';
 import { store } from './store.js';
 import { hasAudio } from './playable.js';
 import { el, fmtTime } from './dom.js';
-import { fmtRemaining, paintElapsed, bindElapsed, onTimeLeftChange } from './time-left.js';
+import { fmtRemaining, paintElapsed, bindElapsed, onTimeLeftChange, timeLeftOn, dockTimeCh, DEFAULT_DOCK_CH } from './time-left.js';
 import { icon } from './icons.js';
 import { storeGet, storeSet } from './storage.js';
 import { openMenu } from './menu.js';
@@ -135,9 +135,22 @@ export function updateDl(song) {
 }
 
 let lastTimes = [0, Number.NaN];
+let dockCh = DEFAULT_DOCK_CH;
+
+function fitDockTime(dur) {
+  const ch = dockTimeCh(dur, dockCh);
+  const neg = timeLeftOn() ? 1 : 0;
+  const box = $('mini-time');
+  if (ch !== dockCh || box.style.getPropertyValue('--time-neg') !== String(neg) || !box.style.getPropertyValue('--time-ch')) {
+    dockCh = ch;
+    box.style.setProperty('--time-ch', String(ch));
+    box.style.setProperty('--time-neg', String(neg));
+  }
+}
 
 export function paintTimes(cur, dur) {
   lastTimes = [cur, dur];
+  fitDockTime(dur);
   paintElapsed($('mini-elapsed'), fmtTime(cur), fmtRemaining(cur, dur));
   $('mini-dur').textContent = ` / ${fmtTime(dur)}`;
 }

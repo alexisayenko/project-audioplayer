@@ -33,7 +33,7 @@ function fakeTarget() {
   };
 }
 
-function setup({ guest = false, fail = false, status = 0, doc = null, win = null } = {}) {
+function setup({ guest = false, fail = false, status = 0, doc = null, win = null, holdMs } = {}) {
   const audio = fakeAudio();
   const state = { id: 'a', guest, fail, posts: [] };
   const rec = createPlayRecorder({
@@ -49,6 +49,7 @@ function setup({ guest = false, fail = false, status = 0, doc = null, win = null
     doc,
     win,
     intervalMs: 1e9,
+    holdMs,
   });
   const play = () => { audio.paused = false; audio.emit('play'); };
   const advance = (to, step = 0.25) => {
@@ -130,9 +131,56 @@ test('PLY-174: a song change closes the play and flushes', async () => {
   s.state.id = 'b';
   s.rec.sync();
   await tick();
+  assert.equal(s.state.posts.length, 0, 'the upload waits for the new song to play (PLY-210)');
+  s.audio.emit('playing');
+  await tick();
   assert.equal(s.state.posts.length, 1);
   assert.equal(s.state.posts[0].batch.plays[0].song_id, 'a');
   assert.equal(s.rec.open.song_id, 'b');
+});
+
+test('PLY-210: the plays upload after a song change is sent once, after the first playing event', async () => {
+  const s = setup();
+  s.play();
+  s.advance(12);
+  s.audio.emit('loadstart');
+  s.state.id = 'b';
+  s.rec.sync();
+  await tick();
+  assert.equal(s.state.posts.length, 0);
+  s.audio.emit('playing');
+  s.audio.emit('playing');
+  await tick();
+  assert.equal(s.state.posts.length, 1);
+  assert.deepEqual(Object.keys(s.state.posts[0].batch).sort(), ['batch_key', 'plays']);
+  assert.equal(s.state.posts[0].batch.plays.length, 1);
+  assert.equal(s.state.posts[0].batch.plays[0].listened_s >= 11, true);
+});
+
+test('PLY-210: with no playing event the upload goes out when the hold time ends', async () => {
+  const s = setup({ holdMs: 20 });
+  s.play();
+  s.advance(12);
+  s.state.id = 'b';
+  s.rec.sync();
+  await tick();
+  assert.equal(s.state.posts.length, 0);
+  await new Promise((r) => setTimeout(r, 60));
+  assert.equal(s.state.posts.length, 1);
+});
+
+test('PLY-210: a hidden page still flushes at once (keepalive)', async () => {
+  const doc = fakeTarget();
+  const s = setup({ doc });
+  s.play();
+  s.advance(12);
+  s.state.id = 'b';
+  s.rec.sync();
+  doc.visibilityState = 'hidden';
+  doc.emit('visibilitychange');
+  await tick();
+  assert.equal(s.state.posts.length, 1);
+  assert.equal(s.state.posts[0].opts.keepalive, true);
 });
 
 test('PLY-175: a repeat of the same song after ended is a separate play', async () => {
@@ -288,6 +336,7 @@ test('PLY-174: a real song change (audio source changed) closes the play', async
   s.audio.src = 'files/b';
   s.state.id = 'b';
   s.rec.sync();
+  s.audio.emit('playing');
   await tick();
   assert.equal(s.state.posts[0].batch.plays[0].song_id, 'a');
 });
