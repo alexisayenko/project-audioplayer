@@ -49,6 +49,33 @@ test('PLY-209: prepare is skipped when the song may not be warmed, and a failing
   await new Promise((r) => setImmediate(r));
 });
 
+test('PLY-214: cancelOthers aborts the warm-ups still in flight for other songs and keeps the one for the song starting', () => {
+  const signals = {};
+  const resolvers = [];
+  const { warmer } = setup({
+    fetchFn: (url, init) => { signals[url] = init.signal; return new Promise((r) => resolvers.push(r)); },
+  });
+  warmer.prepare('a');
+  warmer.probeNext('b');
+  warmer.prepare('c');
+  assert.equal(warmer.cancelOthers('c'), 2);
+  assert.equal(signals['/files/a'].aborted, true);
+  assert.equal(signals['/files/b'].aborted, true);
+  assert.equal(signals['/files/c'].aborted, false);
+  assert.equal(warmer.cancelOthers('c'), 0, 'nothing left to cancel');
+});
+
+test('PLY-214: a warm-up that has finished is no longer in flight, and cancelOthers never throws', async () => {
+  const { warmer } = setup();
+  warmer.prepare('a');
+  await new Promise((r) => setImmediate(r));
+  assert.equal(warmer.cancelOthers('z'), 0);
+  const failing = setup({ fetchFn: () => Promise.reject(new Error('x')) });
+  failing.warmer.prepare('a');
+  await new Promise((r) => setImmediate(r));
+  assert.equal(failing.warmer.cancelOthers('z'), 0);
+});
+
 function fakeDoc() {
   const h = {};
   return {

@@ -14,6 +14,7 @@ export function createWarmer({
   mark = perfMark,
 } = {}) {
   const last = new Map();
+  const flying = new Map();
 
   function probe(id, kind, priority) {
     const t = now();
@@ -23,16 +24,29 @@ export function createWarmer({
     if (last.size > KEEP) last.delete(last.keys().next().value);
     const ac = typeof AbortController === 'function' ? new AbortController() : null;
     mark(kind, id);
+    const settled = () => { if (flying.get(id) === ac) flying.delete(id); };
     try {
+      if (ac) flying.set(id, ac);
       const done = fetchFn(urlOf(id), { headers: { Range: 'bytes=0-1' }, credentials: 'same-origin', priority, signal: ac?.signal });
-      Promise.resolve(done).then((r) => r?.body?.cancel?.(), () => {}).catch(() => {});
-    } catch { /* a warm-up never throws */ }
+      Promise.resolve(done).then((r) => { settled(); r?.body?.cancel?.(); }, settled).catch(() => {});
+    } catch { settled(); /* a warm-up never throws */ }
     return () => ac?.abort();
   }
 
   return {
     prepare: (id) => (id && canPrepare(id) ? probe(id, 'prepare', 'high') : null),
     probeNext: (id) => (id && canProbeNext(id) ? probe(id, 'next-probe', 'low') : null),
+    // A song starts: warm-ups still in flight for any other song are dropped, so the new song's request is the only audio request.
+    cancelOthers(keepId) {
+      let n = 0;
+      for (const [id, ac] of flying) {
+        if (id === keepId) continue;
+        flying.delete(id);
+        ac.abort();
+        n += 1;
+      }
+      return n;
+    },
   };
 }
 

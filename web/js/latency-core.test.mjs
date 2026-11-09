@@ -179,14 +179,25 @@ test('toText lists the facts, the sound, the marks with offsets, the requests an
   core.fact('audio context at press', 'suspended');
   core.mark('loadstart', 1120.44);
   feed(core, 1000, [0, 7, 8]);
-  core.setResources([{ name: '/files/abc', start: 130.2, requestStart: 140, responseStart: 300.5, responseEnd: 650, bytes: 4152631 }]);
+  core.setResources([
+    { name: '/files/old', who: 'prev', start: -80, connect: 0, requestStart: -70, responseStart: -60, responseEnd: 40, bytes: 786432 },
+    { name: '/files/abc', who: 'cur', start: 130.2, connect: 55.5, requestStart: 140, responseStart: 300.5, responseEnd: 650, bytes: 4152631 },
+  ]);
   const text = core.toText();
   assert.match(text, /^Latency meter run\nua: Safari\/17\naudio context at press: suspended\n/);
   assert.match(text, /first sound: 200 ms \(method: level, level>2 for 2 samples\)/);
   assert.match(text, /0\s+press pointerdown BUTTON/);
   assert.match(text, /120\.4\s+loadstart/);
-  assert.match(text, /\/files\/abc start 130\.2 requestStart 140 responseStart 300\.5 responseEnd 650 bytes 4152631/);
+  assert.match(text, /\[cur\] \/files\/abc start 130\.2 connect 55\.5 requestStart 140 responseStart 300\.5 responseEnd 650 bytes 4152631/);
+  assert.match(text, /\[prev\] \/files\/old start -80 \(before the press\) connect 0 requestStart -70/);
+  assert.match(text, /requests in the first 5 s/);
   assert.match(text, /0 7 8$/);
+});
+
+test('toText says so when no request is listed', () => {
+  const core = createMeterCore();
+  core.press(1000, 'pointerdown BUTTON');
+  assert.match(core.toText(), /requests: none listed/);
 });
 
 test('describeLayout: faststart, tail moov and unknown', () => {

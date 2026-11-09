@@ -14,6 +14,8 @@ const SONGS = [
   { id: 's1', title: 'One', artist: 'A', file: 's1.mp3', duration: 100, tags: [] },
   { id: 's2', title: 'Two', artist: 'A', file: 's2.mp3', duration: 100, tags: [] },
   { id: 's4', title: 'Four', artist: 'A', file: 's4.mp3', duration: 100, tags: [] },
+  { id: 's5', title: 'Five', artist: 'A', file: 's5.mp3', duration: 100, tags: [] },
+  { id: 's6', title: 'Six', artist: 'A', file: 's6.mp3', duration: 100, tags: [] },
   { id: 'n3', title: 'No audio', artist: 'A', duration: 100, tags: [], audio_state: 'none' },
 ];
 store.songs = SONGS;
@@ -73,5 +75,33 @@ test('PLY-211: the next queued song is probed once after 2 s of playing; not wit
     assert.equal(fileCalls().length, 0, 'shuffle: the next song is unknowable');
   } finally {
     globalThis.setTimeout = realSet;
+  }
+});
+
+test('PLY-214: starting another song ends the previous download and drops warm-ups for other songs', async () => {
+  const realFetch = globalThis.fetch;
+  const signals = {};
+  globalThis.fetch = (url, opts = {}) => { signals[url] = opts.signal; return new Promise(() => {}); };
+  const realLoad = audio.load;
+  const events = [];
+  audio.load = () => { events.push(`load src=${audio.getAttribute('src')}`); };
+  try {
+    player.playNow('s5');
+    await flush();
+    assert.match(audio.getAttribute('src'), /s5/);
+    player.prepare('s6');
+    events.length = 0;
+    player.playNow('s6');
+    await flush();
+    assert.deepEqual(events, ['load src=null'], 'the unfinished download of s5 is ended before the new source is set');
+    assert.match(audio.getAttribute('src'), /s6/);
+    assert.equal(signals['/files/s6'].aborted, false, 'the warm-up for the song that starts is kept');
+    player.prepare('s0');
+    player.playNow('s5');
+    await flush();
+    assert.equal(signals['/files/s0'].aborted, true, 'a warm-up for another song is dropped');
+  } finally {
+    globalThis.fetch = realFetch;
+    audio.load = realLoad;
   }
 });

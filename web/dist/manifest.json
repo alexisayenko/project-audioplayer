@@ -1,6 +1,6 @@
 {
   "esbuild": "0.27.7",
-  "sources": "f906f0711eba93472c92ce076458aa203d8fae801abf495c244777184152cd26",
+  "sources": "a01ab1ccff7487d940c43901e29482dfb9c29f0028060aac3b4791e7d6a9d503",
   "modules": [
     "js/about.js",
     "js/add-preview.js",
@@ -239,6 +239,7 @@
     "js/stats-listening.js",
     "js/stats-table.js",
     "js/stats.js",
+    "js/stop-load.js",
     "js/storage.js",
     "js/store.js",
     "js/studio-redirect.js",
@@ -335,19 +336,19 @@
   "tier1": [
     "dist/app.js",
     "dist/icons.js",
-    "dist/chunk-UYGAB2AV.js",
-    "dist/chunk-X7WJ5FBH.js",
-    "dist/chunk-IPED6GYM.js",
+    "dist/chunk-64LKMZ4A.js",
+    "dist/chunk-IH6RCVVH.js",
+    "dist/chunk-SLXGNVZH.js",
     "dist/chunk-UT7STWSY.js",
-    "dist/chunk-7RJVXBO3.js",
+    "dist/chunk-4GBAIMG2.js",
     "dist/chunk-EEQXK5JZ.js",
     "dist/chunk-WOT6VMZA.js"
   ],
   "tier2": [
-    "dist/lazy-ui-NAENQUEB.js",
+    "dist/lazy-ui-Q45FUOJU.js",
     "dist/chunk-XHXQGYQY.js",
-    "dist/chunk-Q24H4XKG.js",
-    "dist/lazy-genres-HLB5ROPI.js",
-    "dist/latency-meter-UNJGSB37.js"
+    "dist/chunk-ZK52HLXE.js",
+    "dist/lazy-genres-OOZF4HC6.js",
+    "dist/latency-meter-V5K4LHZL.js"
   ]
 }

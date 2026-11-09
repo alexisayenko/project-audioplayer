@@ -71,19 +71,37 @@ export function isPlayKey(e) {
   return !/^(INPUT|TEXTAREA|SELECT|BUTTON|A|SUMMARY)$/.test(e.target?.tagName ?? '') && !e.target?.isContentEditable;
 }
 
-/** Resource Timing rows of the `/files/` requests started at or after `t0` (all offsets in ms from `t0`). */
-export function resourceRows(entries, t0) {
+export const RESOURCE_WINDOW_MS = 5000;
+const EARLIER_MS = 30000;
+const API_INITIATORS = new Set(['fetch', 'xmlhttprequest', 'other', 'beacon']);
+
+/**
+ * Resource Timing rows for the `windowMs` after the press at `t0` (offsets in ms from `t0`, negative for a request that started earlier and was still running at the press).
+ * Every `/files/` request is listed, with `who`: `cur` (the song of this run), `prev` (the song that was loaded at the press, when it is another one) or `other` (a warm-up for some other song); script-made requests that are not `/files/` (plays upload, listening, peaks) are listed as `api`.
+ */
+export function resourceRows(entries, t0, { prevId = null, curId = null, windowMs = RESOURCE_WINDOW_MS } = {}) {
   const off = (v) => (v > 0 ? tenth(v - t0) : 0);
-  return entries
-    .filter((r) => String(r.name).includes('/files/') && r.startTime >= t0 - 100)
-    .map((r) => ({
-      name: String(r.name).replace(/^.*\/files\//, '/files/').slice(0, 24),
+  const rows = [];
+  for (const r of entries) {
+    const name = String(r.name);
+    const file = name.includes('/files/');
+    if (!file && !API_INITIATORS.has(r.initiatorType)) continue;
+    const early = r.startTime < t0;
+    if (early && !(r.responseEnd > t0 && r.startTime >= t0 - EARLIER_MS)) continue;
+    if (r.startTime > t0 + windowMs) continue;
+    const id = file ? fileIdOf(name) : null;
+    rows.push({
+      name: name.replace(/^[a-z]+:\/\/[^/]+/, '').slice(0, 28),
+      who: !file ? 'api' : id != null && id === prevId && prevId !== curId ? 'prev' : id != null && id === curId ? 'cur' : 'other',
       start: tenth(r.startTime - t0),
+      connect: r.connectEnd > r.connectStart ? tenth(r.connectEnd - r.connectStart) : 0,
       requestStart: off(r.requestStart),
       responseStart: off(r.responseStart),
       responseEnd: off(r.responseEnd),
       bytes: r.transferSize || r.encodedBodySize || 0,
-    }));
+    });
+  }
+  return rows.sort((a, b) => a.start - b.start);
 }
 
 /** The state of one press-to-sound run; no DOM, no clock of its own: every call carries its time. */
@@ -217,8 +235,10 @@ export function createMeterCore({ stripLen = STRIP_LEN, soundLevel = SOUND_LEVEL
     lines.push('marks (ms from press):');
     for (const x of run.marks) lines.push(`  ${String(x.ms).padStart(8)}  ${x.name}${x.detail ? ` ${x.detail}` : ''}`);
     if (run.resources.length) {
-      lines.push('audio requests (ms from press, Resource Timing):');
-      for (const r of run.resources) lines.push(`  ${r.name} start ${r.start} requestStart ${r.requestStart} responseStart ${r.responseStart} responseEnd ${r.responseEnd} bytes ${r.bytes}`);
+      lines.push(`requests in the first ${RESOURCE_WINDOW_MS / 1000} s (ms from press, Resource Timing; who: cur = this song, prev = the song loaded at the press, other = another song or a warm-up, api = not a file; a request cancelled or still pending is not listed; connect > 0 means a new connection):`);
+      for (const r of run.resources) lines.push(`  [${r.who}] ${r.name} start ${r.start}${r.start < 0 ? ' (before the press)' : ''} connect ${r.connect} requestStart ${r.requestStart} responseStart ${r.responseStart} responseEnd ${r.responseEnd} bytes ${r.bytes}`);
+    } else {
+      lines.push('requests: none listed (Resource Timing has none for this run; Safari may omit media requests)');
     }
     lines.push('levels (0-100 every 100 ms, - = no analyser):');
     lines.push(run.samples.map((x) => (x.length > 1 ? x[1] : '-')).join(' '));

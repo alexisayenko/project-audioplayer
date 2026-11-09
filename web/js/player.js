@@ -37,6 +37,7 @@ import { fadeSettings } from './fade-settings.js';
 import { gt } from './cmp.js';
 import { mark, watchAudio, trackPlay } from './perf.js';
 import { createWarmer, watchRowPress, watchNextProbe, saveDataOn } from './warm.js';
+import { stopLoading } from './stop-load.js';
 
 const audio = document.getElementById('audio');
 const loop = createLoop(audio, undefined, createGapless({ audio }));
@@ -522,6 +523,8 @@ function load(autoplay) {
   resumeOnce = false;
   resumeGuard = false;
   if (!restoring) resume.clear();
+  warmer.cancelOthers(song.id);
+  if (stopLoading(audio)) mark('previous download stopped');
   audio.src = api.fileUrl(song.id);
   mark('audio.src set');
   fader.apply();

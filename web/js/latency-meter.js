@@ -2,6 +2,7 @@ import { el } from './dom.js';
 import * as realGraph from './audio-graph.js';
 import { onMark } from './perf.js';
 import { storeGet, storeSet } from './storage.js';
+import { switchMode, SWITCH_KEY, SWITCH_MODES } from './stop-load.js';
 import { createMeterCore, levelOfBytes, describeLayout, pressKind, isPlayKey, fileIdOf, resourceRows, SAMPLE_MS, STRIP_LEN } from './latency-core.js';
 
 export const POS_KEY = 'ap2.perf.pos';
@@ -10,6 +11,7 @@ export const TAP_KEY = 'ap2.perf.tap';
 
 const CLICK_FOLLOW_MS = 1500;
 const RUN_FRESH_MS = 2000;
+const STALL_MS = 100;
 const LAYOUT_BYTES = 4096;
 const AUDIO_MARKS = ['loadstart', 'loadedmetadata', 'loadeddata', 'canplay', 'canplaythrough', 'playing', 'waiting', 'stalled', 'suspend', 'emptied', 'abort', 'error'];
 const PERF_MARKS = new Set(['load() entry', 'audio.src set', 'audio.play() called', 'play() resolved', 'play() rejected', 'audioContext created', 'audioContext resume() called', 'audioContext resume() settled', 'createMediaElementSource done']);
@@ -27,6 +29,8 @@ export function startLatencyMeter({ audio = document.getElementById('audio'), wi
   const now = () => win.performance.now();
   const core = createMeterCore();
   let t0 = 0;
+  let prevId = null;
+  let lastFrame = 0;
   let lastPress = null;
   let timer = null;
   let raf = 0;
@@ -105,7 +109,7 @@ export function startLatencyMeter({ audio = document.getElementById('audio'), wi
 
   function updateResources() {
     try {
-      core.setResources(resourceRows(win.performance.getEntriesByType('resource'), t0));
+      core.setResources(resourceRows(win.performance.getEntriesByType('resource'), t0, { prevId, curId: fileIdOf(audio.getAttribute('src')) }));
     } catch { /* no resource timing */ }
   }
 
@@ -126,7 +130,10 @@ export function startLatencyMeter({ audio = document.getElementById('audio'), wi
   function frame() {
     raf = 0;
     if (!core.running) return;
-    render(now());
+    const t = now();
+    if (lastFrame && t - lastFrame > STALL_MS) core.mark('main thread idle gap', t, `${Math.round(t - lastFrame)} ms without a frame`);
+    lastFrame = t;
+    render(t);
     raf = requestAnimationFrame(frame);
   }
 
@@ -142,8 +149,17 @@ export function startLatencyMeter({ audio = document.getElementById('audio'), wi
     stopLoops();
     clearTimeout(resTimer);
     t0 = t;
+    prevId = fileIdOf(audio.getAttribute('src'));
     shownMarks = -1;
     core.press(t, detail, { armed });
+    try {
+      win.performance.setResourceTimingBufferSize?.(1000);
+      win.performance.clearResourceTimings?.();
+    } catch { /* the buffer keeps its size */ }
+    core.fact('switch mode', switchMode());
+    core.fact('tap', storeGet(TAP_KEY) === '0' ? 'off' : 'on');
+    core.fact('song loaded at press', prevId ?? 'none');
+    core.fact('audio playing at press', audio.paused ? 'no' : 'yes (a switch)');
     core.fact('ua', win.navigator.userAgent);
     core.fact('page', win.location.hash || '/');
     core.fact('audio context at press', ctxState());
@@ -151,6 +167,7 @@ export function startLatencyMeter({ audio = document.getElementById('audio'), wi
     tap();
     render(t);
     timer = setInterval(tickSample, SAMPLE_MS);
+    lastFrame = t;
     raf = requestAnimationFrame(frame);
     setTimeout(raise, 0);
   }
@@ -268,6 +285,9 @@ export function startLatencyMeter({ audio = document.getElementById('audio'), wi
   const paintTap = () => { ui.tapBtn.textContent = storeGet(TAP_KEY) === '0' ? 'Tap off' : 'Tap on'; ui.tapBtn.setAttribute('aria-pressed', String(storeGet(TAP_KEY) !== '0')); };
   ui.tapBtn.addEventListener('click', () => { storeSet(TAP_KEY, storeGet(TAP_KEY) === '0' ? '1' : '0'); paintTap(); });
   paintTap();
+  const paintMode = () => { ui.modeBtn.textContent = `Switch: ${switchMode()}`; };
+  ui.modeBtn.addEventListener('click', () => { storeSet(SWITCH_KEY, SWITCH_MODES[(SWITCH_MODES.indexOf(switchMode()) + 1) % SWITCH_MODES.length]); paintMode(); });
+  paintMode();
   ui.fold.addEventListener('click', () => {
     const on = !panel.classList.contains('lm-collapsed');
     panel.classList.toggle('lm-collapsed', on);
@@ -368,6 +388,7 @@ function buildPanel() {
   const copy = el('button', { class: 'lm-btn lm-act', type: 'button' }, 'Copy');
   const layoutBtn = el('button', { class: 'lm-btn lm-act', type: 'button', title: 'Read the first bytes of the loaded file and report where its moov atom is' }, 'Layout');
   const tapBtn = el('button', { class: 'lm-btn lm-act', type: 'button', title: 'Read the level through the Web Audio analyser (changes how Safari plays the song)' }, 'Tap on');
+  const modeBtn = el('button', { class: 'lm-btn lm-act', type: 'button', title: 'How a new song replaces the one that is loaded: auto = end an unfinished download first, always = end it even when complete, off = just set the new source' }, 'Switch: auto');
   const panel = el('div', { class: 'lm', popover: 'manual', role: 'status', 'aria-label': 'Latency meter' },
     head,
     el('div', { class: 'lm-count' }, ms, el('small', {}, ' ms')),
@@ -378,6 +399,6 @@ function buildPanel() {
       el('div', { class: 'lm-strip', 'aria-hidden': 'true' }, strip),
       marks,
       layout,
-      el('div', { class: 'lm-actions' }, copy, layoutBtn, tapBtn)));
-  return { panel, head, fold, close, ms, sound, meta, levelNum, levelBar, strip, marks, layout, copy, layoutBtn, tapBtn, popover: true };
+      el('div', { class: 'lm-actions' }, copy, layoutBtn, tapBtn, modeBtn)));
+  return { panel, head, fold, close, ms, sound, meta, levelNum, levelBar, strip, marks, layout, copy, layoutBtn, tapBtn, modeBtn, popover: true };
 }
