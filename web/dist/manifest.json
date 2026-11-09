@@ -1,6 +1,6 @@
 {
   "esbuild": "0.27.7",
-  "sources": "b46097e7510beb41f60fcce1f49e985ac47ebdc2264aa56dccdacafc975691b7",
+  "sources": "f906f0711eba93472c92ce076458aa203d8fae801abf495c244777184152cd26",
   "modules": [
     "js/about.js",
     "js/add-preview.js",
@@ -133,6 +133,9 @@
     "js/label-field.js",
     "js/label-names.js",
     "js/label-suggest.js",
+    "js/latency-core.js",
+    "js/latency-flag.js",
+    "js/latency-meter.js",
     "js/lazy-route.js",
     "js/lazy-ui.js",
     "js/legal.js",
@@ -332,17 +335,19 @@
   "tier1": [
     "dist/app.js",
     "dist/icons.js",
-    "dist/chunk-MXBOYWDQ.js",
-    "dist/chunk-EF23O4WX.js",
-    "dist/chunk-KLUKEFVN.js",
+    "dist/chunk-UYGAB2AV.js",
+    "dist/chunk-X7WJ5FBH.js",
+    "dist/chunk-IPED6GYM.js",
     "dist/chunk-UT7STWSY.js",
+    "dist/chunk-7RJVXBO3.js",
     "dist/chunk-EEQXK5JZ.js",
     "dist/chunk-WOT6VMZA.js"
   ],
   "tier2": [
-    "dist/lazy-ui-BTR67PD7.js",
+    "dist/lazy-ui-NAENQUEB.js",
     "dist/chunk-XHXQGYQY.js",
-    "dist/chunk-KTF7Z5X7.js",
-    "dist/lazy-genres-36PSDHYE.js"
+    "dist/chunk-Q24H4XKG.js",
+    "dist/lazy-genres-HLB5ROPI.js",
+    "dist/latency-meter-UNJGSB37.js"
   ]
 }

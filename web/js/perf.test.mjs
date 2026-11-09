@@ -176,3 +176,16 @@ test('resource table counts cover requests since the start and shows the audio r
   assert.equal(rows[1].response_start_ms, 990);
   assert.equal(f.win.__ap2perf.resources().length, 2);
 });
+
+test('onMark hands every mark to the subscriber until it unsubscribes; disabled it is a no-op', () => {
+  const f = fakeWin({ ls: '1' });
+  const p = createPerf({ win: f.win });
+  const seen = [];
+  const off = p.onMark((name, t, detail) => seen.push([name, t, detail]));
+  p.mark('a', 'x');
+  off();
+  p.mark('b');
+  assert.deepEqual(seen, [['a', 1000, 'x']]);
+  const quiet = createPerf({ win: fakeWin().win });
+  assert.equal(typeof quiet.onMark(() => {}), 'function');
+});

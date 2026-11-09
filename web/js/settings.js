@@ -19,6 +19,7 @@ import { TERRAIN_STYLES, getStyle, setStyle } from './viz-terrain-style.js';
 import { HEIGHT_OPTIONS } from './viz-constants.js';
 import { FADE_MAX, FADE_STEP, fadeLabel, fadeHint } from './fade.js';
 import { fadeSettings } from './fade-settings.js';
+import { meterOn, setMeter } from './latency-flag.js';
 
 function accountSection() {
   const out = el('div');
@@ -102,7 +103,16 @@ function playbackCard() {
       el('span', { class: 't-subhead set-text' }, 'Auto-download songs',
         el('small', { class: 't-caption' }, 'Download songs you play or add to the queue. Each download counts toward the hourly add limit.')), box),
     fadeRow({ id: 'fade-in', label: 'Fade in', get: fadeSettings.fadeIn, set: fadeSettings.setFadeIn }),
-    fadeRow({ id: 'fade-out', label: 'Fade out', get: fadeSettings.fadeOut, set: fadeSettings.setFadeOut }));
+    fadeRow({ id: 'fade-out', label: 'Fade out', get: fadeSettings.fadeOut, set: fadeSettings.setFadeOut }),
+    meterRow());
+}
+
+function meterRow() {
+  const box = el('input', { type: 'checkbox', id: 'latency-meter', checked: meterOn() });
+  box.addEventListener('change', () => setMeter(box.checked));
+  return el('label', { class: 'switch-row', for: 'latency-meter' },
+    el('span', { class: 't-subhead set-text' }, 'Latency meter',
+      el('small', { class: 't-caption' }, 'A panel that counts the milliseconds from a press on Play to the first sound. Reload for the full event marks.')), box);
 }
 
 function visualizerCard() {

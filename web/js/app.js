@@ -23,6 +23,7 @@ import { draftStore } from './drafts-store.js';
 import { syncLibraryMenu, saveLibraryView, savedLibraryView, libraryHashFor, initialLibraryRedirect } from './nav-library.js';
 import { renderLogin } from './login.js';
 import { studioSiteUrl } from './studio-redirect.js';
+import { bootMeter } from './latency-flag.js';
 
 const STARTING_RECHECK_MS = 3000;
 const player = document.getElementById('player');
@@ -141,6 +142,7 @@ function route(soft = false) {
 }
 
 initPlayer();
+bootMeter();
 const viz = lazyVisualizer({ player: playerApi });
 initShare();
 const help = initHelpNav();

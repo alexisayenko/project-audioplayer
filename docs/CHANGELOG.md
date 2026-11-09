@@ -2,6 +2,11 @@
 
 What shipped, newest first. One line each; the web UI and server are live at https://electrophone.cc. Everything listed here is deployed except the sections marked "built, not deployed" (the 2026-10-14 release went out once the SSH access in [task-0027](tasks/task-0027.md) was restored; the live visualizer files match `origin/main` as of 2026-10-15). Why: [tech/decisions.md](tech/decisions.md); runbook: [tech/deploy.md](tech/deploy.md).
 
+## 2026-11-09 (built, not deployed)
+
+- Web (built, not deployed): an opt-in latency meter for finding the 3 s start in Safari (Chromium starts at once): Settings > Playback > "Latency meter" (or `?perf=1`) shows a draggable panel in the top layer that restarts at every press on Play, counts milliseconds from the press, samples the audio level every 100 ms, highlights "first sound at N ms", lists the event marks (loadstart, loadedmetadata, canplay, playing, first timeupdate), the AudioContext state and the `/files/` request timing, can read the file's box layout ("Layout") and copies the whole run as text. Off by default and not loaded while off (PLY-212).
+- Server (built, not deployed): stored m4a files start with their `moov` atom. Files whose index is at the end (what yt-dlp's m4a fix-up and ffmpeg's default writer produce) make Safari read the whole file before it plays; new downloads are now rewritten in place without re-encoding (`app/faststart.py`, called by `extractor.download_audio`), and `python -m app.faststart <dir> [--apply]` fixes older files on request (dry run by default, never run by the server). Unverified on the live library: no real file was read (API-317).
+
 ## 2026-11-08 (built, not deployed)
 
 - Web (built, not deployed): playback starts a little sooner in Safari: pressing a row Play button sends a 2-byte `Range` request for the song on `pointerdown` (touch: `touchstart`) to warm the connection and server index before Safari's own probe, the next queued song gets the same low-priority probe after the current one has played 2 s (not with shuffle, data-saver or guests), and the `POST /plays` upload is held until the first `playing` event (or 3 s) after a song change instead of competing with the audio request; `prepare` and `next-probe` perf marks added (PLY-209, PLY-210, PLY-211, `web/js/warm.js`, `play-recorder.js`, `warm.test.mjs`). Not measured in Safari.

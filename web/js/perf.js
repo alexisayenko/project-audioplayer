@@ -22,7 +22,7 @@ export function readEnabled(win = globalThis) {
 
 /** Playback-start timing marks. Silent unless `localStorage['ap2.perf']='1'` or `?perf=1` / `#perf=1` is present when the page starts (PLY-203). */
 export function createPerf({ win = globalThis, enabled = readEnabled(win) } = {}) {
-  if (!enabled) return { enabled: false, mark: noop, begin: noop, watchAudio: noop, track: (p) => p, table: () => [], slowest: () => [], resources: () => [] };
+  if (!enabled) return { enabled: false, mark: noop, onMark: () => noop, begin: noop, watchAudio: noop, track: (p) => p, table: () => [], slowest: () => [], resources: () => [] };
   const clock = win.performance;
   const now = () => (clock?.now ? clock.now() : Date.now());
   const out = win.console ?? {};
@@ -33,6 +33,7 @@ export function createPerf({ win = globalThis, enabled = readEnabled(win) } = {}
   let sawTime = false;
   let rafSeq = 0;
   const audios = new WeakSet();
+  const taps = new Set();
 
   function push(list, item, cap) {
     list.push(item);
@@ -42,6 +43,7 @@ export function createPerf({ win = globalThis, enabled = readEnabled(win) } = {}
   function mark(name, detail) {
     const t = now();
     push(entries, { name, t, detail }, RING);
+    for (const tap of taps) tap(name, t, detail);
     try {
       clock?.mark?.(`ap2:${name}`, { startTime: t, detail });
       if (armed && base != null) clock?.measure?.(`ap2:${name} since start`, { start: base, end: t });
@@ -185,13 +187,15 @@ export function createPerf({ win = globalThis, enabled = readEnabled(win) } = {}
   try { clock?.setResourceTimingBufferSize?.(1000); } catch { /* keep the default buffer */ }
   table.resources = resources;
   win.__ap2perf = table;
-  return { enabled: true, mark, begin, watchAudio, track, table, slowest, resources };
+  const onMark = (fn) => { taps.add(fn); return () => taps.delete(fn); };
+  return { enabled: true, mark, onMark, begin, watchAudio, track, table, slowest, resources };
 }
 
 const perf = createPerf();
 
 export const perfEnabled = perf.enabled;
 export const mark = perf.mark;
+export const onMark = perf.onMark;
 export const watchAudio = perf.watchAudio;
 export const trackPlay = perf.track;
 export const perfBegin = perf.begin;
