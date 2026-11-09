@@ -13,7 +13,7 @@ TOTAL = 3 * CAP + 1000
 @pytest.fixture(autouse=True)
 def _cap_defaults(monkeypatch):
     monkeypatch.delenv("AUDIO_RANGE_RAMP", raising=False)
-    monkeypatch.delenv("AUDIO_RANGE_CAP_BYTES", raising=False)
+    monkeypatch.setenv("AUDIO_RANGE_CAP_BYTES", str(CAP))
     audio_range.reset()
 
 
@@ -30,8 +30,10 @@ def get(c, rng=None, **kw):
     return c.get(f"/files/{VID}", headers=headers, **kw)
 
 
-def test_default_cap_is_768_kib():
-    assert audio_range.cap_bytes() == CAP
+def test_default_cap_is_off(monkeypatch):
+    monkeypatch.delenv("AUDIO_RANGE_CAP_BYTES", raising=False)
+    assert audio_range.cap_bytes() == 0
+    assert audio_range.first_chunk("bytes=0-", 10 * CAP) == "bytes=0-"
 
 
 def test_open_range_from_zero_is_the_first_chunk(big):
@@ -158,7 +160,7 @@ def test_cap_is_configurable_and_zero_turns_it_off(big, monkeypatch):
     monkeypatch.setenv("AUDIO_RANGE_CAP_BYTES", "0")
     assert len(get(big, "bytes=0-").content) == TOTAL
     monkeypatch.setenv("AUDIO_RANGE_CAP_BYTES", "nonsense")
-    assert audio_range.cap_bytes() == CAP
+    assert audio_range.cap_bytes() == 0
 
 
 def test_guest_range_is_capped_and_charged_for_the_chunk(lib, tmp_path, monkeypatch):
