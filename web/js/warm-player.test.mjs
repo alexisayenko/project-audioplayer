@@ -78,7 +78,7 @@ test('PLY-211: the next queued song is probed once after 2 s of playing; not wit
   }
 });
 
-test('PLY-214: starting another song ends the previous download and drops warm-ups for other songs', async () => {
+test('PLY-214: starting another song drops warm-ups for other songs and never empties the source first (silent in Safari)', async () => {
   const realFetch = globalThis.fetch;
   const signals = {};
   globalThis.fetch = (url, opts = {}) => { signals[url] = opts.signal; return new Promise(() => {}); };
@@ -93,7 +93,7 @@ test('PLY-214: starting another song ends the previous download and drops warm-u
     events.length = 0;
     player.playNow('s6');
     await flush();
-    assert.deepEqual(events, ['load src=null'], 'the unfinished download of s5 is ended before the new source is set');
+    assert.deepEqual(events, [], 'the source is replaced directly: no removeAttribute and load() in between');
     assert.match(audio.getAttribute('src'), /s6/);
     assert.equal(signals['/files/s6'].aborted, false, 'the warm-up for the song that starts is kept');
     player.prepare('s0');
