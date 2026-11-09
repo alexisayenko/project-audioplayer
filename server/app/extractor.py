@@ -12,7 +12,7 @@ from urllib.parse import urlparse
 
 import yt_dlp
 
-from . import credit_title, credits, credits_split, genre_filter, library, timeutil, titles, urlclean, yt_genres
+from . import credit_title, credits, credits_split, faststart, genre_filter, library, timeutil, titles, urlclean, yt_genres
 from . import trim as trimming
 from .jsonio import write_bytes_atomic
 from .titles import cut_version, split_artist_title, split_title
@@ -319,7 +319,14 @@ def _finish_trim(target: Path, info: dict[str, Any], trim: trimming.Trim, sectio
 
 def download_audio(video_id: str, out_dir: Path, progress: Callable[[float], None] | None = None, source_url: str | None = None,
                    trim: trimming.Trim | None = None) -> dict[str, Any]:
-    """Download one song's audio (m4a); reports progress (0..1) via the callback. With a `trim` only the cut part is stored, re-encoded to m4a."""
+    """Download one song's audio (m4a); reports progress (0..1) via the callback. With a `trim` only the cut part is stored, re-encoded to m4a. The stored file starts with its `moov` atom (`faststart.ensure`), because Safari cannot start a file whose index is at the end before it has read all of it."""
+    info = _download_audio_file(video_id, out_dir, progress, source_url, trim)
+    faststart.ensure(out_dir / f"{video_id}.m4a")
+    return info
+
+
+def _download_audio_file(video_id: str, out_dir: Path, progress: Callable[[float], None] | None, source_url: str | None,
+                         trim: trimming.Trim | None) -> dict[str, Any]:
     out_dir.mkdir(parents=True, exist_ok=True)
     hook = _progress_hook(progress)
 
