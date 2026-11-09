@@ -81,3 +81,42 @@ at `electrophone.cc`.
 - Lives in: `server/`, `web/`
 - Source spec: [`specs/README.md`](specs/README.md) (API, DATA, TAG, ADD,
   LIB, STO, PLY, WEB, VIZ, SHARE, NFR), ADR-0001 to ADR-0005
+
+## C3 — Android app
+
+The Android phone app: a native Kotlin and Compose app that downloads audio to
+the phone through the iOS client-paced flow, plays it with Media3 behind the
+lock screen, signs in with Google and ships as a sideloaded APK. Status:
+proposal (ADR-0051, task-0127, 2026-11-09); nothing built, no tooling installed.
+
+- Lives in: `android/` (planned, does not exist), `scripts/sync-design-system.py`
+  (the Android token output), `scripts/check.sh` (the Android step),
+  `.github/workflows/` (the ubuntu job), `docs/specs/android.md`
+- Source spec: [`specs/android.md`](specs/android.md), ADR-0051 in
+  [`tech/decisions.md`](tech/decisions.md); the iOS rules it links
+  ([`specs/ios.md`](specs/ios.md))
+- Known risks:
+  - Google ID tokens last about an hour; Credential Manager's silent renewal may
+    show UI or fail, so the AppAuth code plus PKCE fallback (an Android client id
+    in `GOOGLE_CLIENT_ID`) may be needed (AND-072).
+  - A Google OAuth client takes time to start working and needs the SHA-1 of
+    every signing key (debug and release); a changed keystore breaks sign-in
+    until the fingerprint is added.
+  - Losing the release keystore means a new application id for every existing
+    install; it must be backed up outside the Mac.
+  - `POST_NOTIFICATIONS` is a runtime permission on Android 13+; when denied the
+    download progress notification is missing while the downloads still run.
+  - OEM battery managers (Samsung, Xiaomi, Huawei) kill background work and
+    foreground services beyond what AOSP allows; the device checklist (AND-101)
+    must run on the first user's actual phone.
+  - WorkManager cannot wait an exact `retry_after_minutes` through its backoff;
+    the timed re-enqueue (AND-052) is the mechanism and needs a fake-clock test.
+  - Jetpack Security `EncryptedSharedPreferences` is deprecated; the
+    Keystore-backed DataStore has no Google-maintained helper, so the small
+    crypto wrapper is the app's own code.
+  - Audio in `filesDir` is invisible to file managers (no "Open in Files"
+    equivalent) and is lost on uninstall by design.
+  - Sideloading needs "Install unknown apps" per installing app and shows Play
+    Protect warnings for an unknown signer.
+  - The YouTube ToS note applies as on iOS; no distribution beyond the owner's
+    circle.
