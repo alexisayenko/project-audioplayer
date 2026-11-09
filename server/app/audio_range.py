@@ -7,6 +7,8 @@ from collections import OrderedDict
 
 RANGE_CHUNK_BYTES = (128 * 1024, 512 * 1024, 2 * 1024 * 1024)
 RANGE_CHUNK_ENVS = ("AUDIO_RANGE_CHUNK_1_BYTES", "AUDIO_RANGE_CHUNK_2_BYTES", "AUDIO_RANGE_CHUNK_3_BYTES")
+CAP_ENV = "AUDIO_RANGE_CAP_BYTES"
+CAP_DEFAULT_BYTES = 768 * 1024
 RUNS_MAX = 512
 RUNS_TTL_S = 60.0
 
@@ -17,6 +19,26 @@ _clock = time.monotonic
 
 def enabled() -> bool:
     return os.environ.get("AUDIO_RANGE_RAMP", "").strip() == "1"
+
+
+def cap_bytes() -> int:
+    """The first-chunk cap in bytes; 0 switches the cap off. Read per request."""
+    raw = os.environ.get(CAP_ENV, "").strip()
+    try:
+        return max(0, int(raw)) if raw else CAP_DEFAULT_BYTES
+    except ValueError:
+        return CAP_DEFAULT_BYTES
+
+
+def first_chunk(header: str, size: int) -> str:
+    """Clamp a single forward byte range to `cap_bytes()` from its start; suffix, multi-range, invalid and small ranges pass through."""
+    cap = cap_bytes()
+    parsed = _parse(header, size) if cap else None
+    if parsed is None:
+        return header
+    start, end, _ = parsed
+    last = start + cap - 1
+    return header if end <= last else f"bytes={start}-{last}"
 
 
 def _chunk(step: int) -> int:

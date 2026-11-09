@@ -53,6 +53,7 @@ T1, T2, T3 = 128 * K, 512 * K, 2048 * K
 @pytest.fixture(autouse=True)
 def _fresh_runs(monkeypatch):
     monkeypatch.setenv("AUDIO_RANGE_RAMP", "1")
+    monkeypatch.setenv("AUDIO_RANGE_CAP_BYTES", "0")
     audio_range.reset()
     yield
     audio_range.reset()

@@ -53,11 +53,21 @@ def get_file(request: Request, video_id: str, download: bool = Query(default=Fal
     return FileResponse(path, media_type=AUDIO_TYPE, filename=path.name, headers=headers)
 
 
+def _url_session_client(request: Request) -> bool:
+    """The apps' own URLSession downloads (user agent `CFNetwork`) copy whole files and keep every Range answer complete; AVPlayer (`AppleCoreMedia`) and browsers get the first-chunk cap."""
+    agent = request.headers.get("user-agent", "").lower()
+    return "cfnetwork" in agent and "applecoremedia" not in agent
+
+
 def _cap_request_range(request: Request, path: Path, key: tuple[str, str]) -> None:
     header = request.headers.get("range")
-    if header is None or not audio_range.enabled():
+    if header is None or _url_session_client(request):
         return
-    capped = audio_range.capped_range(header, path.stat().st_size, key, record=request.method == "GET")
+    size = path.stat().st_size
+    if audio_range.enabled():
+        capped = audio_range.capped_range(header, size, key, record=request.method == "GET")
+    else:
+        capped = audio_range.first_chunk(header, size)
     if capped != header:
         request.scope["headers"] = [(k, v) for k, v in request.scope["headers"] if k != b"range"] + [(b"range", capped.encode())]
         request.__dict__.pop("_headers", None)
