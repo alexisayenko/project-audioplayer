@@ -9,7 +9,9 @@ import { getListening } from './listening-data.js';
 import { LIBRARY_FRESH_MS, EAGER_COVERS } from './constants.js';
 import { findRowIndex, registerRevealer } from './reveal.js';
 import { prefs, SORTS, savePrefs, visibleSongs, setListening, hasListening, listeningData } from './library-data.js';
-import { songRow, paintDownloadRows, playKey, rowPlayKey } from './library-rows.js';
+import { songRow, paintDownloadRows, playKey, rowPlayKey, revealQueuePosition } from './library-rows.js';
+import { lmPhase } from './perf.js';
+import { restoreFocus } from './defer.js';
 import { loadReferences, onReferencesChange } from './references.js';
 import { disposeAll } from './marquee.js';
 import { isRowControl, keepCovers } from './row-cover.js';
@@ -78,6 +80,8 @@ export function renderLibrary(root) {
   const status = el('div');
   const head = el('div', { class: 'table-head t-eyebrow', 'aria-hidden': 'true' },
     el('span'), el('span', {}, 'Track'), el('span', { class: 'c-genres' }, 'Genres'), el('span', { class: 'c-stats' }, 'Stats'));
+  list.addEventListener('pointerover', (e) => revealQueuePosition(e.target), { passive: true });
+  list.addEventListener('focusin', (e) => revealQueuePosition(e.target), { passive: true });
   list.addEventListener('click', (e) => {
     const row = e.target.closest('li.song');
     const song = row && !isRowControl(e.target) ? store.get(row.dataset.id) : null;
@@ -193,22 +197,28 @@ export function renderLibrary(root) {
     if (stale || gone) return;
     const cur = player.current;
     showPlaying.hidden = !(store.loaded && cur);
-    const rows = [...list.querySelectorAll('li.song')];
-    if (!rows.length) return;
-    const byId = new Map(store.songs.map((s) => [s.id, s]));
+    const changed = lmPhase('library rows: find changed', () => {
+      const found = [];
+      for (const row of list.querySelectorAll('li.song')) {
+        const song = store.get(row.dataset.id);
+        if (song && rowPlayKey(row) !== playKey(song, cur)) found.push([row, song]);
+      }
+      return found;
+    });
+    if (!changed.length) return;
     const data = isGuest() ? null : listeningData();
     const focusedEl = document.activeElement;
     const focusedCls = ['row-cover', 'act-pl', 'act-queue', 'sq-btn'].find((c) => focusedEl?.classList?.contains(c));
     const focusedRow = focusedCls ? focusedEl.closest('li.song') : null;
-    for (const row of rows) {
-      const song = byId.get(row.dataset.id);
-      if (!song || rowPlayKey(row) === playKey(song, cur)) continue;
-      const next = songRow(song, cur, flashedId(), listenedOf(data, song));
-      keepCovers([row], [next]);
-      disposeAll(row);
-      row.replaceWith(next);
-      if (row === focusedRow) next.querySelector(`.${focusedCls}`)?.focus();
-    }
+    lmPhase(`library rows: rebuild ${changed.length}`, () => {
+      for (const [row, song] of changed) {
+        const next = songRow(song, cur, flashedId(), listenedOf(data, song));
+        keepCovers([row], [next]);
+        disposeAll(row);
+        row.replaceWith(next);
+        if (row === focusedRow) restoreFocus(next.querySelector(`.${focusedCls}`), focusedEl);
+      }
+    });
   }
 
   function paintList() {
@@ -279,7 +289,7 @@ export function renderLibrary(root) {
     paintSwitch();
     setView(routeView());
   } else setView('songs');
-  const unsubPlayer = player.onChange(patchPlayState);
+  const unsubPlayer = player.onChange(patchPlayState, 'library rows');
   const unsubDl = autodl.onChange(paintDownloads);
 
   let loadError = null;

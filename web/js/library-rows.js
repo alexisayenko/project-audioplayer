@@ -9,7 +9,7 @@ import { downloadButton, fetchAudio } from './dl-control.js';
 import { ringNode, lineNode, paintRing, paintLine } from './dl-ring.js';
 import { bpmLabel } from './bpm-label.js';
 import { genreText } from './genre-cell.js';
-import { coverModel, coverButton, queueNote } from './row-cover.js';
+import { coverModel, coverButton, queueNote, showQueuePosition, QUEUED_LAZY } from './row-cover.js';
 import { tooltipLine, subtitle, titleLine, titleNodes } from './credits.js';
 import { marquee } from './marquee.js';
 import { songMarks, marksTip } from './references.js';
@@ -33,7 +33,7 @@ function bpmBadge(s) {
 }
 
 function queueButton(s, queued) {
-  const note = queued ? queueNote(player.queuePosition(s.id)) : '';
+  const note = queued ? queueNote(QUEUED_LAZY) : '';
   const tip = queued ? `${note}. Click to remove` : 'Add to queue';
   return el('button', {
     class: `icon sq-btn act-queue${queued ? ' on' : ''}`, type: 'button', title: tip,
@@ -75,7 +75,7 @@ function runCover(s, action, link) {
 
 function coverCell(s, full, { audio, queueable, here, link, queued }) {
   const model = coverModel({ audio, queueable, here, playing: player.playing, dl: autodl.view(s.id).kind, source: !!link });
-  return coverButton(cover(s), model, full, { run: (action) => runCover(s, action, link), queued });
+  return coverButton(cover(s), model, full, { run: (action) => runCover(s, action, link), queued: queued ? QUEUED_LAZY : null });
 }
 
 function subLine(s) {
@@ -94,14 +94,20 @@ function statsCell(n) {
 
 const playKeys = new WeakMap();
 
-// Everything in a row that follows the player: current, play/pause, queue membership and position.
+// Everything in a row that follows the player: current, play/pause and queue membership. The position in the queue is not part of it: it moves for hundreds of rows at every press, so it is read when a row is pointed at or focused.
 export function playKey(s, cur) {
   const here = hasAudio(s) && !!cur && cur.id === s.id;
-  const q = player.inQueue(s.id) ? player.queuePosition(s.id) : null;
-  return `${here ? (player.playing ? 'p' : 'c') : '-'}${q ? `${q.pos}/${q.total}` : ''}`;
+  return `${here ? (player.playing ? 'p' : 'c') : '-'}${player.inQueue(s.id) ? 'q' : ''}`;
 }
 
 export const rowPlayKey = (row) => playKeys.get(row);
+
+/** Fills in the queue position in the tooltips of the row under `target` (a pointer or focus event target). */
+export function revealQueuePosition(target) {
+  const row = target?.closest?.('li.song');
+  const id = row?.dataset?.id;
+  if (id && row.querySelector('.queued, .act-queue.on')) showQueuePosition(row, player.queuePosition(id));
+}
 
 export function songRow(s, cur, flashId, listened = null) {
   const full = titleLine(s);

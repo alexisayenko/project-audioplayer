@@ -76,7 +76,13 @@ export function paintCover(btn, model, name, { touch = touchOnly(), size = 20, e
 // Cover of the current song: always the current song's play/pause state (a song without server audio is handled by player.toggle).
 export const currentCoverModel = (playing) => coverModel({ audio: true, queueable: true, here: true, playing });
 
-export const queueNote = (q) => (q ? `In the queue, position ${q.pos} of ${q.total}` : '');
+/** A queued song whose exact position is not worked out yet: its note says only "In the queue" until `showQueuePosition` fills it in. */
+export const QUEUED_LAZY = Object.freeze({ pos: 0, total: 0 });
+
+export const queueNote = (q) => {
+  if (!q) return '';
+  return q.pos ? `In the queue, position ${q.pos} of ${q.total}` : 'In the queue';
+};
 
 export function coverButton(img, model, name, { run, touch = touchOnly(), queued = null }) {
   const a = coverAttrs(model, name, touch);
@@ -84,19 +90,29 @@ export function coverButton(img, model, name, { run, touch = touchOnly(), queued
   const tip = note ? `${a.label}. ${note}` : a.title;
   return el('button', {
     class: note ? `${a.cls} queued` : a.cls, type: 'button', 'aria-label': a.label, 'aria-description': note || null, title: tip, disabled: a.disabled,
+    'data-label': note ? a.label : null,
     onclick: () => run(model.action),
   }, el('span', { class: 'cover-mark', 'aria-hidden': 'true' }, icon('coverPlaceholder')), img, el('span', { class: 'rc-ov', 'aria-hidden': 'true' }, icon(model.icon, 20)));
+}
+
+/**
+ * Writes the exact queue position into the tooltips of a row's queued controls (`pos` is `{ pos, total }` or null).
+ * Rows are built with "In the queue" only, because the position of every row changes with each queue change and the note is needed only when the row is pointed at or focused.
+ */
+export function showQueuePosition(row, pos) {
+  const note = queueNote(pos);
+  const cover = row.querySelector('.row-cover.queued');
+  if (cover && note) {
+    const tip = `${cover.dataset.label}. ${note}`;
+    if (cover.title !== tip) cover.title = tip;
+    if (cover.getAttribute('aria-description') !== note) cover.setAttribute('aria-description', note);
+  }
+  const btn = row.querySelector('.act-queue.on');
+  const btnTip = `${note}. Click to remove`;
+  if (btn && note && btn.title !== btnTip) btn.title = btnTip;
 }
 
 // Cover button of a Now playing row: the current row follows play/pause, any other row starts that queue item.
 export const queueCoverModel = (isCurrent, playing) => (isCurrent
   ? currentCoverModel(playing)
   : coverModel({ audio: true, queueable: true, here: false }));
-
-export function paintQueueCovers(list, index, playing, nameOf) {
-  const rows = list.querySelectorAll('li.qrow');
-  rows.forEach((row, i) => {
-    const btn = row.querySelector('.row-cover');
-    if (btn) paintCover(btn, queueCoverModel(i === index, playing), nameOf(row), { size: 18 });
-  });
-}

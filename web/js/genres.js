@@ -445,7 +445,7 @@ export function renderGenres(root) {
       outlinePanel,
       live));
   root.append(gm);
-  const unsubPlayer = player.onChange(renderNow);
+  const unsubPlayer = player.onChange(renderNow, 'genres');
   const unsubNowStore = store.subscribe(renderNow);
   renderNow();
   const stopInset = watchPlayerInset(gm, (h) => view.setInsets({ b: 16 + h }));

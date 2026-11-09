@@ -11,7 +11,8 @@ import { autodl, autoDownloadOn } from './autodl.js';
 import { attachScrubber } from './scrubber.js';
 import { storeGet, storeSet, storeRemove } from './storage.js';
 import { createResumePosition } from './resume-position.js';
-import { paintCover, currentCoverModel, paintQueueCovers, keepCovers } from './row-cover.js';
+import { paintCover, currentCoverModel, queueCoverModel, keepCovers } from './row-cover.js';
+import { createQueueView } from './queue-view.js';
 import { $, setIcon, setToggle, setCover, queueRow, updateDl, paintTimes, initTimeToggle, initMiniCompact } from './player-ui.js';
 import { MINI_PX } from './cover-url.js';
 import { watchMedia } from './cover-loader.js';
@@ -35,7 +36,7 @@ import { initLoopChip } from './loop-chip.js';
 import { createFader } from './fade-control.js';
 import { fadeSettings } from './fade-settings.js';
 import { gt } from './cmp.js';
-import { mark, watchAudio, trackPlay } from './perf.js';
+import { mark, lmPhase, watchAudio, trackPlay } from './perf.js';
 import { createWarmer, watchRowPress, watchNextProbe, saveDataOn } from './warm.js';
 import { stopLoading } from './stop-load.js';
 
@@ -143,8 +144,22 @@ function roundStarts() {
 
 const logic = () => ({ queue: ids(), index: qs.index, shuffle, repeat, played, shuffleRank });
 
+const QUEUE_SAVE_MS = 400;
+let queueSaveTimer = null;
+
+function writeQueue() {
+  clearTimeout(queueSaveTimer);
+  queueSaveTimer = null;
+  lmPhase('persist queue', () => storeSet(QUEUE_KEY, JSON.stringify(qs)));
+}
+
+// The queue of 700+ songs is written a moment after the change (never inside a press) and at once when the page is left.
 function saveQueue() {
-  storeSet(QUEUE_KEY, JSON.stringify(qs));
+  if (queueSaveTimer == null) queueSaveTimer = setTimeout(writeQueue, QUEUE_SAVE_MS);
+}
+
+export function flushQueue() {
+  if (queueSaveTimer != null) writeQueue();
 }
 
 function savePrefs() {
@@ -195,7 +210,11 @@ export const player = {
   get current() { const it = qs.items[qs.index]; return it ? store.get(it.id) || null : null; },
   get currentId() { return qs.items[qs.index]?.id ?? null; },
   get playing() { return !audio.paused; },
-  onChange(fn) { listeners.add(fn); return () => listeners.delete(fn); },
+  onChange(fn, label) {
+    if (label) fn.label = label;
+    listeners.add(fn);
+    return () => listeners.delete(fn);
+  },
 
   playNow(id) {
     mark('handler: playNow');
@@ -298,6 +317,7 @@ export const player = {
     } else {
       autodl.prune([]);
     }
+    queueView?.invalidate();
     render();
   },
 
@@ -509,7 +529,6 @@ function load(autoplay) {
   loop.clear();
   fader.reset();
   if (!song) return;
-  updateMediaSession(song);
   if (!hasAudio(song)) {
     audio.pause();
     audio.removeAttribute('src');
@@ -523,8 +542,7 @@ function load(autoplay) {
   resumeOnce = false;
   resumeGuard = false;
   if (!restoring) resume.clear();
-  warmer.cancelOthers(song.id);
-  if (stopLoading(audio)) mark('previous download stopped');
+  lmPhase('stop previous download', () => { warmer.cancelOthers(song.id); if (stopLoading(audio)) mark('previous download stopped'); });
   audio.src = api.fileUrl(song.id);
   mark('audio.src set');
   fader.apply();
@@ -607,6 +625,7 @@ function renderDetails(song) {
   $('cover-art').classList.toggle('noart', !song.cover);
 }
 
+let sessionFor = null;
 let renderTimer = null;
 let renderFull = false;
 let renderedSig = null;
@@ -638,23 +657,29 @@ function render(coversOnly = false) {
   const song = player.current;
   const n = qs.items.length;
   document.body.classList.toggle('has-mini', !!song);
-  renderTransport(song, shownPlaying());
+  lmPhase('render: transport', () => renderTransport(song, shownPlaying()));
   $('queue-count').textContent = n ? `${n} ${plural(n, 'song', 'songs')}` : '';
-  renderPlaylistControls();
+  lmPhase('render: playlist controls', renderPlaylistControls);
   if (!song) {
     renderIdle();
     return;
   }
-  renderMini(song);
-  renderDetails(song);
-  if (coversOnly) paintQueueCovers($('queue-list'), qs.index, shownPlaying(), (row) => row.querySelector('.row-cover').dataset.title);
-  else renderQueue();
-  followQueue ||= createQueueFollow($('queue-list'));
-  followQueue(song.id, qs.index);
+  lmPhase('render: mini player', () => renderMini(song));
+  lmPhase('render: details', () => renderDetails(song));
+  if (sessionFor !== song) {
+    sessionFor = song;
+    lmPhase('render: media session', () => updateMediaSession(song));
+  }
+  lmPhase('render: queue rows', renderQueue);
+  lmPhase('render: queue follow', () => {
+    followQueue ||= createQueueFollow($('queue-list'), { hiddenFast: () => $('player').hidden });
+    followQueue(song.id, qs.index);
+  });
   document.title = `${titleLine(song)} - Electrophone`;
-  renderProgress();
+  lmPhase('render: progress', renderProgress);
   mark('render: listeners start', listeners.size);
-  listeners.forEach((fn) => fn());
+  let nth = 0;
+  listeners.forEach((fn) => lmPhase(`listener ${fn.label || (nth += 1)}`, fn));
   mark('render() end');
 }
 
@@ -672,27 +697,36 @@ function renderPlaylistControls() {
     }, icon('clear', 'inline')))));
 }
 
-const queueCtx = () => ({
-  count: qs.items.length,
-  index: qs.index,
+const queueCtx = ({ items, index, playing }) => ({
+  count: items.length,
+  index,
   move: (i, d) => player.move(i, d),
   removeAt: (i) => player.removeAt(i),
   playAt: (i) => player.playAt(i),
   openCard: (song, opener) => { void openSongCard(song, opener); },
-  playing: shownPlaying(),
+  playing,
 });
 
+let queueView = null;
+
+function makeQueueView() {
+  return createQueueView({
+    list: $('queue-list'),
+    section: $('player'),
+    state: () => ({ items: qs.items, index: qs.index, playing: shownPlaying() }),
+    buildRow: (item, i, s) => queueRow(item, i, queueCtx(s)),
+    paintPlaying: (row, i, s) => paintCover(row.querySelector('.row-cover'), queueCoverModel(i === s.index, s.playing), row.querySelector('.row-cover').dataset.title, { size: 18 }),
+    keepCovers,
+    dispose: disposeAll,
+    onRebuild: () => { closeMenu(); disposeAll($('queue-list')); },
+    onBuilt: () => { updateDl(player.current); followQueue?.resync(); },
+  });
+}
+
 function renderQueue() {
-  closeMenu();
   $('queue-empty').hidden = qs.items.length > 0;
-  disposeAll($('queue-list'));
-  const focused = document.activeElement?.closest?.('#queue-list .row-cover') ? [...$('queue-list').children].indexOf(document.activeElement.closest('li')) : -1;
-  const prevRows = [...$('queue-list').children];
-  const rows = qs.items.map((item, i) => queueRow(item, i, queueCtx()));
-  keepCovers(prevRows, rows);
-  $('queue-list').replaceChildren(...rows);
-  if (focused >= 0) $('queue-list').children[focused]?.querySelector('.row-cover')?.focus();
-  updateDl(player.current);
+  queueView ||= makeQueueView();
+  queueView.update();
 }
 
 const isScrubbing = () => scrubbers.some((x) => x.dragging);
@@ -727,8 +761,8 @@ export function initPlayer() {
   audio.addEventListener('pause', () => { saveResume(true); renderSoon(false); });
   audio.addEventListener('timeupdate', () => { saveResume(false); renderProgress(); });
   audio.addEventListener('seeked', () => saveResume(true));
-  window.addEventListener('pagehide', () => saveResume(true));
-  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') saveResume(true); });
+  window.addEventListener('pagehide', () => { saveResume(true); flushQueue(); });
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') { saveResume(true); flushQueue(); } });
   audio.addEventListener('durationchange', renderProgress);
   audio.addEventListener('ended', () => { resume.clear(); window.dispatchEvent(new Event('song-ended')); if (!loop.onEnded()) player.next(true); });
   for (const ev of ['playing', 'error', 'emptied', 'abort', 'loadstart']) audio.addEventListener(ev, () => renderSoon(false));
@@ -750,7 +784,9 @@ export function initPlayer() {
     onFlushed: () => window.dispatchEvent(new Event('plays-flushed')),
   });
   recentPlaysFn = () => recorder.recentPlays();
-  listeners.add(() => recorder.sync());
+  const syncPlays = () => recorder.sync();
+  syncPlays.label = 'plays recorder';
+  listeners.add(syncPlays);
 
   initMiniCompact();
   initSideMini({ toggle: () => player.toggle() });
@@ -817,6 +853,7 @@ export function initPlayer() {
   restore();
 
   store.subscribe(() => {
+    queueView?.invalidate();
     const { state, curGone } = Q.syncLibrary(qs, (id) => !!store.get(id));
     if (state !== qs) {
       qs = state;

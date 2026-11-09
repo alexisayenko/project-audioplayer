@@ -7,7 +7,10 @@ const SESSION_MS = 30000;
 const AUDIO_EVENTS = ['play', 'loadstart', 'loadedmetadata', 'loadeddata', 'canplay', 'canplaythrough', 'playing', 'timeupdate', 'waiting', 'stalled', 'suspend', 'seeking', 'seeked', 'durationchange', 'emptied', 'abort', 'error'];
 
 const noop = () => {};
+const run = (_name, fn) => fn();
 const tenth = (n) => Math.round(n * 10) / 10;
+
+export const PHASE_PREFIX = 'phase: ';
 
 export function readEnabled(win = globalThis) {
   try {
@@ -22,7 +25,7 @@ export function readEnabled(win = globalThis) {
 
 /** Playback-start timing marks. Silent unless `localStorage['ap2.perf']='1'` or `?perf=1` / `#perf=1` is present when the page starts (PLY-203). */
 export function createPerf({ win = globalThis, enabled = readEnabled(win) } = {}) {
-  if (!enabled) return { enabled: false, mark: noop, onMark: () => noop, begin: noop, watchAudio: noop, track: (p) => p, table: () => [], slowest: () => [], resources: () => [] };
+  if (!enabled) return { enabled: false, mark: noop, phase: run, onMark: () => noop, begin: noop, watchAudio: noop, track: (p) => p, table: () => [], slowest: () => [], resources: () => [] };
   const clock = win.performance;
   const now = () => (clock?.now ? clock.now() : Date.now());
   const out = win.console ?? {};
@@ -48,6 +51,15 @@ export function createPerf({ win = globalThis, enabled = readEnabled(win) } = {}
       clock?.mark?.(`ap2:${name}`, { startTime: t, detail });
       if (armed && base != null) clock?.measure?.(`ap2:${name} since start`, { start: base, end: t });
     } catch { /* performance timeline unavailable */ }
+  }
+
+  function phase(name, fn) {
+    const t = now();
+    try {
+      return fn();
+    } finally {
+      mark(`${PHASE_PREFIX}${name}`, `${tenth(now() - t)} ms`);
+    }
   }
 
   function addGap(kind, start, dur) {
@@ -188,13 +200,17 @@ export function createPerf({ win = globalThis, enabled = readEnabled(win) } = {}
   table.resources = resources;
   win.__ap2perf = table;
   const onMark = (fn) => { taps.add(fn); return () => taps.delete(fn); };
-  return { enabled: true, mark, onMark, begin, watchAudio, track, table, slowest, resources };
+  return { enabled: true, mark, phase, onMark, begin, watchAudio, track, table, slowest, resources };
 }
 
 const perf = createPerf();
 
 export const perfEnabled = perf.enabled;
 export const mark = perf.mark;
+/** `lmMark(name)`: a point in the press pipeline; nothing at all while the meter is off. */
+export const lmMark = perf.mark;
+/** `lmPhase(name, fn)`: runs `fn` and, while the meter is on, marks how long it took (the meter's Copy lists these per phase); while off it only calls `fn`. */
+export const lmPhase = perf.phase;
 export const onMark = perf.onMark;
 export const watchAudio = perf.watchAudio;
 export const trackPlay = perf.track;

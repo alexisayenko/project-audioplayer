@@ -1,6 +1,6 @@
 import { el } from './dom.js';
 import * as realGraph from './audio-graph.js';
-import { onMark } from './perf.js';
+import { onMark, lmPhase, PHASE_PREFIX } from './perf.js';
 import { storeGet, storeSet } from './storage.js';
 import { switchMode, SWITCH_KEY, SWITCH_MODES } from './stop-load.js';
 import { createMeterCore, levelOfBytes, describeLayout, pressKind, isPlayKey, fileIdOf, resourceRows, SAMPLE_MS, STRIP_LEN } from './latency-core.js';
@@ -164,8 +164,8 @@ export function startLatencyMeter({ audio = document.getElementById('audio'), wi
     core.fact('page', win.location.hash || '/');
     core.fact('audio context at press', ctxState());
     shown.ctx = ctxState();
-    tap();
-    render(t);
+    lmPhase('meter: audio tap (unlock or resume)', tap);
+    lmPhase('meter: first panel render', () => render(t));
     timer = setInterval(tickSample, SAMPLE_MS);
     lastFrame = t;
     raf = requestAnimationFrame(frame);
@@ -225,7 +225,7 @@ export function startLatencyMeter({ audio = document.getElementById('audio'), wi
     });
   }
   listen('timeupdate', () => { if (core.running) core.timeupdate(now(), audio.currentTime); });
-  const offMark = onMark((name, t, detail) => { if (core.running && PERF_MARKS.has(name)) core.mark(name, t, detail); });
+  const offMark = onMark((name, t, detail) => { if (core.running && (PERF_MARKS.has(name) || name.startsWith(PHASE_PREFIX))) core.mark(name, t, detail); });
 
   async function checkLayout() {
     const src = audio.getAttribute('src');

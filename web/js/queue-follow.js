@@ -2,12 +2,13 @@ import { scrollTarget } from './reveal.js';
 
 export const USER_SCROLL_MS = 2000;
 
-export function createQueueFollow(list, { now = () => Date.now(), reduced = () => matchMedia('(prefers-reduced-motion: reduce)').matches, observe = true } = {}) {
+export function createQueueFollow(list, { now = () => Date.now(), reduced = () => matchMedia('(prefers-reduced-motion: reduce)').matches, observe = true, hiddenFast = () => false } = {}) {
   let lastKey = null;
   let wasVisible = false;
   let lastUser = -Infinity;
   let current = null;
-  const visible = () => (list.getClientRects?.().length ?? 0) > 0;
+  // `hiddenFast` answers "surely hidden" without asking the layout, which a press must not force.
+  const visible = () => !hiddenFast() && (list.getClientRects?.().length ?? 0) > 0;
   const markUser = () => { lastUser = now(); };
   list.addEventListener?.('wheel', markUser, { passive: true });
   list.addEventListener?.('touchmove', markUser, { passive: true });
@@ -34,8 +35,11 @@ export function createQueueFollow(list, { now = () => Date.now(), reduced = () =
   }
 
   if (observe && typeof ResizeObserver !== 'undefined') new ResizeObserver(sync).observe(list);
-  return (id, index) => {
+  const follow = (id, index) => {
     current = id == null || index < 0 ? null : { key: `${index}|${id}`, index };
     sync();
   };
+  /** The rows were built again (maybe after this call): scroll to the current one once more. */
+  follow.resync = () => { lastKey = null; sync(); };
+  return follow;
 }

@@ -13,7 +13,7 @@ const calls = stubFetch((url, o) => {
   return { body: { songs: [] } };
 });
 const { store } = await import('./store.js');
-const { player, initPlayer } = await import('./player.js');
+const { player, initPlayer, flushQueue } = await import('./player.js');
 const { setAutoDownload } = await import('./autodl.js');
 
 const $ = (id) => document.getElementById(id);
@@ -40,6 +40,7 @@ test('when the library arrives the queue is reconciled: unknown ids dropped, cur
   assert.equal(audio.getAttribute('src'), '/files/b');
   assert.equal(audio.plays, 0, 'a restored queue never starts playing by itself');
   assert.equal($('queue-list').children.length, 2);
+  flushQueue();
   const saved = JSON.parse(localStorage.getItem('ap2.queue'));
   assert.deepEqual(saved.items.map((i) => i.id), ['b', 'a']);
 });

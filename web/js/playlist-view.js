@@ -267,7 +267,7 @@ export function renderPlaylistPage(root, id) {
     ids = detail.songs.filter((sid) => store.get(sid));
     paintAll();
   });
-  const unsubPlayer = player.onChange(() => { if (!gone && detail) paintRows(); });
+  const unsubPlayer = player.onChange(() => { if (!gone && detail) paintRows(); }, 'playlist rows');
   const unsubDl = autodl.onChange(() => { if (!gone && detail) paintDownloadRows(list, paintRows); });
   const flushOnHide = () => { if (sync.pending()) void sync.flush(); };
   window.addEventListener('pagehide', flushOnHide);

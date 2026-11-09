@@ -6,9 +6,27 @@ export const TAIL_MS = 3000;
 export const GIVE_UP_MS = 20000;
 export const GUARD_MS = 200;
 const MAX_SAMPLES = 400;
-const MAX_MARKS = 60;
+const MAX_MARKS = 140;
+const PHASE = 'phase: ';
 
 const tenth = (n) => Math.round(n * 10) / 10;
+
+/** The `phase: <name>` marks of a run (detail `<n> ms`, mark time = end of the phase), summed per name and ordered longest first. */
+export function phaseRows(marks) {
+  const by = new Map();
+  for (const m of marks) {
+    if (!m.name.startsWith(PHASE)) continue;
+    const name = m.name.slice(PHASE.length);
+    const dur = parseFloat(m.detail);
+    if (!Number.isFinite(dur)) continue;
+    const row = by.get(name) ?? { name, ms: 0, runs: 0, endMs: 0 };
+    row.ms = tenth(row.ms + dur);
+    row.runs += 1;
+    row.endMs = m.ms;
+    by.set(name, row);
+  }
+  return [...by.values()].sort((a, b) => b.ms - a.ms);
+}
 
 /** Peak of a time-domain byte buffer (128 is silence) on a 0 to 100 scale. */
 export function levelOfBytes(bytes) {
@@ -234,6 +252,11 @@ export function createMeterCore({ stripLen = STRIP_LEN, soundLevel = SOUND_LEVEL
     lines.push(`first timeupdate>0: ${run.progressMs == null ? 'none' : `${run.progressMs} ms`}`);
     lines.push('marks (ms from press):');
     for (const x of run.marks) lines.push(`  ${String(x.ms).padStart(8)}  ${x.name}${x.detail ? ` ${x.detail}` : ''}`);
+    const phases = phaseRows(run.marks);
+    if (phases.length) {
+      lines.push('phases (ms of main-thread work in each part of the press pipeline, longest first; end = when its last run ended, ms from press):');
+      for (const p of phases) lines.push(`  ${String(p.ms).padStart(8)} ms  ${p.name}${p.runs > 1 ? ` (${p.runs} runs)` : ''}  end ${p.endMs}`);
+    }
     if (run.resources.length) {
       lines.push(`requests in the first ${RESOURCE_WINDOW_MS / 1000} s (ms from press, Resource Timing; who: cur = this song, prev = the song loaded at the press, other = another song or a warm-up, api = not a file; a request cancelled or still pending is not listed; connect > 0 means a new connection):`);
       for (const r of run.resources) lines.push(`  [${r.who}] ${r.name} start ${r.start}${r.start < 0 ? ' (before the press)' : ''} connect ${r.connect} requestStart ${r.requestStart} responseStart ${r.responseStart} responseEnd ${r.responseEnd} bytes ${r.bytes}`);

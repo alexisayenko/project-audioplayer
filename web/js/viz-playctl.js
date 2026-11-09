@@ -53,7 +53,7 @@ export function initOverlayPlayControls({ player, audio, root, live, isOpen }) {
 
   setIcon('viz-shuffle', 'shuffle', 'nav');
   setIcon('viz-repeat', 'repeat', 'nav');
-  player.onChange(paintTransport);
+  player.onChange(paintTransport, 'visualizer transport');
   audio.addEventListener('volumechange', paintVolume);
   paintTransport();
   paintVolume();

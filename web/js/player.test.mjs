@@ -6,7 +6,7 @@ await installPage();
 globalThis.location = { hash: '', href: 'http://localhost/', host: 'localhost' };
 stubFetch(() => ({ body: { songs: [] } }));
 const { store } = await import('./store.js');
-const { player, initPlayer, pausePlayer } = await import('./player.js');
+const { player, initPlayer, pausePlayer, flushQueue } = await import('./player.js');
 
 const $ = (id) => document.getElementById(id);
 const audio = $('audio');
@@ -18,7 +18,7 @@ const SONGS = [
 ];
 const publish = (songs) => { store.songs = songs; store.tags = [{ tag: 'rock', count: 2 }, { tag: 'jazz', count: 1 }]; store.loaded = true; store.listeners.forEach((fn) => fn()); };
 const queueTitles = () => $('queue-list').children.map((li) => li.querySelector('.open').textContent);
-const saved = () => JSON.parse(localStorage.getItem('ap2.queue'));
+const saved = () => { flushQueue(); return JSON.parse(localStorage.getItem('ap2.queue')); };
 const reset = () => { for (let i = player.current ? 50 : 0; i > 0; i -= 1) player.removeAt(0); };
 
 initPlayer();

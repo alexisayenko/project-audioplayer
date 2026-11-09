@@ -12,6 +12,9 @@ export const store = {
   loadedAt: 0,
   pending: null,
   sig: null,
+  index: new Map(),
+  indexFor: null,
+  indexLen: -1,
 
   refresh({ maxAgeMs = 0 } = {}) {
     if (this.pending) return this.pending;
@@ -45,8 +48,17 @@ export const store = {
     this.listeners.forEach((fn) => fn());
   },
 
+  // A map by id, rebuilt when `songs` is replaced or changes length; the first song with an id wins, as with `find`.
   get(id) {
-    return this.songs.find((s) => s.id === id);
+    const list = this.songs;
+    if (this.indexFor !== list || this.indexLen !== list.length) {
+      const map = new Map();
+      for (const s of list) if (!map.has(s.id)) map.set(s.id, s);
+      this.index = map;
+      this.indexFor = list;
+      this.indexLen = list.length;
+    }
+    return this.index.get(id);
   },
 
   subscribe(fn) {

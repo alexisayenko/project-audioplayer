@@ -106,10 +106,13 @@ test('changing the current song patches exactly two rows', async () => {
   assert.equal(rowOf('s3').querySelector('.row-cover').getAttribute('aria-label'), 'Play Song 3');
 });
 
-test('queueing a song patches the queued rows only (positions change), not the list', async () => {
+test('queueing a song patches that row only; the positions of the other queued rows are read when they are pointed at (LIB-283)', async () => {
   const before = snapshot();
   rowOf('s20').querySelector('.act-queue').click();
   await flush();
-  assert.deepEqual(changed(before).sort(), ['s10', 's20', 's3']);
+  assert.deepEqual(changed(before), ['s20']);
   assert.equal(rowOf('s20').querySelector('.act-queue').getAttribute('aria-pressed'), 'true');
+  rowOf('s3').dispatchEvent(makeEvent('pointerover', { bubbles: true }));
+  const q = player.queuePosition('s3');
+  assert.match(rowOf('s3').querySelector('.row-cover').title, new RegExp(`position ${q.pos} of ${q.total}$`));
 });

@@ -11,6 +11,6 @@ export function initShare() {
     b.addEventListener('click', (e) => openShareDialog(player.current, e.currentTarget));
   }
   const sync = () => { for (const b of buttons) b.hidden = !player.current; };
-  player.onChange(sync);
+  player.onChange(sync, 'share buttons');
   sync();
 }

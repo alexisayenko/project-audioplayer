@@ -106,7 +106,7 @@ export function createLiveBpmController({ audio, player, getAnalyser, getContext
     } else { stop(); if (!on) clearValue(); }
   };
 
-  const unsubscribe = player.onChange(sync);
+  const unsubscribe = player.onChange(sync, 'live bpm');
   const onSeeked = () => { clearValue(); };
   const onPlay = () => { clearValue(); sync(); emit(); };
   const onPause = () => { sync(); emit(); };

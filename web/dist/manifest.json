@@ -1,6 +1,6 @@
 {
   "esbuild": "0.27.7",
-  "sources": "a01ab1ccff7487d940c43901e29482dfb9c29f0028060aac3b4791e7d6a9d503",
+  "sources": "ce282bca90f6cace0da97e0874bdef2b1ed57936ed816f0437695ace9a9ecfb1",
   "modules": [
     "js/about.js",
     "js/add-preview.js",
@@ -57,6 +57,7 @@
     "js/credits-split.js",
     "js/credits-suggestions.js",
     "js/credits.js",
+    "js/defer.js",
     "js/dialog-backdrop.js",
     "js/discogs-link.js",
     "js/dl-control.js",
@@ -196,6 +197,7 @@
     "js/queue-follow.js",
     "js/queue-logic.js",
     "js/queue-toggle.js",
+    "js/queue-view.js",
     "js/references.js",
     "js/remix-year.js",
     "js/resume-position.js",
@@ -336,19 +338,19 @@
   "tier1": [
     "dist/app.js",
     "dist/icons.js",
-    "dist/chunk-64LKMZ4A.js",
-    "dist/chunk-IH6RCVVH.js",
-    "dist/chunk-SLXGNVZH.js",
+    "dist/chunk-IGIYLQFI.js",
+    "dist/chunk-DGIE5JSL.js",
+    "dist/chunk-PK4AYVGH.js",
     "dist/chunk-UT7STWSY.js",
-    "dist/chunk-4GBAIMG2.js",
+    "dist/chunk-QO7UXSSK.js",
     "dist/chunk-EEQXK5JZ.js",
     "dist/chunk-WOT6VMZA.js"
   ],
   "tier2": [
-    "dist/lazy-ui-Q45FUOJU.js",
+    "dist/lazy-ui-KOD2OFQE.js",
     "dist/chunk-XHXQGYQY.js",
-    "dist/chunk-ZK52HLXE.js",
-    "dist/lazy-genres-OOZF4HC6.js",
-    "dist/latency-meter-V5K4LHZL.js"
+    "dist/chunk-5SCYW2OB.js",
+    "dist/lazy-genres-IPENQ4BC.js",
+    "dist/latency-meter-JOUKP6SR.js"
   ]
 }

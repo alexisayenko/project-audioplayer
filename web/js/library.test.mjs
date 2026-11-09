@@ -385,12 +385,14 @@ test('row state button toggles the queue inline; the row has no More menu', asyn
   const qi = queuedRow.querySelector('.row-acts .act-queue.on');
   assert.ok(qi, 'queued: the action column holds the pressed queue button');
   assert.equal(qi.getAttribute('aria-pressed'), 'true');
+  assert.equal(qi.title, 'In the queue. Click to remove', 'LIB-283: the exact position waits until the row is pointed at');
+  queuedRow.dispatchEvent(makeEvent('pointerover', { bubbles: true }));
   assert.equal(qi.title, 'In the queue, position 1 of 1. Click to remove');
   assert.match(qi.getAttribute('aria-label'), /^Remove from queue/);
   assert.equal(qi.parentNode.lastElementChild, qi, 'the queue button sits below the playlist button, left of the cover');
   assert.equal(qi.parentNode.nextElementSibling, queuedRow.querySelector('.row-cover'));
   assert.equal(queuedRow.querySelector('.q-mark'), null, 'no cover badge');
-  assert.match(queuedRow.querySelector('.row-cover').getAttribute('aria-description'), /In the queue, position 1 of 1$/);
+  assert.match(queuedRow.querySelector('.row-cover').getAttribute('aria-description'), /In the queue, position 1 of 1$/, 'after the pointer reached the row');
   assert.match(queuedRow.querySelector('.row-cover').title, /In the queue, position 1 of 1$/);
   assert.notEqual(document.getElementById('toast').textContent, 'Queued', 'WEB-115: inline feedback, no toast');
   qi.click();
@@ -445,7 +447,8 @@ test('the cover button plays now, shows Pause on the playing song and Play when 
   assert.equal(cover('b').getAttribute('aria-label'), 'Pause beta');
   assert.equal(cover('b').classList.contains('persist'), true);
   assert.equal(cover('a').getAttribute('aria-label'), 'Play Alpha');
-  assert.ok(document.activeElement === cover('b'), 'the rebuilt cover keeps keyboard focus');
+  await flush();
+  assert.ok(document.activeElement === cover('b'), 'the rebuilt cover keeps keyboard focus (given back at the next frame, PLY-215)');
   cover('b').click();
   await flush();
   assert.equal(player.playing, false);
