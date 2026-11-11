@@ -24,7 +24,7 @@ set +a
 export ANDROID_RELEASE_STORE_FILE="$store"
 
 code="$(date +%Y%m%d)${1:-01}"
-(cd android && ./gradlew lintRelease testReleaseUnitTest assembleRelease -PversionCode="$code")
+(cd android && ./gradlew lintRelease testDebugUnitTest bundleRelease assembleRelease -PversionCode="$code")
 apk="android/app/build/outputs/apk/release/app-release.apk"
 [ -f "$apk" ] || { echo "no signed APK at $apk (is the keystore readable?)"; exit 1; }
 echo "built $apk (versionCode $code)"
