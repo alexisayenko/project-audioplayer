@@ -1,6 +1,13 @@
 package com.alexisayenko.audioplayer.android.ui
 
+import android.Manifest
+import android.content.pm.PackageManager
+import android.os.Build
 import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.runtime.collectAsState
+import androidx.core.content.ContextCompat
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
@@ -61,6 +68,20 @@ fun ElectrophoneApp(graph: AppGraph, sharedLink: String? = null, onSharedLinkTak
                         is PlaybackEvent.Failed -> "“${event.song.title}” could not be played."
                     }
                     Toast.makeText(context, text, Toast.LENGTH_SHORT).show()
+                }
+            }
+
+            // The download notification needs the permission on Android 13+; asked once, when the first download starts.
+            // Downloads run either way (AND-054).
+            val askNotifications = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {}
+            var asked by rememberSaveable { mutableStateOf(false) }
+            val transfers by graph.library.transfers.collectAsState()
+            LaunchedEffect(transfers.isNotEmpty()) {
+                if (transfers.isNotEmpty() && !asked && Build.VERSION.SDK_INT >= 33 &&
+                    ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
+                ) {
+                    asked = true
+                    askNotifications.launch(Manifest.permission.POST_NOTIFICATIONS)
                 }
             }
 

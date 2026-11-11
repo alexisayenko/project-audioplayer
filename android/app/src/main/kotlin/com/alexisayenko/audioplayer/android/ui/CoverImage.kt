@@ -10,6 +10,7 @@ import androidx.compose.ui.res.painterResource
 import coil3.compose.AsyncImage
 import com.alexisayenko.audioplayer.android.LocalAppGraph
 import com.alexisayenko.audioplayer.android.R
+import com.alexisayenko.audioplayer.android.data.api.CoverUrl
 
 /**
  * A song cover (iOS `CoverImage`). [source] is an absolute image URL or the server path `/covers/<id>`; server covers are
@@ -19,11 +20,7 @@ import com.alexisayenko.audioplayer.android.R
 @Composable
 fun CoverImage(source: String?, modifier: Modifier = Modifier) {
     val placeholder = painterResource(R.drawable.thumbnail_record)
-    val url = when {
-        source.isNullOrEmpty() -> null
-        source.startsWith("/") -> LocalAppGraph.current.settings.serverUrl.trimEnd('/') + source
-        else -> source
-    }
+    val url = CoverUrl.resolve(source, LocalAppGraph.current.settings.serverUrl)
     Box(modifier) {
         if (url == null) {
             Image(placeholder, contentDescription = null, modifier = Modifier.fillMaxSize(), contentScale = ContentScale.Fit)
