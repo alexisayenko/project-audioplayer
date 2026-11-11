@@ -234,6 +234,33 @@ object DS {
         val time = TextStyle(fontFamily = FontFamily.Monospace, fontSize = 13.sp, fontWeight = FontWeight.W500, lineHeight = 18.sp)
     }
 
+    object Shadow {
+        /** iOS card and slab: vinyl at 16%, blur 10, y 2. Cards, list groups, pill chips on ground, cover art. The blur value is the SwiftUI shadow radius. */
+        val depthSlab = DSShadow(light = Color(0x29101417), dark = Color(0x29101417), radius = 10.dp, x = 0.dp, y = 2.dp)
+        /** iOS floating slab (mini player, tab bar, transport tray, sheets): vinyl at 16% by day, 70% by night, blur 12, y 8. Pair with a stroke-hairline line ring. */
+        val depthLift = DSShadow(light = Color(0x29101417), dark = Color(0xB3101417), radius = 12.dp, x = 0.dp, y = 8.dp)
+        /** iOS toast and popover: vinyl at 30%, blur 12, y 6. */
+        val depthPop = DSShadow(light = Color(0x4D101417), dark = Color(0x4D101417), radius = 12.dp, x = 0.dp, y = 6.dp)
+        /** macOS transport bar: vinyl at 30%, blur 16, y 4. */
+        val depthBar = DSShadow(light = Color(0x4D101417), dark = Color(0x4D101417), radius = 16.dp, x = 0.dp, y = 4.dp)
+        /** iOS left drawer edge: vinyl at 30%, blur 12, cast to the right (x 4, y 0). */
+        val depthDrawer = DSShadow(light = Color(0x4D101417), dark = Color(0x4D101417), radius = 12.dp, x = 4.dp, y = 0.dp)
+        /** iOS unlit key, small raised capsule and toggle thumb: vinyl at 20%, blur 2, y 1. */
+        val depthKey = DSShadow(light = Color(0x33101417), dark = Color(0x33101417), radius = 2.dp, x = 0.dp, y = 1.dp)
+        /** iOS slider thumb: vinyl at 30%, blur 2, y 1. */
+        val depthThumb = DSShadow(light = Color(0x4D101417), dark = Color(0x4D101417), radius = 2.dp, x = 0.dp, y = 1.dp)
+        /** iOS row lifted while dragged: vinyl at 20%, blur 6, y 2. */
+        val depthHover = DSShadow(light = Color(0x33101417), dark = Color(0x33101417), radius = 6.dp, x = 0.dp, y = 2.dp)
+        /** iOS lit play key and the enabled primary action: accent at 50%, blur 12, no offset. */
+        val depthGlow = DSShadow(light = Color(0x8057D3E9), dark = Color(0x8057D3E9), radius = 12.dp, x = 0.dp, y = 0.dp)
+        /** iOS halo around a lit icon: accent at 25%, blur 6. */
+        val depthGlowSoft = DSShadow(light = Color(0x4057D3E9), dark = Color(0x4057D3E9), radius = 6.dp, x = 0.dp, y = 0.dp)
+        /** iOS LED dot glow: the LED colour (ok or power) at 80%, blur 3. The call site passes the colour; white here is a placeholder. */
+        val depthLed = DSShadow(light = Color(0xCCFFFFFF), dark = Color(0xCCFFFFFF), radius = 3.dp, x = 0.dp, y = 0.dp)
+        /** Legibility halo for white text on cover art: black at 50%, blur 2. The only text shadow. */
+        val depthText = DSShadow(light = Color(0x80000000), dark = Color(0x80000000), radius = 2.dp, x = 0.dp, y = 0.dp)
+    }
+
     object Space {
         /** Icon-to-label gap, LED-to-text gap. */
         val space1: Dp = 4.dp
@@ -392,3 +419,7 @@ object DS {
         val dim: Float = 0.55f
     }
 }
+
+/** One drop shadow level: the colour per theme and the blur radius and offset (drawn with Modifier.dsShadow in Components.kt). */
+@Immutable
+class DSShadow(val light: Color, val dark: Color, val radius: Dp, val x: Dp, val y: Dp)

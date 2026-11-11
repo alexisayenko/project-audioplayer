@@ -23,6 +23,7 @@ fun ElectrophoneTheme(dark: Boolean = isSystemInDarkTheme(), content: @Composabl
     CompositionLocalProvider(
         LocalDSColors provides if (dark) DSColorsDark else DSColorsLight,
         LocalDSChart provides if (dark) DSChartDark else DSChartLight,
+        LocalDarkTheme provides dark,
         content = content,
     )
 }

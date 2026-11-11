@@ -68,6 +68,12 @@ android {
 
     testOptions {
         unitTests.isIncludeAndroidResources = true
+        unitTests.all { test ->
+            // Robolectric reaches JDK internals on SDK 36 (ApplicationSharedMemory); JDK 17+ needs them exported.
+            test.jvmArgs("--add-exports=java.base/jdk.internal.access=ALL-UNNAMED", "--add-opens=java.base/jdk.internal.access=ALL-UNNAMED")
+            // Optional mirror for Robolectric's Android runtime jars (-ProbolectricRepo=<url> or ~/.gradle/gradle.properties).
+            (findProperty("robolectricRepo") as String?)?.let { test.systemProperty("robolectric.dependency.repo.url", it) }
+        }
     }
 
     lint {

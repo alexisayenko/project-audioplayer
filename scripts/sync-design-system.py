@@ -10,8 +10,8 @@ docs/brand/tokens.json; this script turns that file into
   web/tokens.css                   (CSS custom properties, light + dark; tokens marked platform web are web only, platform ios are skipped)
   android/app/src/main/kotlin/com/alexisayenko/audioplayer/android/ui/DesignTokens.kt
                                    (Compose: DSColors and DSChart per theme, TextStyle, Dp scales, motion in milliseconds;
-                                    tokens marked platform ios or web are skipped, platform android are Android only; no shadows
-                                    unless marked platform android)
+                                    tokens marked platform ios or web are skipped, platform android are Android only; the
+                                    single-layer native shadows (platform ios or android) become DSShadow for Modifier.dropShadow)
 
 All colour-valued tokens live in the color family (the artifact's parser accepts per-theme values and
 {name} aliases only there). Inside it, chart-N tokens go to DS.Chart on iOS, tokens marked
@@ -375,6 +375,25 @@ def kotlin_type(tokens: dict) -> list[str]:
     return out
 
 
+def kotlin_shadows(tokens: dict, themes: list[str]) -> list[str]:
+    # The native depth shadows are single-layer "x y blur colour" values written for SwiftUI (platform ios); Compose draws the
+    # same geometry with Modifier.dropShadow, so they reach Android too. The layered web shadows (no platform) stay web only.
+    toks = [t for t in tokens.get("shadow", {}).get("tokens", []) if t.get("platform") in ("ios", "android")]
+    if not toks:
+        return []
+    light, dark = themes[0], (themes[1] if len(themes) > 1 else themes[0])
+    out = ["    object Shadow {"]
+    for tok in toks:
+        vals = theme_values(tok, themes)
+        x, y, blur, lc = parse_shadow_layer(vals[light])
+        dx, dy, dblur, dc = parse_shadow_layer(vals[dark])
+        if (x, y, blur) != (dx, dy, dblur):
+            raise ValueError(f"{tok['name']}: geometry must match in both themes")
+        out.extend([kdoc(tok, "        "), f"        val {camel(tok['name'])} = DSShadow(light = {kotlin_hex(lc)}, dark = {kotlin_hex(dc)}, radius = {num(blur)}.dp, x = {num(x)}.dp, y = {num(y)}.dp)"])
+    out.extend(["    }", ""])
+    return out
+
+
 def kotlin_value(tok: dict, family: str) -> str | None:
     name, raw = tok["name"], str(tok["value"]).strip()
     if family == "icon" and name.startswith("icon-weight"):
@@ -430,10 +449,17 @@ def kotlin(tokens: dict) -> str:
     out.extend(kotlin_colors(tokens, themes))
     out.append("object DS {")
     out.extend(kotlin_type(tokens))
+    out.extend(kotlin_shadows(tokens, themes))
     out.extend(kotlin_families(tokens))
     while out[-1] == "":
         out.pop()
-    out.append("}")
+    out.extend([
+        "}",
+        "",
+        "/** One drop shadow level: the colour per theme and the blur radius and offset (drawn with Modifier.dsShadow in Components.kt). */",
+        "@Immutable",
+        "class DSShadow(val light: Color, val dark: Color, val radius: Dp, val x: Dp, val y: Dp)",
+    ])
     return "\n".join(out) + "\n"
 
 
