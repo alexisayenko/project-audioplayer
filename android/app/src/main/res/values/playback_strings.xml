@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Words of the media notification and its keys (PlaybackService, AND-061). -->
+<resources>
+    <string name="playback_channel_name">Playback</string>
+    <string name="playback_skip_back">Back 10 seconds</string>
+    <string name="playback_skip_forward">Forward 10 seconds</string>
+    <string name="playback_shuffle_on">Shuffle is on</string>
+    <string name="playback_shuffle_off">Shuffle is off</string>
+    <string name="playback_repeat_off">Repeat is off</string>
+    <string name="playback_repeat_all">Repeat the whole list</string>
+    <string name="playback_repeat_one">Repeat one song</string>
+</resources>
