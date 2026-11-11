@@ -26,6 +26,20 @@ const ANDROID_EXTRA = {
   cloud: { d: '<path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/>' },
   phone: { d: '<rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><path d="M12 18h.01"/>' },
   filter: { d: '<path d="M3 6h18"/><path d="M7 12h10"/><path d="M10 18h4"/>' },
+  // Library screen (ui/library): filter chips, the sort control and sheet, the offline banner, the row menu.
+  tag: { d: '<path d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42z"/><circle cx="7.5" cy="7.5" r=".5" fill="currentColor"/>' },
+  calendar: { d: '<path d="M8 2v4"/><path d="M16 2v4"/><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M3 10h18"/>' },
+  globe: { d: '<circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/>' },
+  wifiOff: { d: '<path d="M12 20h.01"/><path d="M8.5 16.429a5 5 0 0 1 7 0"/><path d="M5 12.859a10 10 0 0 1 5.17-2.69"/><path d="M19 12.859a10 10 0 0 0-2.007-1.523"/><path d="M2 8.82a15 15 0 0 1 4.177-2.643"/><path d="M22 8.82a15 15 0 0 0-11.288-3.764"/><path d="m2 2 20 20"/>' },
+  phoneOff: { d: '<path d="M19 15.5V20a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V8.5"/><path d="M8.5 2H17a2 2 0 0 1 2 2v6.5"/><path d="M12 18h.01"/><path d="m2 2 20 20"/>' },
+  sortCriteria: { d: '<path d="M17.5 9.5V7A3.5 3.5 0 0 0 14 3.5H7A3.5 3.5 0 0 0 3.5 7v8A3.5 3.5 0 0 0 7 18.5h4.5"/><path d="M7.5 8h6M7.5 11.5h4M7.5 15h2"/><path d="M12 12.5h9l-3.4 4.2v3.8l-2.2-1.2v-2.6z"/>' },
+  sortAsc: { d: '<path d="M3.5 6.5h3M3.5 12h6M3.5 17.5h9"/><path d="M18 19.5v-15M14.5 8 18 4.5 21.5 8"/>' },
+  sortDesc: { d: '<path d="M3.5 6.5h9M3.5 12h6M3.5 17.5h3"/><path d="M18 4.5v15M14.5 16l3.5 3.5 3.5-3.5"/>' },
+  clock: { d: '<circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>' },
+  textLetters: { d: '<path d="M12 4v16"/><path d="M4 7V5a1 1 0 0 1 1-1h14a1 1 0 0 1 1 1v2"/><path d="M9 20h6"/>' },
+  metronome: { d: '<path d="M9.5 3h5l4.5 18H5z"/><path d="M6.5 15h11"/><path d="m12 15 5-9"/>' },
+  timer: { d: '<path d="M10 2h4"/><path d="m12 14 3-3"/><circle cx="12" cy="14" r="8"/>' },
+  headphones: { d: '<path d="M3 14h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-7a9 9 0 0 1 18 0v7a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3"/>' },
 };
 
 const num = (v) => {

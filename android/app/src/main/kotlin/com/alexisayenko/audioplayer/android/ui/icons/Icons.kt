@@ -603,4 +603,108 @@ object Icons {
             part("M10 18h4", fill = false, stroke = true)
         }
     }
+
+    val tag: ImageVector by lazy {
+        dsIconVector("tag") {
+            part("M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42z", fill = false, stroke = true)
+            part("M7 7.5a0.5 0.5 0 1 0 1 0a0.5 0.5 0 1 0 -1 0Z", fill = true, stroke = true)
+        }
+    }
+
+    val calendar: ImageVector by lazy {
+        dsIconVector("calendar") {
+            part("M8 2v4", fill = false, stroke = true)
+            part("M16 2v4", fill = false, stroke = true)
+            part("M5 4h14a2 2 0 0 1 2 2v14a2 2 0 0 1 -2 2h-14a2 2 0 0 1 -2 -2v-14a2 2 0 0 1 2 -2Z", fill = false, stroke = true)
+            part("M3 10h18", fill = false, stroke = true)
+        }
+    }
+
+    val globe: ImageVector by lazy {
+        dsIconVector("globe") {
+            part("M2 12a10 10 0 1 0 20 0a10 10 0 1 0 -20 0Z", fill = false, stroke = true)
+            part("M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20", fill = false, stroke = true)
+            part("M2 12h20", fill = false, stroke = true)
+        }
+    }
+
+    val wifiOff: ImageVector by lazy {
+        dsIconVector("wifiOff") {
+            part("M12 20h.01", fill = false, stroke = true)
+            part("M8.5 16.429a5 5 0 0 1 7 0", fill = false, stroke = true)
+            part("M5 12.859a10 10 0 0 1 5.17-2.69", fill = false, stroke = true)
+            part("M19 12.859a10 10 0 0 0-2.007-1.523", fill = false, stroke = true)
+            part("M2 8.82a15 15 0 0 1 4.177-2.643", fill = false, stroke = true)
+            part("M22 8.82a15 15 0 0 0-11.288-3.764", fill = false, stroke = true)
+            part("m2 2 20 20", fill = false, stroke = true)
+        }
+    }
+
+    val phoneOff: ImageVector by lazy {
+        dsIconVector("phoneOff") {
+            part("M19 15.5V20a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V8.5", fill = false, stroke = true)
+            part("M8.5 2H17a2 2 0 0 1 2 2v6.5", fill = false, stroke = true)
+            part("M12 18h.01", fill = false, stroke = true)
+            part("m2 2 20 20", fill = false, stroke = true)
+        }
+    }
+
+    val sortCriteria: ImageVector by lazy {
+        dsIconVector("sortCriteria") {
+            part("M17.5 9.5V7A3.5 3.5 0 0 0 14 3.5H7A3.5 3.5 0 0 0 3.5 7v8A3.5 3.5 0 0 0 7 18.5h4.5", fill = false, stroke = true)
+            part("M7.5 8h6M7.5 11.5h4M7.5 15h2", fill = false, stroke = true)
+            part("M12 12.5h9l-3.4 4.2v3.8l-2.2-1.2v-2.6z", fill = false, stroke = true)
+        }
+    }
+
+    val sortAsc: ImageVector by lazy {
+        dsIconVector("sortAsc") {
+            part("M3.5 6.5h3M3.5 12h6M3.5 17.5h9", fill = false, stroke = true)
+            part("M18 19.5v-15M14.5 8 18 4.5 21.5 8", fill = false, stroke = true)
+        }
+    }
+
+    val sortDesc: ImageVector by lazy {
+        dsIconVector("sortDesc") {
+            part("M3.5 6.5h9M3.5 12h6M3.5 17.5h3", fill = false, stroke = true)
+            part("M18 4.5v15M14.5 16l3.5 3.5 3.5-3.5", fill = false, stroke = true)
+        }
+    }
+
+    val clock: ImageVector by lazy {
+        dsIconVector("clock") {
+            part("M2 12a10 10 0 1 0 20 0a10 10 0 1 0 -20 0Z", fill = false, stroke = true)
+            part("M12 6v6l4 2", fill = false, stroke = true)
+        }
+    }
+
+    val textLetters: ImageVector by lazy {
+        dsIconVector("textLetters") {
+            part("M12 4v16", fill = false, stroke = true)
+            part("M4 7V5a1 1 0 0 1 1-1h14a1 1 0 0 1 1 1v2", fill = false, stroke = true)
+            part("M9 20h6", fill = false, stroke = true)
+        }
+    }
+
+    val metronome: ImageVector by lazy {
+        dsIconVector("metronome") {
+            part("M9.5 3h5l4.5 18H5z", fill = false, stroke = true)
+            part("M6.5 15h11", fill = false, stroke = true)
+            part("m12 15 5-9", fill = false, stroke = true)
+        }
+    }
+
+    val timer: ImageVector by lazy {
+        dsIconVector("timer") {
+            part("M10 2h4", fill = false, stroke = true)
+            part("m12 14 3-3", fill = false, stroke = true)
+            part("M4 14a8 8 0 1 0 16 0a8 8 0 1 0 -16 0Z", fill = false, stroke = true)
+        }
+    }
+
+    val headphones: ImageVector by lazy {
+        dsIconVector("headphones") {
+            part("M3 14h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-7a9 9 0 0 1 18 0v7a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3", fill = false, stroke = true)
+        }
+    }
 }
