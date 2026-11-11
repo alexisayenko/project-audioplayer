@@ -1,0 +1,40 @@
+name: Android
+
+# Builds, lints and unit-tests the Android app (AND-083, task-0127 question NH answer 1). Release signing stays local.
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "android/**"
+      - "scripts/sync-design-system.py"
+      - "scripts/export-android-icons.mjs"
+      - "docs/brand/tokens.json"
+      - "web/js/icons.js"
+      - "server/tests/fixtures/**"
+      - ".github/workflows/android.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: android-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-java@77dd5b2ce225ea11469928ac317850245a74ae78 # v6.2.0
+        with:
+          distribution: temurin
+          java-version: "21"
+      - uses: gradle/actions/setup-gradle@8da46b539cd8fe6ab27ca75128919a18d757604c # v6.4.1
+      - name: Generated files are fresh
+        run: |
+          python3 scripts/sync-design-system.py --check
+          node scripts/export-android-icons.mjs --check
+      - name: Lint, unit tests, debug build
+        working-directory: android
+        run: ./gradlew lintDebug testDebugUnitTest assembleDebug

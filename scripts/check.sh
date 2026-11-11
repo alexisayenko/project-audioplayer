@@ -49,6 +49,12 @@ if ! python3 scripts/sync-design-system.py --check >/dev/null; then
 fi
 echo "design tokens ok"
 
+if ! node scripts/export-android-icons.mjs --check >/dev/null; then
+  echo "FAIL: generated Android icons are stale (run node scripts/export-android-icons.mjs)"
+  exit 1
+fi
+echo "android icons ok"
+
 py=python3
 for c in "$HOME/ap2venv/bin/python" "$HOME/ap2venv/bin/python3"; do [ -x "$c" ] && py="$c" && break; done
 if out=$(cd server && PYTHONPATH=. "$py" -m pytest -q --no-header -p no:cacheprovider 2>&1); then
@@ -57,6 +63,21 @@ else
   echo "$out" | tail -n 15
   echo "FAIL: server tests"
   exit 1
+fi
+
+# Android unit tests need a JDK and the Android SDK (ANDROID_HOME or android/local.properties); skipped without them (AND-084).
+if [ -d android ]; then
+  if command -v java >/dev/null 2>&1 && { [ -n "$ANDROID_HOME" ] || [ -f android/local.properties ]; }; then
+    if out=$(cd android && ./gradlew -q testDebugUnitTest 2>&1); then
+      echo "android: unit tests ok"
+    else
+      echo "$out" | tail -n 20
+      echo "FAIL: android unit tests"
+      exit 1
+    fi
+  else
+    echo "android: skipped (no JDK or no Android SDK)"
+  fi
 fi
 
 echo "check ok"
