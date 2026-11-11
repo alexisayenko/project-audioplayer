@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Auto backup on Android 11 and older (AND-056): the audio files stay out, library.json, phone-index.json and library.json.good go in with the rest of filesDir. -->
+<full-backup-content>
+    <exclude domain="file" path="audio" />
+</full-backup-content>
