@@ -22,7 +22,7 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 
-private class StillPlayer(state: PlayerState) : PlayerController {
+internal class StillPlayer(state: PlayerState) : PlayerController {
     override val state = MutableStateFlow(state)
     override fun play(songs: List<Song>, startIndex: Int) {}
     override fun playAll(songs: List<Song>) {}
@@ -52,12 +52,13 @@ class ShellScreenshotTest {
 
     private val playing = PlayerState(queue = SampleSongs.all.take(4), index = 0, isPlaying = true, positionMs = 96_000, durationMs = 268_000)
 
-    private fun shell(name: String, dark: Boolean, drawerOpen: Boolean) {
+    private fun shell(name: String, dark: Boolean, drawerOpen: Boolean, tab: com.alexisayenko.audioplayer.android.ui.shell.AppTab = com.alexisayenko.audioplayer.android.ui.shell.AppTab.Library) {
         compose.shoot(name, FakeGraph(player = StillPlayer(playing)), dark) {
             AppShell(
                 library = { Box(Modifier.fillMaxSize().statusBarsPadding().padding(DS.Space.space4)) { ScreenHeader("Library") } },
                 playback = {},
-                settings = {},
+                settings = { com.alexisayenko.audioplayer.android.ui.settings.SettingsScreen() },
+                initialTab = tab,
                 initialDrawerOpen = drawerOpen,
             )
         }
@@ -65,5 +66,7 @@ class ShellScreenshotTest {
 
     @Test fun shellWithMiniPlayer() = shell("shell", dark = false, drawerOpen = false)
     @Test fun drawerOpen() = shell("drawer", dark = false, drawerOpen = true)
+    @Test fun settings() = shell("settings", dark = false, drawerOpen = false, tab = com.alexisayenko.audioplayer.android.ui.shell.AppTab.Settings)
+    @Test fun settingsDark() = shell("settings", dark = true, drawerOpen = false, tab = com.alexisayenko.audioplayer.android.ui.shell.AppTab.Settings)
     @Test fun drawerOpenDark() = shell("drawer", dark = true, drawerOpen = true)
 }

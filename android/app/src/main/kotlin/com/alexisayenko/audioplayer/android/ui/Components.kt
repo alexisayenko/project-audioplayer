@@ -349,3 +349,21 @@ fun DSRow(label: String, modifier: Modifier = Modifier, sublabel: String? = null
         }
     }
 }
+
+/** A confirmation before a destructive action (IOS-125): title, explanation, the destructive action and Cancel. */
+@Composable
+fun DSConfirmDialog(title: String, message: String, confirm: String, onConfirm: () -> Unit, onDismiss: () -> Unit) {
+    androidx.compose.ui.window.Dialog(onDismissRequest = onDismiss) {
+        androidx.compose.foundation.layout.Column(
+            Modifier.fillMaxWidth().dsFloat(DS.Radius.radiusCard).padding(DS.Space.space5),
+            verticalArrangement = Arrangement.spacedBy(DS.Space.space3),
+        ) {
+            DSText(title, Modifier.semantics { heading() }, DS.Type.headline)
+            DSText(message, style = DS.Type.subhead, color = DS.colors.inkMuted)
+            Row(Modifier.fillMaxWidth().padding(top = DS.Space.space2), horizontalArrangement = Arrangement.spacedBy(DS.Space.space3)) {
+                DSButton("Cancel", onDismiss, Modifier.weight(1f), DSButtonKind.Quiet)
+                DSButton(confirm, { onDismiss(); onConfirm() }, Modifier.weight(1f), DSButtonKind.Danger)
+            }
+        }
+    }
+}
