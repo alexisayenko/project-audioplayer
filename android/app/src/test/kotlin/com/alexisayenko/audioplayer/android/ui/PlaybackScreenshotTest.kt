@@ -11,7 +11,8 @@ import com.alexisayenko.audioplayer.android.preview.FakeGraph
 import com.alexisayenko.audioplayer.android.preview.SampleSongs
 import com.alexisayenko.audioplayer.android.ui.playback.PlaybackContent
 import com.alexisayenko.audioplayer.android.ui.playback.PlaybackScreen
-import com.alexisayenko.audioplayer.android.ui.playback.PlaybackSeek
+import com.alexisayenko.audioplayer.android.logic.PlaybackSeek
+import com.alexisayenko.audioplayer.android.logic.formatTime
 import com.alexisayenko.audioplayer.android.ui.playback.formatTime
 import com.alexisayenko.audioplayer.android.ui.shell.AppShell
 import com.alexisayenko.audioplayer.android.ui.shell.AppTab
