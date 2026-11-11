@@ -252,7 +252,9 @@ unconfirmed. One false positive remains: `Web:S6850` at
 `web/index.html:40` (heading `#player-title` is empty in the markup and
 filled by script).
 
-Native SwiftUI via XcodeGen, no CI workflows yet; only the local path is
+Android: `.github/workflows/android.yml` (added 2026-11-11, not yet run) lints, unit-tests and builds the debug app on `ubuntu-latest` with JDK 21 on a push that touches `android/`, the token or icon generators or their sources, and on manual dispatch (AND-083, owner answer NH1; an exception to "every workflow is manual"). The signed release is built locally with `scripts/build-android-release.sh`.
+
+Native SwiftUI via XcodeGen, no CI workflows for iOS yet; only the local path is
 used (ADR-0008, steps in [`architecture.md`](architecture.md#testflight)).
 `xcodebuild archive`, then `xcodebuild -exportArchive` with
 `destination=upload` in the export options, signed by Xcode's signed-in

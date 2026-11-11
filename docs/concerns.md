@@ -89,7 +89,7 @@ the phone through the iOS client-paced flow, plays it with Media3 behind the
 lock screen, signs in with Google and ships as a sideloaded APK. Status:
 proposal (ADR-0051, task-0127, 2026-11-09); nothing built, no tooling installed.
 
-- Lives in: `android/` (planned, does not exist), `scripts/sync-design-system.py`
+- Lives in: `android/` (built in source 2026-11-11, not run on a device), `scripts/sync-design-system.py`
   (the Android token output), `scripts/check.sh` (the Android step),
   `.github/workflows/` (the ubuntu job), `docs/specs/android.md`
 - Source spec: [`specs/android.md`](specs/android.md), ADR-0051 in

@@ -50,7 +50,7 @@ Each requirement is one line:
 | [terminology.md](terminology.md) | all | Glossary: one name per thing and its aliases (now line, relief, parts, camera, quality, overlay, share link, baselines) |
 | [share.md](share.md) | SHARE | Share link: song id, start time and visualizer settings in a hash route, share dialog, tap-to-play gate (task-0028) |
 | [macos-gui.md](macos-gui.md) | MAC | Native macOS app: web-matching GUI, pages in or out of v1, streaming only, Settings, shortcuts (task-0047, ADR-0029) |
-| [android.md](android.md) | AND | Native Android app (proposal, nothing built): Kotlin and Compose, iOS-modelled screens, downloads on the device with WorkManager, Media3 playback behind the lock screen, Google sign-in, sideloaded APK, toolchain and CI (task-0127, ADR-0051) |
+| [android.md](android.md) | AND | Native Android app (built in source 2026-11-11, not run on a device): Kotlin and Compose, iOS-modelled screens, downloads on the device with WorkManager, Media3 playback behind the lock screen, Google sign-in, sideloaded APK, toolchain and CI (task-0127, ADR-0051) |
 | [youtube-connect.md](youtube-connect.md) | YTC | Connect YouTube: Google OAuth, playlist and Liked videos import as catalog songs, refresh token storage, limits (task-0032, ADR-0020 proposed) |
 | [playlists.md](playlists.md) | PLS | Playlists: top-level menu item, folders and playlists, import from YouTube, SoundCloud and Spotify links and files, export to M3U8, CSV and JSON, Refresh, guest view, quotas (task-0034, ADR-0022) |
 | [studio-site.md](studio-site.md) | STU | Studio tools (Analyze, Synthesize) as a static site at studio.electrophone.cc: build from the shared web modules, degrade without the main app, microphone, headers, redirects (ADR-0049, task-0114, planned) |

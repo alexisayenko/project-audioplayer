@@ -2,6 +2,10 @@
 
 What shipped, newest first. One line each; the web UI and server are live at https://electrophone.cc. Everything listed here is deployed except the sections marked "built, not deployed" (the 2026-10-14 release went out once the SSH access in [task-0027](tasks/task-0027.md) was restored; the live visualizer files match `origin/main` as of 2026-10-15). Why: [tech/decisions.md](tech/decisions.md); runbook: [tech/deploy.md](tech/deploy.md).
 
+## 2026-11-11 (built, not released)
+
+- Android (built in source, not run on a device; task-0127, ADR-0051 accepted): a native Kotlin app in `android/` with the iOS app's screens (Library with search, filters, sort and song details; Now playing with the queue; Add and Edit with token pills; Settings; the left drawer and the mini player), downloads to the phone through WorkManager, Media3 playback with a media session, Google sign-in through Credential Manager and the Electrophone look from the shared tokens (`DesignTokens.kt`) and icon set (`Icons.kt`), both generated. Debug and unsigned release builds and 411 JVM tests pass; the screens were checked from JVM screenshots in day and night themes. Not done: any run on a phone or emulator, the Android OAuth client, a signed APK.
+
 ## 2026-11-09 (deployed)
 
 - Server (fix for no sound in Safari): the audio Range cap (API-318) is off by default again (code default 0, `AUDIO_RANGE_CAP_BYTES` still turns it on). Local check: all 768 KiB chunks concatenate to the exact file with correct Content-Range, so the cause is not proven; Safari runs after the cap deploy showed a short burst of level then silence. Not verified in Safari.
