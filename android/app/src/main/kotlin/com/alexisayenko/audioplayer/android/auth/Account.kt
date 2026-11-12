@@ -17,8 +17,8 @@ interface Account {
     /** The last sign-in failure in words for the person, or null. */
     val error: StateFlow<String?>
 
-    /** Shows the Google account chooser; needs an Activity for the Credential Manager sheet. */
-    suspend fun signInWithGoogle(activity: Activity)
+    /** Shows the Google account chooser; needs an Activity for the Credential Manager sheet. Returns at once; the outcome arrives in [session] or [error]. */
+    fun signInWithGoogle(activity: Activity)
     fun signOut()
 
     /** A token that is not expired, renewed silently when needed; null when signed out or renewal needs the person (AND-072). */

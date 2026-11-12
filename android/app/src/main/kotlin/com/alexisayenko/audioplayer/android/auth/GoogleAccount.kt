@@ -2,14 +2,17 @@ package com.alexisayenko.audioplayer.android.auth
 
 import android.app.Activity
 import android.content.Context
+import android.util.Log
 import androidx.credentials.ClearCredentialStateRequest
 import androidx.credentials.CredentialManager
+import androidx.credentials.CredentialOption
 import androidx.credentials.CustomCredential
 import androidx.credentials.GetCredentialRequest
 import androidx.credentials.exceptions.GetCredentialCancellationException
 import androidx.credentials.exceptions.NoCredentialException
 import com.alexisayenko.audioplayer.android.BuildConfig
 import com.google.android.libraries.identity.googleid.GetGoogleIdOption
+import com.google.android.libraries.identity.googleid.GetSignInWithGoogleOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
 import java.lang.ref.WeakReference
 import kotlinx.coroutines.CancellationException
@@ -20,15 +23,21 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
-/** The person closed the account chooser: not an error to show. */
-class SignInCancelled : Exception("Sign-in cancelled")
+/** Google reported the sign-in as cancelled: the person closed the account chooser, or Google refused the request. [detail] says which. */
+class SignInCancelled(val detail: String? = null) : Exception("Sign-in cancelled")
 
 /** The phone has no Google account that can sign in. */
-class NoGoogleAccount : Exception("No Google account")
+class NoGoogleAccount(val detail: String? = null) : Exception("No Google account")
+
+/** Any other failure of the interactive sign-in. */
+class SignInFailed(val detail: String? = null) : Exception("Sign-in failed")
+
+internal fun failureDetail(e: Throwable, attempt: String? = null): String =
+    "(${e.javaClass.simpleName}: ${e.message})" + if (attempt != null) " at $attempt" else ""
 
 /** Asks Google for an ID token. The real one is [CredentialManagerGoogle]; tests use a fake. */
 interface GoogleTokenSource {
-    /** Shows the account chooser on [activity] and returns the ID token. Throws [SignInCancelled] or [NoGoogleAccount]. */
+    /** Shows the account chooser on [activity] and returns the ID token. Throws [SignInCancelled], [NoGoogleAccount] or [SignInFailed]. */
     suspend fun interactive(activity: Activity): String
 
     /** A fresh ID token for the account that already signed in, without the person choosing anything; null when that is not possible. */
@@ -53,17 +62,15 @@ class CredentialManagerGoogle(context: Context, private val clientId: String) : 
         lastActivity = WeakReference(activity)
     }
 
-    private fun request(silent: Boolean): GetCredentialRequest {
-        val option = GetGoogleIdOption.Builder()
-            .setServerClientId(clientId)
-            .setFilterByAuthorizedAccounts(silent)
-            .setAutoSelectEnabled(silent)
-            .build()
-        return GetCredentialRequest.Builder().addCredentialOption(option).build()
-    }
+    private fun idOption(silent: Boolean): CredentialOption = GetGoogleIdOption.Builder()
+        .setServerClientId(clientId)
+        .setFilterByAuthorizedAccounts(silent)
+        .setAutoSelectEnabled(silent)
+        .build()
 
-    private suspend fun token(context: Context, silent: Boolean): String {
-        val credential = manager.getCredential(context, request(silent)).credential
+    private suspend fun token(context: Context, option: CredentialOption): String {
+        val request = GetCredentialRequest.Builder().addCredentialOption(option).build()
+        val credential = manager.getCredential(context, request).credential
         if (credential is CustomCredential && credential.type == GoogleIdTokenCredential.TYPE_GOOGLE_ID_TOKEN_CREDENTIAL) {
             return GoogleIdTokenCredential.createFrom(credential.data).idToken
         }
@@ -72,17 +79,15 @@ class CredentialManagerGoogle(context: Context, private val clientId: String) : 
 
     override suspend fun interactive(activity: Activity): String {
         attach(activity)
-        return try {
-            token(activity, silent = false)
-        } catch (e: GetCredentialCancellationException) {
-            throw SignInCancelled()
-        } catch (e: NoCredentialException) {
-            throw NoGoogleAccount()
-        }
+        return interactiveToken(
+            chooser = { token(activity, idOption(silent = false)) },
+            button = { token(activity, GetSignInWithGoogleOption.Builder(clientId).build()) },
+            log = { attempt, e -> Log.w(TAG, "$attempt failed: ${e.javaClass.name}: ${e.message}") },
+        )
     }
 
     override suspend fun silent(): String? = try {
-        token(lastActivity.get()?.takeUnless { it.isFinishing || it.isDestroyed } ?: app, silent = true)
+        token(lastActivity.get()?.takeUnless { it.isFinishing || it.isDestroyed } ?: app, idOption(silent = true))
     } catch (e: CancellationException) {
         throw e
     } catch (_: Exception) {
@@ -98,6 +103,40 @@ class CredentialManagerGoogle(context: Context, private val clientId: String) : 
             // Signing out on this phone does not depend on it.
         }
     }
+
+    private companion object {
+        const val TAG = "ElectrophoneAuth"
+    }
+}
+
+/**
+ * The interactive sign-in: [chooser] (`GetGoogleIdOption`) first; when it finds no credential, which it also does on a
+ * first sign-in on some phones, [button] (`GetSignInWithGoogleOption`, the full account chooser). Every failure goes to [log]
+ * and is thrown with the attempt and the cause in its detail.
+ */
+internal suspend fun interactiveToken(
+    chooser: suspend () -> String,
+    button: suspend () -> String,
+    log: (attempt: String, e: Exception) -> Unit,
+): String {
+    suspend fun attempt(name: String, block: suspend () -> String): String = try {
+        block()
+    } catch (e: CancellationException) {
+        throw e
+    } catch (e: Exception) {
+        log(name, e)
+        val detail = failureDetail(e, name)
+        throw when (e) {
+            is GetCredentialCancellationException -> SignInCancelled(detail)
+            is NoCredentialException -> NoGoogleAccount(detail)
+            else -> SignInFailed(detail)
+        }
+    }
+    return try {
+        attempt("GetGoogleIdOption", chooser)
+    } catch (_: NoGoogleAccount) {
+        attempt("GetSignInWithGoogleOption", button)
+    }
 }
 
 /**
@@ -108,7 +147,7 @@ class CredentialManagerGoogle(context: Context, private val clientId: String) : 
  *
  * @param source where ID tokens come from, normally [CredentialManagerGoogle]
  * @param store the encrypted store, normally [TokenStore]
- * @param scope a scope that lives as long as the app (used for sign-out housekeeping)
+ * @param scope a scope that lives as long as the app (the sign-in runs in it, so it survives the screen being recreated)
  * @param clientId the Google web client id; empty when the build has none (`android/local.properties`, AND-074)
  */
 class GoogleAccount(
@@ -130,7 +169,7 @@ class GoogleAccount(
     override val busy: StateFlow<Boolean> get() = busyState
     override val error: StateFlow<String?> get() = errorState
 
-    override suspend fun signInWithGoogle(activity: Activity) {
+    override fun signInWithGoogle(activity: Activity) {
         if (clientId.isBlank()) {
             errorState.value = NOT_CONFIGURED
             return
@@ -138,20 +177,27 @@ class GoogleAccount(
         if (busyState.value) return
         busyState.value = true
         errorState.value = null
-        try {
-            if (!accept(source.interactive(activity))) errorState.value = "Google sign-in failed. Try again."
-        } catch (e: CancellationException) {
-            throw e
-        } catch (_: SignInCancelled) {
-            // The person closed the sheet.
-        } catch (_: NoGoogleAccount) {
-            errorState.value = "No Google account on this phone. Add one in the phone's settings and try again."
-        } catch (_: Exception) {
-            errorState.value = "Google sign-in failed. Try again."
-        } finally {
-            busyState.value = false
+        scope.launch {
+            try {
+                accept(source.interactive(activity))?.let { errorState.value = "$FAILED (token $it)" }
+            } catch (e: CancellationException) {
+                errorState.value = "Sign-in was interrupted ${failureDetail(e)}"
+                throw e
+            } catch (e: SignInCancelled) {
+                errorState.value = "Sign-in was cancelled" + suffix(e.detail)
+            } catch (e: NoGoogleAccount) {
+                errorState.value = NO_ACCOUNT + suffix(e.detail)
+            } catch (e: SignInFailed) {
+                errorState.value = FAILED + suffix(e.detail)
+            } catch (e: Exception) {
+                errorState.value = "$FAILED ${failureDetail(e)}"
+            } finally {
+                busyState.value = false
+            }
         }
     }
+
+    private fun suffix(detail: String?) = if (detail != null) " $detail" else ""
 
     override fun signOut() {
         synchronized(this) { credential = null }
@@ -170,27 +216,29 @@ class GoogleAccount(
             val due = now() - lastSilentMs >= SILENT_RETRY_MS
             if (due) lastSilentMs = now()
             val fresh = if (clientId.isBlank() || !due) null else source.silent()
-            if (fresh != null && accept(fresh)) return synchronized(this) { credential }?.idToken
+            if (fresh != null && accept(fresh) == null) return synchronized(this) { credential }?.idToken
             if (latest.expiresAtMs - now() > EXPIRY_MARGIN_MS) return latest.idToken
             if (synchronized(this) { credential } != null) errorState.value = EXPIRED
             return null
         }
     }
 
-    /** Stores a token that parses and is not expired; false otherwise. */
-    private fun accept(token: String): Boolean {
-        val claims = Jwt.claims(token) ?: return false
-        if (claims.expiresAtMs <= now()) return false
+    /** Stores a token that parses and is not expired and returns null; otherwise says why it was rejected. */
+    private fun accept(token: String): String? {
+        val claims = Jwt.claims(token) ?: return "unparseable"
+        if (claims.expiresAtMs <= now()) return "expired"
         val fresh = StoredCredential(token, claims.expiresAtMs, claims.email ?: synchronized(this) { credential }?.email)
         synchronized(this) { credential = fresh }
         store.write(fresh)
         sessionState.value = Session(fresh.email, fresh.expiresAtMs)
         errorState.value = null
-        return true
+        return null
     }
 
     companion object {
         const val NOT_CONFIGURED = "Google sign-in is not configured in this build."
+        private const val FAILED = "Google sign-in failed. Try again."
+        private const val NO_ACCOUNT = "No Google account on this phone. Add one in the phone's settings and try again."
 
         /** The IOS-013 wording. */
         const val EXPIRED = "Expired, sign in again"

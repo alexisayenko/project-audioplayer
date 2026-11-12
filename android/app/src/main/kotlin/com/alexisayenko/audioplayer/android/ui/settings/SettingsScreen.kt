@@ -120,7 +120,7 @@ fun SettingsScreen() {
                     if (current == null || current.expired()) {
                         GoogleSignInButton(enabled = !busy) {
                             val activity = context.findActivity() ?: return@GoogleSignInButton
-                            scope.launch { graph.account.signInWithGoogle(activity) }
+                            graph.account.signInWithGoogle(activity)
                         }
                     }
                     error?.let { message ->

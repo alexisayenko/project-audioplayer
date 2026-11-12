@@ -23,9 +23,16 @@ The Google web client id is not in the repo (AND-074). Put it in the git-ignored
 googleWebClientId=<the web client id the server lists in GOOGLE_WEB_CLIENT_ID>
 ```
 
-The Google Cloud project also needs an Android OAuth client for package `com.alexisayenko.audioplayer.android` with the
-SHA-1 of each signing key (debug: `./gradlew signingReport`; release: the keystore below). Without the client id the app
-builds and plays local songs, and "Sign in with Google" says it is not configured.
+The Google Cloud project also needs one Android OAuth client for package `com.alexisayenko.audioplayer.android` per
+signing key, each with that key's SHA-1:
+
+- Builds installed from Google Play: the Play **app signing** key. Copy its SHA-1 with the copy button on Play Console >
+  App signing; do not take the first 20 bytes of the SHA-256, that is a different value.
+- Sideloaded release builds: a second client with the SHA-1 of the upload key (the keystore below).
+- Debug builds: the debug key (`./gradlew signingReport`).
+
+A wrong SHA-1 shows in Settings as "[16] Account reauth failed". Without the client id the app builds and plays local
+songs, and "Sign in with Google" says it is not configured.
 
 ## Generated files
 

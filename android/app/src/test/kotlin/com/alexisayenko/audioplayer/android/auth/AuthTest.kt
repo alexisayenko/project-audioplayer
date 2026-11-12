@@ -1,10 +1,13 @@
 package com.alexisayenko.audioplayer.android.auth
 
 import android.app.Activity
+import androidx.credentials.exceptions.GetCredentialCancellationException
+import androidx.credentials.exceptions.NoCredentialException
 import com.alexisayenko.audioplayer.android.tempDir
 import java.io.File
 import java.util.Base64
 import javax.crypto.KeyGenerator
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
@@ -141,17 +144,64 @@ class AuthTest {
     }
 
     @Test
-    fun cancellingTheChooserIsNotAnErrorAndAMissingAccountIs() = runBlocking {
+    fun theInteractiveSignInFallsBackToTheButtonFlowWhenTheChooserFindsNoCredential() = runBlocking {
+        val logged = mutableListOf<String>()
+        val log = { attempt: String, e: Exception -> logged += "$attempt ${e.javaClass.simpleName}"; Unit }
+        assertEquals("first", interactiveToken({ "first" }, { error("not asked") }, log))
+        assertEquals("second", interactiveToken({ throw NoCredentialException("none") }, { "second" }, log))
+        assertEquals(listOf("GetGoogleIdOption NoCredentialException"), logged)
+        assertTrue(runCatching { interactiveToken({ throw NoCredentialException() }, { throw NoCredentialException() }, log) }.exceptionOrNull() is NoGoogleAccount)
+        assertEquals(3, logged.size)
+        assertTrue(runCatching { interactiveToken({ throw NoCredentialException() }, { throw GetCredentialCancellationException() }, log) }.exceptionOrNull() is SignInCancelled)
+        assertTrue(runCatching { interactiveToken({ throw GetCredentialCancellationException() }, { "unused" }, log) }.exceptionOrNull() is SignInCancelled)
+        val cancelled = runCatching { interactiveToken({ throw NoCredentialException() }, { throw GetCredentialCancellationException("[16] Account reauth failed") }, log) }.exceptionOrNull()
+        assertEquals("(GetCredentialCancellationException: [16] Account reauth failed) at GetSignInWithGoogleOption", (cancelled as SignInCancelled).detail)
+        val failed = runCatching { interactiveToken({ throw IllegalStateException("odd") }, { "unused" }, log) }.exceptionOrNull()
+        assertEquals("(IllegalStateException: odd) at GetGoogleIdOption", (failed as SignInFailed).detail)
+    }
+
+    @Test
+    fun everySignInFailureIsShownWithItsCause() = runBlocking {
         val source = FakeSource(interactiveToken = { throw SignInCancelled() })
         val account = account(source, MemoryStore())
         account.signInWithGoogle(activity)
-        assertNull(account.error.value)
-        source.interactiveToken = { throw NoGoogleAccount() }
+        assertEquals("Sign-in was cancelled", account.error.value)
+        source.interactiveToken = { throw SignInCancelled("(GetCredentialCancellationException: [16] Account reauth failed) at GetGoogleIdOption") }
+        account.signInWithGoogle(activity)
+        assertEquals("Sign-in was cancelled (GetCredentialCancellationException: [16] Account reauth failed) at GetGoogleIdOption", account.error.value)
+        source.interactiveToken = { throw NoGoogleAccount("(NoCredentialException: none) at GetSignInWithGoogleOption") }
         account.signInWithGoogle(activity)
         assertTrue(account.error.value!!.startsWith("No Google account"))
+        assertTrue(account.error.value!!.endsWith("try again. (NoCredentialException: none) at GetSignInWithGoogleOption"))
+        source.interactiveToken = { throw SignInFailed("(IllegalStateException: odd) at GetGoogleIdOption") }
+        account.signInWithGoogle(activity)
+        assertEquals("Google sign-in failed. Try again. (IllegalStateException: odd) at GetGoogleIdOption", account.error.value)
+        source.interactiveToken = { throw IllegalArgumentException("bad") }
+        account.signInWithGoogle(activity)
+        assertEquals("Google sign-in failed. Try again. (IllegalArgumentException: bad)", account.error.value)
         source.interactiveToken = { "not a jwt" }
         account.signInWithGoogle(activity)
-        assertEquals("Google sign-in failed. Try again.", account.error.value)
+        assertEquals("Google sign-in failed. Try again. (token unparseable)", account.error.value)
+        source.interactiveToken = { token(-60_000) }
+        account.signInWithGoogle(activity)
+        assertEquals("Google sign-in failed. Try again. (token expired)", account.error.value)
+        assertNull(account.session.value)
+        assertFalse(account.busy.value)
+    }
+
+    @Test
+    fun theSignInRunsInTheAppScopeAndReturnsAtOnce() {
+        val gate = CompletableDeferred<String>()
+        val source = object : GoogleTokenSource {
+            override suspend fun interactive(activity: Activity): String = gate.await()
+            override suspend fun silent(): String? = null
+            override suspend fun clear() = Unit
+        }
+        val account = account(source, MemoryStore())
+        account.signInWithGoogle(activity)
+        assertTrue(account.busy.value)
+        gate.complete(token(3_600_000))
+        assertEquals("a@b.c", account.session.value?.email)
         assertFalse(account.busy.value)
     }
 

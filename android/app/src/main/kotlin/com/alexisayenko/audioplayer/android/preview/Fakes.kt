@@ -79,7 +79,7 @@ class FakeAccount(session: Session? = Session("alex@example.com", Long.MAX_VALUE
     override val session = MutableStateFlow(session)
     override val busy = MutableStateFlow(false)
     override val error = MutableStateFlow<String?>(null)
-    override suspend fun signInWithGoogle(activity: Activity) { session.value = Session("alex@example.com", Long.MAX_VALUE) }
+    override fun signInWithGoogle(activity: Activity) { session.value = Session("alex@example.com", Long.MAX_VALUE) }
     override fun signOut() { session.value = null }
     override suspend fun validToken(): String? = null
 }
