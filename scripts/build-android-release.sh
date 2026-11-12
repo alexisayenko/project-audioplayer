@@ -8,7 +8,7 @@
 # Create the keystore once (keep a backup outside this machine; losing it means a new application id):
 #   keytool -genkeypair -v -keystore ~/.config/android/release.jks -alias electrophone -keyalg RSA -keysize 4096 -validity 10000
 #
-# Usage: scripts/build-android-release.sh [NN]   NN = build of the day, default 01. versionCode is YYYYMMDDNN (ADR-0008).
+# Usage: scripts/build-android-release.sh [N]   N = versionCode, a plain counter, default 1. Raise it for every upload (Play needs it strictly rising).
 set -e
 cd "$(dirname "$0")/.."
 
@@ -23,7 +23,10 @@ set -a
 set +a
 export ANDROID_RELEASE_STORE_FILE="$store"
 
-code="$(date +%Y%m%d)${1:-01}"
+code="${1:-1}"
+case "$code" in
+  ''|*[!0-9]*) echo "versionCode must be a whole number, got: $code"; exit 1 ;;
+esac
 (cd android && ./gradlew lintRelease testDebugUnitTest bundleRelease assembleRelease -PversionCode="$code")
 apk="android/app/build/outputs/apk/release/app-release.apk"
 [ -f "$apk" ] || { echo "no signed APK at $apk (is the keystore readable?)"; exit 1; }

@@ -22,8 +22,8 @@ android {
         applicationId = "com.alexisayenko.audioplayer.android"
         minSdk = 28
         targetSdk = 37
-        // Date-based like the iOS build number (ADR-0008, AND-081): YYYYMMDDNN, strictly rising.
-        versionCode = (findProperty("versionCode") as String?)?.toInt() ?: 2026111101
+        // A plain counter (AND-081): raise it for every upload, Google Play needs it strictly rising. -PversionCode=N overrides.
+        versionCode = (findProperty("versionCode") as String?)?.toInt() ?: 1
         versionName = "1.0"
         buildConfigField("String", "SERVER_URL", "\"https://electrophone.cc\"")
         buildConfigField("String", "GOOGLE_WEB_CLIENT_ID", "\"${localOrEnv("googleWebClientId", "GOOGLE_WEB_CLIENT_ID")}\"")
