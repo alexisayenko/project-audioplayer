@@ -87,7 +87,7 @@ at `electrophone.cc`.
 The Android phone app: a native Kotlin and Compose app that downloads audio to
 the phone through the iOS client-paced flow, plays it with Media3 behind the
 lock screen, signs in with Google and ships as a sideloaded APK. Status:
-proposal (ADR-0051, task-0127, 2026-11-09); nothing built, no tooling installed.
+accepted (ADR-0051, task-0127, 2026-11-11); built in source 2026-11-11, not run on a device.
 
 - Lives in: `android/` (built in source 2026-11-11, not run on a device), `scripts/sync-design-system.py`
   (the Android token output), `scripts/check.sh` (the Android step),
