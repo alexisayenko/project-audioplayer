@@ -236,7 +236,7 @@ android/
 ## 9. Testing
 
 - AND-100 MUST: JVM unit tests cover the ports of section 2.3 against the shared fixtures, the download planner and the hourly pause with a fake clock (the iOS `AlbumTests` model), the resume rule, the weighted shuffle (distribution over many draws), the index loaders with the iOS sample files (`legacy_library_sample.json`, `ios_contract.json`) and corrupt input, and the API error mapping. Status: built, not run on a device
-- AND-101 MUST: before a release APK is attached, a device checklist is run and recorded in task-0127: 30 minutes of locked-screen playback; headset and Bluetooth buttons; a call during playback; a download continued after the app is swiped away and after a reboot; a forced `hourly_limit` pause and its resume; airplane-mode playback of downloaded songs; a process kill and relaunch restoring the queue and position. Status: not done: no device run yet
+- AND-101 MUST: before a release APK is attached, a device checklist is run and recorded in task-0127: 30 minutes of locked-screen playback; headset and Bluetooth buttons; a call during playback; a download continued after the app is swiped away and after a reboot; a forced `hourly_limit` pause and its resume; airplane-mode playback of downloaded songs; a process kill and relaunch restoring the queue and position. Status: partly: emulator run 2026-11-16 recorded in task-0127 (locked playback 3 min, media keys, a call, airplane mode, kill and relaunch); phone run pending
 - AND-102 SHOULD: instrumented tests exist only for the worker and the service lifecycle, added when the device checklist finds a regression twice; no UI test suite in v1. Status: partly: Robolectric tests for the worker, the service and app start; no instrumented tests
 - AND-103 SHOULD: whether the fixtures are read in place or copied is question NG. Status: decided: read in place (NG1)
 
@@ -260,3 +260,6 @@ The owner questions (NA to NH, [task-0127](../tasks/task-0127.md)) were answered
 - On AND-037: "Get metadata", the service icons and "Detect BPM" of the iOS form are not built; genre suggestions come from the library's own tags.
 - Listening counts (`GET /stats/listening`) are not read: "Never listened" keeps every song, "Last listened" sort is disabled and the shuffle is uniform plus the phone's own pending plays.
 - Edit sends `PATCH /songs/{id}` with only the changed keys, as iOS does (the plan said PUT).
+- Seen on the emulator (2026-11-16), on AND-061/AND-063: MEDIA_NEXT on the last queue item with repeat off pauses playback instead of being ignored, and after a song ends Previous seeks to 0 but stays paused. Not fixed.
+- Seen on the emulator (2026-11-16), on AND-032: tapping the row of the song already playing resumes it from the saved position instead of starting it at 0. Not fixed.
+- Seen on the emulator (2026-11-16), on AND-012/AND-040: the Settings switches expose no toggle state to accessibility services (uiautomator sees plain Views, so TalkBack cannot announce on or off). Not fixed.

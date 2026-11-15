@@ -6,7 +6,7 @@ requirements: [docs/specs/android.md](../docs/specs/android.md); progress: [task
 
 ## Build
 
-Needs a JDK (17 or newer; CI uses 21) and the Android SDK (platform 37). Android Studio brings both; from a shell:
+Needs JDK 21 (the APK alone builds with 17, but the Robolectric tests refuse anything below 21; CI uses 21) and the Android SDK (platform 37; the Homebrew `android-commandlinetools` cask works, `sdkmanager "platforms;android-37.0" "build-tools;37.0.0"`). Android Studio brings both; from a shell:
 
 ```sh
 cd android
