@@ -40,6 +40,7 @@ Never edit these by hand:
 
 - `app/src/main/kotlin/.../ui/DesignTokens.kt`: `python3 scripts/sync-design-system.py` (from `docs/brand/tokens.json`)
 - `app/src/main/kotlin/.../ui/icons/Icons.kt`: `node scripts/export-android-icons.mjs` (from `web/js/icons.js`)
+- `app/src/main/res/mipmap-*/ic_launcher_{background,foreground,monochrome}.png` and `mipmap-anydpi-v26/ic_launcher.xml`, `ic_launcher_round.xml`: `python3 scripts/make-android-icon.py` (from `docs/brand/logo/electrophone-app-icon.png` and `electrophone-vinyl.png`)
 
 ## Screenshots
 
