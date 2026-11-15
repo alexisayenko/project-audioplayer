@@ -17,11 +17,13 @@ Derived files (regenerate from the masters, never edit by hand):
 - iOS: `ios/Sources/Assets.xcassets/AppIcon.appiconset/AppIcon.png`, `DrawerLogo.imageset/DrawerLogo@2x.png` (84 px) and `@3x.png` (126 px); the drawer shows the logo in a circle at 42 pt; `VinylRecord.imageset/electrophone-vinyl.png` is an unchanged copy of the transparent 1024 px master retained from the first missing-cover placeholder iteration.
 - The drawer lockup master is copied unchanged to `ios/Sources/Assets.xcassets/ElectrophoneVega108Lockup.imageset/electrophone-vega108-lockup.png` and displayed to the right of the circular vinyl mark, trailing-aligned and aspect-fit. Electrophone is emphasized over the smaller Vega 108 line. It replaces the earlier standalone Vega 108 wordmark; that supplied image remains unused in the asset catalog.
 - Web: `web/favicon-32.png`, `web/favicon.svg` (embeds a 128 px vinyl PNG), `web/apple-touch-icon.png`, `web/img/electrophone-vinyl.png` (192 px, the `mark` icon in `web/js/icons.js`: sidebar brand and login), `web/img/electrophone-lockup.png` (396x132, 23 KB, the lockup master scaled for the web sidebar; regenerate from the master).
+- Android: `docs/brand/android-icon/ic_launcher_background.png` (the plate master's glass), `ic_launcher_foreground.png` (the vinyl master at 60 dp) and `ic_launcher_monochrome.png` (a white record silhouette for themed icons), 432 px adaptive-icon layers generated from the two masters by `scripts/make-android-icon.py` ("vinyl on glass", decided 2026-11-15; see [android-icon/README.md](../android-icon/README.md)).
 
 ## Usage rules
 
 - App icon = the full-bleed liquid-glass plate with the vinyl. In-app and on the web the logo = the vinyl only, never the plate.
 - No recolouring, no filters, no extra outline or shadow.
+- Android themed icons tint the monochrome layer; that OS tint is the one permitted recolouring.
 - Minimum size 20 pt.
 - Clear space = 1/4 of the disc diameter on every side.
 - Do not pre-round the app icon; the system applies the mask.
