@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicText
@@ -264,8 +265,8 @@ fun DSSwitch(checked: Boolean, onCheckedChange: (Boolean) -> Unit, label: String
     val thumb = DS.Component.switchThumb
     val travel by animateDpAsState(if (checked) 48.dp - thumb - 4.dp else 0.dp, tween(DS.Motion.durFast), label = "switch")
     Box(
-        modifier.defaultMinSize(DS.Space.hit, DS.Space.hit)
-            .dsClickable(enabled = enabled, role = Role.Switch, pressedAlpha = 1f) { onCheckedChange(!checked) }
+        modifier.defaultMinSize(DS.Space.hit, DS.Space.hit).alpha(if (enabled) 1f else 0.4f)
+            .toggleable(value = checked, interactionSource = null, indication = null, enabled = enabled, role = Role.Switch, onValueChange = onCheckedChange)
             .semantics { contentDescription = label; stateDescription = if (checked) "On" else "Off" },
         contentAlignment = Alignment.Center,
     ) {

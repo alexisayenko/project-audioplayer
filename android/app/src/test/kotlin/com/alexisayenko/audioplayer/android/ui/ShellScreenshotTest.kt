@@ -4,8 +4,15 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.test.assertIsOff
+import androidx.compose.ui.test.assertIsOn
+import androidx.compose.ui.test.assertIsToggleable
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onNodeWithContentDescription
+import androidx.compose.ui.test.performClick
+import com.alexisayenko.audioplayer.android.LocalAppGraph
 import com.alexisayenko.audioplayer.android.playback.PlayerController
 import com.alexisayenko.audioplayer.android.playback.PlayerState
 import com.alexisayenko.audioplayer.android.playback.RepeatMode
@@ -69,4 +76,17 @@ class ShellScreenshotTest {
     @Test fun settings() = shell("settings", dark = false, drawerOpen = false, tab = com.alexisayenko.audioplayer.android.ui.shell.AppTab.Settings)
     @Test fun settingsDark() = shell("settings", dark = true, drawerOpen = false, tab = com.alexisayenko.audioplayer.android.ui.shell.AppTab.Settings)
     @Test fun drawerOpenDark() = shell("drawer", dark = true, drawerOpen = true)
+
+    @Test fun theSettingsSwitchesReportToggleState() {
+        compose.setContent {
+            ElectrophoneTheme(dark = false) {
+                CompositionLocalProvider(LocalAppGraph provides FakeGraph(player = StillPlayer(playing))) {
+                    com.alexisayenko.audioplayer.android.ui.settings.SettingsScreen()
+                }
+            }
+        }
+        compose.onNodeWithContentDescription("Download new songs automatically").assertIsToggleable().assertIsOn().performClick()
+        compose.onNodeWithContentDescription("Download new songs automatically").assertIsOff()
+        compose.onNodeWithContentDescription("Download over mobile data").assertIsToggleable().assertIsOff()
+    }
 }

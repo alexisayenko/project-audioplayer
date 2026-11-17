@@ -5,6 +5,7 @@ What shipped, newest first. One line each; the web UI and server are live at htt
 ## 2026-11-11 (built, not released)
 
 - Android (built in source, not run on a device; task-0127, ADR-0051 accepted): a native Kotlin app in `android/` with the iOS app's screens (Library with search, filters, sort and song details; Now playing with the queue; Add and Edit with token pills; Settings; the left drawer and the mini player), downloads to the phone through WorkManager, Media3 playback with a media session, Google sign-in through Credential Manager and the Electrophone look from the shared tokens (`DesignTokens.kt`) and icon set (`Icons.kt`), both generated. Debug and unsigned release builds and 411 JVM tests pass; the screens were checked from JVM screenshots in day and night themes. Not done: any run on a phone or emulator, the Android OAuth client, a signed APK.
+- Android (task-0127; emulator run 2026-11-16, Robolectric test): the Settings switches report their on/off state to accessibility services (`DSSwitch` is toggleable with the switch role); the `android/README.md` build section asks for JDK 21 and names the Homebrew command-line-tools route.
 
 ## 2026-11-09 (deployed)
 
